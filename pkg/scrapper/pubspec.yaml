@@ -1,0 +1,12 @@
+name: scrapper
+description: YouTube Music and YouTube Direct extractors (v2) - separate package for separation of concerns.
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  http: ^1.2.0
+  youtube_explode_dart: ^3.0.5
+  crypto: ^3.0.0

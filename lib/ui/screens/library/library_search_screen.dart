@@ -1,0 +1,258 @@
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../components/shared/components_shared.dart';
+import '../../components/ui/components_ui.dart';
+import '../../../config/app_icons.dart';
+import '../../../shared/providers/player_state_provider.dart';
+import '../../../models/library_folder.dart';
+import '../../../models/library_playlist.dart';
+import '../../../shared/providers/library_provider.dart';
+import '../../../shared/utils/string_utils.dart';
+import '../../theme/app_colors.dart';
+import '../../theme/design_tokens.dart';
+import 'library_playlist_screen.dart';
+
+/// Full-screen library search using [SharedSearchPage]. Filters playlists
+/// and folders by name; tap opens a playlist or opens a folder in the library.
+class LibrarySearchScreen extends ConsumerStatefulWidget {
+  const LibrarySearchScreen({super.key});
+
+  @override
+  ConsumerState<LibrarySearchScreen> createState() =>
+      _LibrarySearchScreenState();
+}
+
+class _LibrarySearchScreenState extends ConsumerState<LibrarySearchScreen> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    _focusNode = FocusNode();
+    _controller.addListener(() => setState(() {}));
+    // Defer focus so the route transition finishes first; reduces shutter.
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _focusNode.canRequestFocus) {
+        _focusNode.requestFocus();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final hasSong = ref.watch(currentSongProvider) != null;
+    final searchPage = SharedSearchPage(
+      controller: _controller,
+      focusNode: _focusNode,
+      onBack: () => Navigator.of(context).pop(),
+      onClear: () => setState(() {}),
+      hintText: 'Search in Library',
+      autofocus: false,
+      body: _LibrarySearchBody(query: _controller.text.trim().toLowerCase()),
+    );
+    if (!hasSong) return searchPage;
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: false,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: searchPage),
+            const MiniPlayer(key: ValueKey('library-search-mini-player')),
+            SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LibrarySearchBody extends ConsumerWidget {
+  const _LibrarySearchBody({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (query.isEmpty) {
+      return SearchPageEmptyState(
+        icon: AppIcon(
+          icon: AppIcons.search,
+          size: 64,
+          color: AppColors.textMuted,
+        ),
+        heading: 'Search your library',
+        subheading: 'Find playlists and folders by name',
+      );
+    }
+
+    final playlists = ref.watch(libraryPlaylistsProvider);
+    final folders = ref.watch(libraryFoldersProvider);
+    final inFolderIds = folders.fold<Set<String>>(
+      {},
+      (set, f) => set..addAll(f.playlistIds),
+    );
+    final rootPlaylists =
+        playlists.where((p) => !inFolderIds.contains(p.id)).toList();
+
+    final filteredPlaylists = rootPlaylists
+        .where((p) => p.name.toLowerCase().contains(query))
+        .toList();
+    final filteredFolders =
+        folders.where((f) => f.name.toLowerCase().contains(query)).toList();
+    final hasResults =
+        filteredPlaylists.isNotEmpty || filteredFolders.isNotEmpty;
+
+    if (!hasResults) {
+      return EmptyListMessage(
+        emptyLabel: 'results',
+        query: query,
+        style: const TextStyle(
+          color: AppColors.textSecondary,
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+        ),
+      );
+    }
+
+    return ListView(
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: AppSpacing.max),
+      children: [
+        if (filteredFolders.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.base,
+              vertical: AppSpacing.sm,
+            ),
+            child: Text(
+              'FOLDERS',
+              style: TextStyle(
+                color: AppColors.textMuted.withValues(alpha: 0.9),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          ...filteredFolders.map((folder) => _FolderTile(
+                folder: folder,
+                onTap: () => Navigator.of(context).pop(folder.id),
+              )),
+          const SizedBox(height: AppSpacing.lg),
+        ],
+        if (filteredPlaylists.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.base,
+              vertical: AppSpacing.sm,
+            ),
+            child: Text(
+              'PLAYLISTS',
+              style: TextStyle(
+                color: AppColors.textMuted.withValues(alpha: 0.9),
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+              ),
+            ),
+          ),
+          ...filteredPlaylists.map((playlist) => _PlaylistTile(
+                playlist: playlist,
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          LibraryPlaylistScreen(playlistId: playlist.id),
+                    ),
+                  );
+                },
+              )),
+        ],
+      ],
+    );
+  }
+
+}
+
+class _FolderTile extends StatelessWidget {
+  const _FolderTile({required this.folder, required this.onTap});
+
+  final LibraryFolder folder;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: AppIcon(
+        icon: AppIcons.folder,
+        color: AppColors.primary,
+        size: 24,
+      ),
+      title: Text(
+        folder.name.capitalized,
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
+        style: const TextStyle(
+          color: AppColors.textMuted,
+          fontSize: 13,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
+class _PlaylistTile extends StatelessWidget {
+  const _PlaylistTile({required this.playlist, required this.onTap});
+
+  final LibraryPlaylist playlist;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      leading: AppIcon(
+        icon: AppIcons.playlist,
+        color: AppColors.textSecondary,
+        size: 24,
+      ),
+      title: Text(
+        playlist.name.capitalized,
+        style: const TextStyle(
+          color: AppColors.textPrimary,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        '${playlist.songs.length} song${playlist.songs.length == 1 ? '' : 's'}',
+        style: const TextStyle(
+          color: AppColors.textMuted,
+          fontSize: 13,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+}

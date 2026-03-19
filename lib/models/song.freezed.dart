@@ -1,0 +1,516 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
+// ignore_for_file: type=lint
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
+
+part of 'song.dart';
+
+// **************************************************************************
+// FreezedGenerator
+// **************************************************************************
+
+// dart format off
+T _$identity<T>(T value) => value;
+
+/// @nodoc
+mixin _$Song {
+  String get id;
+  String get title;
+  String get artist;
+  String get thumbnailUrl;
+  Duration get duration;
+  String? get artistBrowseId;
+  String? get albumBrowseId;
+  String? get albumName;
+  bool get isExplicit;
+
+  /// Create a copy of Song
+  /// with the given fields replaced by the non-null parameter values.
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  $SongCopyWith<Song> get copyWith =>
+      _$SongCopyWithImpl<Song>(this as Song, _$identity);
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is Song &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.artist, artist) || other.artist == artist) &&
+            (identical(other.thumbnailUrl, thumbnailUrl) ||
+                other.thumbnailUrl == thumbnailUrl) &&
+            (identical(other.duration, duration) ||
+                other.duration == duration) &&
+            (identical(other.artistBrowseId, artistBrowseId) ||
+                other.artistBrowseId == artistBrowseId) &&
+            (identical(other.albumBrowseId, albumBrowseId) ||
+                other.albumBrowseId == albumBrowseId) &&
+            (identical(other.albumName, albumName) ||
+                other.albumName == albumName) &&
+            (identical(other.isExplicit, isExplicit) ||
+                other.isExplicit == isExplicit));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, id, title, artist, thumbnailUrl,
+      duration, artistBrowseId, albumBrowseId, albumName, isExplicit);
+
+  @override
+  String toString() {
+    return 'Song(id: $id, title: $title, artist: $artist, thumbnailUrl: $thumbnailUrl, duration: $duration, artistBrowseId: $artistBrowseId, albumBrowseId: $albumBrowseId, albumName: $albumName, isExplicit: $isExplicit)';
+  }
+}
+
+/// @nodoc
+abstract mixin class $SongCopyWith<$Res> {
+  factory $SongCopyWith(Song value, $Res Function(Song) _then) =
+      _$SongCopyWithImpl;
+  @useResult
+  $Res call(
+      {String id,
+      String title,
+      String artist,
+      String thumbnailUrl,
+      Duration duration,
+      String? artistBrowseId,
+      String? albumBrowseId,
+      String? albumName,
+      bool isExplicit});
+}
+
+/// @nodoc
+class _$SongCopyWithImpl<$Res> implements $SongCopyWith<$Res> {
+  _$SongCopyWithImpl(this._self, this._then);
+
+  final Song _self;
+  final $Res Function(Song) _then;
+
+  /// Create a copy of Song
+  /// with the given fields replaced by the non-null parameter values.
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? id = null,
+    Object? title = null,
+    Object? artist = null,
+    Object? thumbnailUrl = null,
+    Object? duration = null,
+    Object? artistBrowseId = freezed,
+    Object? albumBrowseId = freezed,
+    Object? albumName = freezed,
+    Object? isExplicit = null,
+  }) {
+    return _then(_self.copyWith(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      title: null == title
+          ? _self.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      artist: null == artist
+          ? _self.artist
+          : artist // ignore: cast_nullable_to_non_nullable
+              as String,
+      thumbnailUrl: null == thumbnailUrl
+          ? _self.thumbnailUrl
+          : thumbnailUrl // ignore: cast_nullable_to_non_nullable
+              as String,
+      duration: null == duration
+          ? _self.duration
+          : duration // ignore: cast_nullable_to_non_nullable
+              as Duration,
+      artistBrowseId: freezed == artistBrowseId
+          ? _self.artistBrowseId
+          : artistBrowseId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      albumBrowseId: freezed == albumBrowseId
+          ? _self.albumBrowseId
+          : albumBrowseId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      albumName: freezed == albumName
+          ? _self.albumName
+          : albumName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isExplicit: null == isExplicit
+          ? _self.isExplicit
+          : isExplicit // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+/// Adds pattern-matching-related methods to [Song].
+extension SongPatterns on Song {
+  /// A variant of `map` that fallback to returning `orElse`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>(
+    TResult Function(_Song value)? $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _Song() when $default != null:
+        return $default(_that);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// Callbacks receives the raw object, upcasted.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case final Subclass2 value:
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>(
+    TResult Function(_Song value) $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Song():
+        return $default(_that);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `map` that fallback to returning `null`.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case final Subclass value:
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>(
+    TResult? Function(_Song value)? $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Song() when $default != null:
+        return $default(_that);
+      case _:
+        return null;
+    }
+  }
+
+  /// A variant of `when` that fallback to an `orElse` callback.
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return orElse();
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>(
+    TResult Function(
+            String id,
+            String title,
+            String artist,
+            String thumbnailUrl,
+            Duration duration,
+            String? artistBrowseId,
+            String? albumBrowseId,
+            String? albumName,
+            bool isExplicit)?
+        $default, {
+    required TResult orElse(),
+  }) {
+    final _that = this;
+    switch (_that) {
+      case _Song() when $default != null:
+        return $default(
+            _that.id,
+            _that.title,
+            _that.artist,
+            _that.thumbnailUrl,
+            _that.duration,
+            _that.artistBrowseId,
+            _that.albumBrowseId,
+            _that.albumName,
+            _that.isExplicit);
+      case _:
+        return orElse();
+    }
+  }
+
+  /// A `switch`-like method, using callbacks.
+  ///
+  /// As opposed to `map`, this offers destructuring.
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case Subclass2(:final field2):
+  ///     return ...;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>(
+    TResult Function(
+            String id,
+            String title,
+            String artist,
+            String thumbnailUrl,
+            Duration duration,
+            String? artistBrowseId,
+            String? albumBrowseId,
+            String? albumName,
+            bool isExplicit)
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Song():
+        return $default(
+            _that.id,
+            _that.title,
+            _that.artist,
+            _that.thumbnailUrl,
+            _that.duration,
+            _that.artistBrowseId,
+            _that.albumBrowseId,
+            _that.albumName,
+            _that.isExplicit);
+      case _:
+        throw StateError('Unexpected subclass');
+    }
+  }
+
+  /// A variant of `when` that fallback to returning `null`
+  ///
+  /// It is equivalent to doing:
+  /// ```dart
+  /// switch (sealedClass) {
+  ///   case Subclass(:final field):
+  ///     return ...;
+  ///   case _:
+  ///     return null;
+  /// }
+  /// ```
+
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>(
+    TResult? Function(
+            String id,
+            String title,
+            String artist,
+            String thumbnailUrl,
+            Duration duration,
+            String? artistBrowseId,
+            String? albumBrowseId,
+            String? albumName,
+            bool isExplicit)?
+        $default,
+  ) {
+    final _that = this;
+    switch (_that) {
+      case _Song() when $default != null:
+        return $default(
+            _that.id,
+            _that.title,
+            _that.artist,
+            _that.thumbnailUrl,
+            _that.duration,
+            _that.artistBrowseId,
+            _that.albumBrowseId,
+            _that.albumName,
+            _that.isExplicit);
+      case _:
+        return null;
+    }
+  }
+}
+
+/// @nodoc
+
+class _Song extends Song {
+  const _Song(
+      {required this.id,
+      required this.title,
+      required this.artist,
+      required this.thumbnailUrl,
+      required this.duration,
+      this.artistBrowseId,
+      this.albumBrowseId,
+      this.albumName,
+      this.isExplicit = false})
+      : super._();
+
+  @override
+  final String id;
+  @override
+  final String title;
+  @override
+  final String artist;
+  @override
+  final String thumbnailUrl;
+  @override
+  final Duration duration;
+  @override
+  final String? artistBrowseId;
+  @override
+  final String? albumBrowseId;
+  @override
+  final String? albumName;
+  @override
+  @JsonKey()
+  final bool isExplicit;
+
+  /// Create a copy of Song
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @JsonKey(includeFromJson: false, includeToJson: false)
+  @pragma('vm:prefer-inline')
+  _$SongCopyWith<_Song> get copyWith =>
+      __$SongCopyWithImpl<_Song>(this, _$identity);
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _Song &&
+            (identical(other.id, id) || other.id == id) &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.artist, artist) || other.artist == artist) &&
+            (identical(other.thumbnailUrl, thumbnailUrl) ||
+                other.thumbnailUrl == thumbnailUrl) &&
+            (identical(other.duration, duration) ||
+                other.duration == duration) &&
+            (identical(other.artistBrowseId, artistBrowseId) ||
+                other.artistBrowseId == artistBrowseId) &&
+            (identical(other.albumBrowseId, albumBrowseId) ||
+                other.albumBrowseId == albumBrowseId) &&
+            (identical(other.albumName, albumName) ||
+                other.albumName == albumName) &&
+            (identical(other.isExplicit, isExplicit) ||
+                other.isExplicit == isExplicit));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, id, title, artist, thumbnailUrl,
+      duration, artistBrowseId, albumBrowseId, albumName, isExplicit);
+
+  @override
+  String toString() {
+    return 'Song(id: $id, title: $title, artist: $artist, thumbnailUrl: $thumbnailUrl, duration: $duration, artistBrowseId: $artistBrowseId, albumBrowseId: $albumBrowseId, albumName: $albumName, isExplicit: $isExplicit)';
+  }
+}
+
+/// @nodoc
+abstract mixin class _$SongCopyWith<$Res> implements $SongCopyWith<$Res> {
+  factory _$SongCopyWith(_Song value, $Res Function(_Song) _then) =
+      __$SongCopyWithImpl;
+  @override
+  @useResult
+  $Res call(
+      {String id,
+      String title,
+      String artist,
+      String thumbnailUrl,
+      Duration duration,
+      String? artistBrowseId,
+      String? albumBrowseId,
+      String? albumName,
+      bool isExplicit});
+}
+
+/// @nodoc
+class __$SongCopyWithImpl<$Res> implements _$SongCopyWith<$Res> {
+  __$SongCopyWithImpl(this._self, this._then);
+
+  final _Song _self;
+  final $Res Function(_Song) _then;
+
+  /// Create a copy of Song
+  /// with the given fields replaced by the non-null parameter values.
+  @override
+  @pragma('vm:prefer-inline')
+  $Res call({
+    Object? id = null,
+    Object? title = null,
+    Object? artist = null,
+    Object? thumbnailUrl = null,
+    Object? duration = null,
+    Object? artistBrowseId = freezed,
+    Object? albumBrowseId = freezed,
+    Object? albumName = freezed,
+    Object? isExplicit = null,
+  }) {
+    return _then(_Song(
+      id: null == id
+          ? _self.id
+          : id // ignore: cast_nullable_to_non_nullable
+              as String,
+      title: null == title
+          ? _self.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      artist: null == artist
+          ? _self.artist
+          : artist // ignore: cast_nullable_to_non_nullable
+              as String,
+      thumbnailUrl: null == thumbnailUrl
+          ? _self.thumbnailUrl
+          : thumbnailUrl // ignore: cast_nullable_to_non_nullable
+              as String,
+      duration: null == duration
+          ? _self.duration
+          : duration // ignore: cast_nullable_to_non_nullable
+              as Duration,
+      artistBrowseId: freezed == artistBrowseId
+          ? _self.artistBrowseId
+          : artistBrowseId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      albumBrowseId: freezed == albumBrowseId
+          ? _self.albumBrowseId
+          : albumBrowseId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      albumName: freezed == albumName
+          ? _self.albumName
+          : albumName // ignore: cast_nullable_to_non_nullable
+              as String?,
+      isExplicit: null == isExplicit
+          ? _self.isExplicit
+          : isExplicit // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+// dart format on

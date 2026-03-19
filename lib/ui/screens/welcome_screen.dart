@@ -5,10 +5,13 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../shared/providers/auth_provider.dart';
+import '../../shared/providers/guest_profile_provider.dart';
+import '../../system/bridges/database_repository.dart';
 import '../../config/app_strings.dart';
 import '../theme/app_colors.dart';
 import '../theme/design_tokens.dart';
 import 'auth_screen.dart';
+import 'guest_profile_setup_screen.dart';
 
 class WelcomeScreen extends ConsumerWidget {
   const WelcomeScreen({super.key});
@@ -130,8 +133,21 @@ class WelcomeScreen extends ConsumerWidget {
 
                   Center(
                     child: GestureDetector(
-                      onTap: () {
-                        ref.read(guestModeProvider.notifier).enterGuestMode();
+                      onTap: () async {
+                        final existing = await ref
+                            .read(databaseBridgeProvider)
+                            .getSetting(kGuestUsernameKey);
+                        if (!context.mounted) return;
+                        if (existing != null && existing.isNotEmpty) {
+                          ref.read(guestModeProvider.notifier).enterGuestMode();
+                        } else {
+                          Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  const GuestProfileSetupScreen(isInitial: true),
+                            ),
+                          );
+                        }
                       },
                       child: const Padding(
                         padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),

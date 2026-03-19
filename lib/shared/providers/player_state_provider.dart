@@ -49,6 +49,13 @@ class PlayerState {
   final StreamQuality quality;
   final int bitrate;
   final bool isNormalizationEnabled;
+  // Stored as nullable so Shorebird-patched builds that pre-date these fields
+  // still get the correct safe default instead of a null-dereference crash.
+  final bool? _isGaplessEnabled;
+  final int? _crossfadeDurationSeconds;
+
+  bool get isGaplessEnabled => _isGaplessEnabled ?? true;
+  int get crossfadeDurationSeconds => _crossfadeDurationSeconds ?? 0;
 
   const PlayerState({
     this.status = PlayerStatus.idle,
@@ -64,7 +71,10 @@ class PlayerState {
     this.quality = StreamQuality.auto,
     this.bitrate = 0,
     this.isNormalizationEnabled = false,
-  });
+    bool isGaplessEnabled = true,
+    int crossfadeDurationSeconds = 0,
+  })  : _isGaplessEnabled = isGaplessEnabled,
+        _crossfadeDurationSeconds = crossfadeDurationSeconds;
 
   bool get isPlaying => status == PlayerStatus.playing;
   bool get isLoading =>
@@ -93,6 +103,8 @@ class PlayerState {
     StreamQuality? quality,
     int? bitrate,
     bool? isNormalizationEnabled,
+    bool? isGaplessEnabled,
+    int? crossfadeDurationSeconds,
     bool clearSong = false,
     bool clearError = false,
   }) {
@@ -111,6 +123,9 @@ class PlayerState {
       bitrate: bitrate ?? this.bitrate,
       isNormalizationEnabled:
           isNormalizationEnabled ?? this.isNormalizationEnabled,
+      isGaplessEnabled: isGaplessEnabled ?? this.isGaplessEnabled,
+      crossfadeDurationSeconds:
+          crossfadeDurationSeconds ?? this.crossfadeDurationSeconds,
     );
   }
 
@@ -130,7 +145,9 @@ class PlayerState {
         volume == other.volume &&
         quality == other.quality &&
         bitrate == other.bitrate &&
-        isNormalizationEnabled == other.isNormalizationEnabled;
+        isNormalizationEnabled == other.isNormalizationEnabled &&
+        isGaplessEnabled == other.isGaplessEnabled &&
+        crossfadeDurationSeconds == other.crossfadeDurationSeconds;
   }
 
   @override
@@ -148,6 +165,8 @@ class PlayerState {
         quality,
         bitrate,
         isNormalizationEnabled,
+        isGaplessEnabled,
+        crossfadeDurationSeconds,
       );
 }
 
@@ -192,6 +211,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
   // Normalization gain is fetched once per song to avoid redundant LUFS fetches.
   String? _lastNormalizationGainFetchedForSongId;
 
+  Timer? _crossfadeTimer;
+  bool _isFadingOut = false;
+  bool _didPreExtend = false;
+
   String? _lastQueueSource;
   String? _lastPlaylistId;
 
@@ -219,9 +242,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
       });
       _restoreLastSong();
       _restoreNormalization();
+      _restorePlaybackSettings();
       ref.onDispose(dispose);
     }
-    return const PlayerState();
+    return PlayerState();
   }
 
   /// Returns the local file path for [songId] from downloads or device music,
@@ -554,6 +578,53 @@ class PlayerNotifier extends Notifier<PlayerState> {
             state = state.copyWith(status: PlayerStatus.playing);
           }
           state = state.copyWith(position: position);
+
+          // ── Gapless: proactively extend playlist 30 s before end on Android ──
+          if (!Platform.isIOS &&
+              state.isGaplessEnabled &&
+              _usingPlaylist &&
+              !_didPreExtend) {
+            final dur = state.duration;
+            if (dur != null && dur.inSeconds > 0) {
+              final remaining = dur - position;
+              if (remaining.inSeconds <= 30 && remaining >= Duration.zero) {
+                _didPreExtend = true;
+                final nextIdx = state.currentIndex + 1;
+                if (nextIdx < state.queue.length &&
+                    nextIdx >= _loadedPlaylistLength) {
+                  unawaited(_extendPlaylistTo(nextIdx));
+                }
+              }
+            } else {
+            }
+          }
+
+          // ── Crossfade: fade out volume as track approaches end ──
+          final crossfadeSecs = state.crossfadeDurationSeconds;
+          if (crossfadeSecs > 0 && state.isPlaying) {
+            final dur = state.duration;
+            if (dur != null && dur.inMilliseconds > 0) {
+              final remaining = dur - position;
+              final threshold = Duration(seconds: crossfadeSecs);
+              if (remaining <= threshold && remaining >= Duration.zero) {
+                final vol =
+                    (remaining.inMilliseconds / threshold.inMilliseconds)
+                        .clamp(0.0, 1.0);
+                logDebug(
+                  'Crossfade fade-out: remaining=${remaining.inMilliseconds}ms '
+                  'threshold=${threshold.inMilliseconds}ms vol=${vol.toStringAsFixed(3)}',
+                  tag: 'Crossfade',
+                );
+                unawaited(_audioPlayer.applyCrossfadeVolume(vol));
+                _isFadingOut = true;
+              } else if (_isFadingOut) {
+                _isFadingOut = false;
+                logDebug('Crossfade fade-out: reset (outside threshold)', tag: 'Crossfade');
+                unawaited(_audioPlayer.resetCrossfadeVolume());
+              }
+            }
+          }
+
           // Debounce persistence to avoid writing to disk every 500ms.
           _persistDebounceTimer?.cancel();
           _persistDebounceTimer = Timer(
@@ -590,6 +661,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
       final song = state.queue[idx];
       // currentIndexStream can re-emit the same index when the sequence changes
       // (e.g. when we append items). Don't reset progress unless the track changed.
+      logDebug(
+        'currentIndexStream: idx=$idx song="${song.title}" '
+        'prevIdx=${state.currentIndex}',
+        tag: 'Crossfade',
+      );
       final sameTrack =
           idx == state.currentIndex && state.currentSong?.id == song.id;
       if (sameTrack) {
@@ -613,6 +689,50 @@ class PlayerNotifier extends Notifier<PlayerState> {
       unawaited(_prefetchUpcoming(idx));
       unawaited(_initializePlaybackTracking(song.id));
       _maybeFetchAndApplyNormalizationGain(song);
+
+      // ── Crossfade fade-in when track changes ──
+      _didPreExtend = false;
+      _isFadingOut = false;
+      final crossfadeSecs = state.crossfadeDurationSeconds;
+      if (crossfadeSecs > 0) {
+        _crossfadeTimer?.cancel();
+        logDebug(
+          'Crossfade fade-in: start — song="${song.title}" durationSecs=$crossfadeSecs',
+          tag: 'Crossfade',
+        );
+        unawaited(_audioPlayer.applyCrossfadeVolume(0.0));
+        final total = Duration(seconds: crossfadeSecs);
+        final start = DateTime.now();
+        _crossfadeTimer = Timer.periodic(
+          const Duration(milliseconds: 50),
+          (timer) {
+            if (_disposed) {
+              timer.cancel();
+              return;
+            }
+            final elapsed = DateTime.now().difference(start);
+            if (elapsed >= total) {
+              timer.cancel();
+              logDebug('Crossfade fade-in: complete', tag: 'Crossfade');
+              unawaited(_audioPlayer.resetCrossfadeVolume());
+              return;
+            }
+            final vol =
+                (elapsed.inMilliseconds / total.inMilliseconds).clamp(0.0, 1.0);
+            logDebug(
+              'Crossfade fade-in: elapsed=${elapsed.inMilliseconds}ms '
+              'vol=${vol.toStringAsFixed(3)}',
+              tag: 'Crossfade',
+            );
+            unawaited(_audioPlayer.applyCrossfadeVolume(vol));
+          },
+        );
+      } else {
+        logDebug(
+          'Crossfade: track changed, crossfade disabled (crossfadeSecs=$crossfadeSecs)',
+          tag: 'Crossfade',
+        );
+      }
     }));
   }
 
@@ -1551,6 +1671,51 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }
   }
 
+  Future<void> _restorePlaybackSettings() async {
+    try {
+      final settings =
+          await ref.read(databaseRepositoryProvider).loadPlaybackSettings();
+      final gapless =
+          settings[PlaybackSettingKeys.gaplessPlayback] as bool? ?? true;
+      final crossfade =
+          settings[PlaybackSettingKeys.crossfadeDurationSeconds] as int? ?? 0;
+      state = state.copyWith(
+        isGaplessEnabled: gapless,
+        crossfadeDurationSeconds: crossfade,
+      );
+    } catch (e) {
+      logWarning('Player: _restorePlaybackSettings failed: $e', tag: 'Player');
+    }
+  }
+
+  Future<void> setGaplessPlayback(bool enabled) async {
+    state = state.copyWith(isGaplessEnabled: enabled);
+    try {
+      await ref.read(databaseRepositoryProvider).savePlaybackSetting(
+            PlaybackSettingKeys.gaplessPlayback,
+            enabled,
+          );
+    } catch (e) {
+      logWarning('Player: setGaplessPlayback persist failed: $e', tag: 'Player');
+    }
+  }
+
+  Future<void> setCrossfadeDuration(int seconds) async {
+    _crossfadeTimer?.cancel();
+    unawaited(_audioPlayer.resetCrossfadeVolume());
+    _isFadingOut = false;
+    state = state.copyWith(crossfadeDurationSeconds: seconds);
+    try {
+      await ref.read(databaseRepositoryProvider).savePlaybackSetting(
+            PlaybackSettingKeys.crossfadeDurationSeconds,
+            seconds,
+          );
+    } catch (e) {
+      logWarning(
+          'Player: setCrossfadeDuration persist failed: $e', tag: 'Player');
+    }
+  }
+
   Future<void> setNormalization(bool enabled) async {
     await _audioPlayer.setNormalization(enabled);
     state = state.copyWith(isNormalizationEnabled: enabled);
@@ -1606,6 +1771,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _stopPositionSyncTimer();
     _playbackRecoveryTimer?.cancel();
     _persistDebounceTimer?.cancel();
+    _crossfadeTimer?.cancel();
     _playRequestedAt = null;
     _playbackTracker?.dispose();
     for (final subscription in _subscriptions) {

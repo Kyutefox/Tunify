@@ -16,7 +16,7 @@
 
     <application
         android:label="Tunify"
-        android:name="${applicationName}"
+        android:name=".TunifyApplication"
         android:icon="@mipmap/ic_launcher"
         android:enableOnBackInvokedCallback="true"
         android:usesCleartextTraffic="true"

@@ -90,9 +90,13 @@ class AudioRepository {
   final String? Function(String songId) _getLocalPath;
 
   /// Resolves the playable source for [song].
-  /// 1) Local/download path if present. 2) Stream cache file if present (0ms).
+  /// 1) Local/download path if present. 2) Stream cache file if present (0ms) — unless
+  ///    [skipStreamCache] is true (used for playlist sources where seeking must work).
   /// 3) Else returns stream URL so playback can start immediately; cache fills in background.
-  Future<ResolvedAudioSource> resolveSource(Song song) async {
+  Future<ResolvedAudioSource> resolveSource(
+    Song song, {
+    bool skipStreamCache = false,
+  }) async {
     final stepSw = Stopwatch()..start();
     final path = _getLocalPath(song.id);
     if (path != null && path.isNotEmpty) {
@@ -101,10 +105,14 @@ class AudioRepository {
     }
     log('PlayFlow: resolveSource getLocalPath -> null (${stepSw.elapsedMilliseconds}ms)', tag: 'PlayFlow');
 
-    final cachePath = await _streamCache.getCacheFilePath(song.id);
-    if (cachePath != null) {
-      log('PlayFlow: resolveSource stream cache HIT (${stepSw.elapsedMilliseconds}ms)', tag: 'PlayFlow');
-      return ResolvedAudioSourceFile(cachePath, sourceKind: AudioSourceKind.streamCached);
+    if (!skipStreamCache) {
+      final cachePath = await _streamCache.getCacheFilePath(song.id);
+      if (cachePath != null) {
+        log('PlayFlow: resolveSource stream cache HIT (${stepSw.elapsedMilliseconds}ms)', tag: 'PlayFlow');
+        return ResolvedAudioSourceFile(cachePath, sourceKind: AudioSourceKind.streamCached);
+      }
+    } else {
+      log('PlayFlow: resolveSource stream cache skipped (playlist seek safety)', tag: 'PlayFlow');
     }
 
     log('PlayFlow: resolveSource getStreamUrl (play from URL, cache in background)', tag: 'PlayFlow');
@@ -156,9 +164,12 @@ class AudioRepository {
   }
 
   /// Resolves [song] to a just_audio [AudioSource] for use in a playlist.
+  /// Stream cache files are skipped so ExoPlayer always uses [LockCachingAudioSource]
+  /// (HTTP), which handles seeks correctly. [AudioSource.file] on a partial stream
+  /// cache file causes [FileDataSourceException] on seek → crash loop.
   /// Starts background cache download when the source is a stream.
   Future<AudioSource> resolveToAudioSource(Song song) async {
-    final resolved = await resolveSource(song);
+    final resolved = await resolveSource(song, skipStreamCache: true);
     if (resolved is ResolvedAudioSourceStream) {
       startBackgroundCacheDownload(song.id, resolved.url, resolved.headers);
     }

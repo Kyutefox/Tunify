@@ -218,6 +218,7 @@ class AudioPlayerService {
   /// Set via [setNormalizationGainDb] before or during playback. Targets –14 LUFS;
   /// defaults to 0.0 dB (no adjustment) until a LUFS value is fetched for the track.
   double _normalizationGainDb = 0.0;
+  double _crossfadeVol = 1.0;
 
   Future<void> setNormalizationGainDb(double gainDb) async {
     _normalizationGainDb = gainDb;
@@ -236,7 +237,8 @@ class AudioPlayerService {
     if (Platform.isAndroid && _loudnessEnhancer != null) {
       await _loudnessEnhancer!.setTargetGain(gainDb);
     } else if (Platform.isIOS) {
-      await _player.setVolume(_dbToLinearVolume(gainDb).clamp(0.05, 1.0));
+      await _player.setVolume(
+          (_dbToLinearVolume(gainDb) * _crossfadeVol).clamp(0.05, 1.0));
     }
   }
 
@@ -259,6 +261,34 @@ class AudioPlayerService {
       'AudioPlayerService: setNormalization enabled=$enabled',
       tag: 'AudioPlayerService',
     );
+  }
+
+  /// Applies a crossfade volume multiplier (0.0–1.0) without affecting normalization.
+  /// Android: sets player volume directly (normalization uses LoudnessEnhancer, not volume).
+  /// iOS: multiplies with the current normalization scalar so both work together.
+  Future<void> applyCrossfadeVolume(double vol) async {
+    _crossfadeVol = vol.clamp(0.0, 1.0);
+    if (Platform.isAndroid) {
+      await _player.setVolume(_crossfadeVol);
+    } else if (Platform.isIOS) {
+      final normVol = _normalizationEnabled
+          ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
+          : 1.0;
+      await _player.setVolume((_crossfadeVol * normVol).clamp(0.05, 1.0));
+    }
+  }
+
+  /// Resets crossfade volume back to full (1.0).
+  Future<void> resetCrossfadeVolume() async {
+    _crossfadeVol = 1.0;
+    if (Platform.isAndroid) {
+      await _player.setVolume(1.0);
+    } else if (Platform.isIOS) {
+      final normVol = _normalizationEnabled
+          ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
+          : 1.0;
+      await _player.setVolume(normVol);
+    }
   }
 
   void dispose() {

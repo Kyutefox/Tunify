@@ -30,9 +30,9 @@ Future<bool> hasCustomSupabaseConfig() async {
 /// Tests that the given [url] and [key] can reach the Supabase project (auth health).
 Future<bool> testSupabaseConnection(String url, String key) async {
   try {
-    final base = url.endsWith('/') ? url : '$url/';
+    final base = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
     final uri = Uri.parse('$base/auth/v1/health');
-    final r = await http.get(uri);
+    final r = await http.get(uri, headers: {'apikey': key});
     return r.statusCode == 200;
   } catch (_) {
     return false;

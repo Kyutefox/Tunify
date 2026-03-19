@@ -128,6 +128,7 @@ class AppIcons {
   static List<List<dynamic>> get wifiFind =>
       HugeIcons.strokeRoundedWifiLocation;
   static List<List<dynamic>> get refresh => HugeIcons.strokeRoundedRefresh;
+  static List<List<dynamic>> get settings => HugeIcons.strokeRoundedSettings01;
   static List<List<dynamic>> get radar => HugeIcons.strokeRoundedRadar01;
   static List<List<dynamic>> get share => HugeIcons.strokeRoundedShare01;
 

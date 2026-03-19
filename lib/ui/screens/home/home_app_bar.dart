@@ -7,8 +7,10 @@ import '../../components/ui/sheet.dart';
 import '../../../config/app_icons.dart';
 import '../../../config/app_strings.dart';
 import '../../../shared/providers/auth_provider.dart';
+import '../../../shared/providers/guest_profile_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
+import '../guest_profile_setup_screen.dart';
 import 'home_shared.dart';
 import 'home_settings_sheet.dart';
 import 'home_user_menu.dart';
@@ -23,9 +25,12 @@ class HomeAppBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final isGuest = ref.watch(guestModeProvider);
+    final guestUsername = isGuest
+        ? ref.watch(guestUsernameProvider).value
+        : null;
     final username = (user?.userMetadata?['username'] as String?) ??
         (user?.email?.split('@').first) ??
-        (isGuest ? 'Guest' : 'V');
+        (isGuest ? (guestUsername ?? 'Guest') : 'V');
     final avatarUrl =
         'https://api.dicebear.com/9.x/fun-emoji/png?seed=${Uri.encodeComponent(username)}&size=72';
 
@@ -149,6 +154,7 @@ class HomeAppBar extends ConsumerWidget {
     String username,
     String? email,
   ) {
+    final isGuest = ref.read(guestModeProvider);
     showRawSheet(
       context,
       child: HomeUserMenuSheet(
@@ -156,7 +162,6 @@ class HomeAppBar extends ConsumerWidget {
         email: email,
         onSignOut: () async {
           Navigator.of(context).pop();
-          final isGuest = ref.read(guestModeProvider);
           if (isGuest) {
             ref.read(guestModeProvider.notifier).exitGuestMode();
           } else {
@@ -167,6 +172,17 @@ class HomeAppBar extends ConsumerWidget {
           Navigator.of(context).pop();
           showRawSheet(context, child: const HomeSettingsSheet());
         },
+        onEditProfile: isGuest
+            ? () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) =>
+                        const GuestProfileSetupScreen(isInitial: false),
+                  ),
+                );
+              }
+            : null,
       ),
     );
   }

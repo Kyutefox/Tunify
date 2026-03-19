@@ -192,15 +192,15 @@ class _TunifyAppContent extends ConsumerWidget {
             ref.read(databaseHydrationInProgressProvider.notifier).state = true;
             // Await pull so SQLite is filled before providers reload; then start sync and notify.
             bridge.pullFromSupabase(next.id).then((_) async {
-              if (!ref.exists(homeProvider)) return;
               if (ref.read(currentUserProvider)?.id != next.id) return;
+              ref.read(databaseHydrationInProgressProvider.notifier).state = false;
+              if (!ref.exists(homeProvider)) return;
               try {
                 await ref.read(homeProvider.notifier).prepareHomeForLogin();
               } catch (e) {
                 logWarning('Auth: prepareHomeForLogin failed ($e), continuing', tag: 'Auth');
               }
               if (ref.read(currentUserProvider)?.id != next.id) return;
-              ref.read(databaseHydrationInProgressProvider.notifier).state = false;
               syncManager.start(next.id);
               ref.read(homeProvider.notifier).onAuthChanged(next);
               ref.read(libraryProvider.notifier).onAuthChanged(next);
@@ -208,11 +208,10 @@ class _TunifyAppContent extends ConsumerWidget {
               ref.read(showExplicitContentProvider.notifier).onAuthChanged();
               ref.read(smartRecommendationShuffleProvider.notifier).onAuthChanged();
             }).catchError((e, st) {
-              if (!ref.exists(homeProvider)) return;
               logWarning('Auth: pullFromSupabase failed ($e), continuing with local data', tag: 'Auth');
-              if (ref.read(currentUserProvider)?.id == next.id) {
-                ref.read(databaseHydrationInProgressProvider.notifier).state = false;
-              }
+              if (ref.read(currentUserProvider)?.id != next.id) return;
+              ref.read(databaseHydrationInProgressProvider.notifier).state = false;
+              if (!ref.exists(homeProvider)) return;
               // Still let user in; start sync and reload with whatever is in SQLite
               syncManager.start(next.id);
               ref.read(homeProvider.notifier).onAuthChanged(next);

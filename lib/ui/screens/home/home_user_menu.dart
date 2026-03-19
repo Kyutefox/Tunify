@@ -16,12 +16,14 @@ class HomeUserMenuSheet extends StatelessWidget {
     required this.email,
     required this.onSignOut,
     this.onSettings,
+    this.onEditProfile,
   });
 
   final String username;
   final String? email;
   final VoidCallback onSignOut;
   final VoidCallback? onSettings;
+  final VoidCallback? onEditProfile;
 
   @override
   Widget build(BuildContext context) {
@@ -121,59 +123,65 @@ class HomeUserMenuSheet extends StatelessWidget {
                 thickness: 0.5,
               ),
               const SizedBox(height: AppSpacing.md),
+              if (onEditProfile != null)
+                _MenuRow(
+                  icon: AppIcons.edit,
+                  label: 'Edit Profile',
+                  onTap: onEditProfile!,
+                ),
               if (onSettings != null)
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: onSettings,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                    child: Row(
-                      children: [
-                        AppIcon(
-                          icon: AppIcons.edit,
-                          color: AppColors.textPrimary,
-                          size: 20,
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        const Text(
-                          'Settings',
-                          style: TextStyle(
-                            color: AppColors.textPrimary,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                _MenuRow(
+                  icon: AppIcons.settings,
+                  label: 'Settings',
+                  onTap: onSettings!,
                 ),
-              GestureDetector(
-                behavior: HitTestBehavior.opaque,
+              _MenuRow(
+                icon: AppIcons.logout,
+                label: 'Sign Out',
+                color: AppColors.secondary,
                 onTap: onSignOut,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
-                  child: Row(
-                    children: [
-                      AppIcon(
-                        icon: AppIcons.logout,
-                        color: AppColors.secondary,
-                        size: 20,
-                      ),
-                      SizedBox(width: AppSpacing.md),
-                      Text(
-                        'Sign Out',
-                        style: TextStyle(
-                          color: AppColors.secondary,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuRow extends StatelessWidget {
+  const _MenuRow({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color = AppColors.textPrimary,
+  });
+
+  final List<List<dynamic>> icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+        child: Row(
+          children: [
+            AppIcon(icon: icon, color: color, size: 20),
+            const SizedBox(width: AppSpacing.md),
+            Text(
+              label,
+              style: TextStyle(
+                color: color,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

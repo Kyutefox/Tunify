@@ -20,6 +20,12 @@ class AudioPlayerService {
   AndroidLoudnessEnhancer? _loudnessEnhancer;
   bool _normalizationEnabled = false;
   late final Future<AudioSession> _audioSessionReady;
+  // Whether this instance is a secondary crossfade player.
+  // Secondary players share the primary's audio focus and must never call
+  // session.setActive(true) — doing so triggers requestAudioFocus which can
+  // deliver AUDIOFOCUS_LOSS to the primary, causing the Android MediaCodec
+  // resource manager to reclaim the primary's decoder mid-crossfade.
+  final bool _isCrossfadePlayer;
 
   final StreamController<Duration> _positionController =
       StreamController<Duration>.broadcast();
@@ -32,22 +38,43 @@ class AudioPlayerService {
   StreamSubscription<Duration?>? _durationSub;
   StreamSubscription<PlayerState>? _playerStateSub;
 
-  AudioPlayerService() {
+  /// Creates a primary [AudioPlayerService] that owns audio-session management.
+  AudioPlayerService() : _isCrossfadePlayer = false {
+    _initPlayer(handleInterruptions: true);
+    _audioSessionReady = _configureAudioSession();
+    _forwardFrom(_player);
+  }
+
+  /// Creates a secondary [AudioPlayerService] for use inside [CrossfadeEngine].
+  ///
+  /// The secondary player intentionally skips all audio-session and audio-focus
+  /// management ([handleInterruptions] is disabled, [session.setActive] is never
+  /// called). This prevents the AUDIOFOCUS_LOSS event that would otherwise be
+  /// delivered to the primary player when the secondary calls requestAudioFocus,
+  /// which in turn causes the Android MediaCodec resource manager to reclaim the
+  /// primary's decoder and break the in-flight crossfade.
+  AudioPlayerService.forCrossfade() : _isCrossfadePlayer = true {
+    _initPlayer(handleInterruptions: false);
+    // Reuse the already-configured, already-active session — no configure() or
+    // setActive() calls needed (and must not be made).
+    _audioSessionReady = AudioSession.instance;
+    _forwardFrom(_player);
+  }
+
+  void _initPlayer({required bool handleInterruptions}) {
     if (Platform.isAndroid) {
       _loudnessEnhancer = AndroidLoudnessEnhancer();
       _loudnessEnhancer!.setEnabled(false);
       _player = AudioPlayer(
-        handleInterruptions: true,
+        handleInterruptions: handleInterruptions,
         audioPipeline: AudioPipeline(
           androidAudioEffects: [_loudnessEnhancer!],
         ),
         // Match old app: no useProxyForRequestHeaders (use just_audio default).
       );
     } else {
-      _player = AudioPlayer(handleInterruptions: true);
+      _player = AudioPlayer(handleInterruptions: handleInterruptions);
     }
-    _audioSessionReady = _configureAudioSession();
-    _forwardFrom(_player);
   }
 
   void _forwardFrom(AudioPlayer p) {
@@ -66,6 +93,9 @@ class AudioPlayerService {
   }
 
   Future<void> _ensureAudioSessionActive() async {
+    // Secondary (crossfade) players must never request audio focus — the primary
+    // holds it for the lifetime of the crossfade.
+    if (_isCrossfadePlayer) return;
     final session = await _audioSessionReady;
     // Explicitly activating the session requests audio focus and prevents
     // silent playback on some devices after a cold start.
@@ -97,22 +127,28 @@ class AudioPlayerService {
       // item because AVQueuePlayer preloads adjacent URLs concurrently. Use a
       // plain setAudioSource (single AVPlayer) instead. Queue navigation is
       // handled by reloading via setPlaylist for each song on iOS.
-      await _player.setAudioSource(
-        items[initialIndex],
-        initialPosition: initialPosition,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => throw TimeoutException('setAudioSource timed out on iOS'),
-      );
+      await _player
+          .setAudioSource(
+            items[initialIndex],
+            initialPosition: initialPosition,
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () =>
+                throw TimeoutException('setAudioSource timed out on iOS'),
+          );
     } else {
-      await _player.setAudioSources(
-        items,
-        initialIndex: initialIndex,
-        initialPosition: initialPosition,
-      ).timeout(
-        const Duration(seconds: 15),
-        onTimeout: () => throw TimeoutException('setAudioSources timed out'),
-      );
+      await _player
+          .setAudioSources(
+            items,
+            initialIndex: initialIndex,
+            initialPosition: initialPosition,
+          )
+          .timeout(
+            const Duration(seconds: 15),
+            onTimeout: () =>
+                throw TimeoutException('setAudioSources timed out'),
+          );
     }
   }
 
@@ -167,8 +203,30 @@ class AudioPlayerService {
     await _player.setFilePath(filePath);
   }
 
+  /// Loads [source] directly on the underlying player, waiting for the audio
+  /// session to be ready. Used by [CrossfadeEngine] to load the next track onto
+  /// the secondary player without going through the playlist API.
+  Future<void> setAudioSourceForCrossfade(AudioSource source) async {
+    await _audioSessionReady;
+    await _player.setAudioSource(source);
+  }
+
+  /// Starts playback on a secondary crossfade player **without** requesting
+  /// audio focus. The primary player already holds focus; calling
+  /// [_ensureAudioSessionActive] (i.e. [session.setActive(true)]) from the
+  /// secondary would trigger [AUDIOFOCUS_LOSS] on the primary, causing
+  /// just_audio to internally pause it and the Android MediaCodec resource
+  /// manager to potentially reclaim the primary's hardware decoder.
+  Future<void> playForCrossfade() async {
+    // _audioSessionReady is AudioSession.instance for crossfade players, which
+    // resolves immediately without calling configure() or setActive().
+    await _audioSessionReady;
+    await _player.play();
+  }
+
   Future<void> pause() async {
     await _player.pause();
+    if (_isCrossfadePlayer) return;
     try {
       final session = await _audioSessionReady;
       await session.setActive(false);
@@ -176,6 +234,7 @@ class AudioPlayerService {
       // Best-effort; don't block pause.
     }
   }
+
   Future<void> resume() async {
     await _ensureAudioSessionActive();
     await _player.play();
@@ -197,6 +256,7 @@ class AudioPlayerService {
   Future<void> seek(Duration position) async => _player.seek(position);
   Future<void> stop() async {
     await _player.stop();
+    if (_isCrossfadePlayer) return;
     try {
       final session = await _audioSessionReady;
       await session.setActive(false);
@@ -218,6 +278,7 @@ class AudioPlayerService {
   /// Set via [setNormalizationGainDb] before or during playback. Targets –14 LUFS;
   /// defaults to 0.0 dB (no adjustment) until a LUFS value is fetched for the track.
   double _normalizationGainDb = 0.0;
+  double _crossfadeVol = 1.0;
 
   Future<void> setNormalizationGainDb(double gainDb) async {
     _normalizationGainDb = gainDb;
@@ -236,7 +297,8 @@ class AudioPlayerService {
     if (Platform.isAndroid && _loudnessEnhancer != null) {
       await _loudnessEnhancer!.setTargetGain(gainDb);
     } else if (Platform.isIOS) {
-      await _player.setVolume(_dbToLinearVolume(gainDb).clamp(0.05, 1.0));
+      await _player.setVolume(
+          (_dbToLinearVolume(gainDb) * _crossfadeVol).clamp(0.05, 1.0));
     }
   }
 
@@ -259,6 +321,40 @@ class AudioPlayerService {
       'AudioPlayerService: setNormalization enabled=$enabled',
       tag: 'AudioPlayerService',
     );
+  }
+
+  /// Applies a crossfade volume multiplier (0.0–1.0) without affecting normalization.
+  /// Android: sets player volume directly (normalization uses LoudnessEnhancer, not volume).
+  /// iOS: multiplies with the current normalization scalar so both work together.
+  Future<void> applyCrossfadeVolume(double vol) async {
+    _crossfadeVol = vol.clamp(0.0, 1.0);
+    if (Platform.isAndroid) {
+      await _player.setVolume(_crossfadeVol);
+    } else if (Platform.isIOS) {
+      final normVol = _normalizationEnabled
+          ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
+          : 1.0;
+      // Allow true silence when the ramp drives vol to 0 (e.g. fade-out start
+      // or secondary at ramp start). The 0.05 floor only applies when the ramp
+      // scalar is non-zero — it prevents near-inaudible normalization gains from
+      // disappearing entirely, not from silencing a deliberate fade.
+      final effective = _crossfadeVol * normVol;
+      await _player
+          .setVolume(_crossfadeVol == 0.0 ? 0.0 : effective.clamp(0.05, 1.0));
+    }
+  }
+
+  /// Resets crossfade volume back to full (1.0).
+  Future<void> resetCrossfadeVolume() async {
+    _crossfadeVol = 1.0;
+    if (Platform.isAndroid) {
+      await _player.setVolume(1.0);
+    } else if (Platform.isIOS) {
+      final normVol = _normalizationEnabled
+          ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
+          : 1.0;
+      await _player.setVolume(normVol);
+    }
   }
 
   void dispose() {

@@ -1,11 +1,18 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 
 import '../../components/ui/components_ui.dart';
 import '../../../config/app_icons.dart';
 import '../../../system/databases/supabase/supabase_prefs.dart';
+import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/providers/content_settings_provider.dart';
 import '../../../shared/providers/download_provider.dart';
 import '../../../shared/providers/home_state_provider.dart';
@@ -205,6 +212,74 @@ class _SettingsCard extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _CrossfadeTile extends StatelessWidget {
+  const _CrossfadeTile({required this.value, required this.onChanged});
+
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppIcon(
+                  icon: AppIcons.refresh,
+                  color: AppColors.textSecondary,
+                  size: 22),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Crossfade',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      value == 0 ? 'Off' : '$value seconds',
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppColors.primary,
+              inactiveTrackColor: AppColors.surfaceLight,
+              thumbColor: AppColors.primary,
+              overlayColor: AppColors.primary.withValues(alpha: 0.12),
+              trackHeight: 3,
+              thumbShape:
+                  const RoundSliderThumbShape(enabledThumbRadius: 7),
+              overlayShape:
+                  const RoundSliderOverlayShape(overlayRadius: 16),
+            ),
+            child: Slider(
+              value: value.toDouble(),
+              min: 0,
+              max: 12,
+              divisions: 12,
+              onChanged: (v) => onChanged(v.round()),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -475,6 +550,19 @@ class _PlaybackSettingsScreen extends ConsumerWidget {
                 .read(smartRecommendationShuffleProvider.notifier)
                 .setSmartRecommendationShuffle(v),
           ),
+          _PlaybackToggleTile(
+            icon: AppIcons.musicNote,
+            label: 'Gapless Playback',
+            subtitle: 'Remove silence between tracks',
+            value: playerState.isGaplessEnabled,
+            onChanged: (v) =>
+                ref.read(playerProvider.notifier).setGaplessPlayback(v),
+          ),
+          _CrossfadeTile(
+            value: playerState.crossfadeDurationSeconds,
+            onChanged: (v) =>
+                ref.read(playerProvider.notifier).setCrossfadeDuration(v),
+          ),
         ],
       ),
     );
@@ -640,19 +728,71 @@ class _SupabaseSettingsScreenState
       return;
     }
     await saveSupabaseConfig(url, key);
-    setState(() {
-      _saving = false;
-      _usingCustomConfig = true;
-    });
+    await _fullReset();
+  }
+
+  Future<void> _fullReset() async {
+    // Sign out Supabase session
+    try {
+      await Supabase.instance.client.auth.signOut();
+    } catch (_) {}
+
+    // Exit guest mode
+    try {
+      await ref.read(guestModeProvider.notifier).exitGuestMode();
+    } catch (_) {}
+
+    // Clear in-memory stream cache and YT visitor data
+    try {
+      ref.read(streamManagerProvider).clearCache();
+      ref.read(streamManagerProvider).setVisitorData(null);
+    } catch (_) {}
+
+    // Clear player persistent stream cache
+    try {
+      await ref.read(playerProvider.notifier).clearPersistentStreamCache();
+    } catch (_) {}
+
+    // Delete stream cache files
+    try {
+      await StreamCacheService().clearAllCache();
+    } catch (_) {}
+
+    // Delete downloaded audio files and clear downloads DB
+    try {
+      await ref.read(downloadServiceProvider).clearAllDownloads();
+    } catch (_) {}
+
+    // Delete SQLite databases (deleteDatabase closes connections before deleting)
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      await deleteDatabase(p.join(dir.path, 'tunify_primary.db'));
+      await deleteDatabase(p.join(dir.path, 'downloads.db'));
+    } catch (e) {
+      logWarning('Factory reset: failed to delete databases: $e', tag: 'Settings');
+    }
+
+    // Clear all SharedPreferences except Supabase credentials
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedUrl = prefs.getString('supabase_custom_url');
+      final savedKey = prefs.getString('supabase_custom_anon_key');
+      await prefs.clear();
+      if (savedUrl != null) await prefs.setString('supabase_custom_url', savedUrl);
+      if (savedKey != null) await prefs.setString('supabase_custom_anon_key', savedKey);
+    } catch (_) {}
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content:
-              Text('Saved. Restart the app to use the new Supabase config.'),
+          content: Text('All data cleared. Closing app…'),
           behavior: SnackBarBehavior.floating,
         ),
       );
+      await Future.delayed(const Duration(seconds: 1));
     }
+
+    exit(0);
   }
 
   @override

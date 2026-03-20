@@ -15,6 +15,7 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.work.WorkManager
 import com.ryanheise.audioservice.AudioServicePlugin
 import io.flutter.embedding.android.FlutterFragmentActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -31,6 +32,8 @@ class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         AudioServicePlugin.getFlutterEngine(this)
         super.onCreate(savedInstanceState)
+        // Cancel any stale WorkManager tasks left over from previous installs
+        WorkManager.getInstance(this).cancelAllWork()
     }
 
     override fun getCachedEngineId(): String? {

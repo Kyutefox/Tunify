@@ -3,17 +3,21 @@ import 'dart:async';
 import 'package:audio_service/audio_service.dart';
 import 'package:just_audio/just_audio.dart' as ja;
 
-import 'audio_player_service.dart';
+import 'crossfade_engine.dart';
 
 /// [BaseAudioHandler] implementation that bridges [audio_service] media controls
-/// (lock-screen, notification) to the app's [AudioPlayerService].
+/// (lock-screen, notification) to the app's [CrossfadeEngine].
 ///
 /// Media control callbacks (play, pause, skip, seek, stop) are dispatched via
 /// optional closure properties so [PlayerNotifier] can bind them at construction.
 /// Playback state is broadcast to [audio_service] on every position or state change,
 /// throttled to 500 ms for position updates to reduce background overhead.
+///
+/// Stream subscriptions are made against [CrossfadeEngine]'s forwarded broadcast
+/// controllers, so they automatically reflect the active (post-swap) primary player
+/// without any re-subscription after a crossfade transition.
 class TunifyAudioHandler extends BaseAudioHandler with SeekHandler {
-  final AudioPlayerService _audioPlayerService;
+  final CrossfadeEngine _engine;
 
   void Function()? onPlay;
   void Function()? onPause;
@@ -26,16 +30,16 @@ class TunifyAudioHandler extends BaseAudioHandler with SeekHandler {
   ja.PlayerState? _lastPlayerState;
   DateTime? _lastPositionBroadcastAt;
 
-  TunifyAudioHandler(this._audioPlayerService) {
+  TunifyAudioHandler(this._engine) {
     _subs = [
-      _audioPlayerService.playerStateStream.listen((s) {
+      _engine.playerStateStream.listen((s) {
         _lastPlayerState = s;
         _broadcastPlaybackState(s);
       }),
       // Keep notification progress in sync during background playback.
       // Throttled to 500 ms to avoid excessive background CPU wake-ups.
-      _audioPlayerService.positionStream.listen((_) {
-        final s = _audioPlayerService.player.playerState;
+      _engine.positionStream.listen((_) {
+        final s = _engine.player.playerState;
         final now = DateTime.now();
         if (_lastPositionBroadcastAt != null &&
             now.difference(_lastPositionBroadcastAt!) <
@@ -64,7 +68,7 @@ class TunifyAudioHandler extends BaseAudioHandler with SeekHandler {
   Future<void> seek(Duration position) async {
     onSeek?.call(position);
     // Broadcast immediately so the notification timer/seekbar updates on scrub.
-    final s = _audioPlayerService.player.playerState;
+    final s = _engine.player.playerState;
     _lastPlayerState = s;
     _broadcastPlaybackState(s);
   }
@@ -102,7 +106,7 @@ class TunifyAudioHandler extends BaseAudioHandler with SeekHandler {
     );
     mediaItem.add(item);
     // Ensure notification progress resets immediately on track change.
-    final s = _lastPlayerState ?? _audioPlayerService.player.playerState;
+    final s = _lastPlayerState ?? _engine.player.playerState;
     _broadcastPlaybackState(s);
   }
 
@@ -114,18 +118,15 @@ class TunifyAudioHandler extends BaseAudioHandler with SeekHandler {
   void _broadcastPlaybackState(ja.PlayerState playerState) {
     final playing = playerState.playing;
     final processingState = _mapProcessingState(playerState.processingState);
-    final pos = _audioPlayerService.player.position;
-    final dur = _audioPlayerService.player.duration;
-    // If user seeks/scrubs close to the end, just_audio can briefly report
-    // `completed` even though we're effectively still in a ready state. Don't
-    // show "completed" unless we truly reached the end.
-    final effectiveProcessingState = (processingState ==
-                AudioProcessingState.completed &&
-            dur != null &&
-            dur.inMilliseconds > 0 &&
-            pos.inMilliseconds < dur.inMilliseconds - 600)
-        ? AudioProcessingState.ready
-        : processingState;
+    final pos = _engine.player.position;
+    final dur = _engine.player.duration;
+    final effectiveProcessingState =
+        (processingState == AudioProcessingState.completed &&
+                dur != null &&
+                dur.inMilliseconds > 0 &&
+                pos.inMilliseconds < dur.inMilliseconds - 600)
+            ? AudioProcessingState.ready
+            : processingState;
 
     playbackState.add(playbackState.value.copyWith(
       controls: [
@@ -142,8 +143,8 @@ class TunifyAudioHandler extends BaseAudioHandler with SeekHandler {
       processingState: effectiveProcessingState,
       playing: playing,
       updatePosition: pos,
-      bufferedPosition: _audioPlayerService.player.bufferedPosition,
-      speed: _audioPlayerService.player.speed,
+      bufferedPosition: _engine.player.bufferedPosition,
+      speed: _engine.player.speed,
     ));
   }
 

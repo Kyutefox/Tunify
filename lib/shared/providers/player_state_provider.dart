@@ -12,6 +12,7 @@ import '../../models/song.dart';
 import '../../system/bridges/audio_repository.dart';
 import '../services/music_stream_manager.dart';
 import '../services/audio/audio_player_service.dart';
+import '../services/audio/crossfade_engine.dart';
 import '../services/audio/audio_handler.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 
@@ -49,6 +50,13 @@ class PlayerState {
   final StreamQuality quality;
   final int bitrate;
   final bool isNormalizationEnabled;
+  // Stored as nullable so Shorebird-patched builds that pre-date these fields
+  // still get the correct safe default instead of a null-dereference crash.
+  final bool? _isGaplessEnabled;
+  final int? _crossfadeDurationSeconds;
+
+  bool get isGaplessEnabled => _isGaplessEnabled ?? true;
+  int get crossfadeDurationSeconds => _crossfadeDurationSeconds ?? 0;
 
   const PlayerState({
     this.status = PlayerStatus.idle,
@@ -64,7 +72,10 @@ class PlayerState {
     this.quality = StreamQuality.auto,
     this.bitrate = 0,
     this.isNormalizationEnabled = false,
-  });
+    bool isGaplessEnabled = true,
+    int crossfadeDurationSeconds = 0,
+  })  : _isGaplessEnabled = isGaplessEnabled,
+        _crossfadeDurationSeconds = crossfadeDurationSeconds;
 
   bool get isPlaying => status == PlayerStatus.playing;
   bool get isLoading =>
@@ -93,6 +104,8 @@ class PlayerState {
     StreamQuality? quality,
     int? bitrate,
     bool? isNormalizationEnabled,
+    bool? isGaplessEnabled,
+    int? crossfadeDurationSeconds,
     bool clearSong = false,
     bool clearError = false,
   }) {
@@ -111,6 +124,9 @@ class PlayerState {
       bitrate: bitrate ?? this.bitrate,
       isNormalizationEnabled:
           isNormalizationEnabled ?? this.isNormalizationEnabled,
+      isGaplessEnabled: isGaplessEnabled ?? this.isGaplessEnabled,
+      crossfadeDurationSeconds:
+          crossfadeDurationSeconds ?? this.crossfadeDurationSeconds,
     );
   }
 
@@ -130,7 +146,9 @@ class PlayerState {
         volume == other.volume &&
         quality == other.quality &&
         bitrate == other.bitrate &&
-        isNormalizationEnabled == other.isNormalizationEnabled;
+        isNormalizationEnabled == other.isNormalizationEnabled &&
+        isGaplessEnabled == other.isGaplessEnabled &&
+        crossfadeDurationSeconds == other.crossfadeDurationSeconds;
   }
 
   @override
@@ -148,6 +166,8 @@ class PlayerState {
         quality,
         bitrate,
         isNormalizationEnabled,
+        isGaplessEnabled,
+        crossfadeDurationSeconds,
       );
 }
 
@@ -161,7 +181,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
   // Service getters — read from providers on each access; safe for method calls.
   AudioRepository get _audioRepository => ref.read(audioRepositoryProvider);
   MusicStreamManager get _streamManager => ref.read(streamManagerProvider);
-  AudioPlayerService get _audioPlayer => ref.read(audioPlayerServiceProvider);
+  CrossfadeEngine get _audioPlayer => ref.read(crossfadeEngineProvider);
   TunifyAudioHandler? get _audioHandler => ref.read(audioHandlerProvider);
 
   PlaybackTracker? _playbackTracker;
@@ -172,12 +192,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   bool _disposed = false;
   bool _isTransitioning = false;
+
   /// Incremented each time a new song load preempts an in-flight transition.
   /// _syncPlaylistToQueue captures this at entry and bails out at each await
   /// checkpoint if the value has changed, preventing the old load from racing
   /// against and clobbering the new one.
   int _transitionGeneration = 0;
   bool _usingPlaylist = false;
+
   /// Number of queue items currently loaded in the just_audio playlist (max 5 initially).
   int _loadedPlaylistLength = 0;
   Timer? _positionSyncTimer;
@@ -191,6 +213,25 @@ class PlayerNotifier extends Notifier<PlayerState> {
   int? _lastNotifiedDurationMs;
   // Normalization gain is fetched once per song to avoid redundant LUFS fetches.
   String? _lastNormalizationGainFetchedForSongId;
+
+  bool _didPreExtend = false;
+
+  /// Index of the next song for which a crossfade has been initiated.
+  /// Prevents the position listener from starting multiple concurrent crossfades.
+  /// Reset to -1 when a crossfade completes, is cancelled, or a new song starts.
+  int _crossfadePreparedForIndex = -1;
+
+  /// Index of the next song for which a secondary preload has been started.
+  /// Prevents the position listener from issuing duplicate preload calls.
+  /// Reset alongside [_crossfadePreparedForIndex].
+  int _crossfadePreloadedForIndex = -1;
+
+  /// True while [_beginTrueCrossfade] is in flight (resolving the source URL)
+  /// but before [CrossfadeEngine.beginCrossfade] has been called.
+  /// Guards the processingState=completed handler during that gap so the
+  /// primary completing early doesn't trigger [_handleCompletion] and
+  /// interrupt the in-flight setup.
+  bool _crossfadeInFlight = false;
 
   String? _lastQueueSource;
   String? _lastPlaylistId;
@@ -219,9 +260,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
       });
       _restoreLastSong();
       _restoreNormalization();
+      _restorePlaybackSettings();
       ref.onDispose(dispose);
     }
-    return const PlayerState();
+    return PlayerState();
   }
 
   /// Returns the local file path for [songId] from downloads or device music,
@@ -285,9 +327,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // `song.duration` often comes from the feed and may be a placeholder.
     // Prefer the real duration from just_audio if it is already known.
     final audioDur = _audioPlayer.duration;
-    final stateDur = (state.duration != null && state.duration!.inMilliseconds > 0)
-        ? state.duration
-        : null;
+    final stateDur =
+        (state.duration != null && state.duration!.inMilliseconds > 0)
+            ? state.duration
+            : null;
     final Duration effectiveDuration = audioDur ?? stateDur ?? song.duration;
     _audioHandler?.setCurrentMediaItem(
       id: song.id,
@@ -335,7 +378,13 @@ class PlayerNotifier extends Notifier<PlayerState> {
         );
       }
       // Guard: song may have changed while the fetch was in-flight.
-      if (state.currentSong?.id != song.id) return;
+      if (state.currentSong?.id != song.id) {
+        // The fetch may be for the crossfade-incoming song — forward to secondary.
+        if (_audioPlayer.isCrossfading && gainDb != null) {
+          unawaited(_audioPlayer.setSecondaryNormalizationGainDb(gainDb));
+        }
+        return;
+      }
       if (gainDb != null) {
         logInfo(
           'Player: normalization gain applied song=${song.id} gainDb=${gainDb.toStringAsFixed(2)}',
@@ -354,7 +403,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
   Future<void> _restoreLastSong() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final song = Song.fromJsonString(prefs.getString(StorageKeys.prefsLastPlayedSong));
+      final song =
+          Song.fromJsonString(prefs.getString(StorageKeys.prefsLastPlayedSong));
       if (song != null && state.currentSong == null) {
         final posMs = prefs.getInt(StorageKeys.prefsLastPlayedPositionMs) ?? 0;
         final durMs = prefs.getInt(StorageKeys.prefsLastPlayedDurationMs) ?? 0;
@@ -427,17 +477,18 @@ class PlayerNotifier extends Notifier<PlayerState> {
         prefs.setInt(StorageKeys.prefsLastPlayedDurationMs, durMs),
       ];
       if (_lastQueueSource != null) {
-        futures.add(prefs.setString(StorageKeys.prefsLastQueueSource, _lastQueueSource!));
+        futures.add(prefs.setString(
+            StorageKeys.prefsLastQueueSource, _lastQueueSource!));
       }
       if (_lastPlaylistId != null) {
-        futures.add(prefs.setString(StorageKeys.prefsLastPlaylistId, _lastPlaylistId!));
+        futures.add(
+            prefs.setString(StorageKeys.prefsLastPlaylistId, _lastPlaylistId!));
       }
       await Future.wait(futures);
     } catch (e) {
       logWarning('Player: _persistPlaybackState failed: $e', tag: 'Player');
     }
   }
-
 
   /// Clears any legacy local stream cache pref (no server cache).
   Future<void> clearPersistentStreamCache() async {
@@ -446,7 +497,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(legacyKey);
     } catch (e) {
-      logWarning('Player: clearPersistentStreamCache failed: $e', tag: 'Player');
+      logWarning('Player: clearPersistentStreamCache failed: $e',
+          tag: 'Player');
     }
   }
 
@@ -480,7 +532,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // During playlist rebuilds we want to keep the UI in a stable loading/buffering
     // state, but we MUST still allow the "now playing" transition through.
     if (_isTransitioning) {
-      if (newStatus != PlayerStatus.playing && newStatus != PlayerStatus.buffering) {
+      if (newStatus != PlayerStatus.playing &&
+          newStatus != PlayerStatus.buffering) {
         return;
       }
     }
@@ -506,14 +559,29 @@ class PlayerNotifier extends Notifier<PlayerState> {
   void _initializeListeners() {
     _subscriptions.add(_audioPlayer.playerStateStream.listen((playerState) {
       if (playerState.processingState == ja.ProcessingState.completed) {
+        // CrossfadeEngine is managing this transition — it will call
+        // _onCrossfadeSwapComplete which handles all state updates.
+        // Also block if _beginTrueCrossfade is still resolving the source URL
+        // (_crossfadeInFlight=true but isCrossfading still false).
+        if (_audioPlayer.isCrossfading || _crossfadeInFlight) return;
         // Only treat as "track finished" when we actually reached the end (had duration and played to end).
         // just_audio can emit completed with 00:00/00:00 on load failure or initial state; then we must not
         // run _handleCompletion() or we get stuck at 00:00 with pause.
         final pos = _audioPlayer.position;
         final dur = _audioPlayer.duration ?? state.duration;
         final hadRealDuration = dur != null && dur.inMilliseconds > 0;
-        final reachedEnd = hadRealDuration && pos.inMilliseconds >= dur.inMilliseconds - 800;
-        if (reachedEnd || (_usingPlaylist && state.canPlayNext && hadRealDuration)) {
+        final reachedEnd =
+            hadRealDuration && pos.inMilliseconds >= dur.inMilliseconds - 800;
+        logDebug(
+          'Player: processingState=completed '
+          'isCrossfading=${_audioPlayer.isCrossfading} '
+          'pos=${pos.inMilliseconds}ms dur=${dur?.inMilliseconds}ms '
+          'reachedEnd=$reachedEnd usingPlaylist=$_usingPlaylist '
+          'canPlayNext=${state.canPlayNext} currentSong="${state.currentSong?.title}"',
+          tag: 'Player',
+        );
+        if (reachedEnd ||
+            (_usingPlaylist && state.canPlayNext && hadRealDuration)) {
           // Show position at end so UI displays e.g. 2:10/2:10 (not 00:00/2:10) until next track loads.
           final displayPosition = dur;
           state = state.copyWith(
@@ -554,6 +622,64 @@ class PlayerNotifier extends Notifier<PlayerState> {
             state = state.copyWith(status: PlayerStatus.playing);
           }
           state = state.copyWith(position: position);
+
+          // ── Gapless: proactively extend playlist 30 s before end on Android ──
+          // Skip when crossfade is enabled — the crossfade engine loads the next
+          // song on a separate player. Extending the ConcatenatingAudioSource here
+          // would cause ExoPlayer to auto-advance to the next track at the natural
+          // song boundary, playing two simultaneous instances of the same song
+          // while the crossfade secondary is also ramping in.
+          if (!Platform.isIOS &&
+              state.isGaplessEnabled &&
+              state.crossfadeDurationSeconds == 0 &&
+              _usingPlaylist &&
+              !_didPreExtend) {
+            final dur = state.duration;
+            if (dur != null && dur.inSeconds > 0) {
+              final remaining = dur - position;
+              if (remaining.inSeconds <= 30 && remaining >= Duration.zero) {
+                _didPreExtend = true;
+                final nextIdx = state.currentIndex + 1;
+                if (nextIdx < state.queue.length &&
+                    nextIdx >= _loadedPlaylistLength) {
+                  unawaited(_extendPlaylistTo(nextIdx));
+                }
+              }
+            }
+          }
+
+          // ── True Crossfade: preload + trigger ──────────────────────────────
+          final crossfadeSecs = state.crossfadeDurationSeconds;
+          if (crossfadeSecs > 0 &&
+              state.isPlaying &&
+              state.canPlayNext &&
+              !_audioPlayer.isCrossfading) {
+            final dur = state.duration;
+            if (dur != null && dur.inMilliseconds > 0) {
+              final remaining = dur - position;
+              final nextIdx = state.currentIndex + 1;
+
+              // Pre-load: resolve & buffer Song B early so ExoPlayer is ready
+              // by the time the fade window opens. Lead time = crossfadeSecs + 10s
+              // (e.g., 22 s before end for a 12 s crossfade).
+              final preloadLeadSecs = crossfadeSecs + 10;
+              if (remaining <= Duration(seconds: preloadLeadSecs) &&
+                  remaining > Duration(seconds: crossfadeSecs) &&
+                  _crossfadePreloadedForIndex != nextIdx) {
+                _crossfadePreloadedForIndex = nextIdx;
+                unawaited(_preloadCrossfadeSecondary(nextIdx));
+              }
+
+              // Begin the actual fade ramp at crossfadeSecs before end.
+              if (remaining <= Duration(seconds: crossfadeSecs) &&
+                  remaining > Duration.zero &&
+                  _crossfadePreparedForIndex != nextIdx) {
+                _crossfadePreparedForIndex = nextIdx;
+                unawaited(_beginTrueCrossfade(nextIdx, crossfadeSecs));
+              }
+            }
+          }
+
           // Debounce persistence to avoid writing to disk every 500ms.
           _persistDebounceTimer?.cancel();
           _persistDebounceTimer = Timer(
@@ -587,9 +713,18 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _subscriptions.add(_audioPlayer.currentIndexStream.listen((int? idx) {
       if (idx == null || !_usingPlaylist || state.queue.isEmpty) return;
       if (idx < 0 || idx >= state.queue.length) return;
+      // CrossfadeEngine is driving this transition via onSwapComplete callback.
+      // Bail here to prevent a double state-update from ConcatenatingAudioSource
+      // auto-advancing in parallel with the crossfade swap.
+      if (_audioPlayer.isCrossfading) return;
       final song = state.queue[idx];
       // currentIndexStream can re-emit the same index when the sequence changes
       // (e.g. when we append items). Don't reset progress unless the track changed.
+      logDebug(
+        'currentIndexStream: idx=$idx song="${song.title}" '
+        'prevIdx=${state.currentIndex}',
+        tag: 'Crossfade',
+      );
       final sameTrack =
           idx == state.currentIndex && state.currentSong?.id == song.id;
       if (sameTrack) {
@@ -613,6 +748,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
       unawaited(_prefetchUpcoming(idx));
       unawaited(_initializePlaybackTracking(song.id));
       _maybeFetchAndApplyNormalizationGain(song);
+
+      // Reset gapless pre-extend flag for the new track.
+      _didPreExtend = false;
     }));
   }
 
@@ -639,14 +777,16 @@ class PlayerNotifier extends Notifier<PlayerState> {
   }
 
   /// Resolves queue to AudioSources, sets the just_audio playlist, and optionally starts playback.
-  Future<void> _syncPlaylistToQueue({bool shouldPlay = false, bool isRetry = false}) async {
+  Future<void> _syncPlaylistToQueue(
+      {bool shouldPlay = false, bool isRetry = false}) async {
     // Prevent concurrent calls — if a load is already in progress, the new
     // call would interrupt it causing an infinite "Loading interrupted" loop.
     // Callers that preempt the current transition (playSong, playNext/Prev on iOS)
     // must increment _transitionGeneration and reset _isTransitioning before
     // calling here, which bypasses this guard and causes the stale call to bail.
     if (_isTransitioning && !isRetry) {
-      logWarning('Player: _syncPlaylistToQueue skipped (already transitioning)', tag: 'Player');
+      logWarning('Player: _syncPlaylistToQueue skipped (already transitioning)',
+          tag: 'Player');
       return;
     }
     final myGeneration = _transitionGeneration;
@@ -676,7 +816,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // are appended lazily by _extendPlaylistTo when playNext() is called.
     final List<Song> effectiveQueue;
     final int effectiveIndex;
-    if (Platform.isIOS && index > 0) {
+    if ((Platform.isIOS || state.crossfadeDurationSeconds > 0) && index > 0) {
+      // iOS: AVQueuePlayer single-source mode always starts at index 0.
+      // Android+crossfade: maxItems=1, so toResolve=[queue[0..0]] but
+      // effectiveIndex could be >0 after a swap — rebase to avoid RangeError.
       effectiveQueue = queue.sublist(index);
       effectiveIndex = 0;
       // Rebase so state.currentIndex=0 matches just_audio's index=0.
@@ -693,7 +836,18 @@ class PlayerNotifier extends Notifier<PlayerState> {
       const resolveTimeout = Duration(seconds: 20);
       // iOS: resolve only the primary song to avoid concurrent YouTube URL
       // fetches that block setAudioSources for 5–10 seconds.
-      final maxItems = Platform.isIOS ? 1 : 5;
+      // Android + crossfade: limit to 1 item so ExoPlayer cannot auto-advance
+      // the ConcatenatingAudioSource at the natural song boundary while the
+      // CrossfadeEngine secondary is ramping in. With multiple items loaded,
+      // ExoPlayer starts its own gapless pre-render ~3–4 s before the boundary
+      // (decoder switch visible in the log), fires a currentIndexStream re-emit,
+      // and can slip past the isCrossfading guard during the secondary-load
+      // window — corrupting the crossfade state. A 1-item playlist prevents
+      // any auto-advance; ProcessingState.completed at song end is blocked by
+      // the isCrossfading guard, and _extendPlaylistTo / _handleCompletion
+      // provide the correct fallback if the crossfade itself fails.
+      final maxItems =
+          (Platform.isIOS || state.crossfadeDurationSeconds > 0) ? 1 : 5;
       final toResolve = effectiveQueue.take(maxItems).toList();
       final sources = <ja.AudioSource>[];
 
@@ -719,8 +873,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
       // If the primary song failed to resolve, surface an error immediately.
       if (resolved.isEmpty || resolved[effectiveIndex] == null) {
-        logError('Player: Primary song failed to resolve, cannot start playback', tag: 'Player');
-        state = state.copyWith(status: PlayerStatus.error, error: 'Failed to load song');
+        logError(
+            'Player: Primary song failed to resolve, cannot start playback',
+            tag: 'Player');
+        state = state.copyWith(
+            status: PlayerStatus.error, error: 'Failed to load song');
         return;
       }
 
@@ -735,7 +892,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
       }
 
       if (sources.isEmpty) {
-        logError('Player: No audio sources resolved, playback cannot start', tag: 'Player');
+        logError('Player: No audio sources resolved, playback cannot start',
+            tag: 'Player');
         _isTransitioning = false;
         return;
       }
@@ -752,8 +910,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
       _audioPlayer.setLoopMode(_toLoopMode(state.repeatMode));
       _usingPlaylist = true;
-      // On iOS, _loadedPlaylistLength = 1 so playNext() triggers _extendPlaylistTo
-      // for the next song. On Android, all resolved items are already loaded.
+      // On iOS and Android+crossfade, _loadedPlaylistLength = 1 so playNext()
+      // triggers _extendPlaylistTo for the next song. On Android without crossfade,
+      // all resolved items (up to 5) are already loaded for gapless playback.
       _loadedPlaylistLength = sources.length;
       _hasLoadedSource = true;
       state = state.copyWith(
@@ -772,7 +931,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
         try {
           await _audioPlayer.play();
         } catch (e) {
-          logWarning('Player: _syncPlaylistToQueue play failed: $e', tag: 'Player');
+          logWarning('Player: _syncPlaylistToQueue play failed: $e',
+              tag: 'Player');
         }
         _startPositionSyncTimer();
         unawaited(_schedulePlaybackRecovery());
@@ -782,16 +942,20 @@ class PlayerNotifier extends Notifier<PlayerState> {
     } catch (e) {
       final msg = e.toString();
       if (msg.contains('Loading interrupted')) {
-        logWarning('Player: _syncPlaylistToQueue (Loading interrupted), retrying once', tag: 'Player');
+        logWarning(
+            'Player: _syncPlaylistToQueue (Loading interrupted), retrying once',
+            tag: 'Player');
         _isTransitioning = false;
-        unawaited(Future<void>.delayed(const Duration(milliseconds: 400), () async {
+        unawaited(
+            Future<void>.delayed(const Duration(milliseconds: 400), () async {
           if (state.queue.isEmpty) return;
           await _syncPlaylistToQueue(shouldPlay: shouldPlay, isRetry: true);
         }));
         return;
       }
       logError('Player: _syncPlaylistToQueue failed: $e', tag: 'Player');
-      state = state.copyWith(status: PlayerStatus.error, error: 'Failed to load queue: $e');
+      state = state.copyWith(
+          status: PlayerStatus.error, error: 'Failed to load queue: $e');
     } finally {
       _isTransitioning = false;
       _reconcileStatusFromPlayer();
@@ -846,6 +1010,12 @@ class PlayerNotifier extends Notifier<PlayerState> {
   }
 
   void _handleCompletion() {
+    logDebug(
+      'Player: _handleCompletion — repeatMode=${state.repeatMode} '
+      'canPlayNext=${state.canPlayNext} usingPlaylist=$_usingPlaylist '
+      'currentIndex=${state.currentIndex} queueLen=${state.queue.length}',
+      tag: 'Player',
+    );
     switch (state.repeatMode) {
       case PlayerRepeatMode.one:
         seekTo(Duration.zero);
@@ -897,7 +1067,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
     try {
       await _audioPlayer.play();
     } catch (e) {
-      logWarning('Player: _startPlaybackWithRecovery initial play failed: $e', tag: 'Player');
+      logWarning('Player: _startPlaybackWithRecovery initial play failed: $e',
+          tag: 'Player');
     }
     _syncPositionAndDurationFromPlayer();
     _startPositionSyncTimer();
@@ -929,10 +1100,12 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
       state = state.copyWith(
         position: shouldUpdatePosition ? pos : prev,
-        duration: (dur != null && dur.inMilliseconds > 0) ? dur : state.duration,
+        duration:
+            (dur != null && dur.inMilliseconds > 0) ? dur : state.duration,
       );
     } catch (e) {
-      logWarning('Player: _syncPositionAndDurationFromPlayer failed: $e', tag: 'Player');
+      logWarning('Player: _syncPositionAndDurationFromPlayer failed: $e',
+          tag: 'Player');
     }
   }
 
@@ -958,8 +1131,13 @@ class PlayerNotifier extends Notifier<PlayerState> {
     String? playlistId,
     String? queueSource,
   }) async {
-    final effectiveNewQueue = (queue != null && queue.length > 1) ? queue : [song];
-    if (state.currentSong?.id == song.id && _queueIdsEqual(effectiveNewQueue, state.queue)) {
+    _audioPlayer.cancelCrossfade();
+    _resetCrossfadeIndices();
+    _crossfadeInFlight = false;
+    final effectiveNewQueue =
+        (queue != null && queue.length > 1) ? queue : [song];
+    if (state.currentSong?.id == song.id &&
+        _queueIdsEqual(effectiveNewQueue, state.queue)) {
       _lastQueueSource = queueSource;
       _lastPlaylistId = playlistId;
       // If the audio source hasn't been loaded yet (e.g. restored from saved state),
@@ -1059,31 +1237,43 @@ class PlayerNotifier extends Notifier<PlayerState> {
       // cheap so the mini player doesn't sit in a long loading state.
       if (state.isPlaying || _hasLoadedSource) {
         if (_usingPlaylist && _hasLoadedSource) {
-          // Song is already loaded/playing. Append upcoming songs directly
-          // without calling setPlaylist(), which would cause a brief audio gap
-          // even when initialPosition is correctly set.
-          const maxTotal = 5;
-          final toAppend = newQueue
-              .skip(_loadedPlaylistLength)
-              .take((maxTotal - _loadedPlaylistLength).clamp(0, maxTotal))
-              .toList();
-          for (final s in toAppend) {
-            if (!_hasLoadedSource || !_usingPlaylist) break;
-            try {
-              final src = await _audioRepository
-                  .resolveToAudioSource(s)
-                  .timeout(const Duration(seconds: 20));
-              await _audioPlayer.addToPlaylist(src);
-              _loadedPlaylistLength++;
-            } catch (e) {
-              logWarning(
-                  'Player: _loadQueueInBackground append failed for ${s.id}: $e',
-                  tag: 'Player');
+          // Crossfade mode: never append items to the primary
+          // ConcatenatingAudioSource. CrossfadeEngine loads the next track on
+          // a dedicated secondary player. Adding items here lets ExoPlayer
+          // auto-advance at the natural song boundary, bypassing the
+          // isCrossfading guard and corrupting crossfade state.
+          if (state.crossfadeDurationSeconds == 0) {
+            // Gapless mode: append upcoming songs directly to avoid the brief
+            // audio gap that setPlaylist() would cause.
+            const maxTotal = 5;
+            final toAppend = newQueue
+                .skip(_loadedPlaylistLength)
+                .take((maxTotal - _loadedPlaylistLength).clamp(0, maxTotal))
+                .toList();
+            for (final s in toAppend) {
+              if (!_hasLoadedSource || !_usingPlaylist) break;
+              if (state.crossfadeDurationSeconds > 0) break;
+              try {
+                final src = await _audioRepository
+                    .resolveToAudioSource(s)
+                    .timeout(const Duration(seconds: 20));
+                await _audioPlayer.addToPlaylist(src);
+                _loadedPlaylistLength++;
+              } catch (e) {
+                logWarning(
+                    'Player: _loadQueueInBackground append failed for ${s.id}: $e',
+                    tag: 'Player');
+              }
             }
           }
           unawaited(_prefetchUpcoming(index));
         } else {
-          unawaited(_syncPlaylistToQueue(shouldPlay: state.isPlaying));
+          // Skip _syncPlaylistToQueue when crossfade mode already has the
+          // current track loaded on the new primary — reloading would cancel
+          // the active crossfade and interrupt playback.
+          if (!(_hasLoadedSource && state.crossfadeDurationSeconds > 0)) {
+            unawaited(_syncPlaylistToQueue(shouldPlay: state.isPlaying));
+          }
         }
       }
     } catch (e) {
@@ -1157,7 +1347,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _audioPlayer.removeFromPlaylist(index);
         _loadedPlaylistLength--;
       } catch (e) {
-        logWarning('Player: removeFromPlaylist($index) failed: $e', tag: 'Player');
+        logWarning('Player: removeFromPlaylist($index) failed: $e',
+            tag: 'Player');
       }
     }
 
@@ -1200,7 +1391,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _audioPlayer.addToPlaylist(source);
         _loadedPlaylistLength++;
       } catch (e) {
-        logWarning('Player: addToQueue resolveToAudioSource failed: $e', tag: 'Player');
+        logWarning('Player: addToQueue resolveToAudioSource failed: $e',
+            tag: 'Player');
       }
     }
   }
@@ -1250,9 +1442,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     );
 
     try {
-      final source = await _audioRepository
-          .resolveSource(song)
-          .timeout(
+      final source = await _audioRepository.resolveSource(song).timeout(
             const Duration(seconds: 30),
             onTimeout: () => throw TimeoutException('Resolve source timed out'),
           );
@@ -1288,7 +1478,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
   Future<void> play() async {
     // First ensure audio source is loaded before playing
     if (!_hasLoadedSource) {
-      logWarning('Player: play called but no source loaded, syncing first', tag: 'Player');
+      logWarning('Player: play called but no source loaded, syncing first',
+          tag: 'Player');
       await _syncPlaylistToQueue(shouldPlay: true);
       return;
     }
@@ -1301,13 +1492,16 @@ class PlayerNotifier extends Notifier<PlayerState> {
       _startPositionSyncTimer();
     } catch (e) {
       logError('Player: play failed: $e', tag: 'Player');
-      state = state.copyWith(status: PlayerStatus.paused, error: 'Failed to start playback');
+      state = state.copyWith(
+          status: PlayerStatus.paused, error: 'Failed to start playback');
     }
   }
 
   Future<void> pause() async {
     _stopPositionSyncTimer();
     _playRequestedAt = null;
+    _resetCrossfadeIndices();
+    _crossfadeInFlight = false;
     await _audioPlayer.pause();
     state = state.copyWith(status: PlayerStatus.paused);
     if (_hasLoadedSource) {
@@ -1316,9 +1510,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
         if (song != null) {
           final prefs = await SharedPreferences.getInstance();
           await Future.wait([
-            prefs.setString(StorageKeys.prefsLastPlayedSong, song.toJsonString()),
-            prefs.setInt(
-                StorageKeys.prefsLastPlayedPositionMs, _audioPlayer.position.inMilliseconds),
+            prefs.setString(
+                StorageKeys.prefsLastPlayedSong, song.toJsonString()),
+            prefs.setInt(StorageKeys.prefsLastPlayedPositionMs,
+                _audioPlayer.position.inMilliseconds),
             prefs.setInt(
                 StorageKeys.prefsLastPlayedDurationMs,
                 _audioPlayer.duration?.inMilliseconds ??
@@ -1333,12 +1528,19 @@ class PlayerNotifier extends Notifier<PlayerState> {
   }
 
   Future<void> seekTo(Duration position) async {
+    // Seek cancels any in-progress crossfade or preload (via CrossfadeEngine.seek)
+    // and resets both index guards so the crossfade window is recalculated freshly.
+    _resetCrossfadeIndices();
+    _crossfadeInFlight = false;
     await _audioPlayer.seek(position);
     state = state.copyWith(position: position);
   }
 
   Future<void> playNext() async {
     if (!state.canPlayNext) return;
+    _audioPlayer.cancelCrossfade();
+    _resetCrossfadeIndices();
+    _crossfadeInFlight = false;
     final nextIndex = state.currentIndex + 1;
     if (_usingPlaylist) {
       if (Platform.isIOS) {
@@ -1366,6 +1568,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
       }
       return;
     }
+    logDebug(
+      'Player: playNext — no playlist, calling _syncPlaylistToQueue '
+      'currentIndex=${state.currentIndex} nextIndex=$nextIndex',
+      tag: 'Player',
+    );
     await _syncPlaylistToQueue(shouldPlay: true);
     if (state.currentIndex != nextIndex) {
       await _audioPlayer.setPlaylistIndex(nextIndex);
@@ -1389,25 +1596,25 @@ class PlayerNotifier extends Notifier<PlayerState> {
       final toResolve = queue.sublist(start, end);
       final futures = toResolve.map((song) async {
         try {
-          return await _audioRepository
-              .resolveToAudioSource(song)
-              .timeout(resolveTimeout,
-                  onTimeout: () => throw TimeoutException('Resolve timed out'));
+          return await _audioRepository.resolveToAudioSource(song).timeout(
+              resolveTimeout,
+              onTimeout: () => throw TimeoutException('Resolve timed out'));
         } catch (e) {
-          logWarning(
-              'Player: resolveToAudioSource failed for ${song.id}: $e',
+          logWarning('Player: resolveToAudioSource failed for ${song.id}: $e',
               tag: 'Player');
           return null;
         }
       });
-      final sources = (await Future.wait(futures)).whereType<ja.AudioSource>().toList();
+      final sources =
+          (await Future.wait(futures)).whereType<ja.AudioSource>().toList();
       for (final source in sources) {
         await _audioPlayer.addToPlaylist(source);
       }
       _loadedPlaylistLength += sources.length;
     } catch (e) {
       logError('Player: _extendPlaylistTo failed: $e', tag: 'Player');
-      state = state.copyWith(status: PlayerStatus.error, error: 'Failed to load next: $e');
+      state = state.copyWith(
+          status: PlayerStatus.error, error: 'Failed to load next: $e');
     } finally {
       _isTransitioning = false;
     }
@@ -1419,6 +1626,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
       return;
     }
     if (!state.canPlayPrevious) return;
+    _audioPlayer.cancelCrossfade();
+    _resetCrossfadeIndices();
+    _crossfadeInFlight = false;
     if (_usingPlaylist) {
       if (Platform.isIOS) {
         // iOS: single-source mode. Update index then reload (no ConcatenatingAudioSource).
@@ -1470,12 +1680,198 @@ class PlayerNotifier extends Notifier<PlayerState> {
           final headers = streamData['headers'] as Map<String, String>?;
           _audioRepository.startBackgroundCacheDownload(id, url, headers);
         } catch (e) {
-          logWarning('Player: _prefetchUpcoming cache warm failed for $id: $e', tag: 'Player');
+          logWarning('Player: _prefetchUpcoming cache warm failed for $id: $e',
+              tag: 'Player');
         }
       }
     } catch (e) {
       logWarning('Player: _prefetchUpcoming failed: $e', tag: 'Player');
     }
+  }
+
+  /// Phase 1 of the crossfade pipeline: resolves the next song's audio source
+  /// and pre-buffers it on a secondary player so ExoPlayer reaches STATE_READY
+  /// before the fade window opens.
+  ///
+  /// Called ~([crossfadeSecs] + 10) s before the end of the current track.
+  /// [CrossfadeEngine.beginCrossfade] detects the already-loaded secondary via
+  /// [CrossfadeEngine.hasPreloadedSecondary] and reuses it, skipping the
+  /// ExoPlayer init wait and making Song B audible from the first ramp tick.
+  Future<void> _preloadCrossfadeSecondary(int nextIndex) async {
+    if (nextIndex >= state.queue.length) return;
+    final nextSong = state.queue[nextIndex];
+    logDebug('Crossfade: preload → "${nextSong.title}" idx=$nextIndex',
+        tag: 'Crossfade');
+    try {
+      final source =
+          await _audioRepository.resolveToAudioSourceForCrossfade(nextSong);
+      if (_disposed) return;
+      if (state.crossfadeDurationSeconds == 0) return;
+      if (_crossfadePreloadedForIndex != nextIndex) return;
+      await _audioPlayer.preloadSecondary(
+        source: source,
+        normalizationEnabled: state.isNormalizationEnabled,
+      );
+    } catch (e) {
+      logWarning('Crossfade: _preloadCrossfadeSecondary failed — $e',
+          tag: 'Crossfade');
+      _crossfadePreloadedForIndex = -1;
+    }
+  }
+
+  /// Phase 2 of the crossfade pipeline: starts the simultaneous volume ramp.
+  ///
+  /// Called from the position stream listener when [crossfadeSecs] remain in
+  /// the current track. If [CrossfadeEngine.hasPreloadedSecondary] is true the
+  /// source URL resolve is skipped (already done in [_preloadCrossfadeSecondary])
+  /// and the preloaded secondary is reused directly. Otherwise the source is
+  /// resolved fresh and passed to [CrossfadeEngine.beginCrossfade] for
+  /// fire-and-forget loading.
+  ///
+  /// [_crossfadeInFlight] is set synchronously at entry to block
+  /// [_handleCompletion] during the async resolve window.
+  Future<void> _beginTrueCrossfade(int nextIndex, int crossfadeSecs) async {
+    if (nextIndex >= state.queue.length) return;
+    final nextSong = state.queue[nextIndex];
+
+    // Set synchronously so the processingState=completed handler doesn't call
+    // _handleCompletion while we await the optional source URL fetch below.
+    _crossfadeInFlight = true;
+
+    logDebug(
+      'Crossfade: begin → "${nextSong.title}" idx=$nextIndex secs=$crossfadeSecs',
+      tag: 'Crossfade',
+    );
+
+    try {
+      // Skip URL resolution when a secondary is already preloaded — the source
+      // was resolved during _preloadCrossfadeSecondary. For streamed content this
+      // avoids a redundant ~1 s API round-trip; beginCrossfade passes null source
+      // and reuses the preloaded secondary directly.
+      final ja.AudioSource? source = _audioPlayer.hasPreloadedSecondary
+          ? null
+          : await _audioRepository.resolveToAudioSourceForCrossfade(nextSong);
+
+      if (_disposed) {
+        _crossfadeInFlight = false;
+        return;
+      }
+      // Bail if the user disabled crossfade, seeked, or changed song while the
+      // optional source URL was being resolved.
+      if (state.crossfadeDurationSeconds == 0) {
+        _crossfadeInFlight = false;
+        return;
+      }
+      if (_crossfadePreparedForIndex != nextIndex) {
+        _crossfadeInFlight = false;
+        return;
+      }
+
+      // Allow normalization gain to be fetched for the next song so it can be
+      // applied to the secondary mid-ramp for a smooth loudness transition.
+      _lastNormalizationGainFetchedForSongId = null;
+      _maybeFetchAndApplyNormalizationGain(nextSong);
+
+      final started = await _audioPlayer.beginCrossfade(
+        source: source,
+        crossfadeSecs: crossfadeSecs,
+        normalizationEnabled: state.isNormalizationEnabled,
+        onSwapComplete: () => _onCrossfadeSwapComplete(nextSong, nextIndex),
+        // Invoked asynchronously if the secondary fails to load/play after the
+        // ramp timer has already started (fire-and-forget load path).
+        onSecondaryLoadFailed: () {
+          logWarning(
+            'Crossfade: secondary load failed mid-ramp — falling back',
+            tag: 'Crossfade',
+          );
+          _resetCrossfadeIndices();
+          // Primary may have completed while blocked by isCrossfading guard.
+          if (_primaryHasReachedEnd()) _handleCompletion();
+        },
+      );
+
+      // beginCrossfade owns the isCrossfading flag on success; on failure the
+      // flag was never set. Either way the in-flight lock is no longer needed.
+      _crossfadeInFlight = false;
+
+      if (!started) {
+        logWarning('Crossfade: beginCrossfade returned false — falling back',
+            tag: 'Crossfade');
+        _resetCrossfadeIndices();
+        // Primary may have completed while blocked by _crossfadeInFlight.
+        if (_primaryHasReachedEnd()) _handleCompletion();
+      }
+    } catch (e) {
+      _crossfadeInFlight = false;
+      logWarning('Crossfade: _beginTrueCrossfade failed — $e',
+          tag: 'Crossfade');
+      _resetCrossfadeIndices();
+    }
+  }
+
+  /// Resets both crossfade index guards atomically.
+  ///
+  /// Always called together — splitting them risks one guard being stale while
+  /// the other has already been cleared, opening a window for duplicate starts.
+  void _resetCrossfadeIndices() {
+    _crossfadePreparedForIndex = -1;
+    _crossfadePreloadedForIndex = -1;
+  }
+
+  /// Returns `true` when the primary player's position has reached or passed
+  /// the end of the track (within 800 ms to absorb platform clock jitter).
+  ///
+  /// Used as a fallback check after a crossfade failure or cancellation: if the
+  /// primary already finished while [_crossfadeInFlight] or [isCrossfading]
+  /// were blocking [_handleCompletion], we call it explicitly here.
+  bool _primaryHasReachedEnd() {
+    final pos = _audioPlayer.position;
+    final dur = _audioPlayer.duration ?? state.duration;
+    return dur != null &&
+        dur.inMilliseconds > 0 &&
+        pos.inMilliseconds >= dur.inMilliseconds - 800;
+  }
+
+  /// Invoked by [CrossfadeEngine] once the swap is complete.
+  ///
+  /// Updates all [PlayerNotifier] state to reflect the newly active song and
+  /// resets crossfade / gapless tracking so the next transition starts clean.
+  void _onCrossfadeSwapComplete(Song nextSong, int nextIndex) {
+    if (_disposed) return;
+
+    logDebug(
+      'Crossfade: swap complete → "${nextSong.title}" idx=$nextIndex',
+      tag: 'Crossfade',
+    );
+
+    _resetCrossfadeIndices();
+    // The new primary was loaded as a single AudioSource (not a ConcatenatingAudioSource),
+    // so the playlist tracking flags need to be reset to reflect this.
+    _usingPlaylist = false;
+    _hasLoadedSource = true;
+    _loadedPlaylistLength = 1;
+    _didPreExtend = false;
+    _isTransitioning = false;
+
+    state = state.copyWith(
+      currentIndex: nextIndex,
+      currentSong: nextSong,
+      position: Duration.zero,
+      duration: nextSong.duration,
+      status: PlayerStatus.playing,
+      clearError: true,
+    );
+
+    _syncMediaNotification(nextSong);
+    ref.read(homeProvider.notifier).addToRecentlyPlayed(nextSong);
+    unawaited(_persistPlaybackState());
+    unawaited(_prefetchUpcoming(nextIndex));
+    unawaited(_initializePlaybackTracking(nextSong.id));
+    // Normalization for the new primary. If already fetched during the ramp,
+    // _maybeFetchAndApplyNormalizationGain returns early (deduplicated).
+    _maybeFetchAndApplyNormalizationGain(nextSong);
+    // Restart the position sync timer so it reads from the new primary player.
+    _startPositionSyncTimer();
   }
 
   void toggleShuffle() {
@@ -1532,14 +1928,17 @@ class PlayerNotifier extends Notifier<PlayerState> {
   Future<void> _restoreNormalization() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      var enabled = prefs.getBool(StorageKeys.prefsVolumeNormalization) ?? false;
+      var enabled =
+          prefs.getBool(StorageKeys.prefsVolumeNormalization) ?? false;
       logInfo(
         'Player: restoreNormalization prefEnabled=$enabled',
         tag: 'Player',
       );
-      final settings = await ref.read(databaseRepositoryProvider).loadPlaybackSettings();
+      final settings =
+          await ref.read(databaseRepositoryProvider).loadPlaybackSettings();
       if (settings.containsKey(PlaybackSettingKeys.volumeNormalization)) {
-        enabled = settings[PlaybackSettingKeys.volumeNormalization] as bool? ?? false;
+        enabled =
+            settings[PlaybackSettingKeys.volumeNormalization] as bool? ?? false;
         await prefs.setBool(StorageKeys.prefsVolumeNormalization, enabled);
       }
       if (enabled) {
@@ -1548,6 +1947,52 @@ class PlayerNotifier extends Notifier<PlayerState> {
       }
     } catch (e) {
       logWarning('Player: _restoreNormalization failed: $e', tag: 'Player');
+    }
+  }
+
+  Future<void> _restorePlaybackSettings() async {
+    try {
+      final settings =
+          await ref.read(databaseRepositoryProvider).loadPlaybackSettings();
+      final gapless =
+          settings[PlaybackSettingKeys.gaplessPlayback] as bool? ?? true;
+      final crossfade =
+          settings[PlaybackSettingKeys.crossfadeDurationSeconds] as int? ?? 0;
+      state = state.copyWith(
+        isGaplessEnabled: gapless,
+        crossfadeDurationSeconds: crossfade,
+      );
+    } catch (e) {
+      logWarning('Player: _restorePlaybackSettings failed: $e', tag: 'Player');
+    }
+  }
+
+  Future<void> setGaplessPlayback(bool enabled) async {
+    state = state.copyWith(isGaplessEnabled: enabled);
+    try {
+      await ref.read(databaseRepositoryProvider).savePlaybackSetting(
+            PlaybackSettingKeys.gaplessPlayback,
+            enabled,
+          );
+    } catch (e) {
+      logWarning('Player: setGaplessPlayback persist failed: $e',
+          tag: 'Player');
+    }
+  }
+
+  Future<void> setCrossfadeDuration(int seconds) async {
+    _audioPlayer.cancelCrossfade();
+    _resetCrossfadeIndices();
+    _crossfadeInFlight = false;
+    state = state.copyWith(crossfadeDurationSeconds: seconds);
+    try {
+      await ref.read(databaseRepositoryProvider).savePlaybackSetting(
+            PlaybackSettingKeys.crossfadeDurationSeconds,
+            seconds,
+          );
+    } catch (e) {
+      logWarning('Player: setCrossfadeDuration persist failed: $e',
+          tag: 'Player');
     }
   }
 
@@ -1572,7 +2017,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(StorageKeys.prefsVolumeNormalization, enabled);
-      await ref.read(databaseRepositoryProvider).savePlaybackSetting(PlaybackSettingKeys.volumeNormalization, enabled);
+      await ref.read(databaseRepositoryProvider).savePlaybackSetting(
+          PlaybackSettingKeys.volumeNormalization, enabled);
     } catch (e) {
       logWarning('Player: setNormalization persist failed: $e', tag: 'Player');
     }
@@ -1606,6 +2052,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _stopPositionSyncTimer();
     _playbackRecoveryTimer?.cancel();
     _persistDebounceTimer?.cancel();
+
     _playRequestedAt = null;
     _playbackTracker?.dispose();
     for (final subscription in _subscriptions) {
@@ -1614,6 +2061,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _audioPlayer.dispose();
   }
 }
+
+/// Provides the [CrossfadeEngine] singleton.
+/// Always overridden in [ProviderScope] via [main.dart].
+final crossfadeEngineProvider = Provider<CrossfadeEngine>((ref) {
+  throw StateError(
+    'crossfadeEngineProvider must be overridden in ProviderScope (see main.dart)',
+  );
+});
 
 final audioPlayerServiceProvider = Provider<AudioPlayerService>((ref) {
   final service = AudioPlayerService();
@@ -1643,14 +2098,17 @@ final streamManagerProvider = Provider<MusicStreamManager>((ref) {
       if (visitorData != null && visitorData.isNotEmpty) {
         try {
           final apiKey = prefs.getString(StorageKeys.prefsYtApiKey);
-          final clientVersion = prefs.getString(StorageKeys.prefsYtClientVersion);
+          final clientVersion =
+              prefs.getString(StorageKeys.prefsYtClientVersion);
           await ref.read(databaseRepositoryProvider).saveYtPersonalization({
             'visitor_data': visitorData,
             if (apiKey != null && apiKey.isNotEmpty) 'api_key': apiKey,
-            if (clientVersion != null && clientVersion.isNotEmpty) 'client_version': clientVersion,
+            if (clientVersion != null && clientVersion.isNotEmpty)
+              'client_version': clientVersion,
           });
         } catch (e) {
-          logWarning('StreamManager: onVisitorDataReceived save failed: $e', tag: 'StreamManager');
+          logWarning('StreamManager: onVisitorDataReceived save failed: $e',
+              tag: 'StreamManager');
         }
       }
     },
@@ -1672,12 +2130,14 @@ final audioRepositoryProvider = Provider<AudioRepository>((ref) {
         final dlPath = ref.read(downloadServiceProvider).getLocalPath(songId);
         if (dlPath != null) return dlPath;
       } catch (e) {
-        logWarning('AudioRepository: getLocalPath (downloads) failed: $e', tag: 'AudioRepository');
+        logWarning('AudioRepository: getLocalPath (downloads) failed: $e',
+            tag: 'AudioRepository');
       }
       try {
         return ref.read(deviceMusicProvider).pathMap[songId];
       } catch (e) {
-        logWarning('AudioRepository: getLocalPath (device) failed: $e', tag: 'AudioRepository');
+        logWarning('AudioRepository: getLocalPath (device) failed: $e',
+            tag: 'AudioRepository');
         return null;
       }
     },

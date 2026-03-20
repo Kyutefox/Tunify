@@ -4,7 +4,7 @@ import 'package:just_audio/just_audio.dart';
 
 import '../../models/song.dart';
 import '../../shared/services/music_stream_manager.dart';
-import '../../shared/services/audio/audio_player_service.dart';
+import '../../shared/services/audio/crossfade_engine.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 import '../../shared/services/stream_cache_service.dart';
 
@@ -100,28 +100,36 @@ class AudioRepository {
     final stepSw = Stopwatch()..start();
     final path = _getLocalPath(song.id);
     if (path != null && path.isNotEmpty) {
-      log('PlayFlow: resolveSource getLocalPath -> file (${stepSw.elapsedMilliseconds}ms)', tag: 'PlayFlow');
-      return ResolvedAudioSourceFile(path, sourceKind: AudioSourceKind.downloaded);
+      log('PlayFlow: resolveSource getLocalPath -> file (${stepSw.elapsedMilliseconds}ms)',
+          tag: 'PlayFlow');
+      return ResolvedAudioSourceFile(path,
+          sourceKind: AudioSourceKind.downloaded);
     }
-    log('PlayFlow: resolveSource getLocalPath -> null (${stepSw.elapsedMilliseconds}ms)', tag: 'PlayFlow');
+    log('PlayFlow: resolveSource getLocalPath -> null (${stepSw.elapsedMilliseconds}ms)',
+        tag: 'PlayFlow');
 
     if (!skipStreamCache) {
       final cachePath = await _streamCache.getCacheFilePath(song.id);
       if (cachePath != null) {
-        log('PlayFlow: resolveSource stream cache HIT (${stepSw.elapsedMilliseconds}ms)', tag: 'PlayFlow');
-        return ResolvedAudioSourceFile(cachePath, sourceKind: AudioSourceKind.streamCached);
+        log('PlayFlow: resolveSource stream cache HIT (${stepSw.elapsedMilliseconds}ms)',
+            tag: 'PlayFlow');
+        return ResolvedAudioSourceFile(cachePath,
+            sourceKind: AudioSourceKind.streamCached);
       }
     } else {
-      log('PlayFlow: resolveSource stream cache skipped (playlist seek safety)', tag: 'PlayFlow');
+      log('PlayFlow: resolveSource stream cache skipped (playlist seek safety)',
+          tag: 'PlayFlow');
     }
 
-    log('PlayFlow: resolveSource getStreamUrl (play from URL, cache in background)', tag: 'PlayFlow');
+    log('PlayFlow: resolveSource getStreamUrl (play from URL, cache in background)',
+        tag: 'PlayFlow');
     final streamData = await _streamManager.getStreamUrl(song.id);
     final url = streamData['stream_url'] as String;
     final headers = streamData['headers'] as Map<String, String>?;
     final bitrate = streamData['bitrate'] as int? ?? 0;
     final quality = streamData['quality'] as String? ?? 'medium';
-    log('PlayFlow: resolveSource getStreamUrl done in ${stepSw.elapsedMilliseconds}ms', tag: 'PlayFlow');
+    log('PlayFlow: resolveSource getStreamUrl done in ${stepSw.elapsedMilliseconds}ms',
+        tag: 'PlayFlow');
     return ResolvedAudioSourceStream(
       url: url,
       headers: headers,
@@ -131,14 +139,15 @@ class AudioRepository {
 
   /// Starts downloading the stream to cache in the background. Call after starting playback from URL.
   /// Deduplicated per [songId]; safe to call multiple times for the same song.
-  void startBackgroundCacheDownload(String songId, String url, Map<String, String>? headers) {
+  void startBackgroundCacheDownload(
+      String songId, String url, Map<String, String>? headers) {
     _streamCache.downloadToCacheInBackground(songId, url, headers);
   }
 
   /// Applies [source] to [player]: file path or URL (playback starts as soon as buffer has data).
   Future<void> applySource(
     ResolvedAudioSource source,
-    AudioPlayerService player, {
+    CrossfadeEngine player, {
     Duration? initialPosition,
   }) async {
     if (source is ResolvedAudioSourceFile && source.filePath != null) {
@@ -149,7 +158,8 @@ class AudioRepository {
       return;
     }
     if (source is ResolvedAudioSourceStream) {
-      await player.playUrl(source.url, headers: source.headers, initialPosition: initialPosition);
+      await player.playUrl(source.url,
+          headers: source.headers, initialPosition: initialPosition);
     }
   }
 
@@ -174,6 +184,37 @@ class AudioRepository {
       startBackgroundCacheDownload(song.id, resolved.url, resolved.headers);
     }
     return _toJustAudioSource(resolved);
+  }
+
+  /// Resolves [song] to an [AudioSource] suitable for the [CrossfadeEngine]
+  /// secondary player.
+  ///
+  /// Only uses a file path for fully-downloaded local files (device or
+  /// downloads directory). Stream cache files are intentionally skipped:
+  /// they are filled in the background while the current song plays, so at the
+  /// moment a crossfade begins the cache file is only partially written.
+  /// Handing a partial file to ExoPlayer causes [ProcessingState.completed] to
+  /// fire mid-crossfade (the player reads EOF prematurely), which breaks the
+  /// swap and triggers spurious [_handleCompletion] calls.
+  ///
+  /// For streamed content, a plain [AudioSource.uri] is used instead of
+  /// [LockCachingAudioSource] to avoid ExoPlayer [SimpleCache] lock conflicts
+  /// between the primary and secondary players sharing the same URL. Background
+  /// stream-to-disk caching is still initiated so subsequent plays are fast.
+  Future<AudioSource> resolveToAudioSourceForCrossfade(Song song) async {
+    // Only use a file path for fully-downloaded content (skipStreamCache=true
+    // means we won't return a potentially-partial stream cache file).
+    final resolved = await resolveSource(song, skipStreamCache: true);
+
+    if (resolved is ResolvedAudioSourceFile) {
+      return AudioSource.file(resolved.path);
+    }
+
+    final s = resolved as ResolvedAudioSourceStream;
+    // Start background caching (deduplicated per songId).
+    startBackgroundCacheDownload(song.id, s.url, s.headers);
+    // Plain URI — no LockCachingAudioSource — avoids cache-file conflicts.
+    return AudioSource.uri(Uri.parse(s.url));
   }
 
   static AudioSource _toJustAudioSource(ResolvedAudioSource r) {

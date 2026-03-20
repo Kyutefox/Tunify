@@ -19,6 +19,7 @@ import 'package:tunify/shared/providers/search_provider.dart';
 import 'package:tunify/system/bridges/database_repository.dart';
 import 'package:tunify/shared/services/audio/audio_handler.dart';
 import 'package:tunify/shared/services/audio/audio_player_service.dart';
+import 'package:tunify/shared/services/audio/crossfade_engine.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 import 'package:tunify/system/databases/supabase/supabase_prefs.dart';
 import 'package:tunify/ui/components/ui/button.dart';
@@ -54,7 +55,7 @@ Future<void> main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
 
-    final audioPlayerService = AudioPlayerService();
+    final crossfadeEngine = CrossfadeEngine(AudioPlayerService());
 
     SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -67,13 +68,14 @@ Future<void> main() async {
 
     runApp(ProviderScope(
       overrides: [
-        audioPlayerServiceProvider.overrideWithValue(audioPlayerService),
+        crossfadeEngineProvider.overrideWithValue(crossfadeEngine),
       ],
-      child: TunifyApp(audioPlayerService: audioPlayerService),
+      child: TunifyApp(crossfadeEngine: crossfadeEngine),
     ));
   }, (error, stack) {
     if (error is SocketException) {
-      logWarning('Background SocketException (suppressed): $error', tag: 'Audio');
+      logWarning('Background SocketException (suppressed): $error',
+          tag: 'Audio');
       return;
     }
     logError('Unhandled error in main zone: $error\n$stack', tag: 'Main');
@@ -81,9 +83,9 @@ Future<void> main() async {
 }
 
 class TunifyApp extends ConsumerStatefulWidget {
-  const TunifyApp({super.key, required this.audioPlayerService});
+  const TunifyApp({super.key, required this.crossfadeEngine});
 
-  final AudioPlayerService audioPlayerService;
+  final CrossfadeEngine crossfadeEngine;
 
   @override
   ConsumerState<TunifyApp> createState() => _TunifyAppState();
@@ -100,7 +102,7 @@ class _TunifyAppState extends ConsumerState<TunifyApp> {
     TunifyAudioHandler? handler;
     try {
       handler = await AudioService.init(
-        builder: () => TunifyAudioHandler(widget.audioPlayerService),
+        builder: () => TunifyAudioHandler(widget.crossfadeEngine),
         config: const AudioServiceConfig(
           androidNotificationChannelId: 'com.tunify.audio',
           androidNotificationChannelName: 'Tunify Playback',
@@ -193,12 +195,14 @@ class _TunifyAppContent extends ConsumerWidget {
             // Await pull so SQLite is filled before providers reload; then start sync and notify.
             bridge.pullFromSupabase(next.id).then((_) async {
               if (ref.read(currentUserProvider)?.id != next.id) return;
-              ref.read(databaseHydrationInProgressProvider.notifier).state = false;
+              ref.read(databaseHydrationInProgressProvider.notifier).state =
+                  false;
               if (!ref.exists(homeProvider)) return;
               try {
                 await ref.read(homeProvider.notifier).prepareHomeForLogin();
               } catch (e) {
-                logWarning('Auth: prepareHomeForLogin failed ($e), continuing', tag: 'Auth');
+                logWarning('Auth: prepareHomeForLogin failed ($e), continuing',
+                    tag: 'Auth');
               }
               if (ref.read(currentUserProvider)?.id != next.id) return;
               syncManager.start(next.id);
@@ -206,11 +210,16 @@ class _TunifyAppContent extends ConsumerWidget {
               ref.read(libraryProvider.notifier).onAuthChanged(next);
               ref.read(recentSearchProvider.notifier).onAuthChanged();
               ref.read(showExplicitContentProvider.notifier).onAuthChanged();
-              ref.read(smartRecommendationShuffleProvider.notifier).onAuthChanged();
+              ref
+                  .read(smartRecommendationShuffleProvider.notifier)
+                  .onAuthChanged();
             }).catchError((e, st) {
-              logWarning('Auth: pullFromSupabase failed ($e), continuing with local data', tag: 'Auth');
+              logWarning(
+                  'Auth: pullFromSupabase failed ($e), continuing with local data',
+                  tag: 'Auth');
               if (ref.read(currentUserProvider)?.id != next.id) return;
-              ref.read(databaseHydrationInProgressProvider.notifier).state = false;
+              ref.read(databaseHydrationInProgressProvider.notifier).state =
+                  false;
               if (!ref.exists(homeProvider)) return;
               // Still let user in; start sync and reload with whatever is in SQLite
               syncManager.start(next.id);
@@ -218,11 +227,14 @@ class _TunifyAppContent extends ConsumerWidget {
               ref.read(libraryProvider.notifier).onAuthChanged(next);
               ref.read(recentSearchProvider.notifier).onAuthChanged();
               ref.read(showExplicitContentProvider.notifier).onAuthChanged();
-              ref.read(smartRecommendationShuffleProvider.notifier).onAuthChanged();
+              ref
+                  .read(smartRecommendationShuffleProvider.notifier)
+                  .onAuthChanged();
             });
           } else {
             ref.read(syncManagerProvider).stop();
-            ref.read(databaseHydrationInProgressProvider.notifier).state = false;
+            ref.read(databaseHydrationInProgressProvider.notifier).state =
+                false;
             // Flush cached stream URLs on logout — they are tied to session
             // cookies and would fail or serve wrong content for the next user.
             ref.read(streamManagerProvider).clearCache();
@@ -230,7 +242,9 @@ class _TunifyAppContent extends ConsumerWidget {
             ref.read(libraryProvider.notifier).onAuthChanged(next);
             ref.read(recentSearchProvider.notifier).onAuthChanged();
             ref.read(showExplicitContentProvider.notifier).onAuthChanged();
-            ref.read(smartRecommendationShuffleProvider.notifier).onAuthChanged();
+            ref
+                .read(smartRecommendationShuffleProvider.notifier)
+                .onAuthChanged();
           }
         }
       },
@@ -386,7 +400,8 @@ class _AppShellState extends ConsumerState<AppShell> {
     showAppSheet(
       context,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
+        padding:
+            const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -509,9 +524,9 @@ class _OfflineBanner extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOnline = ref.watch(connectivityProvider).maybeWhen(
-      data: (connected) => connected,
-      orElse: () => true,
-    );
+          data: (connected) => connected,
+          orElse: () => true,
+        );
 
     if (isOnline) return const SizedBox.shrink();
 
@@ -580,9 +595,7 @@ class _NavItem extends StatelessWidget {
                 child: Center(
                   child: AppIcon(
                     icon: icon,
-                    color: selected
-                        ? AppColors.primary
-                        : AppColors.textMuted,
+                    color: selected ? AppColors.primary : AppColors.textMuted,
                     size: _iconSize,
                   ),
                 ),

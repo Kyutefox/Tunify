@@ -334,7 +334,13 @@ class AudioPlayerService {
       final normVol = _normalizationEnabled
           ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
           : 1.0;
-      await _player.setVolume((_crossfadeVol * normVol).clamp(0.05, 1.0));
+      // Allow true silence when the ramp drives vol to 0 (e.g. fade-out start
+      // or secondary at ramp start). The 0.05 floor only applies when the ramp
+      // scalar is non-zero — it prevents near-inaudible normalization gains from
+      // disappearing entirely, not from silencing a deliberate fade.
+      final effective = _crossfadeVol * normVol;
+      await _player
+          .setVolume(_crossfadeVol == 0.0 ? 0.0 : effective.clamp(0.05, 1.0));
     }
   }
 

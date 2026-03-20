@@ -174,7 +174,7 @@ class AudioRepository {
   }
 
   /// Resolves [song] to a just_audio [AudioSource] for use in a playlist.
-  /// Stream cache files are skipped so ExoPlayer always uses [LockCachingAudioSource]
+  /// Stream cache files are skipped so ExoPlayer always uses LockCachingAudioSource
   /// (HTTP), which handles seeks correctly. [AudioSource.file] on a partial stream
   /// cache file causes [FileDataSourceException] on seek → crash loop.
   /// Starts background cache download when the source is a stream.
@@ -198,7 +198,7 @@ class AudioRepository {
   /// swap and triggers spurious [_handleCompletion] calls.
   ///
   /// For streamed content, a plain [AudioSource.uri] is used instead of
-  /// [LockCachingAudioSource] to avoid ExoPlayer [SimpleCache] lock conflicts
+  /// LockCachingAudioSource to avoid ExoPlayer SimpleCache lock conflicts
   /// between the primary and secondary players sharing the same URL. Background
   /// stream-to-disk caching is still initiated so subsequent plays are fast.
   Future<AudioSource> resolveToAudioSourceForCrossfade(Song song) async {

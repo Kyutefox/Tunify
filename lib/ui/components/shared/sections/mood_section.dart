@@ -8,6 +8,7 @@ import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
 import '../../ui/widgets/mood_browse_sheet.dart';
 import '../../ui/widgets/section_header.dart';
+import '../../../../ui/layout/shell_context.dart';
 
 /// Mood section: moods and genres from the main home feed API.
 /// Shows skeleton while home is loading; uses [moodsProvider] when loaded.
@@ -54,16 +55,21 @@ class _MoodGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final columns = isDesktop ? 4 : 2;
+    final aspectRatio = isDesktop ? 3.5 : 3.0;
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      padding: EdgeInsets.symmetric(horizontal: hPad),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: columns,
           crossAxisSpacing: AppSpacing.md,
           mainAxisSpacing: AppSpacing.md,
-          childAspectRatio: 3.0,
+          childAspectRatio: aspectRatio,
         ),
         itemCount: visibleMoods.length,
         itemBuilder: (_, i) {
@@ -111,6 +117,11 @@ class _MoodSectionSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final columns = isDesktop ? 4 : 2;
+    final aspectRatio = isDesktop ? 3.5 : 3.0;
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -119,14 +130,14 @@ class _MoodSectionSkeleton extends StatelessWidget {
           useCompactStyle: true,
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+          padding: EdgeInsets.symmetric(horizontal: hPad),
           child: GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
+            crossAxisCount: columns,
             crossAxisSpacing: AppSpacing.md,
             mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: 3.0,
+            childAspectRatio: aspectRatio,
             children: List.generate(
               8,
               (_) => Container(

@@ -12,6 +12,7 @@ import '../../models/library_playlist.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/providers/library_provider.dart';
 import '../../system/bridges/database_repository.dart';
+import '../layout/shell_context.dart';
 import '../theme/app_colors.dart';
 import '../theme/design_tokens.dart';
 import '../../shared/utils/string_utils.dart';
@@ -189,6 +190,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           : null,
     );
 
+    final isDesktop = ShellContext.isDesktopOf(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -198,8 +201,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              appBar,
-              const SizedBox(height: AppSpacing.sm),
+              // Desktop sidebar handles the library header/filters — hide here.
+              if (!isDesktop) appBar,
+              if (!isDesktop) const SizedBox(height: AppSpacing.sm),
               Expanded(
                 child: ref.watch(currentUserProvider) != null
                     ? RefreshIndicator(
@@ -444,118 +448,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   void _onFolderOptions(LibraryFolder folder) {
     _unfocus();
-    showAppSheet(
-      context,
-      child: _LibraryFolderSheet(
-        folder: folder,
-        onTogglePin: () {
-          ref.read(libraryProvider.notifier).toggleFolderPin(folder.id);
-        },
-        onRename: () async {
-          final navigator = Navigator.of(context);
-          final newName = await navigator.push<String>(
-            MaterialPageRoute<String>(
-              builder: (_) => CreateLibraryItemScreen(
-                mode: CreateLibraryItemMode.renameFolder,
-                initialName: folder.name,
-              ),
-            ),
-          );
-          if (navigator.mounted) navigator.pop();
-          if (newName != null && newName.trim().isNotEmpty) {
-            ref.read(libraryProvider.notifier).renameFolder(
-                  folder.id,
-                  newName.trim(),
-                );
-          }
-        },
-        onDelete: () async {
-          final confirmed = await showConfirmDialog(
-            context,
-            title: 'Delete folder?',
-            message:
-                '${folder.name.capitalized} will be removed. Playlists inside will not be deleted.',
-            confirmLabel: 'Delete',
-          );
-          if (confirmed) {
-            ref.read(libraryProvider.notifier).deleteFolder(folder.id);
-          }
-        },
-      ),
-    );
+    showLibraryFolderOptionsSheet(context, ref, folder);
   }
 
   void _onPlaylistOptions(LibraryPlaylist playlist) {
     _unfocus();
-    showAppSheet(
-      context,
-      child: _LibraryPlaylistSheet(
-        playlist: playlist,
-        onTogglePin: () {
-          ref.read(libraryProvider.notifier).togglePlaylistPin(playlist.id);
-        },
-        onDelete: () async {
-          final confirmed = await showConfirmDialog(
-            context,
-            title: 'Delete playlist?',
-            message:
-                '${playlist.name.capitalized} will be removed from your library.',
-            confirmLabel: 'Delete',
-          );
-          if (confirmed) {
-            await ref
-                .read(libraryProvider.notifier)
-                .deletePlaylist(playlist.id);
-          }
-        },
-        onAddToFolder: () async {
-          final navigator = Navigator.of(context);
-          await _showAddToFolderSheet(playlist.id);
-          if (navigator.mounted) navigator.pop();
-        },
-      ),
-    );
-  }
-
-  Future<void> _showAddToFolderSheet(String playlistId) async {
-    _unfocus();
-    final folders = ref.read(libraryFoldersProvider);
-    if (folders.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Create a folder from the menu first'),
-        ),
-      );
-      return;
-    }
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      isDismissible: true,
-      enableDrag: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => AppDraggableSheet(
-        initialChildSize: 0.5,
-        minChildSize: 0.35,
-        maxChildSize: 0.92,
-        builder: (scrollController) => _AddToFolderSheet(
-          folders: folders,
-          playlistId: playlistId,
-          scrollController: scrollController,
-          onToggle: (folderId, add) {
-            if (add) {
-              ref
-                  .read(libraryProvider.notifier)
-                  .addPlaylistToFolder(folderId, playlistId);
-            } else {
-              ref
-                  .read(libraryProvider.notifier)
-                  .removePlaylistFromFolder(folderId, playlistId);
-            }
-          },
-        ),
-      ),
-    );
+    showLibraryPlaylistOptionsSheet(context, ref, playlist);
   }
 }
 
@@ -1109,8 +1007,138 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
   }
 }
 
-class _LibraryPlaylistSheet extends StatelessWidget {
-  const _LibraryPlaylistSheet({
+// ── Public sheet launchers — shared by LibraryScreen and DesktopSidebar ──────
+
+/// Shows the playlist options sheet (pin, add to folder, delete).
+/// Callable from any [ConsumerWidget] / [ConsumerState] that has a [WidgetRef].
+void showLibraryPlaylistOptionsSheet(
+  BuildContext context,
+  WidgetRef ref,
+  LibraryPlaylist playlist,
+) {
+  showAppSheet(
+    context,
+    child: LibraryPlaylistSheet(
+      playlist: playlist,
+      onTogglePin: () {
+        ref.read(libraryProvider.notifier).togglePlaylistPin(playlist.id);
+      },
+      onDelete: () async {
+        final confirmed = await showConfirmDialog(
+          context,
+          title: 'Delete playlist?',
+          message:
+              '${playlist.name.capitalized} will be removed from your library.',
+          confirmLabel: 'Delete',
+        );
+        if (confirmed) {
+          await ref.read(libraryProvider.notifier).deletePlaylist(playlist.id);
+        }
+      },
+      onAddToFolder: () async {
+        final navigator = Navigator.of(context);
+        await showAddToFolderSheet(context, ref, playlist.id);
+        if (navigator.mounted) navigator.pop();
+      },
+    ),
+  );
+}
+
+/// Shows the folder options sheet (pin, rename, delete).
+void showLibraryFolderOptionsSheet(
+  BuildContext context,
+  WidgetRef ref,
+  LibraryFolder folder,
+) {
+  showAppSheet(
+    context,
+    child: LibraryFolderSheet(
+      folder: folder,
+      onTogglePin: () {
+        ref.read(libraryProvider.notifier).toggleFolderPin(folder.id);
+      },
+      onRename: () async {
+        final navigator = Navigator.of(context);
+        final newName = await navigator.push<String>(
+          MaterialPageRoute<String>(
+            builder: (_) => CreateLibraryItemScreen(
+              mode: CreateLibraryItemMode.renameFolder,
+              initialName: folder.name,
+            ),
+          ),
+        );
+        if (navigator.mounted) navigator.pop();
+        if (newName != null && newName.trim().isNotEmpty) {
+          ref.read(libraryProvider.notifier).renameFolder(
+                folder.id,
+                newName.trim(),
+              );
+        }
+      },
+      onDelete: () async {
+        final confirmed = await showConfirmDialog(
+          context,
+          title: 'Delete folder?',
+          message:
+              '${folder.name.capitalized} will be removed. Playlists inside will not be deleted.',
+          confirmLabel: 'Delete',
+        );
+        if (confirmed) {
+          ref.read(libraryProvider.notifier).deleteFolder(folder.id);
+        }
+      },
+    ),
+  );
+}
+
+/// Shows the add-to-folder picker sheet for a playlist.
+Future<void> showAddToFolderSheet(
+  BuildContext context,
+  WidgetRef ref,
+  String playlistId,
+) async {
+  final folders = ref.read(libraryFoldersProvider);
+  if (folders.isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Create a folder from the menu first')),
+    );
+    return;
+  }
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    isDismissible: true,
+    enableDrag: true,
+    backgroundColor: Colors.transparent,
+    builder: (_) => AppDraggableSheet(
+      initialChildSize: 0.5,
+      minChildSize: 0.35,
+      maxChildSize: 0.92,
+      builder: (scrollController) => _AddToFolderSheet(
+        folders: folders,
+        playlistId: playlistId,
+        scrollController: scrollController,
+        onToggle: (folderId, add) {
+          if (add) {
+            ref
+                .read(libraryProvider.notifier)
+                .addPlaylistToFolder(folderId, playlistId);
+          } else {
+            ref
+                .read(libraryProvider.notifier)
+                .removePlaylistFromFolder(folderId, playlistId);
+          }
+        },
+      ),
+    ),
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+class LibraryPlaylistSheet extends StatelessWidget {
+  const LibraryPlaylistSheet({
+    super.key,
     required this.playlist,
     required this.onDelete,
     required this.onAddToFolder,
@@ -1163,8 +1191,9 @@ class _LibraryPlaylistSheet extends StatelessWidget {
   }
 }
 
-class _LibraryFolderSheet extends StatelessWidget {
-  const _LibraryFolderSheet({
+class LibraryFolderSheet extends StatelessWidget {
+  const LibraryFolderSheet({
+    super.key,
     required this.folder,
     required this.onTogglePin,
     required this.onRename,

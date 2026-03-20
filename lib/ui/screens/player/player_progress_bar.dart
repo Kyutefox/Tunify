@@ -4,7 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/providers/player_state_provider.dart';
 
 class PlayerProgressBar extends ConsumerStatefulWidget {
-  const PlayerProgressBar({super.key});
+  const PlayerProgressBar({super.key, this.compact = false});
+
+  /// When true, uses a slimmer track and smaller thumb — suited for the
+  /// desktop player bar where vertical space is limited.
+  final bool compact;
 
   @override
   ConsumerState<PlayerProgressBar> createState() => _PlayerProgressBarState();
@@ -26,8 +30,11 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
     final position = ref.watch(playerProvider.select((s) => s.position));
     final duration = ref.watch(playerProvider.select((s) => s.duration));
     final safeDuration = duration ?? Duration.zero;
+    final durationKnown = duration != null && duration.inMilliseconds > 0;
     final displayProgress =
         _isDragging ? _dragValue : progress.clamp(0.0, 1.0);
+
+    final compact = widget.compact;
 
     return Column(
       children: [
@@ -37,9 +44,11 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
             inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
             thumbColor: Colors.white,
             overlayColor: Colors.white.withValues(alpha: 0.08),
-            trackHeight: 4,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-            overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+            trackHeight: compact ? 3 : 4,
+            thumbShape: RoundSliderThumbShape(
+                enabledThumbRadius: compact ? 6 : 7),
+            overlayShape: RoundSliderOverlayShape(
+                overlayRadius: compact ? 12 : 16),
           ),
           child: Slider(
             value: displayProgress,
@@ -79,7 +88,7 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
                 ),
               ),
               Text(
-                _fmt(safeDuration),
+                durationKnown ? _fmt(safeDuration) : '--:--',
                 style: const TextStyle(
                   color: Color(0x80FFFFFF),
                   fontSize: 12,

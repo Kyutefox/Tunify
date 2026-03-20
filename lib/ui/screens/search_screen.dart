@@ -206,7 +206,7 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
       },
       hintText: 'Search songs, artists, and more',
       autofocus: true,
-      body: _SearchResultsBody(
+      body: SearchResultsBody(
         onOpenPlayer: _openPlayer,
         inlineSuggestions: _suggestions.take(4).toList(),
         inlineSuggestionsForQuery: _suggestionsForQuery,
@@ -247,8 +247,9 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
   }
 }
 
-class _SearchResultsBody extends ConsumerWidget {
-  const _SearchResultsBody({
+class SearchResultsBody extends ConsumerWidget {
+  const SearchResultsBody({
+    super.key,
     required this.onOpenPlayer,
     this.onRecentQueryTap,
     this.inlineSuggestions = const [],
@@ -297,7 +298,7 @@ class _SearchResultsBody extends ConsumerWidget {
           key: const ValueKey('initial'),
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _RecentSearchSection(
+            RecentSearchSection(
               compact: true,
               onQueryTap: onRecentQueryTap,
             ),
@@ -439,7 +440,7 @@ class _SearchMoodGrid extends ConsumerWidget {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(bottom: AppSpacing.max),
       children: [
-        const _RecentSearchSection(),
+        const RecentSearchSection(),
         RecentlyPlayedSection(
           onPlay: (song) => ref
               .read(playerProvider.notifier)
@@ -451,8 +452,9 @@ class _SearchMoodGrid extends ConsumerWidget {
   }
 }
 
-class _RecentSearchSection extends ConsumerWidget {
-  const _RecentSearchSection({
+class RecentSearchSection extends ConsumerWidget {
+  const RecentSearchSection({
+    super.key,
     this.compact = false,
     this.onQueryTap,
   });

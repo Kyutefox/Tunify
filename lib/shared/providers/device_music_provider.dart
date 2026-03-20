@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:on_audio_query_pluse/on_audio_query.dart';
@@ -58,6 +60,13 @@ class DeviceMusicNotifier extends StateNotifier<DeviceMusicState> {
   DeviceMusicNotifier() : super(const DeviceMusicState());
 
   Future<void> loadSongs() async {
+    // Device music scanning requires Android MediaStore (on_audio_query_pluse).
+    // macOS and other desktop platforms have no equivalent API.
+    if (!Platform.isAndroid) {
+      state = state.copyWith(isLoading: false, hasPermission: false);
+      return;
+    }
+
     if (state.isLoading) return;
     state = state.copyWith(isLoading: true, clearError: true);
 

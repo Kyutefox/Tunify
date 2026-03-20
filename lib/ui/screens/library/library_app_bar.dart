@@ -1,6 +1,6 @@
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/material.dart';
 
+import '../../components/shared/library_filter_chips.dart';
 import '../../components/ui/button.dart';
 import '../../components/ui/sheet.dart';
 import '../../components/ui/widgets/widgets.dart';
@@ -35,9 +35,6 @@ extension LibraryFilterX on LibraryFilter {
 }
 
 enum DownloadedSource { library, device }
-
-/// Approximate width of the clear (X) chip + padding so slot can shrink in sync with X exit.
-const double _clearChipSlotWidth = 44;
 
 class LibraryAppBar extends StatefulWidget {
   const LibraryAppBar({
@@ -79,130 +76,64 @@ class LibraryAppBar extends StatefulWidget {
   State<LibraryAppBar> createState() => _LibraryAppBarState();
 }
 
-class _LibraryAppBarState extends State<LibraryAppBar>
-    with SingleTickerProviderStateMixin {
-  static const double _sortGridIconSize = 18;
-  static const Duration _chipTransitionDuration =
-      Duration(milliseconds: 320);
-
-  late final AnimationController _exitController = AnimationController(
-    vsync: this,
-    duration: _chipTransitionDuration,
-  );
-  LibraryFilter? _exitingFilter;
-
-  @override
-  void initState() {
-    super.initState();
-    _exitController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _exitingFilter = null);
-        });
-      }
-    });
-  }
-
-  @override
-  void didUpdateWidget(LibraryAppBar oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.selectedFilter != null && widget.selectedFilter == null) {
-      _exitingFilter = oldWidget.selectedFilter;
-      _exitController.forward(from: 0);
-    }
-  }
-
-  @override
-  void dispose() {
-    _exitController.dispose();
-    super.dispose();
-  }
-
-  static Widget _slideTransition(Widget child, Animation<double> animation) {
-    final curved = CurvedAnimation(
-      parent: animation,
-      curve: Curves.easeInOutCubic,
-      reverseCurve: Curves.easeInOutCubic,
-    );
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(-0.35, 0),
-        end: Offset.zero,
-      ).animate(curved),
-      child: FadeTransition(
-        opacity: Tween<double>(begin: 0, end: 1).animate(curved),
-        child: child,
-      ),
-    );
-  }
-
-  static Widget _chipLayoutBuilder(
-    Widget? currentChild,
-    List<Widget> previousChildren,
-  ) {
-    return Stack(
-      alignment: Alignment.centerLeft,
-      clipBehavior: Clip.none,
-      children: <Widget>[
-        ...previousChildren,
-        if (currentChild != null) currentChild,
-      ],
-    );
-  }
-
-  static void _showSortSheet(
-    BuildContext context,
-    LibrarySortOrder current,
-    ValueChanged<LibrarySortOrder> onSelected,
-  ) {
-    showAppSheet(
-      context,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.sm),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Sort by',
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                ),
+/// Shows the library sort-order bottom sheet.
+/// Shared between [LibraryAppBar] (mobile) and the desktop sidebar.
+void showLibrarySortSheet(
+  BuildContext context,
+  LibrarySortOrder current,
+  ValueChanged<LibrarySortOrder> onSelected,
+) {
+  showAppSheet(
+    context,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.sm),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Sort by',
+              style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
-          _SortOption(
-            label: LibrarySortOrder.recent.label,
-            selected: current == LibrarySortOrder.recent,
-            onTap: () {
-              Navigator.pop(context);
-              onSelected(LibrarySortOrder.recent);
-            },
-          ),
-          _SortOption(
-            label: LibrarySortOrder.recentlyAdded.label,
-            selected: current == LibrarySortOrder.recentlyAdded,
-            onTap: () {
-              Navigator.pop(context);
-              onSelected(LibrarySortOrder.recentlyAdded);
-            },
-          ),
-          _SortOption(
-            label: LibrarySortOrder.alphabetical.label,
-            selected: current == LibrarySortOrder.alphabetical,
-            onTap: () {
-              Navigator.pop(context);
-              onSelected(LibrarySortOrder.alphabetical);
-            },
-          ),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-      ),
-    );
-  }
+        ),
+        _SortOption(
+          label: LibrarySortOrder.recent.label,
+          selected: current == LibrarySortOrder.recent,
+          onTap: () {
+            Navigator.pop(context);
+            onSelected(LibrarySortOrder.recent);
+          },
+        ),
+        _SortOption(
+          label: LibrarySortOrder.recentlyAdded.label,
+          selected: current == LibrarySortOrder.recentlyAdded,
+          onTap: () {
+            Navigator.pop(context);
+            onSelected(LibrarySortOrder.recentlyAdded);
+          },
+        ),
+        _SortOption(
+          label: LibrarySortOrder.alphabetical.label,
+          selected: current == LibrarySortOrder.alphabetical,
+          onTap: () {
+            Navigator.pop(context);
+            onSelected(LibrarySortOrder.alphabetical);
+          },
+        ),
+        const SizedBox(height: AppSpacing.lg),
+      ],
+    ),
+  );
+}
+
+class _LibraryAppBarState extends State<LibraryAppBar> {
+  static const double _sortGridIconSize = 18;
 
   Widget _buildHeaderContent() {
     return Padding(
@@ -247,162 +178,11 @@ class _LibraryAppBarState extends State<LibraryAppBar>
               ],
             ),
             const SizedBox(height: AppSpacing.md),
-            AnimatedSwitcher(
-              duration: _chipTransitionDuration,
-              switchInCurve: Curves.easeInOutCubic,
-              switchOutCurve: Curves.easeInOutCubic,
-              transitionBuilder: _slideTransition,
-              layoutBuilder: _chipLayoutBuilder,
-              child: widget.folderName != null && widget.onExitFolder != null
-                  ? SingleChildScrollView(
-                      key: const ValueKey('folder-row'),
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Padding(
-                            padding: const EdgeInsets.only(
-                                right: AppSpacing.sm),
-                            child: _LibraryChip(
-                              selected: true,
-                              onTap: widget.onExitFolder!,
-                              child: AppIcon(
-                                icon: AppIcons.close,
-                                size: 14,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                          ),
-                          _LibraryChip(
-                            selected: true,
-                            onTap: widget.onExitFolder!,
-                            child: Text(
-                              widget.folderName!,
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
-                      ),
-                    )
-                  : SingleChildScrollView(
-                      key: const ValueKey('filter-row'),
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          _exitingFilter != null
-                              ? AnimatedBuilder(
-                                  animation: _exitController,
-                                  builder: (context, _) {
-                                    final t = Curves.easeInOutCubic
-                                        .transform(_exitController.value);
-                                    final slotWidth =
-                                        _clearChipSlotWidth * (1 - t);
-                                    return SizedBox(
-                                      width: slotWidth.clamp(0.0, double.infinity),
-                                      child: ClipRect(
-                                        child: Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: SlideTransition(
-                                            position: Tween<Offset>(
-                                              begin: Offset.zero,
-                                              end: const Offset(-1, 0),
-                                            ).animate(
-                                              CurvedAnimation(
-                                                parent: _exitController,
-                                                curve: Curves.easeInOutCubic,
-                                              ),
-                                            ),
-                                            child: FadeTransition(
-                                              opacity: Tween<double>(
-                                                begin: 1,
-                                                end: 0,
-                                              ).animate(
-                                                CurvedAnimation(
-                                                  parent: _exitController,
-                                                  curve: Curves.easeInOutCubic,
-                                                ),
-                                              ),
-                                              child: Padding(
-                                                padding: const EdgeInsets.only(
-                                                    right: AppSpacing.sm),
-                                                child: _LibraryChip(
-                                                  selected: true,
-                                                  onTap: () {},
-                                                  child: AppIcon(
-                                                    icon: AppIcons.close,
-                                                    size: 14,
-                                                    color: AppColors.primary,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                )
-                              : widget.selectedFilter != null
-                                  ? Padding(
-                                      key: const ValueKey('clear-chip'),
-                                      padding: const EdgeInsets.only(
-                                          right: AppSpacing.sm),
-                                      child: _LibraryChip(
-                                        selected: true,
-                                        onTap: () =>
-                                            widget.onFilterChanged(null),
-                                        child: AppIcon(
-                                          icon: AppIcons.close,
-                                          size: 14,
-                                          color: AppColors.primary,
-                                        ),
-                                      ),
-                                    )
-                                  : const SizedBox(
-                                      key: ValueKey('no-clear-chip'),
-                                      width: 0,
-                                    ),
-                          ...LibraryFilter.values
-                              .where((f) => f != LibraryFilter.all)
-                              .map((filter) {
-                            final selected =
-                                widget.selectedFilter == filter;
-                            return Padding(
-                              padding: EdgeInsets.only(
-                                right: filter !=
-                                        LibraryFilter.downloaded
-                                    ? AppSpacing.sm
-                                    : 0,
-                              ),
-                              child: _LibraryChip(
-                                selected: selected,
-                                onTap: () =>
-                                    widget.onFilterChanged(filter),
-                                child: Text(
-                                  filter.label,
-                                  style: TextStyle(
-                                    color: selected
-                                        ? AppColors.primary
-                                        : AppColors.textSecondary,
-                                    fontSize: 13,
-                                    fontWeight: selected
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
+            LibraryFilterChips(
+              selectedFilter: widget.selectedFilter,
+              onFilterChanged: widget.onFilterChanged,
+              folderName: widget.folderName,
+              onExitFolder: widget.onExitFolder,
             ),
             const SizedBox(height: AppSpacing.md),
             Row(
@@ -410,7 +190,7 @@ class _LibraryAppBarState extends State<LibraryAppBar>
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: () => _showSortSheet(context, widget.sortOrder, widget.onSortChanged),
+                    onTap: () => showLibrarySortSheet(context, widget.sortOrder, widget.onSortChanged),
                     borderRadius: BorderRadius.circular(8),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
@@ -598,44 +378,3 @@ class _Segment extends StatelessWidget {
   }
 }
 
-/// Reusable filter/folder chip: same size and style as library filter chips.
-class _LibraryChip extends StatelessWidget {
-  const _LibraryChip({
-    required this.selected,
-    required this.onTap,
-    required this.child,
-  });
-
-  final bool selected;
-  final VoidCallback onTap;
-  final Widget child;
-
-  static const double _height = 32;
-  static const double _radius = 8;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(_radius),
-        child: Container(
-          height: _height,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary.withValues(alpha: 0.2)
-                : AppColors.surfaceLight.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(_radius),
-            border: selected
-                ? Border.all(color: AppColors.primary, width: 1)
-                : null,
-          ),
-          child: child,
-        ),
-      ),
-    );
-  }
-}

@@ -47,12 +47,12 @@ class StreamCacheService {
   Future<String?> getCacheFilePath(String songId) async {
     if (songId.isEmpty) return null;
     final dir = await _getCacheDir();
-    // On iOS, only serve m4a (AAC) cached files — AVPlayer cannot decode
-    // opus/webm, so .audio/.opus/.webm files written on Android would cause
-    // a -11828 "Cannot Open" error. Those files are skipped and the URL path
-    // is used instead, which fetches an AAC stream via preferAac.
-    final extensions =
-        Platform.isIOS ? ['m4a'] : ['audio', 'opus', 'webm', 'm4a'];
+    // iOS and macOS use AVPlayer (AVFoundation), which cannot decode opus/webm.
+    // Only serve m4a (AAC) cached files on Apple platforms — other formats would
+    // cause a -11828 "Cannot Open" error. Android ExoPlayer handles all formats.
+    final extensions = (Platform.isIOS || Platform.isMacOS)
+        ? ['m4a']
+        : ['audio', 'opus', 'webm', 'm4a'];
     for (final ext in extensions) {
       final path = join(dir, '$songId.$ext');
       final file = File(path);

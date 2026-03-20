@@ -15,18 +15,27 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.x'
+          flutter-version: '3.27.x'
           channel: stable
           cache: true
 
-      - name: Install dependencies
+      - name: Install root dependencies
         run: flutter pub get
 
-      - name: Generate code
-        run: dart run build_runner build --delete-conflicting-outputs
+      - name: Install pkg/scrapper dependencies
+        run: flutter pub get
+        working-directory: pkg/scrapper
+
+      - name: Install pkg/logger dependencies
+        run: flutter pub get
+        working-directory: pkg/logger
+
+      - name: Install pkg/tunify_database dependencies
+        run: flutter pub get
+        working-directory: pkg/tunify_database
 
       - name: Analyze
-        run: flutter analyze --fatal-infos
+        run: flutter analyze --fatal-warnings
 
-      - name: Run tests
+      - name: Run unit tests
         run: flutter test

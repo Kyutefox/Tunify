@@ -59,7 +59,7 @@ class _LibrarySearchScreenState extends ConsumerState<LibrarySearchScreen> {
       onClear: () => setState(() {}),
       hintText: 'Search in Library',
       autofocus: false,
-      body: _LibrarySearchBody(query: _controller.text.trim().toLowerCase()),
+      body: LibrarySearchBody(query: _controller.text.trim().toLowerCase()),
     );
     if (!hasSong) return searchPage;
     return Scaffold(
@@ -80,10 +80,22 @@ class _LibrarySearchScreenState extends ConsumerState<LibrarySearchScreen> {
   }
 }
 
-class _LibrarySearchBody extends ConsumerWidget {
-  const _LibrarySearchBody({required this.query});
+/// Shared search results body used by both [LibrarySearchScreen] (mobile,
+/// full-screen) and the desktop sidebar search panel.
+///
+/// When [onFolderTap] / [onPlaylistTap] are null the widget falls back to
+/// the mobile navigator pattern (pop with folder-id / pop then push playlist).
+class LibrarySearchBody extends ConsumerWidget {
+  const LibrarySearchBody({
+    super.key,
+    required this.query,
+    this.onFolderTap,
+    this.onPlaylistTap,
+  });
 
   final String query;
+  final void Function(LibraryFolder)? onFolderTap;
+  final void Function(LibraryPlaylist)? onPlaylistTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -150,7 +162,9 @@ class _LibrarySearchBody extends ConsumerWidget {
           ),
           ...filteredFolders.map((folder) => _FolderTile(
                 folder: folder,
-                onTap: () => Navigator.of(context).pop(folder.id),
+                onTap: onFolderTap != null
+                    ? () => onFolderTap!(folder)
+                    : () => Navigator.of(context).pop(folder.id),
               )),
           const SizedBox(height: AppSpacing.lg),
         ],
@@ -172,21 +186,22 @@ class _LibrarySearchBody extends ConsumerWidget {
           ),
           ...filteredPlaylists.map((playlist) => _PlaylistTile(
                 playlist: playlist,
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.of(context).push(
-                    MaterialPageRoute<void>(
-                      builder: (_) =>
-                          LibraryPlaylistScreen(playlistId: playlist.id),
-                    ),
-                  );
-                },
+                onTap: onPlaylistTap != null
+                    ? () => onPlaylistTap!(playlist)
+                    : () {
+                        Navigator.pop(context);
+                        Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) =>
+                                LibraryPlaylistScreen(playlistId: playlist.id),
+                          ),
+                        );
+                      },
               )),
         ],
       ],
     );
   }
-
 }
 
 class _FolderTile extends StatelessWidget {

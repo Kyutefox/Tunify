@@ -15,6 +15,7 @@ import '../../theme/design_tokens.dart';
 
 import '../../components/ui/widgets/mood_browse_sheet.dart';
 import '../../components/ui/widgets/now_playing_indicator.dart';
+import '../../layout/shell_context.dart';
 import 'home_shared.dart';
 
 class RecentlyPlayedRow extends StatelessWidget {
@@ -143,23 +144,27 @@ class QuickPicksRow extends StatelessWidget {
   final void Function(Song song) onPlay;
 
   static const int _perColumn = 4;
-  static const double _tileH = 64;
-  static const double _gap = AppSpacing.sm;
-  static const double _listH = _tileH * _perColumn + _gap * (_perColumn - 1);
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final tileH = isDesktop ? 76.0 : 64.0;
+    final tileW = isDesktop ? 264.0 : 220.0;
+    const gap = AppSpacing.sm;
+    final listH = tileH * _perColumn + gap * (_perColumn - 1);
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+
     final capped = songs.take(20).toList();
     final columns = <List<Song>>[];
     for (var i = 0; i < capped.length; i += _perColumn) {
       columns.add(capped.sublist(i, (i + _perColumn).clamp(0, capped.length)));
     }
     return SizedBox(
-      height: _listH,
+      height: listH,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+        padding: EdgeInsets.symmetric(horizontal: hPad),
         addRepaintBoundaries: false,
         addAutomaticKeepAlives: false,
         itemCount: columns.length,
@@ -171,11 +176,12 @@ class QuickPicksRow extends StatelessWidget {
             children: List.generate(col.length, (rowIdx) {
               return Padding(
                 padding: EdgeInsets.only(
-                  bottom: rowIdx < col.length - 1 ? _gap : 0,
+                  bottom: rowIdx < col.length - 1 ? gap : 0,
                 ),
                 child: QuickPickTile(
                   song: col[rowIdx],
-                  height: _tileH,
+                  height: tileH,
+                  width: tileW,
                   onTap: () => onPlay(col[rowIdx]),
                 ),
               );
@@ -193,10 +199,12 @@ class QuickPickTile extends ConsumerWidget {
     required this.song,
     required this.onTap,
     this.height = 64,
+    this.width = 220,
   });
   final Song song;
   final VoidCallback onTap;
   final double height;
+  final double width;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -208,7 +216,7 @@ class QuickPickTile extends ConsumerWidget {
       onTap: onTap,
       scale: 0.96,
       child: Container(
-        width: 220,
+        width: width,
         height: height,
         decoration: BoxDecoration(
           color: AppColors.surfaceLight,
@@ -301,25 +309,34 @@ class PlaylistsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final cardSize = isDesktop ? 176.0 : 148.0;
+    final rowHeight = cardSize + 48; // artwork + text labels
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+
     return SizedBox(
-      height: 196,
+      height: rowHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+        padding: EdgeInsets.symmetric(horizontal: hPad),
         addRepaintBoundaries: false,
         addAutomaticKeepAlives: false,
         itemCount: playlists.take(6).length,
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (ctx, i) => BrowsePlaylistCard(playlist: playlists[i]),
+        itemBuilder: (ctx, i) => BrowsePlaylistCard(
+          playlist: playlists[i],
+          size: cardSize,
+        ),
       ),
     );
   }
 }
 
 class BrowsePlaylistCard extends ConsumerStatefulWidget {
-  const BrowsePlaylistCard({super.key, required this.playlist});
+  const BrowsePlaylistCard({super.key, required this.playlist, this.size = 148});
   final Playlist playlist;
+  final double size;
 
   @override
   ConsumerState<BrowsePlaylistCard> createState() =>
@@ -361,11 +378,12 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
   @override
   Widget build(BuildContext context) {
     final playlist = widget.playlist;
+    final size = widget.size;
     return PressScale(
       onTap: _onTap,
       scale: 0.93,
       child: SizedBox(
-        width: 148,
+        width: size,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -376,14 +394,14 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
                   clipBehavior: Clip.hardEdge,
                   child: CachedNetworkImage(
                     imageUrl: playlist.coverUrl,
-                    width: 148,
-                    height: 148,
+                    width: size,
+                    height: size,
                     fit: BoxFit.cover,
                     fadeInDuration: Duration.zero,
                     fadeOutDuration: Duration.zero,
-                    memCacheWidth: cachePx(context, 148),
-                    memCacheHeight: cachePx(context, 148),
-                    errorWidget: (_, __, ___) => PlaceholderArt(size: 148),
+                    memCacheWidth: cachePx(context, size),
+                    memCacheHeight: cachePx(context, size),
+                    errorWidget: (_, __, ___) => PlaceholderArt(size: size),
                   ),
                 ),
                 if (_loading)
@@ -507,35 +525,45 @@ class ArtistsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final avatarSize = isDesktop ? 88.0 : 72.0;
+    final rowHeight = isDesktop ? 130.0 : 108.0;
+    final separator = isDesktop ? AppSpacing.xxl : AppSpacing.xl;
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+
     return SizedBox(
-      height: 108,
+      height: rowHeight,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+        padding: EdgeInsets.symmetric(horizontal: hPad),
         addRepaintBoundaries: false,
         addAutomaticKeepAlives: false,
         itemCount: artists.take(10).length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.xl),
-        itemBuilder: (ctx, i) => HomeArtistAvatar(artist: artists[i]),
+        separatorBuilder: (_, __) => SizedBox(width: separator),
+        itemBuilder: (ctx, i) => HomeArtistAvatar(
+          artist: artists[i],
+          size: avatarSize,
+        ),
       ),
     );
   }
 }
 
 class HomeArtistAvatar extends StatelessWidget {
-  const HomeArtistAvatar({super.key, required this.artist});
+  const HomeArtistAvatar({super.key, required this.artist, this.size = 72});
   final Artist artist;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 72,
+      width: size,
       child: Column(
         children: [
           Container(
-            width: 72,
-            height: 72,
+            width: size,
+            height: size,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(
@@ -550,14 +578,14 @@ class HomeArtistAvatar extends StatelessWidget {
                 fit: BoxFit.cover,
                 fadeInDuration: Duration.zero,
                 fadeOutDuration: Duration.zero,
-                memCacheWidth: cachePx(context, 72),
-                memCacheHeight: cachePx(context, 72),
+                memCacheWidth: cachePx(context, size),
+                memCacheHeight: cachePx(context, size),
                 errorWidget: (_, __, ___) => Container(
                   color: AppColors.surface,
                   child: AppIcon(
                     icon: AppIcons.person,
                     color: AppColors.textMuted,
-                    size: 32,
+                    size: size * 0.44,
                   ),
                 ),
               ),

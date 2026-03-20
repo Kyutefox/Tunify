@@ -364,69 +364,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     );
   }
 
-  void _showQueueSheet() {
-    showAppDraggableSheet(
-      context,
-      initialChildSize: 0.55,
-      minChildSize: 0.3,
-      maxChildSize: 0.85,
-      builder: (scrollController) =>
-          _QueueSheetContent(scrollController: scrollController),
-    );
-  }
-
-  void _showLyricsSheet() {
-    showAppDraggableSheet(
-      context,
-      initialChildSize: 0.6,
-      minChildSize: 0.3,
-      maxChildSize: 0.9,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            _dominantColor.withValues(alpha: 0.15),
-            AppColors.surface,
-            AppColors.surface,
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          stops: const [0, 0.3, 1],
-        ),
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(AppRadius.xxl),
-        ),
-        border: Border(
-          top: BorderSide(
-            color: Colors.white.withValues(alpha: 0.08),
-            width: 1,
-          ),
-        ),
-      ),
-      builder: (scrollController) => _LyricsSheetContent(
-        dominantColor: _dominantColor,
-        scrollController: scrollController,
-      ),
-    );
-  }
-
-  void _showDevicesSheet() {
-    showAppDraggableSheet(
-      context,
-      initialChildSize: 0.50,
-      minChildSize: 0.30,
-      maxChildSize: 0.85,
-      builder: (scrollController) =>
-          _DevicesSheetContent(scrollController: scrollController),
-    );
-  }
-
-  void _showSleepTimerSheet() {
-    showAppSheet(
-      context,
-      maxHeight: 440,
-      child: const _SleepTimerSheetContent(),
-    );
-  }
+  void _showQueueSheet() => showQueueSheet(context);
+  void _showLyricsSheet() =>
+      showLyricsSheet(context, dominantColor: _dominantColor);
+  void _showDevicesSheet() => showDevicesSheet(context);
+  void _showSleepTimerSheet() => showSleepTimerSheet(context);
 
   Widget _buildExtraControls() {
     return Row(
@@ -444,6 +386,74 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     );
   }
 }
+
+// ── Public sheet launchers — shared by PlayerScreen and DesktopPlayerBar ──────
+
+void showQueueSheet(BuildContext context) {
+  showAppDraggableSheet(
+    context,
+    initialChildSize: 0.55,
+    minChildSize: 0.3,
+    maxChildSize: 0.85,
+    builder: (scrollController) =>
+        _QueueSheetContent(scrollController: scrollController),
+  );
+}
+
+void showLyricsSheet(
+  BuildContext context, {
+  Color dominantColor = AppColors.primary,
+}) {
+  showAppDraggableSheet(
+    context,
+    initialChildSize: 0.6,
+    minChildSize: 0.3,
+    maxChildSize: 0.9,
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [
+          dominantColor.withValues(alpha: 0.15),
+          AppColors.surface,
+          AppColors.surface,
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        stops: const [0, 0.3, 1],
+      ),
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(AppRadius.xxl),
+      ),
+      border: Border(
+        top: BorderSide(color: Colors.white.withValues(alpha: 0.08), width: 1),
+      ),
+    ),
+    builder: (scrollController) => _LyricsSheetContent(
+      dominantColor: dominantColor,
+      scrollController: scrollController,
+    ),
+  );
+}
+
+void showDevicesSheet(BuildContext context) {
+  showAppDraggableSheet(
+    context,
+    initialChildSize: 0.50,
+    minChildSize: 0.30,
+    maxChildSize: 0.85,
+    builder: (scrollController) =>
+        _DevicesSheetContent(scrollController: scrollController),
+  );
+}
+
+void showSleepTimerSheet(BuildContext context) {
+  showAppSheet(
+    context,
+    maxHeight: 440,
+    child: const _SleepTimerSheetContent(),
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 class _SleepTimerSheetContent extends ConsumerWidget {
   const _SleepTimerSheetContent();

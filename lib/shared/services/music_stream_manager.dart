@@ -327,7 +327,7 @@ class MusicStreamManager {
       final fetchT0 = apiSw.elapsedMilliseconds;
       final ytStream = await _ytDirect.streams.fetchBestAudioStream(
         videoId,
-        preferAac: Platform.isIOS,
+        preferAac: Platform.isIOS || Platform.isMacOS,
       );
       log('PlayFlow: getStreamUrl fetchBestAudioStream (youtube_explode_dart getManifest) done in ${apiSw.elapsedMilliseconds - fetchT0}ms', tag: 'PlayFlow');
       if (ytStream == null) {

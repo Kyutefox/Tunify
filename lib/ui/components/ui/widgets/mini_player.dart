@@ -5,6 +5,7 @@ import '../../../../config/app_icons.dart';
 import '../../../../models/song.dart';
 import '../../../../shared/providers/library_provider.dart';
 import '../../../../shared/providers/player_state_provider.dart';
+import '../../../../ui/layout/shell_context.dart';
 import '../../../../ui/screens/player_screen.dart';
 import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
@@ -50,6 +51,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
 
   @override
   Widget build(BuildContext context) {
+    // Desktop has its own DesktopPlayerBar — never show the mobile mini player.
+    if (ShellContext.isDesktopOf(context)) return const SizedBox.shrink();
+
     final song = ref.watch(currentSongProvider);
     if (song == null) return const SizedBox.shrink();
 

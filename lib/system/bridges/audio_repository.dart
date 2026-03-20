@@ -222,10 +222,11 @@ class AudioRepository {
       return AudioSource.file(r.path);
     }
     final s = r as ResolvedAudioSourceStream;
-    // On iOS, use a plain URI with no custom headers. AVURLAsset hangs when
-    // Origin/Referer headers are set (iOS HTTP stack treats them as restricted).
-    // YouTube m4a CDN URLs are signed and self-authenticating — no headers needed.
-    return Platform.isIOS
+    // On Apple platforms (iOS, macOS), use a plain URI with no custom headers.
+    // AVURLAsset hangs when Origin/Referer headers are set — the AVFoundation
+    // HTTP stack treats them as restricted. YouTube m4a CDN URLs are signed
+    // and self-authenticating, so no headers are needed.
+    return (Platform.isIOS || Platform.isMacOS)
         ? AudioSource.uri(Uri.parse(s.url))
         // ignore: experimental_member_use
         : LockCachingAudioSource(Uri.parse(s.url), headers: s.headers ?? {});

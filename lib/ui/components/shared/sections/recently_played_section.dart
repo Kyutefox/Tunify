@@ -10,6 +10,7 @@ import '../../../../ui/screens/home/recently_played_screen.dart';
 import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
 import '../../ui/widgets/section_header.dart';
+import '../../../../ui/layout/shell_context.dart';
 
 /// Reusable "Recently Played" section: header with "See all" opening [RecentlyPlayedScreen],
 /// and a horizontal list of song cards. Use on home and search from one source.
@@ -22,9 +23,6 @@ class RecentlyPlayedSection extends ConsumerWidget {
   final void Function(Song song) onPlay;
 
   static const int _maxVisible = 8;
-  static const double _rowHeight = 188;
-  static const double _cardWidth = 148;
-  static const double _thumbSize = 148;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,6 +31,11 @@ class RecentlyPlayedSection extends ConsumerWidget {
     if (recentlyPlayed.isEmpty) {
       return const SizedBox(height: AppSpacing.sm);
     }
+
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final cardSize = isDesktop ? 176.0 : 148.0;
+    final rowHeight = isDesktop ? 222.0 : 188.0;
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
 
     final visible = recentlyPlayed.take(_maxVisible).toList(growable: false);
 
@@ -53,17 +56,18 @@ class RecentlyPlayedSection extends ConsumerWidget {
           useCompactStyle: true,
         ),
         SizedBox(
-          height: _rowHeight,
+          height: rowHeight,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+            padding: EdgeInsets.symmetric(horizontal: hPad),
             itemCount: visible.length,
             separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
             itemBuilder: (_, i) {
               final song = visible[i];
               return _RecentSongCard(
                 song: song,
+                size: cardSize,
                 onTap: () {
                   HapticFeedback.lightImpact();
                   onPlay(song);
@@ -79,17 +83,21 @@ class RecentlyPlayedSection extends ConsumerWidget {
 }
 
 class _RecentSongCard extends StatelessWidget {
-  const _RecentSongCard({required this.song, required this.onTap});
+  const _RecentSongCard({
+    required this.song,
+    required this.onTap,
+    required this.size,
+  });
   final Song song;
   final VoidCallback onTap;
+  final double size;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: SizedBox(
-        width: RecentlyPlayedSection._cardWidth,
-        height: RecentlyPlayedSection._rowHeight,
+        width: size,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -97,17 +105,17 @@ class _RecentSongCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.md),
               child: CachedNetworkImage(
                 imageUrl: song.thumbnailUrl,
-                width: RecentlyPlayedSection._thumbSize,
-                height: RecentlyPlayedSection._thumbSize,
+                width: size,
+                height: size,
                 fit: BoxFit.cover,
                 placeholder: (_, __) => Container(
-                  width: RecentlyPlayedSection._thumbSize,
-                  height: RecentlyPlayedSection._thumbSize,
+                  width: size,
+                  height: size,
                   color: AppColors.surfaceLight,
                 ),
                 errorWidget: (_, __, ___) => Container(
-                  width: RecentlyPlayedSection._thumbSize,
-                  height: RecentlyPlayedSection._thumbSize,
+                  width: size,
+                  height: size,
                   color: AppColors.surfaceLight,
                   child: AppIcon(
                     icon: AppIcons.musicNote,

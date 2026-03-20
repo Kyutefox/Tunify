@@ -122,11 +122,11 @@ class AudioPlayerService {
     if (items.isEmpty) return;
     // Audio session must be configured before activating the native platform.
     await _audioSessionReady;
-    if (Platform.isIOS) {
-      // iOS: ConcatenatingAudioSource (AVQueuePlayer) hangs even with a single
-      // item because AVQueuePlayer preloads adjacent URLs concurrently. Use a
-      // plain setAudioSource (single AVPlayer) instead. Queue navigation is
-      // handled by reloading via setPlaylist for each song on iOS.
+    if (Platform.isIOS || Platform.isMacOS) {
+      // Apple platforms (iOS, macOS): ConcatenatingAudioSource (AVQueuePlayer)
+      // hangs even with a single item because AVQueuePlayer preloads adjacent
+      // URLs concurrently. Use a plain setAudioSource (single AVPlayer) instead.
+      // Queue navigation is handled by reloading via setPlaylist per song.
       await _player
           .setAudioSource(
             items[initialIndex],
@@ -135,7 +135,7 @@ class AudioPlayerService {
           .timeout(
             const Duration(seconds: 15),
             onTimeout: () =>
-                throw TimeoutException('setAudioSource timed out on iOS'),
+                throw TimeoutException('setAudioSource timed out on Apple platform'),
           );
     } else {
       await _player
@@ -177,9 +177,9 @@ class AudioPlayerService {
         ? headers
         : youtubePlaybackHeaders;
 
-    // On iOS, no custom headers — AVURLAsset hangs with Origin/Referer set.
-    // Signed YouTube URLs are self-authenticating and play without headers.
-    final audioSource = Platform.isIOS
+    // On Apple platforms (iOS, macOS), no custom headers — AVURLAsset hangs
+    // with Origin/Referer set. Signed YouTube URLs are self-authenticating.
+    final audioSource = (Platform.isIOS || Platform.isMacOS)
         ? AudioSource.uri(Uri.parse(url))
         // ignore: experimental_member_use
         : LockCachingAudioSource(Uri.parse(url), headers: requestHeaders);
@@ -292,11 +292,11 @@ class AudioPlayerService {
   /// Applies [gainDb] to the platform-specific normalization pipeline.
   ///
   /// Android: sets target gain on [AndroidLoudnessEnhancer].
-  /// iOS: maps dB to a linear volume scalar clamped to [0.05, 1.0] to avoid silence.
+  /// Apple (iOS/macOS): maps dB to a linear volume scalar clamped to [0.05, 1.0].
   Future<void> _applyNormalizationGain(double gainDb) async {
     if (Platform.isAndroid && _loudnessEnhancer != null) {
       await _loudnessEnhancer!.setTargetGain(gainDb);
-    } else if (Platform.isIOS) {
+    } else if (Platform.isIOS || Platform.isMacOS) {
       await _player.setVolume(
           (_dbToLinearVolume(gainDb) * _crossfadeVol).clamp(0.05, 1.0));
     }
@@ -314,7 +314,7 @@ class AudioPlayerService {
     if (Platform.isAndroid && _loudnessEnhancer != null) {
       await _loudnessEnhancer!.setEnabled(enabled);
       if (enabled) await _applyNormalizationGain(_normalizationGainDb);
-    } else if (Platform.isIOS) {
+    } else if (Platform.isIOS || Platform.isMacOS) {
       await _applyNormalizationGain(enabled ? _normalizationGainDb : 0.0);
     }
     logInfo(
@@ -325,12 +325,12 @@ class AudioPlayerService {
 
   /// Applies a crossfade volume multiplier (0.0–1.0) without affecting normalization.
   /// Android: sets player volume directly (normalization uses LoudnessEnhancer, not volume).
-  /// iOS: multiplies with the current normalization scalar so both work together.
+  /// Apple (iOS/macOS): multiplies with the current normalization scalar so both work together.
   Future<void> applyCrossfadeVolume(double vol) async {
     _crossfadeVol = vol.clamp(0.0, 1.0);
     if (Platform.isAndroid) {
       await _player.setVolume(_crossfadeVol);
-    } else if (Platform.isIOS) {
+    } else if (Platform.isIOS || Platform.isMacOS) {
       final normVol = _normalizationEnabled
           ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
           : 1.0;
@@ -349,7 +349,7 @@ class AudioPlayerService {
     _crossfadeVol = 1.0;
     if (Platform.isAndroid) {
       await _player.setVolume(1.0);
-    } else if (Platform.isIOS) {
+    } else if (Platform.isIOS || Platform.isMacOS) {
       final normVol = _normalizationEnabled
           ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
           : 1.0;

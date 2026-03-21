@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../config/app_icons.dart';
 import '../components/ui/button.dart';
 import '../../shared/providers/library_provider.dart';
+import '../../shared/providers/palette_provider.dart';
 import '../../shared/providers/player_state_provider.dart';
 import '../../shared/providers/sleep_timer_provider.dart';
 import '../screens/player/player_progress_bar.dart';
@@ -28,10 +29,25 @@ class DesktopPlayerBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasSong = ref.watch(currentSongProvider) != null;
+    final dominantColor = ref.watch(dominantColorProvider);
 
-    return Container(
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 600),
+      curve: Curves.easeOutCubic,
       height: 92,
-      color: AppColors.background,
+      decoration: BoxDecoration(
+        color: hasSong
+            ? Color.lerp(AppColors.background, dominantColor, 0.10)!
+            : AppColors.background,
+        border: Border(
+          top: BorderSide(
+            color: hasSong
+                ? dominantColor.withValues(alpha: 0.18)
+                : AppColors.glassBorder,
+            width: 0.5,
+          ),
+        ),
+      ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: hasSong
           ? const Row(

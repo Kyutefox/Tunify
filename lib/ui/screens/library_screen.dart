@@ -25,6 +25,7 @@ import 'library/library_downloaded_content.dart';
 import 'library/library_liked_songs_screen.dart';
 import 'library/library_search_screen.dart';
 import '../components/shared/adaptive_menu.dart';
+import '../components/shared/create_library_options.dart';
 import 'download_queue_sheet.dart';
 import 'player/album_page.dart';
 import 'player/artist_page.dart';
@@ -172,6 +173,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         }
       },
       onDownloadQueueTap: () => showDownloadQueueSheet(context),
+      onCreateTap: () => showCreateLibrarySheet(context, ref),
       selectedFilter: _filter,
       onFilterChanged: _onFilterChanged,
       downloadedSource: _filter == LibraryFilter.downloaded

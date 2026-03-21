@@ -114,7 +114,15 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar> {
   Widget build(BuildContext context) {
     return Container(
       height: 64,
-      color: AppColors.surface,
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.glassBorder,
+            width: 0.5,
+          ),
+        ),
+      ),
       child: Stack(
         children: [
           // ── Left: back/forward above sidebar | Right: avatar ─────────────

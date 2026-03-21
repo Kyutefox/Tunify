@@ -185,7 +185,15 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
     return SizedBox(
       width: kDesktopSidebarWidth,
       child: Container(
-        color: AppColors.surface,
+        decoration: BoxDecoration(
+          color: AppColors.background,
+          border: Border(
+            right: BorderSide(
+              color: AppColors.glassBorder,
+              width: 0.5,
+            ),
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

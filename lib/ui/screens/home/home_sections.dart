@@ -10,7 +10,6 @@ import '../../../models/playlist.dart';
 import '../../../models/song.dart';
 import '../../../shared/providers/content_settings_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
-import '../../../shared/providers/home_state_provider.dart';
 import '../../desktop/desktop_right_sidebar.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';

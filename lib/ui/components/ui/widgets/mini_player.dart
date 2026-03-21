@@ -2,8 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../config/app_icons.dart';
-import '../../../../models/song.dart';
-import '../../../../shared/providers/library_provider.dart';
+import '../../../../shared/providers/palette_provider.dart';
 import '../../../../shared/providers/player_state_provider.dart';
 import '../../../../ui/layout/shell_context.dart';
 import '../../../../ui/screens/player_screen.dart';
@@ -15,14 +14,23 @@ void openFullPlayerRoute(BuildContext context) {
   Navigator.of(context).push(
     PageRouteBuilder(
       opaque: true,
-      barrierColor: Colors.black87,
+      barrierColor: Colors.black,
       pageBuilder: (_, __, ___) => const PlayerScreen(),
-      transitionDuration: const Duration(milliseconds: 180),
-      reverseTransitionDuration: const Duration(milliseconds: 160),
+      transitionDuration: const Duration(milliseconds: 420),
+      reverseTransitionDuration: const Duration(milliseconds: 340),
       transitionsBuilder: (_, anim, __, child) {
+        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
         return FadeTransition(
-          opacity: CurvedAnimation(parent: anim, curve: Curves.easeOut),
-          child: child,
+          opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+            CurvedAnimation(parent: anim, curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
+          ),
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0, 0.06),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
         );
       },
     ),
@@ -60,6 +68,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
     final isPlaying = ref.watch(playerProvider.select((s) => s.isPlaying));
     final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
     final progress = ref.watch(playerProvider.select((s) => s.progress));
+    final dominantColor = ref.watch(dominantColorProvider);
 
     return GestureDetector(
       onTap: _openFullPlayer,
@@ -86,20 +95,28 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
           AppSpacing.sm,
           AppSpacing.sm,
         ),
-        child: Container(
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeOutCubic,
           height: 68,
           decoration: BoxDecoration(
-            color: AppColors.surfaceLight.withValues(alpha: 0.97),
+            color: Color.lerp(AppColors.surfaceLight, dominantColor, 0.18)!
+                .withValues(alpha: 0.97),
             borderRadius: BorderRadius.circular(AppRadius.xl),
             border: Border.all(
-              color: AppColors.glassBorder,
+              color: dominantColor.withValues(alpha: 0.20),
               width: 0.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 24,
-                offset: const Offset(0, 6),
+                color: dominantColor.withValues(alpha: 0.18),
+                blurRadius: 20,
+                offset: const Offset(0, 4),
+              ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.28),
+                blurRadius: 16,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
@@ -114,7 +131,33 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                   ),
                   child: Row(
                     children: [
-                      _AlbumThumb(url: song.thumbnailUrl),
+                      Hero(
+                        tag: 'player-album-art',
+                        flightShuttleBuilder: (_, anim, direction, __, ___) {
+                          final radius = Tween<double>(
+                            begin: direction == HeroFlightDirection.push
+                                ? AppRadius.md
+                                : 20.0,
+                            end: direction == HeroFlightDirection.push
+                                ? 20.0
+                                : AppRadius.md,
+                          ).animate(CurvedAnimation(
+                            parent: anim,
+                            curve: Curves.easeOutCubic,
+                          ));
+                          return AnimatedBuilder(
+                            animation: radius,
+                            builder: (_, __) => ClipRRect(
+                              borderRadius: BorderRadius.circular(radius.value),
+                              child: CachedNetworkImage(
+                                imageUrl: song.thumbnailUrl,
+                                fit: BoxFit.contain,
+                              ),
+                            ),
+                          );
+                        },
+                        child: _AlbumThumb(url: song.thumbnailUrl),
+                      ),
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
                         child: Column(
@@ -144,8 +187,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                           ],
                         ),
                       ),
-                      _MiniLikeButton(song: song),
-                      const SizedBox(width: AppSpacing.xs),
                       MiniPlayerPlayButton(
                         isPlaying: isPlaying,
                         isLoading: isLoading,
@@ -169,8 +210,8 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                       value: progress.clamp(0.0, 1.0),
                       minHeight: 3,
                       backgroundColor: Colors.white.withValues(alpha: 0.06),
-                      valueColor: const AlwaysStoppedAnimation<Color>(
-                        AppColors.primary,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        dominantColor,
                       ),
                     ),
                   ),
@@ -213,33 +254,6 @@ class _AlbumThumb extends StatelessWidget {
               size: 20,
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniLikeButton extends ConsumerWidget {
-  const _MiniLikeButton({required this.song});
-  final Song song;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isLiked = ref.watch(
-      libraryProvider.select((s) => s.likedSongIds.contains(song.id)),
-    );
-    return GestureDetector(
-      onTap: () {
-        ref.read(libraryProvider.notifier).toggleLiked(song);
-      },
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xs),
-        child: FavouriteIcon(
-          isLiked: isLiked,
-          songId: song.id,
-          size: 20,
-          emptyColor: AppColors.textSecondary,
         ),
       ),
     );

@@ -7,7 +7,6 @@ import '../../shared/providers/connectivity_provider.dart';
 import '../../shared/providers/home_state_provider.dart';
 import '../../shared/providers/player_state_provider.dart';
 import '../../shared/providers/search_provider.dart';
-import '../components/shared/create_library_options.dart';
 import '../components/ui/widgets/mini_player.dart';
 import '../layout/shell_context.dart';
 import '../screens/home_screen.dart';
@@ -35,7 +34,6 @@ class _MobileShellState extends ConsumerState<MobileShell> {
     AppIcons.home,
     AppIcons.search,
     AppIcons.library,
-    AppIcons.add,
   ];
 
   @override
@@ -97,17 +95,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
     );
   }
 
-  void _showCreateSheet() => showCreateLibrarySheet(context, ref);
-
   Widget _buildNavBar() {
-    const navToPage = [0, 1, 2, -1];
-    const pageToNav = [0, 1, 2];
-
-    final activeNavIndex =
-        _selectedIndex >= 0 && _selectedIndex < pageToNav.length
-            ? pageToNav[_selectedIndex]
-            : 0;
-
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Container(
@@ -119,34 +107,27 @@ class _MobileShellState extends ConsumerState<MobileShell> {
         ),
       ),
       child: Padding(
-        padding:
-            EdgeInsets.only(bottom: bottomPadding > 0 ? bottomPadding : 0),
+        padding: EdgeInsets.only(bottom: bottomPadding > 0 ? bottomPadding : 0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: List.generate(4, (i) {
-            final selected = activeNavIndex == i;
-            final isCreate = i == 3;
-
+          children: List.generate(3, (i) {
+            final selected = _selectedIndex == i;
             return Expanded(
-              child: isCreate
-                  ? _NavCreateButton(onTap: _showCreateSheet)
-                  : _NavItem(
-                      icon: _navIcons[i],
-                      selected: selected,
-                      onTap: () {
-                        final pageIndex = navToPage[i];
-                        if (pageIndex < 0) return;
-                        if (_selectedIndex == 1 && pageIndex != 1) {
-                          ref.read(searchProvider.notifier).search('');
-                        }
-                        final wasOnHome = _selectedIndex == 0;
-                        setState(() => _selectedIndex = pageIndex);
-                        if (pageIndex == 0 && !wasOnHome) {
-                          ref.read(homeProvider.notifier).refresh();
-                        }
-                      },
-                    ),
+              child: _NavItem(
+                icon: _navIcons[i],
+                selected: selected,
+                onTap: () {
+                  if (_selectedIndex == 1 && i != 1) {
+                    ref.read(searchProvider.notifier).search('');
+                  }
+                  final wasOnHome = _selectedIndex == 0;
+                  setState(() => _selectedIndex = i);
+                  if (i == 0 && !wasOnHome) {
+                    ref.read(homeProvider.notifier).refresh();
+                  }
+                },
+              ),
             );
           }),
         ),
@@ -235,49 +216,6 @@ class _NavItem extends StatelessWidget {
                     size: _iconSize,
                   ),
                 ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavCreateButton extends StatelessWidget {
-  const _NavCreateButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          splashColor: AppColors.primary.withValues(alpha: 0.3),
-          highlightColor: AppColors.primary.withValues(alpha: 0.2),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.35),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Center(
-              child: AppIcon(
-                icon: AppIcons.add,
-                color: AppColors.textPrimary,
-                size: 22,
               ),
             ),
           ),

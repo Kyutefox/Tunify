@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:palette_generator/palette_generator.dart';
 
 import '../../components/ui/sheet.dart' show showAppDraggableSheet, showAppSheet, kSheetHorizontalPadding;
 import '../../../config/app_icons.dart';
@@ -13,10 +12,10 @@ import '../../../shared/services/download_service.dart';
 import '../../../shared/providers/library_provider.dart';
 import '../../../models/lyrics_result.dart';
 import '../../../shared/providers/lyrics_provider.dart';
+import '../../../shared/providers/palette_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
 import '../../../shared/providers/sleep_timer_provider.dart';
 import '../../../shared/services/device_discovery_service.dart';
-import 'package:tunify_logger/tunify_logger.dart';
 import 'song_options_sheet.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
@@ -37,10 +36,6 @@ class PlayerScreen extends ConsumerStatefulWidget {
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen>
     with SingleTickerProviderStateMixin {
-  Color _dominantColor = AppColors.primary;
-  String? _lastExtractedUrl;
-  static const _paletteCacheMaxSize = 15;
-  final Map<String, Color> _paletteCache = {};
   double _dragDy = 0;
 
   late AnimationController _artScaleCtrl;
@@ -58,14 +53,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       CurvedAnimation(parent: _artScaleCtrl, curve: Curves.easeOutCubic),
     );
 
-    // Set up listeners immediately — no postFrameCallback delay needed.
     ref.listenManual(currentSongProvider, (_, next) {
-      if (next != null && next.thumbnailUrl != _lastExtractedUrl) {
-        _extractColor();
-      }
-      if (next != null) {
-        _fetchLyrics();
-      }
+      if (next != null) _fetchLyrics();
     });
     ref.listenManual(playerProvider.select((s) => s.isPlaying), (_, isPlaying) {
       if (isPlaying) {
@@ -74,10 +63,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         _artScaleCtrl.reverse();
       }
     });
-    // Run initial extraction after the first frame so the widget is fully mounted.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _extractColor();
       _fetchLyrics();
     });
   }
@@ -87,50 +74,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     if (song != null) {
       ref.read(lyricsProvider.notifier).fetchForVideo(song.id);
     }
-  }
-
-  Future<void> _extractColor() async {
-    final url = ref.read(currentSongProvider)?.thumbnailUrl;
-    if (url == null || url == _lastExtractedUrl) return;
-
-    final cached = _paletteCache[url];
-    if (cached != null) {
-      _lastExtractedUrl = url;
-      if (mounted && cached != _dominantColor) {
-        setState(() => _dominantColor = cached);
-      }
-      return;
-    }
-
-    _lastExtractedUrl = url;
-    try {
-      final gen = await PaletteGenerator.fromImageProvider(
-        CachedNetworkImageProvider(url),
-        size: const Size(200, 200),
-      );
-      final raw = gen.vibrantColor?.color ??
-          gen.lightVibrantColor?.color ??
-          gen.dominantColor?.color ??
-          AppColors.primary;
-      final color = _boostColor(raw);
-      _paletteCache[url] = color;
-      if (_paletteCache.length > _paletteCacheMaxSize) {
-        _paletteCache.remove(_paletteCache.keys.first);
-      }
-      if (mounted) setState(() => _dominantColor = color);
-    } catch (e) {
-      logWarning('PlayerScreen: _updateDominantColor failed: $e', tag: 'PlayerScreen');
-    }
-  }
-
-  /// Lifts a raw palette color so it reads well as a background tint.
-  /// Dark or desaturated album colors get pushed toward a vibrant mid-tone.
-  Color _boostColor(Color raw) {
-    final hsl = HSLColor.fromColor(raw);
-    return hsl
-        .withLightness((hsl.lightness + 0.12).clamp(0.32, 0.68))
-        .withSaturation((hsl.saturation + 0.15).clamp(0.0, 1.0))
-        .toColor();
   }
 
   @override
@@ -143,6 +86,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
   @override
   Widget build(BuildContext context) {
+    final dominantColor = ref.watch(dominantColorProvider);
+
     final song = ref.watch(playerProvider.select((s) => s.currentSong));
 
     if (song == null) {
@@ -174,7 +119,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               RepaintBoundary(
                 child: PlayerBlurredBackground(
                   url: song.thumbnailUrl,
-                  dominantColor: _dominantColor,
+                  dominantColor: dominantColor,
                 ),
               ),
               SafeArea(
@@ -186,17 +131,17 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       const SizedBox(height: 8),
                       _buildTopBar(),
                       const Spacer(flex: 2),
-                      _buildAlbumArt(song),
+                      _buildAlbumArt(song, dominantColor),
                       const Spacer(flex: 2),
                       _buildSongInfo(song),
                       const SizedBox(height: 28),
                       const RepaintBoundary(child: PlayerProgressBar()),
                       const SizedBox(height: 20),
                       RepaintBoundary(
-                        child: PlayerControls(dominantColor: _dominantColor),
+                        child: PlayerControls(dominantColor: dominantColor),
                       ),
                       const SizedBox(height: 28),
-                      _buildExtraControls(),
+                      _buildExtraControls(dominantColor),
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -208,7 +153,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       ),
     );
   }
-
   Widget _buildTopBar() {
     return Row(
       children: [
@@ -245,7 +189,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     );
   }
 
-  Widget _buildAlbumArt(Song song) {
+  Widget _buildAlbumArt(Song song, Color dominantColor) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final artSize = screenWidth - (AppSpacing.xl * 2) - 32;
     final cachePx = (artSize * MediaQuery.devicePixelRatioOf(context)).round();
@@ -263,44 +207,70 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             notifier.playPrevious();
           }
         },
-        child: Container(
-          width: artSize,
-          height: artSize,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(
-                color: _dominantColor.withValues(alpha: 0.35),
-                blurRadius: 50,
-                spreadRadius: 5,
-                offset: const Offset(0, 12),
+        child: Hero(
+          tag: 'player-album-art',
+          flightShuttleBuilder: (_, anim, direction, __, ___) {
+            final radius = Tween<double>(
+              begin: direction == HeroFlightDirection.push
+                  ? AppRadius.md
+                  : 20.0,
+              end: direction == HeroFlightDirection.push
+                  ? 20.0
+                  : AppRadius.md,
+            ).animate(CurvedAnimation(
+              parent: anim,
+              curve: Curves.easeOutCubic,
+            ));
+            return AnimatedBuilder(
+              animation: radius,
+              builder: (_, __) => ClipRRect(
+                borderRadius: BorderRadius.circular(radius.value),
+                child: CachedNetworkImage(
+                  imageUrl: song.thumbnailUrl,
+                  fit: BoxFit.contain,
+                ),
               ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.3),
-                blurRadius: 30,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(20),
-            child: Container(
-              color: Colors.black.withValues(alpha: 0.22),
-              child: CachedNetworkImage(
-                imageUrl: song.thumbnailUrl,
-                width: artSize,
-                height: artSize,
-                memCacheWidth: cachePx,
-                memCacheHeight: cachePx,
-                fit: BoxFit.contain,
-                errorWidget: (_, __, ___) => Container(
+            );
+          },
+          child: Container(
+            width: artSize,
+            height: artSize,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: dominantColor.withValues(alpha: 0.35),
+                  blurRadius: 50,
+                  spreadRadius: 5,
+                  offset: const Offset(0, 12),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.3),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                color: Colors.black.withValues(alpha: 0.22),
+                child: CachedNetworkImage(
+                  imageUrl: song.thumbnailUrl,
                   width: artSize,
                   height: artSize,
-                  color: AppColors.surfaceLight,
-                  child: AppIcon(
-                      icon: AppIcons.musicNote,
-                      color: AppColors.textMuted,
-                      size: 80),
+                  memCacheWidth: cachePx,
+                  memCacheHeight: cachePx,
+                  fit: BoxFit.contain,
+                  errorWidget: (_, __, ___) => Container(
+                    width: artSize,
+                    height: artSize,
+                    color: AppColors.surfaceLight,
+                    child: AppIcon(
+                        icon: AppIcons.musicNote,
+                        color: AppColors.textMuted,
+                        size: 80),
+                  ),
                 ),
               ),
             ),
@@ -366,19 +336,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   }
 
   void _showQueueSheet() => showQueueSheet(context);
-  void _showLyricsSheet() =>
-      showLyricsSheet(context, dominantColor: _dominantColor);
+  void _showLyricsSheet(Color dominantColor) =>
+      showLyricsSheet(context, dominantColor: dominantColor);
   void _showDevicesSheet() => showDevicesSheet(context);
   void _showSleepTimerSheet() => showSleepTimerSheet(context);
 
-  Widget _buildExtraControls() {
+  Widget _buildExtraControls(Color dominantColor) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
         PlayerExtraButton(
             icon: AppIcons.devices, label: 'Devices', onTap: _showDevicesSheet),
         PlayerExtraButton(
-            icon: AppIcons.lyrics, label: 'Lyrics', onTap: _showLyricsSheet),
+            icon: AppIcons.lyrics, label: 'Lyrics', onTap: () => _showLyricsSheet(dominantColor)),
         PlayerExtraButton(
             icon: AppIcons.queueMusic, label: 'Queue', onTap: _showQueueSheet),
         PlayerExtraButton(

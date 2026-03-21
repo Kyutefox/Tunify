@@ -262,7 +262,9 @@ class _DynamicSectionsSliceState extends ConsumerState<_DynamicSectionsSlice> {
 
   @override
   void dispose() {
-    for (final c in _controllers.values) c.dispose();
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 

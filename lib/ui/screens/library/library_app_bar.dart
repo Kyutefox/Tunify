@@ -41,6 +41,7 @@ class LibraryAppBar extends StatefulWidget {
     super.key,
     required this.onSearchTap,
     required this.onDownloadQueueTap,
+    required this.onCreateTap,
     required this.selectedFilter,
     required this.onFilterChanged,
     this.downloadedSource,
@@ -56,6 +57,7 @@ class LibraryAppBar extends StatefulWidget {
 
   final VoidCallback onSearchTap;
   final VoidCallback onDownloadQueueTap;
+  final VoidCallback onCreateTap;
   /// Null = no filter (main section). Non-null = that filter's section is shown.
   final LibraryFilter? selectedFilter;
   /// Pass null to clear filter and show main section.
@@ -133,6 +135,15 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                   tooltip: 'Download queue',
                   size: 40,
                   iconSize: 22,
+                ),
+                AppIconButton(
+                  icon: AppIcon(
+                    icon: AppIcons.add,
+                    size: 24,
+                    color: AppColors.textPrimary,
+                  ),
+                  onPressed: widget.onCreateTap,
+                  tooltip: 'Create playlist or folder',
                 ),
                 AppIconButton(
                   icon: AppIcon(

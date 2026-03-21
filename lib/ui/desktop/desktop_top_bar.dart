@@ -7,6 +7,7 @@ import '../../config/app_icons.dart';
 import '../../shared/providers/search_provider.dart';
 import '../components/shared/user_avatar_button.dart';
 import '../theme/app_colors.dart';
+import '../theme/design_tokens.dart';
 
 /// Full-width top bar spanning both sidebar and content area.
 ///
@@ -263,7 +264,7 @@ class _DesktopSearchBar extends StatelessWidget {
       height: 40,
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
           color: isActive
               ? Colors.white.withValues(alpha: 0.55)

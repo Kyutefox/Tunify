@@ -141,7 +141,7 @@ class AppSheet extends StatelessWidget {
               height: _handleHeight,
               decoration: BoxDecoration(
                 color: AppColors.textMuted.withValues(alpha: 0.4),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -214,7 +214,7 @@ class AppDraggableSheet extends StatelessWidget {
                   height: _handleHeight,
                   decoration: BoxDecoration(
                     color: AppColors.textMuted.withValues(alpha: 0.4),
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),

@@ -48,7 +48,7 @@ class DesktopPlayerBar extends ConsumerWidget {
           ),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
       child: hasSong
           ? const Row(
               crossAxisAlignment: CrossAxisAlignment.center,
@@ -88,7 +88,7 @@ class _SongInfo extends ConsumerWidget {
       children: [
         // Album art
         ClipRRect(
-          borderRadius: BorderRadius.circular(4),
+          borderRadius: BorderRadius.circular(AppRadius.xs),
           child: CachedNetworkImage(
             imageUrl: song.thumbnailUrl,
             width: 56,
@@ -108,7 +108,7 @@ class _SongInfo extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
 
         // Title + artist
         Flexible(
@@ -121,7 +121,7 @@ class _SongInfo extends ConsumerWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: AppColors.textPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -139,7 +139,7 @@ class _SongInfo extends ConsumerWidget {
             ],
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
 
         // Like button — same FavouriteIcon used in mobile mini player
         AppIconButton(
@@ -287,6 +287,7 @@ class _RightControlsState extends ConsumerState<_RightControls> {
     final sleepActive =
         ref.watch(sleepTimerProvider.select((s) => s.isActive));
     final activeTab = ref.watch(rightSidebarTabProvider);
+    final dominantColor = ref.watch(dominantColorProvider);
 
     final IconData volIcon = _volume == 0
         ? Icons.volume_off_rounded
@@ -341,8 +342,8 @@ class _RightControlsState extends ConsumerState<_RightControls> {
               setState(() => _volume = _volume == 0 ? 1.0 : 0),
           behavior: HitTestBehavior.opaque,
           child: Padding(
-            padding: const EdgeInsets.all(4),
-            child: Icon(volIcon, color: AppColors.textSecondary, size: 18),
+            padding: const EdgeInsets.all(AppSpacing.xs),
+            child: Icon(volIcon, color: Colors.white.withValues(alpha: 0.75), size: 18),
           ),
         ),
         const SizedBox(width: 4),
@@ -350,10 +351,10 @@ class _RightControlsState extends ConsumerState<_RightControls> {
           width: 96,
           child: SliderTheme(
             data: SliderTheme.of(context).copyWith(
-              activeTrackColor: Colors.white,
-              inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
-              thumbColor: Colors.white,
-              overlayColor: Colors.white.withValues(alpha: 0.08),
+              activeTrackColor: dominantColor,
+              inactiveTrackColor: dominantColor.withValues(alpha: 0.25),
+              thumbColor: dominantColor,
+              overlayColor: dominantColor.withValues(alpha: 0.15),
               trackHeight: 3,
               thumbShape:
                   const RoundSliderThumbShape(enabledThumbRadius: 5),
@@ -474,7 +475,7 @@ class _BarIconBtn extends StatelessWidget {
         onTap: () => onTap(ctx),
         behavior: HitTestBehavior.opaque,
         child: Padding(
-          padding: const EdgeInsets.all(8),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           child: SizedBox(
             width: 20,
             height: 20,

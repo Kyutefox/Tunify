@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:tunify/config/app_strings.dart';
 import 'package:tunify/ui/components/ui/widgets/logo_loading_indicator.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 
 /// Loading screen shown after login. Creative design: gradient background,
 /// breathing logo, green progress ring, and subtle equalizer.
@@ -130,7 +131,7 @@ class _EqualizerBars extends StatelessWidget {
                 color: AppColors.primary.withValues(
                   alpha: 0.5 + 0.5 * (height / maxHeight),
                 ),
-                borderRadius: BorderRadius.circular(2),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             );
           },

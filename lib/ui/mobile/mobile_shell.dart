@@ -14,6 +14,7 @@ import '../screens/library_screen.dart';
 import '../screens/loading_screen.dart';
 import '../screens/search_screen.dart';
 import '../theme/app_colors.dart';
+import '../theme/design_tokens.dart';
 
 /// Standard mobile shell: bottom nav bar + mini player + IndexedStack.
 ///
@@ -157,7 +158,7 @@ class _OfflineBanner extends ConsumerWidget {
       child: const Row(
         children: [
           Icon(Icons.wifi_off, size: 18, color: Colors.orangeAccent),
-          SizedBox(width: 8),
+          SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Text(
               "You're offline — some features may be limited",

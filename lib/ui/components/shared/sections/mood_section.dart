@@ -91,7 +91,7 @@ class _MoodGrid extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: mood.gradient,
                 ),
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Align(
                   alignment: Alignment.bottomLeft,
                   child: Text(

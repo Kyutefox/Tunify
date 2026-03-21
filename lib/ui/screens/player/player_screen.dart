@@ -22,6 +22,7 @@ import '../../theme/design_tokens.dart';
 import '../../components/ui/widgets/download_progress_ring.dart';
 import '../../components/ui/widgets/song_list_tile.dart';
 import '../../components/ui/widgets/mini_player_play_button.dart';
+import '../../components/ui/empty_state_placeholder.dart';
 import '../../components/ui/button.dart';
 import 'player_controls.dart';
 import 'player_progress_bar.dart';
@@ -128,21 +129,21 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
                   child: Column(
                     children: [
-                      const SizedBox(height: 8),
+                      const SizedBox(height: AppSpacing.sm),
                       _buildTopBar(),
                       const Spacer(flex: 2),
                       _buildAlbumArt(song, dominantColor),
                       const Spacer(flex: 2),
                       _buildSongInfo(song),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: AppSpacing.xxl),
                       const RepaintBoundary(child: PlayerProgressBar()),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: AppSpacing.lg),
                       RepaintBoundary(
                         child: PlayerControls(dominantColor: dominantColor),
                       ),
-                      const SizedBox(height: 28),
+                      const SizedBox(height: AppSpacing.xxl),
                       _buildExtraControls(dominantColor),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: AppSpacing.base),
                     ],
                   ),
                 ),
@@ -213,9 +214,9 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             final radius = Tween<double>(
               begin: direction == HeroFlightDirection.push
                   ? AppRadius.md
-                  : 20.0,
+                  : AppRadius.xl,
               end: direction == HeroFlightDirection.push
-                  ? 20.0
+                  ? AppRadius.xl
                   : AppRadius.md,
             ).animate(CurvedAnimation(
               parent: anim,
@@ -236,7 +237,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             width: artSize,
             height: artSize,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
               boxShadow: [
                 BoxShadow(
                   color: dominantColor.withValues(alpha: 0.35),
@@ -252,7 +253,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               ],
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
               child: Container(
                 color: Colors.black.withValues(alpha: 0.22),
                 child: CachedNetworkImage(
@@ -301,11 +302,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 song.artist,
-                style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.72),
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
                 ),
@@ -315,7 +316,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ],
           ),
         ),
-        const SizedBox(width: 12),
+        const SizedBox(width: AppSpacing.md),
         GestureDetector(
           onTap: () => ref.read(libraryProvider.notifier).toggleLiked(song),
           child: AnimatedSwitcher(
@@ -327,7 +328,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               isLiked: isLiked,
               songId: song.id,
               size: 26,
-              emptyColor: Colors.white.withValues(alpha: 0.72),
+              emptyColor: AppColors.textSecondary,
             ),
           ),
         ),
@@ -487,7 +488,7 @@ class _SleepTimerSheetContent extends ConsumerWidget {
             ),
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: AppSpacing.lg),
         // Hero: moon circle with state
         Center(
           child: _SleepTimerHero(
@@ -556,7 +557,7 @@ class _SleepTimerSheetContent extends ConsumerWidget {
             ),
           ),
         ],
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
       ],
     );
   }
@@ -650,7 +651,7 @@ class _SleepTimerHero extends StatelessWidget {
                             color: AppColors.textSecondary,
                             size: 28,
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: AppSpacing.xs + 2),
                           Text(
                             'End of song',
                             style: TextStyle(
@@ -835,7 +836,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                   icon: AppIcons.speakerGroup,
                   color: AppColors.textPrimary,
                   size: 22),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.sm + 2),
               const Expanded(
                 child: Text(
                   'Connect to a device',
@@ -861,7 +862,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: AppSpacing.sm),
         _SectionLabel(label: 'CURRENT DEVICE'),
         _DeviceTile(
           icon: _iconForType(_activeDevice.type),
@@ -876,14 +877,14 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
           isActive: true,
           accentColor: AppColors.primary,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         const Divider(
           color: AppColors.surfaceHighlight,
           indent: 24,
           endIndent: 24,
           height: 1,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         _SectionLabel(
           label: 'BLUETOOTH',
           trailing: GestureDetector(
@@ -929,14 +930,14 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                     hasBluetoothActive && _activeDevice.name == d.name,
                 accentColor: AppColors.primary,
               )),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         const Divider(
           color: AppColors.surfaceHighlight,
           indent: 24,
           endIndent: 24,
           height: 1,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         _SectionLabel(
           label: 'NETWORK DEVICES',
           trailing: GestureDetector(
@@ -951,7 +952,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                       ? AppColors.textMuted
                       : AppColors.primary,
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: AppSpacing.xs),
                 Text(
                   _scanningNetwork ? 'Scanning...' : 'Scan',
                   style: TextStyle(
@@ -984,7 +985,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                 accentColor: AppColors.primary,
               )),
 
-        const SizedBox(height: 32),
+        const SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
@@ -1055,7 +1056,7 @@ class _DeviceTile extends StatelessWidget {
               size: 21,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: AppSpacing.md + 2),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1142,7 +1143,7 @@ class _EmptySection extends StatelessWidget {
       child: Row(
         children: [
           AppIcon(icon: icon, color: AppColors.textMuted, size: 28),
-          const SizedBox(width: 14),
+          const SizedBox(width: AppSpacing.md + 2),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -1155,7 +1156,7 @@ class _EmptySection extends StatelessWidget {
                   ),
                 ),
                 if (actionLabel != null && onAction != null) ...[
-                  const SizedBox(height: 6),
+                  const SizedBox(height: AppSpacing.xs + 2),
                   GestureDetector(
                     onTap: onAction,
                     child: Text(
@@ -1195,7 +1196,7 @@ class _ScanningPlaceholder extends StatelessWidget {
               size: 28,
             ),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: AppSpacing.md + 2),
           const Text(
             'Scanning your network...',
             style: TextStyle(
@@ -1256,7 +1257,7 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
                 color: AppColors.primary,
                 size: 22,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.xs + 2),
               const Text(
                 'On Device',
                 style: TextStyle(
@@ -1361,7 +1362,7 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
           mainAxisSize: MainAxisSize.min,
           children: [
             icon,
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.xs + 2),
             Text(
               isInQueue ? 'Downloading' : 'Download',
               style: const TextStyle(
@@ -1403,7 +1404,7 @@ class QueuePanelContent extends ConsumerWidget {
                   icon: AppIcons.queueMusic,
                   color: AppColors.textPrimary,
                   size: 22),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.sm + 2),
               const Text(
                 'Queue',
                 style: TextStyle(
@@ -1412,12 +1413,12 @@ class QueuePanelContent extends ConsumerWidget {
                   fontWeight: FontWeight.w700,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: AppSpacing.sm),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: Colors.white.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
                 child: Text(
                   '${queue.length}',
@@ -1432,10 +1433,14 @@ class QueuePanelContent extends ConsumerWidget {
           ),
         ),
         if (queue.isEmpty)
-          const Expanded(
-            child: Center(
-              child: Text('The queue is empty',
-                  style: TextStyle(color: AppColors.textMuted)),
+          Expanded(
+            child: EmptyStatePlaceholder(
+              icon: AppIcon(
+                icon: AppIcons.queueMusic,
+                color: AppColors.textMuted,
+                size: 48,
+              ),
+              title: 'The queue is empty',
             ),
           )
         else ...[
@@ -1455,7 +1460,7 @@ class QueuePanelContent extends ConsumerWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   SongListTile(
                     song: currentSong,
                     onTap: () {
@@ -1490,7 +1495,7 @@ class QueuePanelContent extends ConsumerWidget {
                     color: AppColors.textSecondary,
                     size: 18,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: AppSpacing.sm),
                   const Text(
                     'Shuffling from',
                     style: TextStyle(
@@ -1652,7 +1657,7 @@ class _DesktopQueueOverlayState extends State<_DesktopQueueOverlay>
                 child: Container(
                   decoration: BoxDecoration(
                     color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.08),
                       width: 0.5,
@@ -1666,7 +1671,7 @@ class _DesktopQueueOverlayState extends State<_DesktopQueueOverlay>
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     child: QueuePanelContent(
                       scrollController: _scrollController,
                     ),
@@ -1844,7 +1849,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                   icon: AppIcons.lyrics,
                   color: widget.dominantColor,
                   size: 22),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.sm + 2),
               const Text(
                 'Lyrics',
                 style: TextStyle(
@@ -1885,7 +1890,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
     if (state.error != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(40),
+          padding: const EdgeInsets.all(AppSpacing.xxxl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1893,7 +1898,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                   icon: AppIcons.lyrics,
                   color: AppColors.textMuted.withValues(alpha: 0.4),
                   size: 56),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.base),
               const Text(
                 'Couldn\'t load lyrics',
                 style: TextStyle(
@@ -1902,7 +1907,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.xs + 2),
               const Text(
                 'A network error occurred. Tap to retry.',
                 style: TextStyle(
@@ -1911,7 +1916,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                 ),
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: AppSpacing.lg),
               GestureDetector(
                 onTap: () {
                   final songId = ref.read(currentSongProvider)?.id;
@@ -1948,7 +1953,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
     if (!state.hasLyrics) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(40),
+          padding: const EdgeInsets.all(AppSpacing.xxxl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -1956,7 +1961,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                   icon: AppIcons.lyrics,
                   color: AppColors.textMuted.withValues(alpha: 0.4),
                   size: 56),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.base),
               const Text(
                 'No lyrics available.',
                 style: TextStyle(
@@ -1965,7 +1970,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: AppSpacing.xs + 2),
               const Text(
                 'Lyrics are not available for this song',
                 style: TextStyle(
@@ -1996,7 +2001,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
 
   Widget _buildLine(LyricsLine line, int index, bool isSynced) {
     final isEmpty = line.text.trim().isEmpty;
-    if (isEmpty) return const SizedBox(height: 20);
+    if (isEmpty) return const SizedBox(height: AppSpacing.lg);
 
     final isActive = isSynced && index == _activeIndex;
 

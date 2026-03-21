@@ -170,7 +170,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: () => showLibrarySortSheet(context, widget.sortOrder, widget.onSortChanged),
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.sm,
@@ -260,7 +260,7 @@ class _LibraryDeviceSwitch extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
       decoration: BoxDecoration(
         color: AppColors.surfaceLight.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -298,7 +298,7 @@ class _Segment extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.sm,
@@ -308,7 +308,7 @@ class _Segment extends StatelessWidget {
             color: selected
                 ? AppColors.primary.withValues(alpha: 0.2)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
           child: Text(
             label,

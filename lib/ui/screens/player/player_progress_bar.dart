@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../shared/providers/palette_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
+import '../../../shared/utils/duration_format.dart';
 
 class PlayerProgressBar extends ConsumerStatefulWidget {
   const PlayerProgressBar({super.key, this.compact = false});
@@ -52,17 +54,12 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
   double get _currentAnimatedProgress =>
       _fromProgress + (_toProgress - _fromProgress) * _anim.value;
 
-  String _fmt(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-
   @override
   Widget build(BuildContext context) {
     final progress = ref.watch(playerProvider.select((s) => s.progress));
     final position = ref.watch(playerProvider.select((s) => s.position));
     final duration = ref.watch(playerProvider.select((s) => s.duration));
+    final dominantColor = ref.watch(dominantColorProvider);
 
     // Drive the animation whenever progress changes.
     _onProgressUpdate(progress.clamp(0.0, 1.0));
@@ -71,10 +68,11 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
     final durationKnown = duration != null && duration.inMilliseconds > 0;
 
     final positionText = _isDragging
-        ? _fmt(Duration(
-            milliseconds: (_dragValue * safeDuration.inMilliseconds).round()))
-        : _fmt(position);
-    final durationText = durationKnown ? _fmt(safeDuration) : '--:--';
+        ? Duration(
+            milliseconds: (_dragValue * safeDuration.inMilliseconds).round())
+            .formattedMmSS
+        : position.formattedMmSS;
+    final durationText = durationKnown ? safeDuration.formattedMmSS : '--:--';
 
     const timeStyle = TextStyle(
       color: Color(0x80FFFFFF),
@@ -100,10 +98,10 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
                   _isDragging ? _dragValue : _currentAnimatedProgress;
               return SliderTheme(
                 data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: Colors.white,
-                  inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
-                  thumbColor: Colors.white,
-                  overlayColor: Colors.white.withValues(alpha: 0.08),
+                  activeTrackColor: dominantColor,
+                  inactiveTrackColor: dominantColor.withValues(alpha: 0.25),
+                  thumbColor: dominantColor,
+                  overlayColor: dominantColor.withValues(alpha: 0.15),
                   trackHeight: compact ? 3 : 4,
                   thumbShape: RoundSliderThumbShape(
                       enabledThumbRadius: compact ? 6 : 7),

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../components/shared/collection_detail_scaffold.dart';
 import '../../components/ui/components_ui.dart';
+import '../home/home_shared.dart';
 import '../../../config/app_icons.dart';
 import '../../../models/collection_result.dart';
 import '../../../models/library_artist.dart';
@@ -262,7 +263,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
               icon: AppIcons.shuffle,
               size: 24,
               color:
-                  _shuffleEnabled ? AppColors.accentGreen : AppColors.textMuted,
+                  _shuffleEnabled ? AppColors.primary : AppColors.textMuted,
             ),
             onPressed: canPlay
                 ? () => setState(() => _shuffleEnabled = !_shuffleEnabled)
@@ -288,25 +289,10 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
             },
           ),
           const Spacer(),
-          GestureDetector(
-            onTap: canPlay ? _playAll : null,
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: canPlay
-                    ? AppColors.accentGreen
-                    : AppColors.textMuted.withValues(alpha: 0.3),
-              ),
-              child: Center(
-                child: AppIcon(
-                  icon: AppIcons.play,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
-            ),
+          PlayCircleButton(
+            onTap: canPlay ? _playAll : () {},
+            size: 56,
+            iconSize: 32,
           ),
         ],
       ),

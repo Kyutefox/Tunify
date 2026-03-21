@@ -209,7 +209,7 @@ class PlayerExtraButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             AppIcon(icon: icon, color: Colors.white.withValues(alpha: 0.75), size: 22),
-            const SizedBox(height: 6),
+            const SizedBox(height: AppSpacing.xs + 2),
             Text(
               label,
               style: TextStyle(

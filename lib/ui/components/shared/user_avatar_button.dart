@@ -12,6 +12,7 @@ import '../../screens/home/home_settings_sheet.dart';
 import '../../screens/home/home_shared.dart';
 import '../../screens/home/home_user_menu.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/design_tokens.dart';
 import '../ui/sheet.dart';
 import 'adaptive_menu.dart';
 
@@ -153,7 +154,7 @@ void _showDesktopMenu(
           ),
         ),
       ),
-      const SizedBox(width: 10),
+      const SizedBox(width: AppSpacing.sm + 2),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

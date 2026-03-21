@@ -137,9 +137,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                           final radius = Tween<double>(
                             begin: direction == HeroFlightDirection.push
                                 ? AppRadius.md
-                                : 20.0,
+                                : AppRadius.xl,
                             end: direction == HeroFlightDirection.push
-                                ? 20.0
+                                ? AppRadius.xl
                                 : AppRadius.md,
                           ).animate(CurvedAnimation(
                             parent: anim,

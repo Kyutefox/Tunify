@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../components/shared/collection_detail_scaffold.dart';
 import '../../components/ui/components_ui.dart';
+import '../home/home_shared.dart';
 import '../../../config/app_icons.dart';
 import '../../../models/song.dart';
 import '../../../shared/providers/content_settings_provider.dart';
@@ -540,7 +541,7 @@ class _LikedActionRow extends ConsumerWidget {
           ),
           MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
           const Spacer(),
-          GestureDetector(
+          PlayCircleButton(
             onTap: canPlay
                 ? () {
                     final queue = shuffleEnabled
@@ -552,24 +553,9 @@ class _LikedActionRow extends ConsumerWidget {
                             queue: queue,
                             queueSource: 'liked');
                   }
-                : null,
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: canPlay
-                    ? AppColors.primary
-                    : AppColors.textMuted.withValues(alpha: 0.3),
-              ),
-              child: Center(
-                child: AppIcon(
-                  icon: AppIcons.play,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
-            ),
+                : () {},
+            size: 56,
+            iconSize: 32,
           ),
         ],
       ),

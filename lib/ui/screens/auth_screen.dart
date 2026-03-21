@@ -187,7 +187,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet>
                     duration: AppDuration.normal,
                     child: Text(
                       _isSignUp
-                          ? 'Join ${AppStrings.appName} and start listening'
+                          ? 'Your library, your way.'
                           : 'Sign in to continue to ${AppStrings.appName}',
                       key: ValueKey('sub_$_isSignUp'),
                       style: const TextStyle(

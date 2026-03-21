@@ -14,6 +14,7 @@ import '../../theme/app_colors.dart';
 import '../../components/ui/widgets/section_header.dart';
 import '../../theme/design_tokens.dart';
 import 'home_sections.dart';
+import 'home_shared.dart';
 import 'home_skeletons.dart';
 
 class HomeContent extends ConsumerWidget {
@@ -151,23 +152,11 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection> {
                   ),
                   const SizedBox(width: AppSpacing.sm),
                 ],
-                GestureDetector(
+                PlayCircleButton(
                   onTap: () => ref.read(playerProvider.notifier).playSong(
                         quickPicks.first,
                         queue: quickPicks,
                       ),
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: AppIcon(icon: AppIcons.play, size: 18, color: Colors.white),
-                    ),
-                  ),
                 ),
               ],
             ),
@@ -207,8 +196,8 @@ class _NavButton extends StatelessWidget {
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(
-        width: 28,
-        height: 28,
+        width: AppSpacing.xxl,
+        height: AppSpacing.xxl,
         decoration: BoxDecoration(
           color: enabled ? AppColors.surfaceLight : AppColors.surfaceLight.withValues(alpha: 0.4),
           shape: BoxShape.circle,
@@ -400,23 +389,11 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav> {
               ],
               if (widget.type == HomeSectionType.songs && widget.songs.isNotEmpty) ...[
                 if (showNav) const SizedBox(width: AppSpacing.sm),
-                GestureDetector(
+                PlayCircleButton(
                   onTap: () => ref.read(playerProvider.notifier).playSong(
                         widget.songs.first,
                         queue: widget.songs,
                       ),
-                  behavior: HitTestBehavior.opaque,
-                  child: Container(
-                    width: 34,
-                    height: 34,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: AppIcon(icon: AppIcons.play, size: 18, color: Colors.white),
-                    ),
-                  ),
                 ),
               ],
             ],

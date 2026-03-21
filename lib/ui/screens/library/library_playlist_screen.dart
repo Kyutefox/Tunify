@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../components/shared/collection_detail_scaffold.dart';
 import '../../components/ui/components_ui.dart';
+import '../home/home_shared.dart';
 import '../../../config/app_icons.dart';
 import '../../../models/library_playlist.dart';
 import '../../../models/song.dart';
@@ -383,7 +384,7 @@ class _PlaylistActionRow extends ConsumerWidget {
             color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
           ),
           const Spacer(),
-          GestureDetector(
+          PlayCircleButton(
             onTap: canPlay
                 ? () {
                     final queue = shuffleEnabled
@@ -396,24 +397,9 @@ class _PlaylistActionRow extends ConsumerWidget {
                             playlistId: playlistId,
                             queueSource: 'playlist');
                   }
-                : null,
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: canPlay
-                    ? AppColors.primary
-                    : AppColors.textMuted.withValues(alpha: 0.3),
-              ),
-              child: Center(
-                child: AppIcon(
-                  icon: AppIcons.play,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
-            ),
+                : () {},
+            size: 56,
+            iconSize: 32,
           ),
         ],
       ),
@@ -489,7 +475,7 @@ class _PillButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
@@ -499,7 +485,7 @@ class _PillButton extends StatelessWidget {
             border: Border.all(
               color: AppColors.textMuted.withValues(alpha: 0.5),
             ),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,

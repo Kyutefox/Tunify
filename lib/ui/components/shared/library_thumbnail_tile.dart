@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../config/app_icons.dart';
@@ -115,10 +116,10 @@ class _Thumb extends StatelessWidget {
         height: 52,
         color: AppColors.surfaceLight,
         child: thumbnailUrl != null
-            ? Image.network(
-                thumbnailUrl!,
+            ? CachedNetworkImage(
+                imageUrl: thumbnailUrl!,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => _icon,
+                errorWidget: (_, __, ___) => _icon,
               )
             : _icon,
       ),

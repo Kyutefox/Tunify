@@ -469,6 +469,7 @@ class _QuickActionRow extends StatelessWidget {
             icon: isDownloaded ? AppIcons.checkCircle : AppIcons.download,
             iconColor: isDownloaded ? AppColors.primary : AppColors.textSecondary,
             label: 'Download',
+            isActive: isDownloaded,
             onTap: onDownload,
           ),
         ),
@@ -490,6 +491,7 @@ class _QuickActionRow extends StatelessWidget {
               emptyColor: AppColors.textSecondary,
             ),
             label: isLiked ? 'Liked' : 'Like',
+            isActive: isLiked,
             onTap: onLiked,
           ),
         ),
@@ -505,6 +507,7 @@ class _QuickActionButton extends StatelessWidget {
     this.iconWidget,
     required this.label,
     required this.onTap,
+    this.isActive = false,
   }) : assert(icon != null && iconColor != null || iconWidget != null,
          'Provide either icon+iconColor or iconWidget');
 
@@ -513,6 +516,7 @@ class _QuickActionButton extends StatelessWidget {
   final Widget? iconWidget;
   final String label;
   final VoidCallback onTap;
+  final bool isActive;
 
   static const double _circleSize = 44.0;
   static const double _iconSize = 26.0;
@@ -537,9 +541,13 @@ class _QuickActionButton extends StatelessWidget {
                 height: _circleSize,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppColors.glassWhite,
+                  color: isActive
+                      ? AppColors.primary.withValues(alpha: 0.15)
+                      : AppColors.glassWhite,
                   border: Border.all(
-                    color: AppColors.glassBorder,
+                    color: isActive
+                        ? AppColors.primary.withValues(alpha: 0.35)
+                        : AppColors.glassBorder,
                     width: 1,
                   ),
                 ),
@@ -551,7 +559,7 @@ class _QuickActionButton extends StatelessWidget {
                   ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               Text(
                 label,
                 style: const TextStyle(

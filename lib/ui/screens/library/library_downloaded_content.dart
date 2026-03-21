@@ -16,6 +16,7 @@ import '../../../shared/providers/player_state_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
 import '../player/song_options_sheet.dart';
+import '../home/home_shared.dart';
 import 'library_downloaded_screen.dart';
 
 /// Inline content for Library > Downloaded filter. Shows either library
@@ -130,7 +131,7 @@ class _LibraryDownloadedList extends ConsumerWidget {
               icon: AppIcons.shuffle,
               size: 22,
               color: shuffleEnabled
-                  ? AppColors.accentGreen
+                  ? AppColors.primary
                   : AppColors.textMuted,
             ),
             onPressed: () {
@@ -150,7 +151,7 @@ class _LibraryDownloadedList extends ConsumerWidget {
             iconSize: 22,
           ),
           const Spacer(),
-          GestureDetector(
+          PlayCircleButton(
             onTap: () {
               final queue = shuffleEnabled
                   ? (List<Song>.from(displaySongs)..shuffle(Random()))
@@ -161,21 +162,8 @@ class _LibraryDownloadedList extends ConsumerWidget {
                     queueSource: 'downloads',
                   );
             },
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.accentGreen,
-              ),
-              child: Center(
-                child: AppIcon(
-                  icon: AppIcons.play,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
-            ),
+            size: 56,
+            iconSize: 28,
           ),
         ],
       ),
@@ -232,13 +220,13 @@ class _LibraryDownloadedList extends ConsumerWidget {
               children: [
                 AppIcon(
                     icon: AppIcons.checkCircle,
-                    color: AppColors.accentGreen,
+                    color: AppColors.primary,
                     size: 14),
                 const SizedBox(width: 4),
                 Text(
                   'In device',
                   style: TextStyle(
-                      color: AppColors.accentGreen, fontSize: 12),
+                      color: AppColors.primary, fontSize: 12),
                 ),
                 const SizedBox(width: 8),
                 Flexible(
@@ -345,12 +333,10 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
                               fit: BoxFit.cover,
                               width: double.infinity,
                               height: double.infinity,
-                              placeholder: (_, __) =>
-                                  _gridThumbPlaceholder(),
-                              errorWidget: (_, __, ___) =>
-                                  _gridThumbPlaceholder(),
+                              placeholder: (_, __) => PlaceholderArt(size: 120),
+                              errorWidget: (_, __, ___) => PlaceholderArt(size: 120),
                             )
-                          : _gridThumbPlaceholder(),
+                          : PlaceholderArt(size: 120),
                     ),
                   ),
                   if (isNowPlaying)
@@ -374,11 +360,11 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
                     top: 4,
                     right: 4,
                     child: Material(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.glassBlack,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                       child: InkWell(
                         onTap: onOptions,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
                         child: Padding(
                           padding: const EdgeInsets.all(6),
                           child: AppIcon(
@@ -420,17 +406,6 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
       ),
     );
   }
-
-  static Widget _gridThumbPlaceholder() => Container(
-        color: AppColors.surfaceLight,
-        child: Center(
-          child: AppIcon(
-            icon: AppIcons.musicNote,
-            color: AppColors.textMuted,
-            size: 32,
-          ),
-        ),
-      );
 }
 
 class _DeviceMusicList extends ConsumerWidget {
@@ -471,32 +446,15 @@ class _DeviceMusicList extends ConsumerWidget {
 
     if (displaySongs.isEmpty) {
       return SliverFillRemaining(
-        child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AppIcon(
-                icon: AppIcons.musicNote,
-                color: AppColors.textMuted,
-                size: 48,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              const Text(
-                'No music found on device',
-                style: TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              AppButton(
-                label: 'Refresh',
-                variant: AppButtonVariant.text,
-                onPressed: () =>
-                    ref.read(deviceMusicProvider.notifier).loadSongs(),
-              ),
-            ],
+        child: EmptyStatePlaceholder(
+          icon: AppIcon(
+            icon: AppIcons.musicNote,
+            color: AppColors.textMuted,
+            size: 48,
           ),
+          title: 'No music found on device',
+          actionLabel: 'Refresh',
+          onAction: () => ref.read(deviceMusicProvider.notifier).loadSongs(),
         ),
       );
     }
@@ -527,7 +485,7 @@ class _DeviceMusicList extends ConsumerWidget {
             iconSize: 22,
           ),
           const Spacer(),
-          GestureDetector(
+          PlayCircleButton(
             onTap: () {
               ref.read(playerProvider.notifier).playSong(
                     displaySongs.first,
@@ -535,21 +493,8 @@ class _DeviceMusicList extends ConsumerWidget {
                     queueSource: 'device',
                   );
             },
-            child: Container(
-              width: 56,
-              height: 56,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.accentGreen,
-              ),
-              child: Center(
-                child: AppIcon(
-                  icon: AppIcons.play,
-                  color: Colors.white,
-                  size: 32,
-                ),
-              ),
-            ),
+            size: 56,
+            iconSize: 28,
           ),
         ],
       ),
@@ -745,11 +690,11 @@ class _DeviceMusicGridCard extends ConsumerWidget {
                     top: 4,
                     right: 4,
                     child: Material(
-                      color: Colors.black54,
-                      borderRadius: BorderRadius.circular(20),
+                      color: AppColors.glassBlack,
+                      borderRadius: BorderRadius.circular(AppRadius.full),
                       child: InkWell(
                         onTap: onOptions,
-                        borderRadius: BorderRadius.circular(20),
+                        borderRadius: BorderRadius.circular(AppRadius.full),
                         child: Padding(
                           padding: const EdgeInsets.all(6),
                           child: AppIcon(
@@ -806,47 +751,18 @@ class _DevicePermissionPrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppIcon(
-              icon: AppIcons.folder,
-              color: AppColors.textMuted,
-              size: 48,
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            const Text(
-              'Allow access to device music',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              permanentlyDenied
-                  ? 'Permission was denied. Please enable it in Settings.'
-                  : 'Grant permission to see music stored on your device.',
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 14,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            AppButton(
-              label: permanentlyDenied ? 'Open Settings' : 'Grant Permission',
-              onPressed: permanentlyDenied ? onOpenSettings : onGrant,
-              backgroundColor: AppColors.accent,
-            ),
-          ],
-        ),
+    return EmptyStatePlaceholder(
+      icon: AppIcon(
+        icon: AppIcons.folder,
+        color: AppColors.textMuted,
+        size: 48,
       ),
+      title: 'Allow access to device music',
+      subtitle: permanentlyDenied
+          ? 'Permission was denied. Please enable it in Settings.'
+          : 'Grant permission to see music stored on your device.',
+      actionLabel: permanentlyDenied ? 'Open Settings' : 'Grant Permission',
+      onAction: permanentlyDenied ? onOpenSettings : onGrant,
     );
   }
 }

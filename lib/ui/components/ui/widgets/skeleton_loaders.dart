@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../../ui/theme/app_colors.dart';
+import '../../../../ui/theme/design_tokens.dart';
 
 class SkeletonLoader extends StatelessWidget {
   final double width;
@@ -56,7 +57,7 @@ class SongCardSkeleton extends StatelessWidget {
                 height: 150,
                 decoration: BoxDecoration(
                   color: AppColors.surfaceHighlight,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
               const SizedBox(height: 10),
@@ -65,7 +66,7 @@ class SongCardSkeleton extends StatelessWidget {
                 height: 14,
                 decoration: BoxDecoration(
                   color: AppColors.surfaceHighlight,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
               ),
               const SizedBox(height: 6),
@@ -74,7 +75,7 @@ class SongCardSkeleton extends StatelessWidget {
                 height: 12,
                 decoration: BoxDecoration(
                   color: AppColors.surfaceHighlight,
-                  borderRadius: BorderRadius.circular(4),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
               ),
             ],
@@ -93,7 +94,7 @@ class SongCardSkeleton extends StatelessWidget {
           height: 56,
           decoration: BoxDecoration(
             color: AppColors.surfaceHighlight,
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
         ),
         title: Container(
@@ -101,7 +102,7 @@ class SongCardSkeleton extends StatelessWidget {
           height: 14,
           decoration: BoxDecoration(
             color: AppColors.surfaceHighlight,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
         subtitle: Container(
@@ -110,7 +111,7 @@ class SongCardSkeleton extends StatelessWidget {
           margin: const EdgeInsets.only(top: 6),
           decoration: BoxDecoration(
             color: AppColors.surfaceHighlight,
-            borderRadius: BorderRadius.circular(4),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
       ),
@@ -137,7 +138,7 @@ class PlaylistCardSkeleton extends StatelessWidget {
               height: 180,
               decoration: BoxDecoration(
                 color: AppColors.surfaceHighlight,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
             ),
             const SizedBox(height: 12),
@@ -146,7 +147,7 @@ class PlaylistCardSkeleton extends StatelessWidget {
               height: 16,
               decoration: BoxDecoration(
                 color: AppColors.surfaceHighlight,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
             const SizedBox(height: 8),
@@ -155,7 +156,7 @@ class PlaylistCardSkeleton extends StatelessWidget {
               height: 12,
               decoration: BoxDecoration(
                 color: AppColors.surfaceHighlight,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
           ],
@@ -192,7 +193,7 @@ class ArtistAvatarSkeleton extends StatelessWidget {
               height: 12,
               decoration: BoxDecoration(
                 color: AppColors.surfaceHighlight,
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
           ],

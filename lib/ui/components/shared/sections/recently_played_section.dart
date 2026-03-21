@@ -132,7 +132,7 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: const Text(
                     'See all',

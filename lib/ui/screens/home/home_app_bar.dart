@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../components/shared/user_avatar_button.dart';
-import '../../components/ui/button.dart';
-import '../../../config/app_icons.dart';
 import '../../../shared/providers/auth_provider.dart';
 import '../../../shared/providers/guest_profile_provider.dart';
 import '../../theme/app_colors.dart';
@@ -41,14 +39,6 @@ class HomeAppBar extends ConsumerWidget {
             ),
           ),
         ),
-        AppIconButton(
-          icon: AppIcon(icon: AppIcons.notifications, size: 24, color: AppColors.textPrimary),
-          onPressed: () {},
-          style: AppIconButtonStyle.filled,
-          size: 36,
-          iconSize: 16,
-        ),
-        const SizedBox(width: AppSpacing.sm),
         const UserAvatarButton(),
       ],
     );

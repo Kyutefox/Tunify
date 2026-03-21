@@ -87,7 +87,7 @@ class _DesktopSettingsScreenState extends State<DesktopSettingsScreen> {
       children: [
         // ── Header ──────────────────────────────────────────────────────────
         const Padding(
-          padding: EdgeInsets.fromLTRB(24, 24, 24, 16),
+          padding: EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, AppSpacing.base),
           child: Text(
             'Settings',
             style: TextStyle(
@@ -212,7 +212,7 @@ class _NavItem extends StatelessWidget {
                   size: 18,
                   color: isActive ? section.iconColor : AppColors.textMuted,
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: AppSpacing.sm + 2),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

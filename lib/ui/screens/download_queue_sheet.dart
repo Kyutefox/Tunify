@@ -245,7 +245,7 @@ class DownloadQueueTile extends StatelessWidget {
                   ],
                   const SizedBox(height: 4),
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(2),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                     child: LinearProgressIndicator(
                       value: expected > 0 ? progress : null,
                       minHeight: 4,

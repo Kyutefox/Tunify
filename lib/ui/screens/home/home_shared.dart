@@ -4,6 +4,58 @@ import '../../../config/app_icons.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
 
+/// Circular play button used in section headers and action rows.
+/// Provides consistent size, color, and press feedback everywhere.
+class PlayCircleButton extends StatefulWidget {
+  const PlayCircleButton({
+    super.key,
+    required this.onTap,
+    this.size = 34,
+    this.iconSize = 18,
+  });
+
+  final VoidCallback onTap;
+  final double size;
+  final double iconSize;
+
+  @override
+  State<PlayCircleButton> createState() => _PlayCircleButtonState();
+}
+
+class _PlayCircleButtonState extends State<PlayCircleButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.88 : 1.0,
+        duration: AppDuration.fast,
+        curve: Curves.easeOut,
+        child: Container(
+          width: widget.size,
+          height: widget.size,
+          decoration: const BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+          ),
+          child: Center(
+            child: AppIcon(
+              icon: AppIcons.play,
+              size: widget.iconSize,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 int cachePx(BuildContext context, double logicalSize) {
   return (logicalSize * MediaQuery.devicePixelRatioOf(context)).round();
 }
@@ -60,11 +112,19 @@ class PlaceholderArt extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      color: AppColors.surfaceLight,
-      child: AppIcon(
-        icon: AppIcons.musicNote,
-        color: AppColors.textMuted,
-        size: 32,
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.surfaceHighlight, AppColors.surfaceLight],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: AppIcon(
+          icon: AppIcons.musicNote,
+          color: AppColors.textMuted,
+          size: 36,
+        ),
       ),
     );
   }
@@ -87,7 +147,7 @@ class SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppColors.surfaceHighlight,
         borderRadius: BorderRadius.circular(radius),
       ),
     );

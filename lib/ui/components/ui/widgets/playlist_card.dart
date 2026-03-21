@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../config/app_icons.dart';
 import '../../../../models/playlist.dart';
 import '../../../../ui/theme/app_colors.dart';
+import '../../../../ui/theme/design_tokens.dart';
 
 class PlaylistCard extends StatefulWidget {
   final Playlist playlist;
@@ -51,7 +52,7 @@ class _PlaylistCardState extends State<PlaylistCard> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildCover(),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               Text(
                 widget.playlist.title,
                 maxLines: 1,
@@ -63,7 +64,7 @@ class _PlaylistCardState extends State<PlaylistCard> {
                   letterSpacing: -0.2,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Row(
                 children: [
                   if (widget.playlist.curatorName != null) ...[
@@ -105,7 +106,7 @@ class _PlaylistCardState extends State<PlaylistCard> {
       width: widget.width,
       height: widget.height,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
           BoxShadow(
             color: _isHovered
@@ -117,7 +118,7 @@ class _PlaylistCardState extends State<PlaylistCard> {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -273,7 +274,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
           ..scaleByDouble(
               _isPressed ? 0.98 : 1.0, _isPressed ? 0.98 : 1.0, 1.0, 1.0),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -296,7 +297,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(AppSpacing.lg),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
@@ -307,7 +308,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                             horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.8),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Text(
                           widget.playlist.curatorName!,
@@ -318,7 +319,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                           ),
                         ),
                       ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.sm),
                     Text(
                       widget.playlist.title,
                       maxLines: 2,
@@ -330,7 +331,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                         letterSpacing: -0.5,
                       ),
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: AppSpacing.xs),
                     Text(
                       widget.playlist.description,
                       maxLines: 1,
@@ -340,7 +341,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                         fontSize: 13,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: AppSpacing.md),
                     Row(
                       children: [
                         Container(
@@ -348,14 +349,14 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                               horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             gradient: AppColors.primaryGradient,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(AppRadius.xl),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               AppIcon(icon: AppIcons.play,
                                   color: Colors.white, size: 20),
-                              SizedBox(width: 4),
+                              const SizedBox(width: AppSpacing.xs),
                               Text(
                                 'Play',
                                 style: TextStyle(
@@ -367,7 +368,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                             ],
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: AppSpacing.md),
                         Text(
                           '${widget.playlist.trackCountFormatted} • ${widget.playlist.durationFormatted}',
                           style: TextStyle(

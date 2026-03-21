@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../ui/theme/app_colors.dart';
+import '../../../../ui/theme/design_tokens.dart';
 
 class NowPlayingIndicator extends StatefulWidget {
   const NowPlayingIndicator(
@@ -111,7 +112,7 @@ class NowPlayingThumbnail extends StatelessWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.black.withValues(alpha: 0.55),
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
               child: Center(
                 child: NowPlayingIndicator(

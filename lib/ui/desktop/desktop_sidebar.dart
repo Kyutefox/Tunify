@@ -253,7 +253,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                         height: 36,
                         decoration: BoxDecoration(
                           color: AppColors.surfaceLight,
-                          borderRadius: BorderRadius.circular(8),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Row(
                           children: [

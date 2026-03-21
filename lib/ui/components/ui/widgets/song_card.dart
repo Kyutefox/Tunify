@@ -4,6 +4,8 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../config/app_icons.dart';
 import '../../../../models/song.dart';
 import '../../../../ui/theme/app_colors.dart';
+import '../../../../ui/theme/design_tokens.dart';
+import '../components_ui.dart';
 
 class SongCard extends StatefulWidget {
   final Song song;
@@ -100,7 +102,7 @@ class _SongCardState extends State<SongCard> {
       width: 150,
       height: 150,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         boxShadow: [
           BoxShadow(
             color: widget.isPlaying
@@ -112,7 +114,7 @@ class _SongCardState extends State<SongCard> {
         ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Stack(
           fit: StackFit.expand,
           children: [
@@ -153,8 +155,12 @@ class _SongCardState extends State<SongCard> {
                       ],
                     ),
                   ),
-                  child: const Center(
-                    child: _WaveformIndicator(),
+                  child: Center(
+                    child: NowPlayingIndicator(
+                      size: 32,
+                      barCount: 4,
+                      animate: true,
+                    ),
                   ),
                 ),
               ),
@@ -198,7 +204,7 @@ class _SongCardState extends State<SongCard> {
                       const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(4),
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                   child: Text(
                     widget.song.durationFormatted,
@@ -230,7 +236,7 @@ class _SongCardState extends State<SongCard> {
       height: 3,
       decoration: BoxDecoration(
         color: AppColors.surfaceHighlight,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: FractionallySizedBox(
         alignment: Alignment.centerLeft,
@@ -238,7 +244,7 @@ class _SongCardState extends State<SongCard> {
         child: Container(
           decoration: BoxDecoration(
             gradient: AppColors.primaryGradient,
-            borderRadius: BorderRadius.circular(2),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
       ),
@@ -281,10 +287,10 @@ class _LargeSongCardState extends State<LargeSongCard> {
           ..scaleByDouble(
               _isPressed ? 0.97 : 1.0, _isPressed ? 0.97 : 1.0, 1.0, 1.0),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           gradient: AppColors.cardGradient,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
             color: widget.isPlaying
                 ? AppColors.primary.withValues(alpha: 0.5)
@@ -306,7 +312,7 @@ class _LargeSongCardState extends State<LargeSongCard> {
             Hero(
               tag: 'large_song_${widget.song.id}',
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: CachedNetworkImage(
                   imageUrl: widget.song.thumbnailUrl,
                   width: 64,
@@ -347,7 +353,11 @@ class _LargeSongCardState extends State<LargeSongCard> {
               ),
             ),
             if (widget.isPlaying)
-              const _WaveformIndicator(size: 24)
+              NowPlayingIndicator(
+                size: 24,
+                barCount: 4,
+                animate: true,
+              )
             else
               Container(
                 width: 40,
@@ -369,74 +379,5 @@ class _LargeSongCardState extends State<LargeSongCard> {
         .animate(delay: Duration(milliseconds: widget.index * 80))
         .fadeIn(duration: 400.ms)
         .slideY(begin: 0.1, curve: Curves.easeOutCubic);
-  }
-}
-
-class _WaveformIndicator extends StatefulWidget {
-  final double size;
-
-  const _WaveformIndicator({this.size = 32});
-
-  @override
-  State<_WaveformIndicator> createState() => _WaveformIndicatorState();
-}
-
-class _WaveformIndicatorState extends State<_WaveformIndicator>
-    with TickerProviderStateMixin {
-  late List<AnimationController> _controllers;
-  late List<Animation<double>> _animations;
-
-  @override
-  void initState() {
-    super.initState();
-    _controllers = List.generate(4, (index) {
-      return AnimationController(
-        duration: Duration(milliseconds: 400 + (index * 100)),
-        vsync: this,
-      )..repeat(reverse: true);
-    });
-    _animations = _controllers.map((c) {
-      return Tween<double>(begin: 0.3, end: 1.0).animate(
-        CurvedAnimation(parent: c, curve: Curves.easeInOut),
-      );
-    }).toList();
-  }
-
-  @override
-  void dispose() {
-    for (var c in _controllers) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(4, (index) {
-        return AnimatedBuilder(
-          animation: _animations[index],
-          builder: (context, child) {
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 1.5),
-              width: 3,
-              height: widget.size * _animations[index].value,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(1.5),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.white.withValues(alpha: 0.5),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-            );
-          },
-        );
-      }),
-    );
   }
 }

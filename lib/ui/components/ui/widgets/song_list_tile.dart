@@ -170,7 +170,7 @@ class SongListTile extends ConsumerWidget {
 
   Widget _defaultThumbnail() {
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.xs),
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: song.thumbnailUrl.isNotEmpty
           ? CachedNetworkImage(
               imageUrl: song.thumbnailUrl,
@@ -208,7 +208,7 @@ class _ExplicitBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
         color: AppColors.textMuted.withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: const Text(
         'E',

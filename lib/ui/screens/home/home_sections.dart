@@ -1,6 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../config/app_icons.dart';
@@ -707,11 +706,8 @@ class HomeMoodTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        showMoodBrowseSheet(context, initialMood: mood);
-      },
+    return PressScale(
+      onTap: () => showMoodBrowseSheet(context, initialMood: mood),
       child: Container(
         decoration: BoxDecoration(
           gradient: mood.gradient,

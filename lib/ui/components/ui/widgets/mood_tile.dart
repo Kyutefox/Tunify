@@ -3,6 +3,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 
 import '../../../../config/app_icons.dart';
 import '../../../../models/mood.dart';
+import '../../../../ui/theme/design_tokens.dart';
 
 class MoodTile extends StatefulWidget {
   final Mood mood;
@@ -61,7 +62,7 @@ class _MoodTileState extends State<MoodTile>
           ..scaleByDouble(
               _isPressed ? 0.93 : 1.0, _isPressed ? 0.93 : 1.0, 1.0, 1.0),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppRadius.xl),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -179,7 +180,7 @@ class _LargeMoodCardState extends State<LargeMoodCard> {
           ..scaleByDouble(
               _isPressed ? 0.95 : 1.0, _isPressed ? 0.95 : 1.0, 1.0, 1.0),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.lg),
           child: Stack(
             fit: StackFit.expand,
             children: [

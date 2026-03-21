@@ -7,6 +7,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../config/app_icons.dart';
 import '../../../../config/app_strings.dart';
 import '../../../../ui/theme/app_colors.dart';
+import '../../../../ui/theme/design_tokens.dart';
 
 class DynamicHeader extends StatefulWidget {
   final String greeting;
@@ -203,7 +204,7 @@ class _DynamicHeaderState extends State<DynamicHeader>
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     boxShadow: [
                       BoxShadow(
                         color: AppColors.primary.withValues(alpha: 0.4),
@@ -213,7 +214,7 @@ class _DynamicHeaderState extends State<DynamicHeader>
                     ],
                   ),
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                     child: SvgPicture.asset(
                       AppStrings.logoAsset,
                       width: 44,
@@ -272,7 +273,7 @@ class _DynamicHeaderState extends State<DynamicHeader>
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.glassWhite,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.xl),
                     border: Border.all(color: AppColors.glassBorder),
                   ),
                   child: Row(
@@ -327,7 +328,7 @@ class _DynamicHeaderState extends State<DynamicHeader>
         height: 44,
         decoration: BoxDecoration(
           color: AppColors.glassWhite,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(color: AppColors.glassBorder),
         ),
         child: AppIcon(
@@ -347,13 +348,13 @@ class _DynamicHeaderState extends State<DynamicHeader>
         height: 44,
         decoration: BoxDecoration(
           gradient: AppColors.primaryGradient,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
         ),
         padding: const EdgeInsets.all(2),
         child: Container(
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
           ),
           child: AppIcon(
             icon: AppIcons.person,

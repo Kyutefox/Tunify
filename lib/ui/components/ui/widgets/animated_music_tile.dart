@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../config/app_icons.dart';
 import '../../../../models/song.dart';
 import '../../../../ui/theme/app_colors.dart';
+import '../../../../ui/theme/design_tokens.dart';
 
 class AnimatedMusicTile extends StatefulWidget {
   final Song song;
@@ -95,7 +96,7 @@ class _AnimatedMusicTileState extends State<AnimatedMusicTile>
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOutCubic,
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.md),
         transform: Matrix4.identity()
           ..scaleByDouble(
               _isPressed ? 0.97 : 1.0, _isPressed ? 0.97 : 1.0, 1.0, 1.0),
@@ -110,7 +111,7 @@ class _AnimatedMusicTileState extends State<AnimatedMusicTile>
                   end: Alignment.centerRight,
                 )
               : AppColors.cardGradient,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: widget.isPlaying
                 ? AppColors.primary.withValues(alpha: 0.4)
@@ -145,7 +146,7 @@ class _AnimatedMusicTileState extends State<AnimatedMusicTile>
             Hero(
               tag: 'tile_song_${widget.song.id}',
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: CachedNetworkImage(
                   imageUrl: widget.song.thumbnailUrl,
                   width: 52,
@@ -305,7 +306,7 @@ class _CompactMusicTileState extends State<CompactMusicTile> {
               _isPressed ? 0.96 : 1.0, _isPressed ? 0.96 : 1.0, 1.0, 1.0),
         decoration: BoxDecoration(
           gradient: AppColors.cardGradient,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: widget.isPlaying
                 ? AppColors.primary.withValues(alpha: 0.4)
@@ -316,7 +317,7 @@ class _CompactMusicTileState extends State<CompactMusicTile> {
         child: Row(
           children: [
             ClipRRect(
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
               child: CachedNetworkImage(
                 imageUrl: widget.song.thumbnailUrl,
                 width: 52,

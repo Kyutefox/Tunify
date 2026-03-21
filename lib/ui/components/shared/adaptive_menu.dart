@@ -164,7 +164,7 @@ const Duration _kHoverDelay = Duration(milliseconds: 110);
 
 BoxDecoration _panelDecoration() => BoxDecoration(
       color: const Color(0xFF1C1C1E),
-      borderRadius: BorderRadius.circular(10),
+      borderRadius: BorderRadius.circular(AppRadius.md),
       border: Border.all(
         color: Colors.white.withValues(alpha: 0.10),
         width: 0.5,
@@ -496,7 +496,7 @@ class _MenuPanel extends StatelessWidget {
       constraints: const BoxConstraints(maxHeight: 360),
       decoration: _panelDecoration(),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(vertical: 4),
           child: Column(
@@ -626,7 +626,7 @@ class _MenuItemState extends State<_MenuItem> {
             color: highlighted
                 ? Colors.white.withValues(alpha: 0.07)
                 : Colors.transparent,
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
           child: Row(
             children: [
@@ -637,7 +637,7 @@ class _MenuItemState extends State<_MenuItem> {
                   child: AppIcon(icon: e.icon, color: color, size: 15),
                 ),
               ),
-              const SizedBox(width: 10),
+              const SizedBox(width: AppSpacing.sm + 2),
               Expanded(
                 child: Text(
                   e.label,
@@ -652,7 +652,7 @@ class _MenuItemState extends State<_MenuItem> {
                 ),
               ),
               if (e.subEntries != null || e.showChevron) ...[
-                const SizedBox(width: 6),
+                const SizedBox(width: AppSpacing.xs + 2),
                 AppIcon(
                   icon: AppIcons.chevronRight,
                   color: AppColors.textMuted,

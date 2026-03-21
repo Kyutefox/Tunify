@@ -58,7 +58,7 @@ class PlayerBlurredBackground extends StatelessWidget {
   }
 }
 
-class PlayerGlassButton extends StatelessWidget {
+class PlayerGlassButton extends StatefulWidget {
   const PlayerGlassButton({
     super.key,
     required this.icon,
@@ -71,22 +71,41 @@ class PlayerGlassButton extends StatelessWidget {
   final double size;
 
   @override
+  State<PlayerGlassButton> createState() => _PlayerGlassButtonState();
+}
+
+class _PlayerGlassButtonState extends State<PlayerGlassButton> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 42,
-        height: 42,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: Colors.white.withValues(alpha: 0.08),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.12),
-            width: 0.5,
+      onTap: widget.onTap,
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.88 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: AnimatedOpacity(
+          opacity: _pressed ? 0.6 : 1.0,
+          duration: const Duration(milliseconds: 120),
+          child: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white.withValues(alpha: 0.08),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.12),
+                width: 0.5,
+              ),
+            ),
+            child: Center(
+              child: AppIcon(icon: widget.icon, color: AppColors.textPrimary, size: widget.size),
+            ),
           ),
-        ),
-        child: Center(
-          child: AppIcon(icon: icon, color: AppColors.textPrimary, size: size),
         ),
       ),
     );

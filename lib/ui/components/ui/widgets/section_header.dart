@@ -77,60 +77,19 @@ class SectionHeader extends StatelessWidget {
 
   Widget _buildAction(BuildContext context) {
     final label = seeAllLabel;
-    if (label != null && label.isNotEmpty) {
-      return GestureDetector(
-        onTap: onSeeAll,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      );
-    }
+    final text = (label != null && label.isNotEmpty) ? label : 'See All';
     return GestureDetector(
       onTap: onSeeAll,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ShaderMask(
-              shaderCallback: (bounds) =>
-                  AppColors.primaryGradient.createShader(bounds),
-              child: const Text(
-                'See All',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            const SizedBox(width: 4),
-            ShaderMask(
-              shaderCallback: (bounds) =>
-                  AppColors.primaryGradient.createShader(bounds),
-              child: AppIcon(
-                icon: AppIcons.forward,
-                size: 14,
-                color: Colors.white,
-              ),
-            ),
-          ],
+      child: ShaderMask(
+        shaderCallback: (bounds) =>
+            AppColors.primaryGradient.createShader(bounds),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
         ),
       ),
     );
@@ -154,7 +113,7 @@ class GradientSectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.xl, AppSpacing.base, AppSpacing.base),
       child: Row(
         children: [
           if (icon != null) ...[

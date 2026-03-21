@@ -4,6 +4,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import '../../../../config/app_icons.dart';
 import '../../../../models/artist.dart';
 import '../../../../ui/theme/app_colors.dart';
+import '../../../../ui/theme/design_tokens.dart';
 
 class ArtistAvatar extends StatefulWidget {
   final Artist artist;
@@ -212,10 +213,10 @@ class _ArtistCardState extends State<ArtistCard> {
           ..scaleByDouble(
               _isPressed ? 0.96 : 1.0, _isPressed ? 0.96 : 1.0, 1.0, 1.0),
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           gradient: AppColors.cardGradient,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(AppRadius.md),
           border: Border.all(
             color: AppColors.surfaceHighlight,
             width: 1,
@@ -318,7 +319,7 @@ class _ArtistCardState extends State<ArtistCard> {
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
               decoration: BoxDecoration(
                 border: Border.all(color: AppColors.primary),
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppRadius.lg),
               ),
               child: const Text(
                 'Follow',

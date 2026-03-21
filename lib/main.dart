@@ -26,6 +26,7 @@ import 'package:tunify/ui/mobile/mobile_shell.dart';
 import 'package:tunify/ui/screens/loading_screen.dart';
 import 'package:tunify/ui/screens/welcome_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_theme.dart';
 
 final supabaseInitProvider = FutureProvider<void>((ref) async {
@@ -329,7 +330,7 @@ class _InitErrorScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -338,7 +339,7 @@ class _InitErrorScreen extends StatelessWidget {
                 color: AppColors.textMuted,
                 size: 42,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               const Text(
                 'Unable to initialize services',
                 style: TextStyle(
@@ -347,13 +348,13 @@ class _InitErrorScreen extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               const Text(
                 'Please check your connection and try again.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.base),
               AppButton(
                 label: 'Retry',
                 onPressed: onRetry,

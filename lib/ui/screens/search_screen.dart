@@ -108,7 +108,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
                       color: AppColors.textSecondary,
                       size: 18,
                     ),
-                    const SizedBox(width: 6),
+                    const SizedBox(width: AppSpacing.xs + 2),
                     const Text(
                       'Browse',
                       style: TextStyle(
@@ -122,7 +122,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
               ),
             )
           else
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
         ],
       ),
     );
@@ -558,7 +558,7 @@ class RecentSearchSection extends ConsumerWidget {
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(AppRadius.sm),
                   ),
                   child: const Text(
                     'Clear',
@@ -588,7 +588,7 @@ class RecentSearchSection extends ConsumerWidget {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () => _onChipTap(context, query),
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
                   child: Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.md,
@@ -596,7 +596,7 @@ class RecentSearchSection extends ConsumerWidget {
                     ),
                     decoration: BoxDecoration(
                       color: AppColors.surfaceLight.withValues(alpha: 0.8),
-                      borderRadius: BorderRadius.circular(20),
+                      borderRadius: BorderRadius.circular(AppRadius.xl),
                       border: Border.all(
                         color: AppColors.textMuted.withValues(alpha: 0.2),
                         width: 1,

@@ -299,7 +299,6 @@ class _LibraryChip extends StatelessWidget {
   final Widget child;
 
   static const double _height = 32;
-  static const double _radius = 8;
 
   @override
   Widget build(BuildContext context) {
@@ -307,7 +306,7 @@ class _LibraryChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(_radius),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Container(
           height: _height,
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
@@ -316,7 +315,7 @@ class _LibraryChip extends StatelessWidget {
             color: selected
                 ? AppColors.primary.withValues(alpha: 0.2)
                 : AppColors.surfaceLight.withValues(alpha: 0.8),
-            borderRadius: BorderRadius.circular(_radius),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
             border: selected
                 ? Border.all(color: AppColors.primary, width: 1)
                 : null,

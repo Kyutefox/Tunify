@@ -62,6 +62,7 @@ class SongListTile extends ConsumerWidget {
 
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
         color: highlightBackground && isNowPlaying
             ? AppColors.primary.withValues(alpha: 0.08)

@@ -87,14 +87,13 @@ class _SearchBarPlaceholder extends ConsumerWidget {
               ),
             ),
           ),
-          // Divider
-          Container(
-            width: 1,
-            height: 22,
-            color: AppColors.textMuted.withValues(alpha: 0.3),
-          ),
-          // Browse button — desktop only
-          if (ShellContext.isDesktopOf(context))
+          // Divider + Browse — desktop only
+          if (ShellContext.isDesktopOf(context)) ...[
+            Container(
+              width: 1,
+              height: 22,
+              color: AppColors.textMuted.withValues(alpha: 0.3),
+            ),
             GestureDetector(
               onTap: () => showMoodBrowseSheet(context, moods: moods),
               behavior: HitTestBehavior.opaque,
@@ -120,8 +119,8 @@ class _SearchBarPlaceholder extends ConsumerWidget {
                   ],
                 ),
               ),
-            )
-          else
+            ),
+          ] else
             const SizedBox(width: AppSpacing.md),
         ],
       ),
@@ -553,17 +552,13 @@ class RecentSearchSection extends ConsumerWidget {
               GestureDetector(
                 onTap: () =>
                     ref.read(recentSearchProvider.notifier).clearAll(),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
+                child: ShaderMask(
+                  shaderCallback: (bounds) =>
+                      AppColors.primaryGradient.createShader(bounds),
                   child: const Text(
                     'Clear',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: Colors.white,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),

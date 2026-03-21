@@ -709,7 +709,7 @@ class _AddToPlaylistSheetContentState
         const SizedBox(height: AppSpacing.sm),
         Expanded(
               child: _isSearching
-                  ? const Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
                   : list.isEmpty
                       ? Center(
                           child: Padding(

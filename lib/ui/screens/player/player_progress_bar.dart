@@ -75,7 +75,7 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
     final durationText = durationKnown ? safeDuration.formattedMmSS : '--:--';
 
     const timeStyle = TextStyle(
-      color: Color(0x80FFFFFF),
+      color: Color(0x80FFFFFF), // 50% white — intentional for player time labels
       fontSize: 12,
       fontWeight: FontWeight.w500,
       fontFeatures: [FontFeature.tabularFigures()],

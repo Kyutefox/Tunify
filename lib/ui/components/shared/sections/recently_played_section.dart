@@ -128,16 +128,13 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
                     builder: (_) => const RecentlyPlayedScreen(),
                   ),
                 ),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                  ),
+                child: ShaderMask(
+                  shaderCallback: (bounds) =>
+                      AppColors.primaryGradient.createShader(bounds),
                   child: const Text(
                     'See all',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: Colors.white,
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
                     ),

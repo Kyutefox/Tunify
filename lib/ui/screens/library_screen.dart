@@ -352,7 +352,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         return [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
               child: AnimatedSwitcher(
                 duration: Duration.zero,
                 child: KeyedSubtree(
@@ -383,7 +383,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         return [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
               child: AnimatedSwitcher(
                 duration: Duration.zero,
                 child: KeyedSubtree(
@@ -490,7 +490,6 @@ class _FollowedArtistsList extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 vertical: AppSpacing.sm,
-                horizontal: AppSpacing.sm,
               ),
               child: Row(
                 children: [
@@ -653,7 +652,6 @@ class _FollowedAlbumsList extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(
                 vertical: AppSpacing.sm,
-                horizontal: AppSpacing.sm,
               ),
               child: Row(
                 children: [

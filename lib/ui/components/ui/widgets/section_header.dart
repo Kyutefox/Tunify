@@ -121,7 +121,7 @@ class GradientSectionHeader extends StatelessWidget {
               shaderCallback: (bounds) => gradient.createShader(bounds),
               child: AppIcon(icon: icon!, size: 28, color: Colors.white),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.md),
           ],
           Expanded(
             child: Column(

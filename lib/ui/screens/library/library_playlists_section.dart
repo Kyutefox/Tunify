@@ -61,7 +61,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
         isFolderView && contentEntries.isEmpty;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -495,7 +495,6 @@ class _LibraryFolderListTile extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.sm,
-            horizontal: AppSpacing.sm,
           ),
           child: Row(
             children: [
@@ -657,7 +656,6 @@ class _StaticListTile extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.sm,
-            horizontal: AppSpacing.sm,
           ),
           child: Row(
             children: [
@@ -736,7 +734,6 @@ class _LibraryPlaylistListTile extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(
             vertical: AppSpacing.sm,
-            horizontal: AppSpacing.sm,
           ),
           child: Row(
             children: [

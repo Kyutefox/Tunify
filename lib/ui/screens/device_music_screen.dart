@@ -206,7 +206,7 @@ class _DeviceMusicScreenState extends ConsumerState<DeviceMusicScreen>
   Widget _buildBody(DeviceMusicState state) {
     if (state.isLoading && state.songs.isEmpty) {
       return const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
+        child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
 

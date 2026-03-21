@@ -67,7 +67,7 @@ class HomeSettingsSheet extends ConsumerWidget {
                 'Settings',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 22,
+                  fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -191,7 +191,7 @@ class _SettingsCard extends StatelessWidget {
                       title,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 17,
+                        fontSize: AppFontSize.xxl,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -200,7 +200,7 @@ class _SettingsCard extends StatelessWidget {
                       subtitle,
                       style: const TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 13,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
                   ],
@@ -246,14 +246,14 @@ class _CrossfadeTile extends StatelessWidget {
                       'Crossfade',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 15,
+                        fontSize: AppFontSize.lg,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       value == 0 ? 'Off' : '$value seconds',
                       style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 12),
+                          color: AppColors.textMuted, fontSize: AppFontSize.sm),
                     ),
                   ],
                 ),
@@ -386,14 +386,14 @@ class _DataTile extends StatelessWidget {
                       label,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 15,
+                        fontSize: AppFontSize.lg,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       subtitle,
                       style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 12),
+                          color: AppColors.textMuted, fontSize: AppFontSize.sm),
                     ),
                   ],
                 ),
@@ -626,14 +626,14 @@ class _PlaybackToggleTile extends StatelessWidget {
                   label,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 15,
+                    fontSize: AppFontSize.lg,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   subtitle,
                   style:
-                      const TextStyle(color: AppColors.textMuted, fontSize: 12),
+                      const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
                 ),
               ],
             ),
@@ -838,7 +838,7 @@ class _SupabaseSettingsBodyState extends ConsumerState<SupabaseSettingsBody> {
                 : 'Currently using default config',
             style: const TextStyle(
               color: AppColors.textMuted,
-              fontSize: 13,
+              fontSize: AppFontSize.md,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -846,7 +846,7 @@ class _SupabaseSettingsBodyState extends ConsumerState<SupabaseSettingsBody> {
             'Leave URL and anon key empty to use the default config. Enter both to use your own project.',
             style: TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 13,
+              fontSize: AppFontSize.md,
             ),
           ),
           const SizedBox(height: AppSpacing.xl),

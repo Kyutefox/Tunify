@@ -64,7 +64,7 @@ class DesktopPlayerBar extends ConsumerWidget {
           : const Center(
               child: Text(
                 'Play a song to get started',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                style: TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.md),
               ),
             ),
     );
@@ -122,7 +122,7 @@ class _SongInfo extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 13,
+                  fontSize: AppFontSize.md,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -133,7 +133,7 @@ class _SongInfo extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 12,
+                  fontSize: AppFontSize.sm,
                 ),
               ),
             ],
@@ -289,11 +289,11 @@ class _RightControlsState extends ConsumerState<_RightControls> {
     final activeTab = ref.watch(rightSidebarTabProvider);
     final dominantColor = ref.watch(dominantColorProvider);
 
-    final IconData volIcon = _volume == 0
-        ? Icons.volume_off_rounded
+    final volIcon = _volume == 0
+        ? AppIcons.volumeOff
         : _volume < 0.5
-            ? Icons.volume_down_rounded
-            : Icons.volume_up_rounded;
+            ? AppIcons.volumeLow
+            : AppIcons.volumeHigh;
 
     // Returns the icon color for a sidebar-toggle button.
     Color tabColor(RightSidebarTab tab) => activeTab == tab
@@ -343,7 +343,7 @@ class _RightControlsState extends ConsumerState<_RightControls> {
           behavior: HitTestBehavior.opaque,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xs),
-            child: Icon(volIcon, color: Colors.white.withValues(alpha: 0.75), size: 18),
+            child: AppIcon(icon: volIcon, color: Colors.white.withValues(alpha: 0.75), size: 18),
           ),
         ),
         const SizedBox(width: 4),

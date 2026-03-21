@@ -95,7 +95,7 @@ class HomeUserMenuSheet extends StatelessWidget {
                           username,
                           style: const TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 17,
+                            fontSize: AppFontSize.xxl,
                             fontWeight: FontWeight.w700,
                           ),
                           maxLines: 1,
@@ -106,7 +106,7 @@ class HomeUserMenuSheet extends StatelessWidget {
                             email!,
                             style: const TextStyle(
                               color: AppColors.textMuted,
-                              fontSize: 13,
+                              fontSize: AppFontSize.md,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -177,7 +177,7 @@ class _MenuRow extends StatelessWidget {
               label,
               style: TextStyle(
                 color: color,
-                fontSize: 15,
+                fontSize: AppFontSize.lg,
                 fontWeight: FontWeight.w600,
               ),
             ),

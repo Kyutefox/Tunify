@@ -208,9 +208,9 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                       'Library',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 22,
+                        fontSize: AppFontSize.h2,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -0.8,
+                        letterSpacing: AppLetterSpacing.display,
                       ),
                     ),
                   ),
@@ -353,7 +353,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                       sortOrder.label,
                                       style: const TextStyle(
                                         color: AppColors.textSecondary,
-                                        fontSize: 12,
+                                        fontSize: AppFontSize.sm,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -439,7 +439,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                 'No playlists in this folder.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
-                                    color: AppColors.textMuted, fontSize: 13),
+                                    color: AppColors.textMuted, fontSize: AppFontSize.md),
                               ),
                             )
                           else
@@ -581,9 +581,9 @@ class _SectionLabel extends StatelessWidget {
         label,
         style: const TextStyle(
           color: AppColors.textMuted,
-          fontSize: 11,
+          fontSize: AppFontSize.xs,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.8,
+          letterSpacing: AppLetterSpacing.label,
         ),
       ),
     );

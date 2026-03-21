@@ -245,7 +245,7 @@ class _DynamicHeaderState extends State<DynamicHeader>
               widget.greeting,
               style: TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: 16,
+                fontSize: AppFontSize.xl,
                 fontWeight: FontWeight.w500,
               ),
             )
@@ -257,9 +257,9 @@ class _DynamicHeaderState extends State<DynamicHeader>
               widget.userName ?? 'Music Lover',
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 32,
+                fontSize: AppFontSize.display3,
                 fontWeight: FontWeight.w700,
-                letterSpacing: -0.5,
+                letterSpacing: AppLetterSpacing.display,
               ),
             )
                 .animate()
@@ -299,7 +299,7 @@ class _DynamicHeaderState extends State<DynamicHeader>
                         'Online',
                         style: TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 12,
+                          fontSize: AppFontSize.sm,
                           fontWeight: FontWeight.w500,
                         ),
                       ),

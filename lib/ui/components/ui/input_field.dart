@@ -57,7 +57,7 @@ class AppInputField extends StatelessWidget {
           hintText: useHint ? hintText : null,
           hintStyle: TextStyle(
             color: AppColors.textMuted.withValues(alpha: 0.7),
-            fontSize: 16,
+            fontSize: AppFontSize.xl,
           ),
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
@@ -106,11 +106,11 @@ class AppInputField extends StatelessWidget {
           labelText: useLabel ? labelText : null,
           labelStyle: const TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 14,
+            fontSize: AppFontSize.base,
           ),
           floatingLabelStyle: const TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 13,
+            fontSize: AppFontSize.md,
             fontWeight: FontWeight.w500,
           ),
           floatingLabelBehavior: FloatingLabelBehavior.auto,
@@ -155,7 +155,7 @@ class AppInputField extends StatelessWidget {
           ),
           errorStyle: const TextStyle(
             color: AppColors.accentRed,
-            fontSize: 12,
+            fontSize: AppFontSize.sm,
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md,
@@ -171,7 +171,7 @@ class AppInputField extends StatelessWidget {
     final textStyle = TextStyle(
       color: AppColors.textPrimary,
       fontSize: style == InputFieldStyle.transparent ? 16 : 15,
-      height: 1.3,
+      height: AppLineHeight.normal,
       fontWeight: style == InputFieldStyle.transparent ? FontWeight.w500 : null,
     );
 

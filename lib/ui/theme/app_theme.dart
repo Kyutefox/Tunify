@@ -7,8 +7,6 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData.dark(useMaterial3: true).copyWith(
       scaffoldBackgroundColor: AppColors.background,
-      // Kill the spreading ripple globally — it bleeds through page transitions.
-      // Press feedback is handled by highlightColor only (clears on finger lift).
       splashFactory: NoSplash.splashFactory,
       splashColor: Colors.transparent,
       highlightColor: Colors.white.withValues(alpha: 0.06),
@@ -23,102 +21,31 @@ class AppTheme {
         onSurface: AppColors.textPrimary,
         outline: AppColors.glassBorder,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.2,
+        titleTextStyle: GoogleFonts.plusJakartaSans(
+          textStyle: AppTextStyle.screenTitle,
         ),
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
-      textTheme: GoogleFonts.interTextTheme(const TextTheme(
-        displayLarge: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 48,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -1.5,
-          height: 1.1,
-        ),
-        displayMedium: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 36,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -1.0,
-          height: 1.15,
-        ),
-        displaySmall: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.5,
-        ),
-        headlineLarge: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.3,
-        ),
-        headlineMedium: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
-        ),
-        headlineSmall: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        ),
-        titleLarge: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-        titleMedium: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-        ),
-        titleSmall: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
-        bodyLarge: TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 15,
-          fontWeight: FontWeight.w400,
-        ),
-        bodyMedium: TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-        ),
-        bodySmall: TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-        ),
-        labelLarge: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-        ),
-        labelMedium: TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-        labelSmall: TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-        ),
+      textTheme: GoogleFonts.plusJakartaSansTextTheme(TextTheme(
+        displayLarge: AppTextStyle.display1,
+        displayMedium: AppTextStyle.display2,
+        displaySmall: AppTextStyle.display3,
+        headlineLarge: AppTextStyle.h1,
+        headlineMedium: AppTextStyle.h3,
+        headlineSmall: AppTextStyle.screenTitle,
+        titleLarge: AppTextStyle.titleBase,
+        titleMedium: AppTextStyle.titleLg,
+        titleSmall: AppTextStyle.labelLg,
+        bodyLarge: AppTextStyle.bodyLg,
+        bodyMedium: AppTextStyle.bodyBase,
+        bodySmall: AppTextStyle.caption,
+        labelLarge: AppTextStyle.labelLg,
+        labelMedium: AppTextStyle.labelBase,
+        labelSmall: AppTextStyle.labelSm,
       )),
       iconTheme: const IconThemeData(color: AppColors.textSecondary),
       navigationBarTheme: NavigationBarThemeData(
@@ -127,14 +54,14 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const TextStyle(
-              fontSize: 11,
+            return GoogleFonts.plusJakartaSans(
+              fontSize: AppFontSize.xs,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             );
           }
-          return const TextStyle(
-            fontSize: 11,
+          return GoogleFonts.plusJakartaSans(
+            fontSize: AppFontSize.xs,
             fontWeight: FontWeight.w500,
             color: AppColors.textMuted,
           );
@@ -182,7 +109,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppRadius.input),
           borderSide: const BorderSide(color: AppColors.accentRed),
         ),
-        errorStyle: const TextStyle(color: AppColors.accentRed, fontSize: 12),
+        errorStyle: GoogleFonts.plusJakartaSans(
+          color: AppColors.accentRed,
+          fontSize: AppFontSize.sm,
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,

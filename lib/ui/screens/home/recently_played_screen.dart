@@ -187,7 +187,7 @@ class _DateGroupedSongList extends ConsumerWidget {
                   songs[index].artist,
                   style: const TextStyle(
                     color: AppColors.textMuted,
-                    fontSize: 12,
+                    fontSize: AppFontSize.sm,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -198,7 +198,7 @@ class _DateGroupedSongList extends ConsumerWidget {
                 songs[index].durationFormatted,
                 style: const TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 12,
+                  fontSize: AppFontSize.sm,
                 ),
               ),
             ],
@@ -210,7 +210,7 @@ class _DateGroupedSongList extends ConsumerWidget {
                 songs[index].durationFormatted,
                 style: const TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 13,
+                  fontSize: AppFontSize.md,
                 ),
               ),
               AppIconButton(
@@ -248,7 +248,7 @@ class _DateGroupedSongList extends ConsumerWidget {
                   song.artist,
                   style: const TextStyle(
                     color: AppColors.textMuted,
-                    fontSize: 12,
+                    fontSize: AppFontSize.sm,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -259,7 +259,7 @@ class _DateGroupedSongList extends ConsumerWidget {
                 song.durationFormatted,
                 style: const TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 12,
+                  fontSize: AppFontSize.sm,
                 ),
               ),
             ],
@@ -271,7 +271,7 @@ class _DateGroupedSongList extends ConsumerWidget {
                 song.durationFormatted,
                 style: const TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 13,
+                  fontSize: AppFontSize.md,
                 ),
               ),
               AppIconButton(
@@ -352,9 +352,9 @@ class _DateHeader extends StatelessWidget {
         label,
         style: const TextStyle(
           color: AppColors.textSecondary,
-          fontSize: 14,
+          fontSize: AppFontSize.base,
           fontWeight: FontWeight.w700,
-          letterSpacing: 0.3,
+          letterSpacing: AppLetterSpacing.normal,
         ),
       ),
     );

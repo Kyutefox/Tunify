@@ -523,7 +523,7 @@ class _FollowedArtistsList extends ConsumerWidget {
                           artist.name,
                           style: const TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 15,
+                            fontSize: AppFontSize.lg,
                             fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
@@ -531,7 +531,7 @@ class _FollowedArtistsList extends ConsumerWidget {
                         ),
                         const Text(
                           'Artist',
-                          style: TextStyle(color: AppColors.textMuted, fontSize: 13),
+                          style: TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.md),
                         ),
                       ],
                     ),
@@ -608,7 +608,7 @@ class _FollowedArtistsGrid extends ConsumerWidget {
                 artist.name,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 13,
+                  fontSize: AppFontSize.md,
                   fontWeight: FontWeight.w600,
                 ),
                 maxLines: 1,
@@ -617,7 +617,7 @@ class _FollowedArtistsGrid extends ConsumerWidget {
               ),
               const Text(
                 'Artist',
-                style: TextStyle(color: AppColors.textMuted, fontSize: 11),
+                style: TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.xs),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -690,7 +690,7 @@ class _FollowedAlbumsList extends ConsumerWidget {
                           album.title,
                           style: const TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 15,
+                            fontSize: AppFontSize.lg,
                             fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
@@ -698,7 +698,7 @@ class _FollowedAlbumsList extends ConsumerWidget {
                         ),
                         Text(
                           album.artistName,
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                          style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.md),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -780,7 +780,7 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
                 album.title,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 13,
+                  fontSize: AppFontSize.md,
                   fontWeight: FontWeight.w600,
                 ),
                 maxLines: 1,
@@ -788,7 +788,7 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
               ),
               Text(
                 album.artistName,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: 11),
+                style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.xs),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -831,7 +831,7 @@ class LibraryFilterPlaceholder extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: 15,
+                fontSize: AppFontSize.lg,
               ),
             ),
           ],
@@ -905,7 +905,7 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                       'Add to folder',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 20,
+                        fontSize: AppFontSize.h3,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -914,7 +914,7 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                       '${widget.folders.length}',
                       style: const TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 14,
+                        fontSize: AppFontSize.base,
                       ),
                     ),
                   ],
@@ -1005,7 +1005,7 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                       subtitle: Text(
                         '${f.playlistCount} playlists',
                         style: const TextStyle(
-                            color: AppColors.textMuted, fontSize: 12),
+                            color: AppColors.textMuted, fontSize: AppFontSize.sm),
                       ),
                       trailing: hasPlaylist
                           ? AppIcon(

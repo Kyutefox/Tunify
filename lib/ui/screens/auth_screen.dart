@@ -173,10 +173,10 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet>
                       key: ValueKey(_isSignUp),
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 26,
+                        fontSize: AppFontSize.h1,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -0.6,
-                        height: 1.1,
+                        letterSpacing: AppLetterSpacing.display,
+                        height: AppLineHeight.tight,
                       ),
                     ),
                   ),
@@ -192,7 +192,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet>
                       key: ValueKey('sub_$_isSignUp'),
                       style: const TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 14,
+                        fontSize: AppFontSize.base,
                       ),
                     ),
                   ),
@@ -296,24 +296,24 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet>
                       margin: const EdgeInsets.only(top: AppSpacing.md),
                       padding: const EdgeInsets.all(AppSpacing.md),
                       decoration: BoxDecoration(
-                        color: AppColors.accent.withValues(alpha: 0.12),
+                        color: AppColors.primary.withValues(alpha: 0.12),
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         border: Border.all(
-                          color: AppColors.accent.withValues(alpha: 0.40),
+                          color: AppColors.primary.withValues(alpha: 0.40),
                         ),
                       ),
                       child: Row(
                         children: [
                           AppIcon(
                               icon: AppIcons.markEmailUnread,
-                              color: AppColors.accent,
+                              color: AppColors.primary,
                               size: 18),
                           SizedBox(width: AppSpacing.sm),
                           Expanded(
                             child: Text(
                               'Account created! Check your email to confirm your address, then sign in.',
                               style: TextStyle(
-                                  color: AppColors.accent, fontSize: 13),
+                                  color: AppColors.primary, fontSize: AppFontSize.md),
                             ),
                           ),
                         ],
@@ -344,7 +344,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet>
                               authState.error!,
                               style: const TextStyle(
                                 color: AppColors.accentRed,
-                                fontSize: 13,
+                                fontSize: AppFontSize.md,
                               ),
                             ),
                           ),
@@ -371,7 +371,7 @@ class _AuthBottomSheetState extends ConsumerState<AuthBottomSheet>
                       child: RichText(
                         text: TextSpan(
                           style: const TextStyle(
-                              color: AppColors.textSecondary, fontSize: 14),
+                              color: AppColors.textSecondary, fontSize: AppFontSize.base),
                           children: [
                             TextSpan(
                               text: _isSignUp

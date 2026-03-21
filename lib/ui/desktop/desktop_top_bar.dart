@@ -293,14 +293,14 @@ class _DesktopSearchBar extends StatelessWidget {
                 focusNode: focusNode,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 13,
+                  fontSize: AppFontSize.md,
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
                   hintText: 'What do you want to play?',
                   hintStyle: TextStyle(
                     color: AppColors.textMuted.withValues(alpha: 0.7),
-                    fontSize: 13,
+                    fontSize: AppFontSize.md,
                   ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -349,7 +349,7 @@ class _DesktopSearchBar extends StatelessWidget {
                     'Browse',
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                       fontWeight: FontWeight.w600,
                     ),
                   ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../config/app_icons.dart';
 import '../../../ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 
 /// Reusable app bar with back button and title. Use for secondary screens.
 class BackTitleAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -38,7 +39,7 @@ class BackTitleAppBar extends StatelessWidget implements PreferredSizeWidget {
         title,
         style: const TextStyle(
           color: AppColors.textPrimary,
-          fontSize: 18,
+          fontSize: AppFontSize.xxl,
           fontWeight: FontWeight.w700,
         ),
       ),

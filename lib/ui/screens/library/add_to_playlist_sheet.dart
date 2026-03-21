@@ -91,7 +91,7 @@ class _AddToPlaylistSheetContentState
                       : 'Add ${widget.songs.length} songs to playlist',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 18,
+                    fontSize: AppFontSize.xxl,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
@@ -158,7 +158,7 @@ class _AddToPlaylistSheetContentState
                   : 'Create a playlist in Library first',
               style: TextStyle(
                 color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: 14,
+                fontSize: AppFontSize.base,
               ),
             ),
           )
@@ -199,7 +199,7 @@ class _AddToPlaylistSheetContentState
                     p.trackCountLabel,
                     style: const TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                     ),
                   ),
                   trailing: allAlreadyIn

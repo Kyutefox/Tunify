@@ -65,7 +65,7 @@ class _LibraryLikedSongsScreenState
           '${likedSongs.length} ${likedSongs.length == 1 ? 'song' : 'songs'}',
           style: TextStyle(
             color: AppColors.textMuted.withValues(alpha: 0.9),
-            fontSize: 14,
+            fontSize: AppFontSize.base,
           ),
         ),
         if (likedSongs.isNotEmpty) ...[
@@ -73,14 +73,14 @@ class _LibraryLikedSongsScreenState
             ' • ',
             style: TextStyle(
               color: AppColors.textMuted.withValues(alpha: 0.9),
-              fontSize: 14,
+              fontSize: AppFontSize.base,
             ),
           ),
           Text(
             _formatDuration(likedSongs),
             style: TextStyle(
               color: AppColors.textMuted.withValues(alpha: 0.9),
-              fontSize: 14,
+              fontSize: AppFontSize.base,
             ),
           ),
         ],
@@ -123,7 +123,7 @@ class _LibraryLikedSongsScreenState
                       : 'No matches for "$query"',
                   style: TextStyle(
                     color: AppColors.textMuted.withValues(alpha: 0.9),
-                    fontSize: 14,
+                    fontSize: AppFontSize.base,
                   ),
                 ),
               ),
@@ -258,7 +258,7 @@ class _EditLikedSheetState extends ConsumerState<_EditLikedSheet> {
             leading: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
+                AppIconButton(
                   icon: FavouriteIcon(
                     isLiked: marked,
                     songId: song.id,
@@ -266,6 +266,8 @@ class _EditLikedSheetState extends ConsumerState<_EditLikedSheet> {
                     emptyColor: AppColors.textMuted,
                   ),
                   onPressed: () => _toggleRemove(song),
+                  size: 40,
+                  iconSize: 22,
                 ),
                 NowPlayingThumbnail(
                   isPlaying: isNowPlaying,
@@ -313,7 +315,7 @@ class _EditLikedSheetState extends ConsumerState<_EditLikedSheet> {
                 color: marked
                     ? AppColors.textMuted
                     : isNowPlaying
-                        ? AppColors.accent
+                        ? AppColors.primary
                         : AppColors.textPrimary,
                 decoration: marked ? TextDecoration.lineThrough : null,
               ),
@@ -371,7 +373,7 @@ class _LikedEmptyState extends StatelessWidget {
               'No liked songs yet',
               style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 20,
+                fontSize: AppFontSize.h3,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -381,7 +383,7 @@ class _LikedEmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: 15,
+                fontSize: AppFontSize.lg,
               ),
             ),
           ],
@@ -517,7 +519,7 @@ class _LikedActionRow extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
       child: Row(
         children: [
-          IconButton(
+          AppIconButton(
             icon: AppIcon(
               icon: AppIcons.shuffle,
               size: 24,
@@ -529,16 +531,18 @@ class _LikedActionRow extends ConsumerWidget {
                     ref.read(libraryProvider.notifier).toggleLikedShuffle();
                   }
                 : null,
-            color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
+            size: 40,
+            iconSize: 24,
           ),
-          IconButton(
+          AppIconButton(
             icon: AppIcon(
               icon: AppIcons.edit,
               size: 24,
               color: AppColors.textMuted,
             ),
             onPressed: onEdit,
-            color: AppColors.textMuted,
+            size: 40,
+            iconSize: 24,
           ),
           MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
           const Spacer(),
@@ -625,7 +629,7 @@ class _LikedTrackTile extends ConsumerWidget {
             song.durationFormatted,
             style: const TextStyle(
               color: AppColors.textMuted,
-              fontSize: 13,
+              fontSize: AppFontSize.md,
             ),
           ),
           AppIconButton(

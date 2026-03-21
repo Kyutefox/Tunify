@@ -311,7 +311,7 @@ class _SongOptionsContent extends ConsumerWidget {
                     song.title,
                     style: const TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 16,
+                      fontSize: AppFontSize.xl,
                       fontWeight: FontWeight.w700,
                     ),
                     maxLines: 1,
@@ -322,7 +322,7 @@ class _SongOptionsContent extends ConsumerWidget {
                     song.artist,
                     style: const TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 13,
+                      fontSize: AppFontSize.md,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -565,7 +565,7 @@ class _QuickActionButton extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 12,
+                  fontSize: AppFontSize.sm,
                   fontWeight: FontWeight.w500,
                 ),
               ),

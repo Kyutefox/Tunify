@@ -73,7 +73,7 @@ class _ArtistAvatarState extends State<ArtistAvatar>
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 13,
+                  fontSize: AppFontSize.md,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -86,7 +86,7 @@ class _ArtistAvatarState extends State<ArtistAvatar>
                     AppIcon(
                       icon: AppIcons.verified,
                       size: 12,
-                      color: AppColors.accent,
+                      color: AppColors.primary,
                     ),
                     const SizedBox(width: 4),
                   ],
@@ -97,7 +97,7 @@ class _ArtistAvatarState extends State<ArtistAvatar>
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 11,
+                        fontSize: AppFontSize.xs,
                       ),
                     ),
                   ),
@@ -262,7 +262,7 @@ class _ArtistCardState extends State<ArtistCard> {
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 15,
+                            fontSize: AppFontSize.lg,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -272,7 +272,7 @@ class _ArtistCardState extends State<ArtistCard> {
                         AppIcon(
                           icon: AppIcons.verified,
                           size: 16,
-                          color: AppColors.accent,
+                          color: AppColors.primary,
                         ),
                       ],
                     ],
@@ -282,7 +282,7 @@ class _ArtistCardState extends State<ArtistCard> {
                     widget.artist.listenersFormatted,
                     style: const TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                     ),
                   ),
                   if (widget.artist.latestRelease != null) ...[
@@ -305,7 +305,7 @@ class _ArtistCardState extends State<ArtistCard> {
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 11,
+                              fontSize: AppFontSize.xs,
                             ),
                           ),
                         ),
@@ -325,7 +325,7 @@ class _ArtistCardState extends State<ArtistCard> {
                 'Follow',
                 style: TextStyle(
                   color: AppColors.primary,
-                  fontSize: 12,
+                  fontSize: AppFontSize.sm,
                   fontWeight: FontWeight.w600,
                 ),
               ),

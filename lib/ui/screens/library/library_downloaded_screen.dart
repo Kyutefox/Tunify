@@ -52,7 +52,7 @@ class LibraryDownloadedScreen extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      IconButton(
+                      AppIconButton(
                         icon: AppIcon(
                           icon: AppIcons.shuffle,
                           size: 24,
@@ -65,11 +65,10 @@ class LibraryDownloadedScreen extends ConsumerWidget {
                               .read(libraryProvider.notifier)
                               .toggleDownloadedShuffle();
                         },
-                        color: shuffleEnabled
-                            ? AppColors.primary
-                            : AppColors.textMuted,
+                        size: 40,
+                        iconSize: 24,
                       ),
-                      IconButton(
+                      AppIconButton(
                         icon: AppIcon(
                           icon: AppIcons.edit,
                           size: 24,
@@ -77,7 +76,8 @@ class LibraryDownloadedScreen extends ConsumerWidget {
                         ),
                         onPressed: () =>
                             openEditDownloadedSheet(context, songs),
-                        color: AppColors.textMuted,
+                        size: 40,
+                        iconSize: 24,
                       ),
                       const Spacer(),
                       GestureDetector(
@@ -132,14 +132,14 @@ class LibraryDownloadedScreen extends ConsumerWidget {
                             Text(
                               'In device',
                               style: TextStyle(
-                                  color: AppColors.primary, fontSize: 12),
+                                  color: AppColors.primary, fontSize: AppFontSize.sm),
                             ),
                             const SizedBox(width: 8),
                             Flexible(
                               child: Text(
                                 song.artist,
                                 style: const TextStyle(
-                                    color: AppColors.textMuted, fontSize: 12),
+                                    color: AppColors.textMuted, fontSize: AppFontSize.sm),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -153,7 +153,7 @@ class LibraryDownloadedScreen extends ConsumerWidget {
                               song.durationFormatted,
                               style: const TextStyle(
                                 color: AppColors.textMuted,
-                                fontSize: 13,
+                                fontSize: AppFontSize.md,
                               ),
                             ),
                             AppIconButton(
@@ -281,7 +281,7 @@ class _EditDownloadedSheetState extends ConsumerState<_EditDownloadedSheet> {
             leading: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
+                AppIconButton(
                   icon: AppIcon(
                     icon: marked
                         ? AppIcons.removeCircle
@@ -290,6 +290,8 @@ class _EditDownloadedSheetState extends ConsumerState<_EditDownloadedSheet> {
                     size: 22,
                   ),
                   onPressed: () => _toggleRemove(song),
+                  size: 40,
+                  iconSize: 22,
                 ),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadius.xs),

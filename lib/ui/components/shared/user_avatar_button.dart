@@ -165,7 +165,7 @@ void _showDesktopMenu(
               username,
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 13,
+                fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
               maxLines: 1,
@@ -176,7 +176,7 @@ void _showDesktopMenu(
                 email,
                 style: const TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 11,
+                  fontSize: AppFontSize.xs,
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,

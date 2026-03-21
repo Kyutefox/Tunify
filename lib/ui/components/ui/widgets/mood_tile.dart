@@ -103,7 +103,7 @@ class _MoodTileState extends State<MoodTile>
                   children: [
                     Text(
                       widget.mood.emoji,
-                      style: const TextStyle(fontSize: 28),
+                      style: const TextStyle(fontSize: AppFontSize.display3),
                     ),
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -112,9 +112,9 @@ class _MoodTileState extends State<MoodTile>
                           widget.mood.label,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 15,
+                            fontSize: AppFontSize.lg,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: -0.3,
+                            letterSpacing: AppLetterSpacing.heading,
                           ),
                         ),
                         if (widget.mood.subtitle != null) ...[
@@ -123,7 +123,7 @@ class _MoodTileState extends State<MoodTile>
                             widget.mood.subtitle!,
                             style: TextStyle(
                               color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 11,
+                              fontSize: AppFontSize.xs,
                             ),
                           ),
                         ],
@@ -213,14 +213,14 @@ class _LargeMoodCardState extends State<LargeMoodCard> {
                         children: [
                           Text(
                             widget.mood.emoji,
-                            style: const TextStyle(fontSize: 24),
+                            style: const TextStyle(fontSize: AppFontSize.h1),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             widget.mood.label,
                             style: const TextStyle(
                               color: Colors.white,
-                              fontSize: 16,
+                              fontSize: AppFontSize.xl,
                               fontWeight: FontWeight.w700,
                             ),
                           ),

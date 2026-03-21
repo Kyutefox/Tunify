@@ -216,9 +216,9 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                   currentPage.title,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 20,
+                    fontSize: AppFontSize.h3,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
+                    letterSpacing: AppLetterSpacing.heading,
                   ),
                 ),
               ),
@@ -270,7 +270,7 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                             'Categories',
                             style: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 14,
+                              fontSize: AppFontSize.base,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
@@ -305,7 +305,7 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                           'Playlists',
                           style: TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 14,
+                            fontSize: AppFontSize.base,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -329,7 +329,7 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                             'No subcategories or playlists for this mood.',
                             style: TextStyle(
                               color: AppColors.textMuted,
-                              fontSize: 14,
+                              fontSize: AppFontSize.base,
                             ),
                           ),
                         ),
@@ -384,7 +384,7 @@ class _SheetMoodTile extends StatelessWidget {
             mood.label,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 14,
+              fontSize: AppFontSize.base,
               fontWeight: FontWeight.w700,
               shadows: [Shadow(color: Colors.black26, blurRadius: 4)],
             ),
@@ -452,7 +452,7 @@ class _PlaylistRow extends StatelessWidget {
                     playlist.title,
                     style: const TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 15,
+                      fontSize: AppFontSize.lg,
                       fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
@@ -465,7 +465,7 @@ class _PlaylistRow extends StatelessWidget {
                       playlist.subtitle!,
                       style: const TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 12,
+                        fontSize: AppFontSize.sm,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

@@ -52,7 +52,7 @@ class SheetPlaylistTile extends StatelessWidget {
                     playlist.name.capitalized,
                     style: const TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 14,
+                      fontSize: AppFontSize.base,
                       fontWeight: FontWeight.w500,
                     ),
                     maxLines: 1,
@@ -62,7 +62,7 @@ class SheetPlaylistTile extends StatelessWidget {
                     playlist.trackCountLabel,
                     style: const TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                     ),
                   ),
                 ],

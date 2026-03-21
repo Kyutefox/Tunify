@@ -59,9 +59,9 @@ class _PlaylistCardState extends State<PlaylistCard> {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 15,
+                  fontSize: AppFontSize.lg,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: -0.2,
+                  letterSpacing: AppLetterSpacing.heading,
                 ),
               ),
               const SizedBox(height: AppSpacing.xs),
@@ -72,21 +72,21 @@ class _PlaylistCardState extends State<PlaylistCard> {
                       widget.playlist.curatorName!,
                       style: const TextStyle(
                         color: AppColors.primary,
-                        fontSize: 12,
+                        fontSize: AppFontSize.sm,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     const Text(
                       ' • ',
                       style:
-                          TextStyle(color: AppColors.textMuted, fontSize: 12),
+                          TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
                     ),
                   ],
                   Text(
                     widget.playlist.trackCountFormatted,
                     style: const TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                     ),
                   ),
                 ],
@@ -220,7 +220,7 @@ class _PlaylistCardState extends State<PlaylistCard> {
                       widget.playlist.durationFormatted,
                       style: const TextStyle(
                         color: Colors.white70,
-                        fontSize: 12,
+                        fontSize: AppFontSize.sm,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -314,7 +314,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                           widget.playlist.curatorName!,
                           style: const TextStyle(
                             color: Colors.white,
-                            fontSize: 11,
+                            fontSize: AppFontSize.xs,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -326,9 +326,9 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: AppFontSize.h1,
                         fontWeight: FontWeight.w700,
-                        letterSpacing: -0.5,
+                        letterSpacing: AppLetterSpacing.display,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
@@ -338,7 +338,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: Colors.white.withValues(alpha: 0.7),
-                        fontSize: 13,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.md),
@@ -361,7 +361,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                                 'Play',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 13,
+                                  fontSize: AppFontSize.md,
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
@@ -373,7 +373,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                           '${widget.playlist.trackCountFormatted} • ${widget.playlist.durationFormatted}',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.6),
-                            fontSize: 12,
+                            fontSize: AppFontSize.sm,
                           ),
                         ),
                       ],

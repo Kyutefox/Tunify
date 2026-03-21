@@ -39,7 +39,7 @@ class EmptyStatePlaceholder extends StatelessWidget {
               title,
               style: const TextStyle(
                 color: AppColors.textMuted,
-                fontSize: 16,
+                fontSize: AppFontSize.xl,
               ),
               textAlign: TextAlign.center,
             ),
@@ -49,7 +49,7 @@ class EmptyStatePlaceholder extends StatelessWidget {
                 subtitle!,
                 style: TextStyle(
                   color: AppColors.textMuted.withValues(alpha: 0.8),
-                  fontSize: 14,
+                  fontSize: AppFontSize.base,
                 ),
                 textAlign: TextAlign.center,
               ),

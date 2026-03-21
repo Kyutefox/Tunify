@@ -121,7 +121,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                         widget.title!,
                         style: const TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize: 18,
+                          fontSize: AppFontSize.xxl,
                           fontWeight: FontWeight.w700,
                         ),
                         overflow: TextOverflow.ellipsis,
@@ -273,9 +273,9 @@ class CollectionDetailExpandedContent extends StatelessWidget {
             title,
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 28,
+              fontSize: AppFontSize.display3,
               fontWeight: FontWeight.w800,
-              letterSpacing: -0.6,
+              letterSpacing: AppLetterSpacing.display,
             ),
           ),
         ),
@@ -323,9 +323,9 @@ class CollectionDetailHeader extends StatelessWidget {
               title,
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 28,
+                fontSize: AppFontSize.display3,
                 fontWeight: FontWeight.w800,
-                letterSpacing: -0.6,
+                letterSpacing: AppLetterSpacing.display,
               ),
             ),
           ),
@@ -378,7 +378,7 @@ class CollectionTrackListHeader extends StatelessWidget {
               '#',
               style: TextStyle(
                 color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: 12,
+                fontSize: AppFontSize.sm,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -391,7 +391,7 @@ class CollectionTrackListHeader extends StatelessWidget {
               'TITLE',
               style: TextStyle(
                 color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: 12,
+                fontSize: AppFontSize.sm,
                 fontWeight: FontWeight.w600,
               ),
             ),

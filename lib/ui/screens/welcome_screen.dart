@@ -5,6 +5,7 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../config/app_icons.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/providers/guest_profile_provider.dart';
 import '../../system/bridges/database_repository.dart';
@@ -90,10 +91,10 @@ class WelcomeScreen extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 56,
+                      fontSize: AppFontSize.hero,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -2.0,
-                      height: 1.0,
+                      letterSpacing: AppLetterSpacing.display,
+                      height: AppLineHeight.tight,
                     ),
                   )
                       .animate(delay: 80.ms)
@@ -108,10 +109,10 @@ class WelcomeScreen extends ConsumerWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 20,
+                      fontSize: AppFontSize.h3,
                       fontWeight: FontWeight.w400,
-                      height: 1.4,
-                      letterSpacing: -0.2,
+                      height: AppLineHeight.relaxed,
+                      letterSpacing: AppLetterSpacing.heading,
                     ),
                   )
                       .animate(delay: 160.ms)
@@ -171,13 +172,13 @@ class WelcomeScreen extends ConsumerWidget {
                             'Continue as guest',
                             style: TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 14,
+                              fontSize: AppFontSize.base,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                           const SizedBox(width: 4),
-                          const Icon(
-                            Icons.arrow_forward_ios,
+                          AppIcon(
+                            icon: AppIcons.chevronRight,
                             size: 11,
                             color: AppColors.textSecondary,
                           ),
@@ -314,9 +315,9 @@ class _WelcomeButton extends StatelessWidget {
           label,
           style: TextStyle(
             color: filled ? Colors.white : AppColors.textPrimary,
-            fontSize: 16,
+            fontSize: AppFontSize.xl,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.1,
+            letterSpacing: AppLetterSpacing.normal,
           ),
         ),
       ),

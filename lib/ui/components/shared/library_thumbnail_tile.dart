@@ -58,7 +58,7 @@ class LibraryThumbnailTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 15,
+                        fontSize: AppFontSize.lg,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -67,7 +67,7 @@ class LibraryThumbnailTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: 13),
+                          color: AppColors.textMuted, fontSize: AppFontSize.md),
                     ),
                   ],
                 ),

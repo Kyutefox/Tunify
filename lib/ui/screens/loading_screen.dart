@@ -81,10 +81,10 @@ class _LoadingScreenState extends State<LoadingScreen>
                     AppStrings.appName,
                     style: TextStyle(
                       color: AppColors.textPrimary,
-                      fontSize: 28,
+                      fontSize: AppFontSize.display3,
                       fontWeight: FontWeight.w800,
-                      letterSpacing: -0.5,
-                      height: 1.1,
+                      letterSpacing: AppLetterSpacing.display,
+                      height: AppLineHeight.tight,
                       shadows: [
                         Shadow(
                           color: Colors.black.withValues(alpha: 0.3),
@@ -99,9 +99,9 @@ class _LoadingScreenState extends State<LoadingScreen>
                     'Loading your music…',
                     style: TextStyle(
                       color: AppColors.textSecondary.withValues(alpha: 0.95),
-                      fontSize: 15,
+                      fontSize: AppFontSize.lg,
                       fontWeight: FontWeight.w500,
-                      letterSpacing: 0.2,
+                      letterSpacing: AppLetterSpacing.normal,
                     ),
                   ),
                 ],

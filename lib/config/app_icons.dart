@@ -89,8 +89,8 @@ class AppIcons {
   static Color favouriteColorFor(String? id) =>
       AppColors.loveThemeColorFor(id);
 
-  static List<List<dynamic>> get moreVert => HugeIcons.strokeRoundedMenu01;
-  static List<List<dynamic>> get moreHoriz => HugeIcons.strokeRoundedMenu01;
+  static List<List<dynamic>> get moreVert => HugeIcons.strokeRoundedMoreVertical;
+  static List<List<dynamic>> get moreHoriz => HugeIcons.strokeRoundedMoreHorizontal;
 
   static List<List<dynamic>> get artist => HugeIcons.strokeRoundedMic01;
   static List<List<dynamic>> get album => HugeIcons.strokeRoundedAlbum01;
@@ -102,7 +102,7 @@ class AppIcons {
   static List<List<dynamic>> get lock => HugeIcons.strokeRoundedLock;
   static List<List<dynamic>> get visibility => HugeIcons.strokeRoundedEye;
   static List<List<dynamic>> get visibilityOff =>
-      HugeIcons.strokeRoundedCancel01;
+      HugeIcons.strokeRoundedViewOff;
   static List<List<dynamic>> get markEmailUnread =>
       HugeIcons.strokeRoundedMailOpen01;
   static List<List<dynamic>> get errorOutline =>
@@ -127,6 +127,9 @@ class AppIcons {
       HugeIcons.strokeRoundedSpeaker01;
   static List<List<dynamic>> get wifiFind =>
       HugeIcons.strokeRoundedWifiLocation;
+  static List<List<dynamic>> get volumeHigh => HugeIcons.strokeRoundedVolumeHigh;
+  static List<List<dynamic>> get volumeLow => HugeIcons.strokeRoundedVolumeLow;
+  static List<List<dynamic>> get volumeOff => HugeIcons.strokeRoundedVolumeOff;
   static List<List<dynamic>> get refresh => HugeIcons.strokeRoundedRefresh;
   static List<List<dynamic>> get settings => HugeIcons.strokeRoundedSettings01;
   static List<List<dynamic>> get radar => HugeIcons.strokeRoundedRadar01;
@@ -134,9 +137,10 @@ class AppIcons {
 
   static List<List<dynamic>> get cloudOff =>
       HugeIcons.strokeRoundedWifiNoSignal;
-  static List<List<dynamic>> get brokenImage => HugeIcons.strokeRoundedCancel01;
+  static List<List<dynamic>> get brokenImage => HugeIcons.strokeRoundedImageNotFound01;
+  static List<List<dynamic>> get wifiOff => HugeIcons.strokeRoundedWifiOff01;
 
-  static List<List<dynamic>> get psychology => HugeIcons.strokeRoundedUser02;
+  static List<List<dynamic>> get psychology => HugeIcons.strokeRoundedBrain;
   static List<List<dynamic>> get spa => HugeIcons.strokeRoundedLeaf01;
   static List<List<dynamic>> get fitness => HugeIcons.strokeRoundedFire;
   static List<List<dynamic>> get nightlight => HugeIcons.strokeRoundedMoon01;

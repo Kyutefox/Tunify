@@ -5,6 +5,7 @@ import '../../../config/app_icons.dart';
 import '../../../models/library_folder.dart';
 import '../../../models/library_playlist.dart';
 import '../../../shared/providers/library_provider.dart';
+import '../../components/ui/button.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
 import '../../../shared/utils/string_utils.dart';
@@ -70,7 +71,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
                 'No playlists in this folder',
                 style: TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 15,
+                  fontSize: AppFontSize.lg,
                 ),
               ),
             )
@@ -89,7 +90,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
                     'Create your first playlist',
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: 15,
+                      fontSize: AppFontSize.lg,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -98,7 +99,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
                     'Tap + to get started',
                     style: TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 13,
+                      fontSize: AppFontSize.md,
                     ),
                   ),
                 ],
@@ -260,7 +261,7 @@ class _StaticGridCard extends StatelessWidget {
             title,
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 13,
+              fontSize: AppFontSize.md,
               fontWeight: FontWeight.w600,
             ),
             maxLines: 1,
@@ -270,7 +271,7 @@ class _StaticGridCard extends StatelessWidget {
             subtitle,
             style: const TextStyle(
               color: AppColors.textMuted,
-              fontSize: 11,
+              fontSize: AppFontSize.xs,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -347,7 +348,7 @@ class _LibraryPlaylistGridCard extends StatelessWidget {
                   playlist.name.capitalized,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 13,
+                    fontSize: AppFontSize.md,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -375,7 +376,7 @@ class _LibraryPlaylistGridCard extends StatelessWidget {
             playlist.trackCountLabel,
             style: const TextStyle(
               color: AppColors.textMuted,
-              fontSize: 11,
+              fontSize: AppFontSize.xs,
             ),
           ),
         ],
@@ -436,7 +437,7 @@ class _LibraryFolderGridCard extends StatelessWidget {
                   folder.name.capitalized,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 13,
+                    fontSize: AppFontSize.md,
                     fontWeight: FontWeight.w600,
                   ),
                   maxLines: 1,
@@ -466,7 +467,7 @@ class _LibraryFolderGridCard extends StatelessWidget {
                 : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
             style: const TextStyle(
               color: AppColors.textMuted,
-              fontSize: 11,
+              fontSize: AppFontSize.xs,
             ),
           ),
         ],
@@ -524,7 +525,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                       folder.name.capitalized,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 15,
+                        fontSize: AppFontSize.lg,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -536,7 +537,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                           : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
                       style: const TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 13,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
                   ],
@@ -552,19 +553,19 @@ class _LibraryFolderListTile extends StatelessWidget {
                   ),
                 ),
               Builder(
-                builder: (btnCtx) => IconButton(
+                builder: (btnCtx) => AppIconButton(
                   icon: AppIcon(
                     icon: AppIcons.moreHoriz,
                     size: 22,
                     color: AppColors.textMuted,
                   ),
-                  onPressed: () {
+                  onPressedWithContext: (btnCtx) {
                     final box = btnCtx.findRenderObject() as RenderBox?;
                     onOptions(box != null && box.hasSize
                         ? box.localToGlobal(Offset.zero) & box.size
                         : null);
                   },
-                  color: AppColors.textMuted,
+                  size: 40,
                   iconSize: 22,
                 ),
               ),
@@ -685,7 +686,7 @@ class _StaticListTile extends StatelessWidget {
                       title,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 15,
+                        fontSize: AppFontSize.lg,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -695,7 +696,7 @@ class _StaticListTile extends StatelessWidget {
                       subtitle,
                       style: const TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 13,
+                        fontSize: AppFontSize.md,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -774,7 +775,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                       playlist.name.capitalized,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 15,
+                        fontSize: AppFontSize.lg,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -784,7 +785,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                       playlist.trackCountLabel,
                       style: const TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 13,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
                   ],
@@ -800,19 +801,19 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                   ),
                 ),
               Builder(
-                builder: (btnCtx) => IconButton(
+                builder: (btnCtx) => AppIconButton(
                   icon: AppIcon(
                     icon: AppIcons.moreHoriz,
                     size: 22,
                     color: AppColors.textMuted,
                   ),
-                  onPressed: () {
+                  onPressedWithContext: (btnCtx) {
                     final box = btnCtx.findRenderObject() as RenderBox?;
                     onOptions(box != null && box.hasSize
                         ? box.localToGlobal(Offset.zero) & box.size
                         : null);
                   },
-                  color: AppColors.textMuted,
+                  size: 40,
                   iconSize: 22,
                 ),
               ),

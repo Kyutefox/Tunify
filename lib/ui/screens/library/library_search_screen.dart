@@ -135,7 +135,7 @@ class LibrarySearchBody extends ConsumerWidget {
         query: query,
         style: const TextStyle(
           color: AppColors.textSecondary,
-          fontSize: 15,
+          fontSize: AppFontSize.lg,
           fontWeight: FontWeight.w600,
         ),
       );
@@ -155,9 +155,9 @@ class LibrarySearchBody extends ConsumerWidget {
               'FOLDERS',
               style: TextStyle(
                 color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: 12,
+                fontSize: AppFontSize.sm,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
+                letterSpacing: AppLetterSpacing.label,
               ),
             ),
           ),
@@ -179,9 +179,9 @@ class LibrarySearchBody extends ConsumerWidget {
               'PLAYLISTS',
               style: TextStyle(
                 color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: 12,
+                fontSize: AppFontSize.sm,
                 fontWeight: FontWeight.w700,
-                letterSpacing: 1.2,
+                letterSpacing: AppLetterSpacing.label,
               ),
             ),
           ),
@@ -223,7 +223,7 @@ class _FolderTile extends StatelessWidget {
         folder.name.capitalized,
         style: const TextStyle(
           color: AppColors.textPrimary,
-          fontSize: 16,
+          fontSize: AppFontSize.xl,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -231,7 +231,7 @@ class _FolderTile extends StatelessWidget {
         '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
         style: const TextStyle(
           color: AppColors.textMuted,
-          fontSize: 13,
+          fontSize: AppFontSize.md,
         ),
       ),
       onTap: onTap,
@@ -257,7 +257,7 @@ class _PlaylistTile extends StatelessWidget {
         playlist.name.capitalized,
         style: const TextStyle(
           color: AppColors.textPrimary,
-          fontSize: 16,
+          fontSize: AppFontSize.xl,
           fontWeight: FontWeight.w500,
         ),
       ),
@@ -265,7 +265,7 @@ class _PlaylistTile extends StatelessWidget {
         '${playlist.songs.length} song${playlist.songs.length == 1 ? '' : 's'}',
         style: const TextStyle(
           color: AppColors.textMuted,
-          fontSize: 13,
+          fontSize: AppFontSize.md,
         ),
       ),
       onTap: onTap,

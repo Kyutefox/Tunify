@@ -105,7 +105,7 @@ class _CreateLibraryItemScreenState extends State<CreateLibraryItemScreen> {
                 mode.saveLabel,
                 style: const TextStyle(
                   color: AppColors.primary,
-                  fontSize: 16,
+                  fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w600,
                 ),
               ),

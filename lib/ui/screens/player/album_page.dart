@@ -161,7 +161,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
           _metadata?.subtitle ?? widget.artistName,
           style: const TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 16,
+            fontSize: AppFontSize.xl,
             fontWeight: FontWeight.w500,
           ),
         ),
@@ -172,7 +172,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
               '${displaySongs.length} ${displaySongs.length == 1 ? 'song' : 'songs'}',
               style: TextStyle(
                 color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: 14,
+                fontSize: AppFontSize.base,
               ),
             ),
             if (displaySongs.isNotEmpty) ...[
@@ -180,14 +180,14 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                 ' • ',
                 style: TextStyle(
                   color: AppColors.textMuted.withValues(alpha: 0.9),
-                  fontSize: 14,
+                  fontSize: AppFontSize.base,
                 ),
               ),
               Text(
                 _formatDuration(displaySongs),
                 style: TextStyle(
                   color: AppColors.textMuted.withValues(alpha: 0.9),
-                  fontSize: 14,
+                  fontSize: AppFontSize.base,
                 ),
               ),
             ],
@@ -246,7 +246,7 @@ class _AlbumPageState extends ConsumerState<AlbumPage> {
                             : 'No matches for "$query"',
                         style: TextStyle(
                           color: AppColors.textMuted.withValues(alpha: 0.9),
-                          fontSize: 14,
+                          fontSize: AppFontSize.base,
                         ),
                       ),
                     ),
@@ -394,7 +394,7 @@ class _AlbumTrackTile extends ConsumerWidget {
             song.durationFormatted,
             style: const TextStyle(
               color: AppColors.textMuted,
-              fontSize: 13,
+              fontSize: AppFontSize.md,
             ),
           ),
           AppIconButton(

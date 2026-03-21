@@ -64,7 +64,7 @@ class SheetOptionTile extends StatelessWidget {
                   label,
                   style: TextStyle(
                     color: labelColor,
-                    fontSize: 16,
+                    fontSize: AppFontSize.xl,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

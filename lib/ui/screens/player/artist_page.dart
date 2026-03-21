@@ -129,7 +129,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
       '${displaySongs.length} ${displaySongs.length == 1 ? 'song' : 'songs'}',
       style: TextStyle(
         color: AppColors.textMuted.withValues(alpha: 0.9),
-        fontSize: 14,
+        fontSize: AppFontSize.base,
       ),
     );
 
@@ -183,7 +183,7 @@ class _ArtistPageState extends ConsumerState<ArtistPage> {
                             : 'No matches for "$query"',
                         style: TextStyle(
                           color: AppColors.textMuted.withValues(alpha: 0.9),
-                          fontSize: 14,
+                          fontSize: AppFontSize.base,
                         ),
                       ),
                     ),
@@ -327,7 +327,7 @@ class _ArtistTrackTile extends ConsumerWidget {
             song.durationFormatted,
             style: const TextStyle(
               color: AppColors.textMuted,
-              fontSize: 13,
+              fontSize: AppFontSize.md,
             ),
           ),
           AppIconButton(

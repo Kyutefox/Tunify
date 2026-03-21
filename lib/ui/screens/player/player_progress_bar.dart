@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../shared/providers/palette_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
 import '../../../shared/utils/duration_format.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 
 class PlayerProgressBar extends ConsumerStatefulWidget {
   const PlayerProgressBar({super.key, this.compact = false});
@@ -76,7 +77,7 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
 
     const timeStyle = TextStyle(
       color: Color(0x80FFFFFF), // 50% white — intentional for player time labels
-      fontSize: 12,
+      fontSize: AppFontSize.sm,
       fontWeight: FontWeight.w500,
       fontFeatures: [FontFeature.tabularFigures()],
     );

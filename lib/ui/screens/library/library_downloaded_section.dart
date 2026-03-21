@@ -66,7 +66,7 @@ class LibraryDownloadedSection extends ConsumerWidget {
                         'Downloaded',
                         style: TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize: 17,
+                          fontSize: AppFontSize.xxl,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -77,7 +77,7 @@ class LibraryDownloadedSection extends ConsumerWidget {
                             : '$count song${count == 1 ? '' : 's'} on device',
                         style: const TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 13,
+                          fontSize: AppFontSize.md,
                         ),
                       ),
                     ],

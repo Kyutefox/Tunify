@@ -87,7 +87,7 @@ class SectionHeader extends StatelessWidget {
           text,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 13,
+            fontSize: AppFontSize.md,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -133,9 +133,9 @@ class GradientSectionHeader extends StatelessWidget {
                     title,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 22,
+                      fontSize: AppFontSize.h2,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: -0.5,
+                      letterSpacing: AppLetterSpacing.display,
                     ),
                   ),
                 ),
@@ -145,7 +145,7 @@ class GradientSectionHeader extends StatelessWidget {
                     subtitle!,
                     style: const TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 13,
+                      fontSize: AppFontSize.md,
                     ),
                   ),
                 ],

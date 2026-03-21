@@ -62,7 +62,7 @@ class DownloadQueueSheet extends ConsumerWidget {
                 'Download queue',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 18,
+                  fontSize: AppFontSize.xxl,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -76,7 +76,7 @@ class DownloadQueueSheet extends ConsumerWidget {
                 'No downloads in the queue',
                 style: TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 15,
+                  fontSize: AppFontSize.lg,
                 ),
               ),
             ),
@@ -190,7 +190,7 @@ class DownloadQueueTile extends StatelessWidget {
                   entry.song.title,
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 14,
+                    fontSize: AppFontSize.base,
                     fontWeight: FontWeight.w500,
                   ),
                   maxLines: 1,
@@ -203,7 +203,7 @@ class DownloadQueueTile extends StatelessWidget {
                     entry.errorMessage!,
                     style: TextStyle(
                       color: statusColor,
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -218,7 +218,7 @@ class DownloadQueueTile extends StatelessWidget {
                             : formatDownloadBytes(downloaded),
                         style: const TextStyle(
                           color: AppColors.textSecondary,
-                          fontSize: 11,
+                          fontSize: AppFontSize.xs,
                         ),
                       ),
                       if (expected > 0)
@@ -226,7 +226,7 @@ class DownloadQueueTile extends StatelessWidget {
                           '$percent%',
                           style: const TextStyle(
                             color: AppColors.textSecondary,
-                            fontSize: 11,
+                            fontSize: AppFontSize.xs,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -239,7 +239,7 @@ class DownloadQueueTile extends StatelessWidget {
                       formatSpeed(entry.speedBytesPerSecond!),
                       style: const TextStyle(
                         color: AppColors.textMuted,
-                        fontSize: 10,
+                        fontSize: AppFontSize.micro,
                       ),
                     ),
                   ],
@@ -259,7 +259,7 @@ class DownloadQueueTile extends StatelessWidget {
                     statusText,
                     style: TextStyle(
                       color: statusColor,
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                     ),
                   ),
               ],

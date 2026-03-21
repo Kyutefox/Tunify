@@ -32,9 +32,9 @@ class HomeAppBar extends ConsumerWidget {
               '$greeting, $username',
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: AppFontSize.base,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
+                letterSpacing: AppLetterSpacing.normal,
               ),
             ),
           ),

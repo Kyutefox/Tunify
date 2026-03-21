@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/legacy.dart';
 import '../../config/app_icons.dart';
 import '../screens/player/player_screen.dart';
 import '../theme/app_colors.dart';
+import '../theme/design_tokens.dart';
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -214,9 +215,9 @@ class _TabButton extends StatelessWidget {
               tab.label,
               style: TextStyle(
                 color: color,
-                fontSize: 10,
+                fontSize: AppFontSize.micro,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                letterSpacing: 0.3,
+                letterSpacing: AppLetterSpacing.normal,
               ),
             ),
           ],

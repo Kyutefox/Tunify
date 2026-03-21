@@ -35,9 +35,9 @@ class SearchPageEmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 22,
+                fontSize: AppFontSize.h2,
                 fontWeight: FontWeight.w700,
-                letterSpacing: -0.4,
+                letterSpacing: AppLetterSpacing.heading,
               ),
             ),
             const SizedBox(height: AppSpacing.sm),
@@ -46,7 +46,7 @@ class SearchPageEmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: AppColors.textSecondary,
-                fontSize: 15,
+                fontSize: AppFontSize.lg,
                 fontWeight: FontWeight.w500,
               ),
             ),

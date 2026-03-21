@@ -68,9 +68,9 @@ class _SongCardState extends State<SongCard> {
                   color: widget.isPlaying
                       ? AppColors.primary
                       : AppColors.textPrimary,
-                  fontSize: 14,
+                  fontSize: AppFontSize.base,
                   fontWeight: FontWeight.w600,
-                  letterSpacing: -0.2,
+                  letterSpacing: AppLetterSpacing.heading,
                 ),
               ),
               const SizedBox(height: 3),
@@ -80,7 +80,7 @@ class _SongCardState extends State<SongCard> {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 12,
+                  fontSize: AppFontSize.sm,
                 ),
               ),
               if (widget.showProgress && widget.progress != null) ...[
@@ -210,7 +210,7 @@ class _SongCardState extends State<SongCard> {
                     widget.song.durationFormatted,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
+                      fontSize: AppFontSize.xs,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -335,7 +335,7 @@ class _LargeSongCardState extends State<LargeSongCard> {
                       color: widget.isPlaying
                           ? AppColors.primary
                           : AppColors.textPrimary,
-                      fontSize: 15,
+                      fontSize: AppFontSize.lg,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -346,7 +346,7 @@ class _LargeSongCardState extends State<LargeSongCard> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 13,
+                      fontSize: AppFontSize.md,
                     ),
                   ),
                 ],

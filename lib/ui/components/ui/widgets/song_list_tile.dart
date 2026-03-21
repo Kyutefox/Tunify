@@ -80,7 +80,7 @@ class SongListTile extends ConsumerWidget {
                         '$index',
                         style: const TextStyle(
                           color: AppColors.textMuted,
-                          fontSize: 14,
+                          fontSize: AppFontSize.base,
                         ),
                       ),
               ),
@@ -128,7 +128,7 @@ class SongListTile extends ConsumerWidget {
                             color: isNowPlaying
                                 ? AppColors.primary
                                 : AppColors.textPrimary,
-                            fontSize: 14,
+                            fontSize: AppFontSize.base,
                             fontWeight: FontWeight.w500,
                           ),
                           maxLines: 1,
@@ -150,7 +150,7 @@ class SongListTile extends ConsumerWidget {
                               song.artist,
                               style: const TextStyle(
                                 color: AppColors.textMuted,
-                                fontSize: 12,
+                                fontSize: AppFontSize.sm,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
@@ -215,7 +215,7 @@ class _ExplicitBadge extends StatelessWidget {
         'E',
         style: TextStyle(
           color: AppColors.textMuted,
-          fontSize: 10,
+          fontSize: AppFontSize.micro,
           fontWeight: FontWeight.w700,
         ),
       ),

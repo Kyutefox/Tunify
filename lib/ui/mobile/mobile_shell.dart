@@ -164,15 +164,15 @@ class _OfflineBanner extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(
                   horizontal: AppSpacing.base, vertical: AppSpacing.sm),
               color: Colors.orangeAccent.withValues(alpha: 0.12),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.wifi_off, size: 18, color: Colors.orangeAccent),
+                  AppIcon(icon: AppIcons.wifiOff, size: 18, color: Colors.orangeAccent),
                   SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       "You're offline — some features may be limited",
                       style:
-                          TextStyle(color: Colors.orangeAccent, fontSize: 13),
+                          TextStyle(color: Colors.orangeAccent, fontSize: AppFontSize.md),
                     ),
                   ),
                 ],

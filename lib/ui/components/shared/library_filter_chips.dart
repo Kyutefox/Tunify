@@ -149,7 +149,7 @@ class _LibraryFilterChipsState extends State<LibraryFilterChips>
                       widget.folderName!,
                       style: const TextStyle(
                         color: AppColors.primary,
-                        fontSize: 13,
+                        fontSize: AppFontSize.md,
                         fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
@@ -251,7 +251,7 @@ class _LibraryFilterChipsState extends State<LibraryFilterChips>
                             color: widget.selectedFilter == filter
                                 ? AppColors.primary
                                 : AppColors.textSecondary,
-                            fontSize: 13,
+                            fontSize: AppFontSize.md,
                             fontWeight: widget.selectedFilter == filter
                                 ? FontWeight.w600
                                 : FontWeight.w500,

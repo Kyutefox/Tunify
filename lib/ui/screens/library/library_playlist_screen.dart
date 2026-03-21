@@ -88,7 +88,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           '${playlist.songs.length} ${playlist.songs.length == 1 ? 'song' : 'songs'}',
           style: TextStyle(
             color: AppColors.textMuted.withValues(alpha: 0.9),
-            fontSize: 14,
+            fontSize: AppFontSize.base,
           ),
         ),
         if (playlist.songs.isNotEmpty) ...[
@@ -96,14 +96,14 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             ' • ',
             style: TextStyle(
               color: AppColors.textMuted.withValues(alpha: 0.9),
-              fontSize: 14,
+              fontSize: AppFontSize.base,
             ),
           ),
           Text(
             _formatPlaylistDuration(playlist.songs),
             style: TextStyle(
               color: AppColors.textMuted.withValues(alpha: 0.9),
-              fontSize: 14,
+              fontSize: AppFontSize.base,
             ),
           ),
         ],
@@ -164,7 +164,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                       : 'No matches for "$query" in this playlist',
                   style: TextStyle(
                     color: AppColors.textMuted.withValues(alpha: 0.9),
-                    fontSize: 14,
+                    fontSize: AppFontSize.base,
                   ),
                 ),
               ),
@@ -497,7 +497,7 @@ class _PillButton extends StatelessWidget {
                 label,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 13,
+                  fontSize: AppFontSize.md,
                   fontWeight: FontWeight.w500,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -701,7 +701,7 @@ class _AddToPlaylistSheetContentState
                     'Recently played',
                     style: TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -772,7 +772,7 @@ class _AddToPlaylistSheetContentState
                               subtitle: Text(
                                 song.artist,
                                 style: const TextStyle(
-                                    color: AppColors.textMuted, fontSize: 12),
+                                    color: AppColors.textMuted, fontSize: AppFontSize.sm),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -873,7 +873,7 @@ class _EmptyState extends StatelessWidget {
               'No songs yet',
               style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 20,
+                fontSize: AppFontSize.h3,
                 fontWeight: FontWeight.w700,
               ),
             ),
@@ -883,7 +883,7 @@ class _EmptyState extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: 14,
+                fontSize: AppFontSize.base,
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
@@ -944,7 +944,7 @@ class _TrackTile extends ConsumerWidget {
             song.durationFormatted,
             style: const TextStyle(
               color: AppColors.textMuted,
-              fontSize: 13,
+              fontSize: AppFontSize.md,
             ),
           ),
           AppIconButton(
@@ -1190,7 +1190,7 @@ class _SortPlaylistSheet extends ConsumerWidget {
                 'Sort by',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 18,
+                  fontSize: AppFontSize.xxl,
                   fontWeight: FontWeight.w700,
                 ),
               ),

@@ -134,7 +134,7 @@ class SquareSongCard extends ConsumerWidget {
                       color: isNowPlaying
                           ? AppColors.accent
                           : AppColors.textPrimary,
-                      fontSize: 13,
+                      fontSize: AppFontSize.md,
                       fontWeight: FontWeight.w600,
                     ),
                     maxLines: 1,
@@ -147,7 +147,7 @@ class SquareSongCard extends ConsumerWidget {
               song.artist,
               style: const TextStyle(
                 color: AppColors.textMuted,
-                fontSize: 11,
+                fontSize: AppFontSize.xs,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -400,7 +400,7 @@ class QuickPickTile extends ConsumerWidget {
                             color: isNowPlaying
                                 ? AppColors.accent
                                 : AppColors.textPrimary,
-                            fontSize: 13,
+                            fontSize: AppFontSize.md,
                             fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
@@ -414,7 +414,7 @@ class QuickPickTile extends ConsumerWidget {
                     song.artist,
                     style: const TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 11,
+                      fontSize: AppFontSize.xs,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -650,7 +650,7 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
               playlist.title,
               style: const TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 13,
+                fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
               maxLines: 1,
@@ -660,7 +660,7 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
               playlist.curatorName ?? '${playlist.trackCount} songs',
               style: const TextStyle(
                 color: AppColors.textMuted,
-                fontSize: 11,
+                fontSize: AppFontSize.xs,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -723,7 +723,7 @@ class HomeMoodTile extends StatelessWidget {
             mood.label,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 14,
+              fontSize: AppFontSize.base,
               fontWeight: FontWeight.w700,
               shadows: [Shadow(color: Colors.black26, blurRadius: 4)],
             ),
@@ -908,7 +908,7 @@ class HomeArtistAvatar extends StatelessWidget {
             artist.name,
             style: const TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 11,
+              fontSize: AppFontSize.xs,
               fontWeight: FontWeight.w500,
             ),
             maxLines: 1,

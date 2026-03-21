@@ -60,7 +60,7 @@ class LibraryFolderScreen extends ConsumerWidget {
                   'No playlists in this folder',
                   style: TextStyle(
                     color: AppColors.textMuted,
-                    fontSize: 15,
+                    fontSize: AppFontSize.lg,
                   ),
                 ),
               ),
@@ -145,7 +145,7 @@ class LibraryFolderScreen extends ConsumerWidget {
                                   playlist.name.capitalized,
                                   style: const TextStyle(
                                     color: AppColors.textPrimary,
-                                    fontSize: 15,
+                                    fontSize: AppFontSize.lg,
                                     fontWeight: FontWeight.w600,
                                   ),
                                   maxLines: 1,
@@ -155,7 +155,7 @@ class LibraryFolderScreen extends ConsumerWidget {
                                   playlist.trackCountLabel,
                                   style: const TextStyle(
                                     color: AppColors.textMuted,
-                                    fontSize: 13,
+                                    fontSize: AppFontSize.md,
                                   ),
                                 ),
                               ],

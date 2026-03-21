@@ -92,7 +92,7 @@ class _DesktopSettingsScreenState extends State<DesktopSettingsScreen> {
             'Settings',
             style: TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 22,
+              fontSize: AppFontSize.h2,
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -221,7 +221,7 @@ class _NavItem extends StatelessWidget {
                         section.label,
                         style: TextStyle(
                           color: labelColor,
-                          fontSize: 14,
+                          fontSize: AppFontSize.base,
                           fontWeight: isActive
                               ? FontWeight.w600
                               : FontWeight.w500,
@@ -231,7 +231,7 @@ class _NavItem extends StatelessWidget {
                         section.subtitle,
                         style: const TextStyle(
                           color: AppColors.textMuted,
-                          fontSize: 11,
+                          fontSize: AppFontSize.xs,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,

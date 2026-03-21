@@ -67,7 +67,7 @@ class AppButton extends StatelessWidget {
                     label,
                     style: TextStyle(
                       color: effectiveForeground,
-                      fontSize: 16,
+                      fontSize: AppFontSize.xl,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -77,7 +77,7 @@ class AppButton extends StatelessWidget {
                 label,
                 style: TextStyle(
                   color: effectiveForeground,
-                  fontSize: 16,
+                  fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w600,
                 ),
               );

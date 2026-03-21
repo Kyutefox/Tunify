@@ -120,9 +120,9 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                   'Library',
                   style: TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 28,
+                    fontSize: AppFontSize.display3,
                     fontWeight: FontWeight.w800,
-                    letterSpacing: -0.8,
+                    letterSpacing: AppLetterSpacing.display,
                   ),
                 ),
                 const Spacer(),
@@ -189,7 +189,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                             widget.sortOrder.label,
                             style: const TextStyle(
                               color: AppColors.textSecondary,
-                              fontSize: 13,
+                              fontSize: AppFontSize.md,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -314,7 +314,7 @@ class _Segment extends StatelessWidget {
             label,
             style: TextStyle(
               color: selected ? AppColors.primary : AppColors.textSecondary,
-              fontSize: 12,
+              fontSize: AppFontSize.sm,
               fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
             ),
           ),

@@ -227,9 +227,9 @@ class _GuestProfileSetupScreenState
                   widget.isInitial ? 'Choose your name' : 'Edit your profile',
                   style: const TextStyle(
                     color: AppColors.textPrimary,
-                    fontSize: 22,
+                    fontSize: AppFontSize.h2,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
+                    letterSpacing: AppLetterSpacing.heading,
                   ),
                 ),
 
@@ -239,7 +239,7 @@ class _GuestProfileSetupScreenState
                   'Your avatar updates as you type.',
                   style: TextStyle(
                     color: AppColors.textMuted,
-                    fontSize: 13,
+                    fontSize: AppFontSize.md,
                   ),
                 ),
 
@@ -281,7 +281,7 @@ class _GuestProfileSetupScreenState
                               'Back',
                               style: TextStyle(
                                 color: AppColors.textMuted,
-                                fontSize: 14,
+                                fontSize: AppFontSize.base,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),

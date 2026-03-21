@@ -166,7 +166,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                               song.title,
                               style: const TextStyle(
                                 color: AppColors.textPrimary,
-                                fontSize: 13,
+                                fontSize: AppFontSize.md,
                                 fontWeight: FontWeight.w600,
                               ),
                               maxLines: 1,
@@ -177,7 +177,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                               song.artist,
                               style: const TextStyle(
                                 color: AppColors.textMuted,
-                                fontSize: 11,
+                                fontSize: AppFontSize.xs,
                               ),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,

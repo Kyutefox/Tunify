@@ -137,7 +137,7 @@ class _AnimatedMusicTileState extends State<AnimatedMusicTile>
                   color: widget.rank <= 3
                       ? AppColors.primary
                       : AppColors.textMuted,
-                  fontSize: 14,
+                  fontSize: AppFontSize.base,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -169,7 +169,7 @@ class _AnimatedMusicTileState extends State<AnimatedMusicTile>
                       color: widget.isPlaying
                           ? AppColors.primary
                           : AppColors.textPrimary,
-                      fontSize: 14,
+                      fontSize: AppFontSize.base,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -180,7 +180,7 @@ class _AnimatedMusicTileState extends State<AnimatedMusicTile>
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                     ),
                   ),
                   const SizedBox(height: 6),
@@ -196,7 +196,7 @@ class _AnimatedMusicTileState extends State<AnimatedMusicTile>
                         _formatCount(widget.playCount),
                         style: const TextStyle(
                           color: AppColors.textMuted,
-                          fontSize: 11,
+                          fontSize: AppFontSize.xs,
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -209,7 +209,7 @@ class _AnimatedMusicTileState extends State<AnimatedMusicTile>
                         _formatCount(widget.likeCount),
                         style: const TextStyle(
                           color: AppColors.textMuted,
-                          fontSize: 11,
+                          fontSize: AppFontSize.xs,
                         ),
                       ),
                     ],
@@ -339,7 +339,7 @@ class _CompactMusicTileState extends State<CompactMusicTile> {
                       color: widget.isPlaying
                           ? AppColors.primary
                           : AppColors.textPrimary,
-                      fontSize: 14,
+                      fontSize: AppFontSize.base,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -350,7 +350,7 @@ class _CompactMusicTileState extends State<CompactMusicTile> {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 12,
+                      fontSize: AppFontSize.sm,
                     ),
                   ),
                 ],

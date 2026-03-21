@@ -116,7 +116,7 @@ class _MenuSheetBody extends StatelessWidget {
                 title!,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 18,
+                  fontSize: AppFontSize.xxl,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -518,9 +518,9 @@ class _MenuPanel extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: 11,
+                      fontSize: AppFontSize.xs,
                       fontWeight: FontWeight.w600,
-                      letterSpacing: 0.5,
+                      letterSpacing: AppLetterSpacing.normal,
                     ),
                   ),
                 ),
@@ -533,7 +533,7 @@ class _MenuPanel extends StatelessWidget {
                   child: Text(
                     emptyLabel!,
                     style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 13),
+                        color: AppColors.textMuted, fontSize: AppFontSize.md),
                   ),
                 ),
               for (final e in entries)
@@ -645,9 +645,9 @@ class _MenuItemState extends State<_MenuItem> {
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: color,
-                    fontSize: 13,
+                    fontSize: AppFontSize.md,
                     fontWeight: FontWeight.w500,
-                    height: 1.2,
+                    height: AppLineHeight.normal,
                   ),
                 ),
               ),

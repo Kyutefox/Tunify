@@ -214,7 +214,7 @@ class PlayerExtraButton extends StatelessWidget {
               label,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.5),
-                fontSize: 10,
+                fontSize: AppFontSize.micro,
                 fontWeight: FontWeight.w500,
               ),
             ),

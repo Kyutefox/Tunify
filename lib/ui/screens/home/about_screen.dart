@@ -225,9 +225,9 @@ class _HeroHeader extends StatelessWidget {
                 _kAppName,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 30,
+                  fontSize: AppFontSize.display3,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
+                  letterSpacing: AppLetterSpacing.display,
                 ),
               ),
               const SizedBox(height: 4),
@@ -235,7 +235,7 @@ class _HeroHeader extends StatelessWidget {
                 _kAppTagline,
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 14,
+                  fontSize: AppFontSize.base,
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
@@ -253,7 +253,7 @@ class _HeroHeader extends StatelessWidget {
                   version.isEmpty ? '' : 'v$version (build $buildNumber)',
                   style: const TextStyle(
                     color: AppColors.textSecondary,
-                    fontSize: 12,
+                    fontSize: AppFontSize.sm,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -290,9 +290,9 @@ class _SectionCard extends StatelessWidget {
             title.toUpperCase(),
             style: const TextStyle(
               color: AppColors.primary,
-              fontSize: 11,
+              fontSize: AppFontSize.xs,
               fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
+              letterSpacing: AppLetterSpacing.label,
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -314,8 +314,8 @@ class _AppInfoCard extends StatelessWidget {
         _kAppDescription,
         style: const TextStyle(
           color: AppColors.textSecondary,
-          fontSize: 14,
-          height: 1.6,
+          fontSize: AppFontSize.base,
+          height: AppLineHeight.relaxed,
         ),
       ),
     );
@@ -376,7 +376,7 @@ class _PersonCard extends StatelessWidget {
                       name,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 16,
+                        fontSize: AppFontSize.xl,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -385,7 +385,7 @@ class _PersonCard extends StatelessWidget {
                       role,
                       style: const TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 13,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
                   ],
@@ -477,7 +477,7 @@ class _GradientFallback extends StatelessWidget {
           name[0].toUpperCase(),
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 22,
+            fontSize: AppFontSize.h2,
             fontWeight: FontWeight.w800,
           ),
         ),
@@ -531,7 +531,7 @@ class _IconLink extends StatelessWidget {
                         label,
                         style: TextStyle(
                           color: color,
-                          fontSize: 12,
+                          fontSize: AppFontSize.sm,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -539,7 +539,7 @@ class _IconLink extends StatelessWidget {
                         sublabel,
                         style: const TextStyle(
                           color: AppColors.textMuted,
-                          fontSize: 10,
+                          fontSize: AppFontSize.micro,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -601,7 +601,7 @@ class _TechChip extends StatelessWidget {
         label,
         style: TextStyle(
           color: color,
-          fontSize: 12,
+          fontSize: AppFontSize.sm,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -677,9 +677,9 @@ class _AboutScreenBodyState extends State<AboutScreenBody> {
             _kAppName,
             style: TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 26,
+              fontSize: AppFontSize.h1,
               fontWeight: FontWeight.w800,
-              letterSpacing: -0.5,
+              letterSpacing: AppLetterSpacing.display,
             ),
           ),
           const SizedBox(height: 4),
@@ -687,7 +687,7 @@ class _AboutScreenBodyState extends State<AboutScreenBody> {
             _kAppTagline,
             style: TextStyle(
               color: AppColors.textSecondary,
-              fontSize: 13,
+              fontSize: AppFontSize.md,
             ),
           ),
           if (_version.isNotEmpty) ...[
@@ -706,7 +706,7 @@ class _AboutScreenBodyState extends State<AboutScreenBody> {
                 'v$_version (build $_build)',
                 style: const TextStyle(
                   color: AppColors.textSecondary,
-                  fontSize: 12,
+                  fontSize: AppFontSize.sm,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -776,7 +776,7 @@ class _FooterText extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         Text(
           '© $_kReleaseYear $_kOrgName. All rights reserved.',
-          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
@@ -785,7 +785,7 @@ class _FooterText extends StatelessWidget {
           text: TextSpan(
             style: TextStyle(
               color: AppColors.textMuted.withValues(alpha: 0.6),
-              fontSize: 11,
+              fontSize: AppFontSize.xs,
             ),
             children: const [
               TextSpan(text: 'Made with '),

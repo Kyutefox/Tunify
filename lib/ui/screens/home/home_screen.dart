@@ -128,9 +128,9 @@ class _DesktopGreetingHeader extends ConsumerWidget {
           username.isNotEmpty ? '$greeting, $username' : greeting,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: 14,
+            fontSize: AppFontSize.base,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0.2,
+            letterSpacing: AppLetterSpacing.normal,
           ),
         ),
       ),

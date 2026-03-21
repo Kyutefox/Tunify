@@ -79,7 +79,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
                       'Search songs, artists, and more',
                       style: TextStyle(
                         color: AppColors.textMuted.withValues(alpha: 0.7),
-                        fontSize: 16,
+                        fontSize: AppFontSize.xl,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -113,7 +113,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
                       'Browse',
                       style: TextStyle(
                         color: AppColors.textSecondary,
-                        fontSize: 13,
+                        fontSize: AppFontSize.md,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -371,7 +371,7 @@ class SearchResultsBody extends ConsumerWidget {
           'No results found',
           style: TextStyle(
             color: AppColors.textSecondary,
-            fontSize: 15,
+            fontSize: AppFontSize.lg,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -418,7 +418,7 @@ class SearchResultsBody extends ConsumerWidget {
                         s,
                         style: const TextStyle(
                           color: AppColors.textPrimary,
-                          fontSize: 14,
+                          fontSize: AppFontSize.base,
                           fontWeight: FontWeight.w500,
                         ),
                         maxLines: 1,
@@ -455,7 +455,7 @@ class SearchResultsBody extends ConsumerWidget {
                 song.durationFormatted,
                 style: const TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 13,
+                  fontSize: AppFontSize.md,
                 ),
               ),
               AppIconButton(
@@ -546,7 +546,7 @@ class RecentSearchSection extends ConsumerWidget {
                     color: AppColors.textPrimary,
                     fontSize: compact ? 16 : 20,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
+                    letterSpacing: AppLetterSpacing.heading,
                   ),
                 ),
               ),
@@ -560,7 +560,7 @@ class RecentSearchSection extends ConsumerWidget {
                     'Clear',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 13,
+                      fontSize: AppFontSize.md,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -603,7 +603,7 @@ class RecentSearchSection extends ConsumerWidget {
                       query,
                       style: const TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 14,
+                        fontSize: AppFontSize.base,
                         fontWeight: FontWeight.w500,
                       ),
                       maxLines: 1,
@@ -695,9 +695,9 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                       'Search',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: 28,
+                        fontSize: AppFontSize.display3,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: -0.6,
+                        letterSpacing: AppLetterSpacing.display,
                       ),
                     ),
                   ),

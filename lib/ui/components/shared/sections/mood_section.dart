@@ -98,7 +98,7 @@ class _MoodGrid extends StatelessWidget {
                     mood.label,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 13,
+                      fontSize: AppFontSize.md,
                       fontWeight: FontWeight.w700,
                       shadows: [
                         Shadow(color: Colors.black38, blurRadius: 6),

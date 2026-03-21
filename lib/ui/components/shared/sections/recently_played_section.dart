@@ -136,7 +136,7 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
                     'See all',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 13,
+                      fontSize: AppFontSize.md,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -261,7 +261,7 @@ class _RecentSongCard extends StatelessWidget {
             song.title,
             style: const TextStyle(
               color: AppColors.textPrimary,
-              fontSize: 13,
+              fontSize: AppFontSize.md,
               fontWeight: FontWeight.w600,
             ),
             maxLines: 1,
@@ -271,7 +271,7 @@ class _RecentSongCard extends StatelessWidget {
             song.artist,
             style: const TextStyle(
               color: AppColors.textMuted,
-              fontSize: 11,
+              fontSize: AppFontSize.xs,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,

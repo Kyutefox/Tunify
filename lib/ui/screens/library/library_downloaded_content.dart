@@ -226,14 +226,14 @@ class _LibraryDownloadedList extends ConsumerWidget {
                 Text(
                   'In device',
                   style: TextStyle(
-                      color: AppColors.primary, fontSize: 12),
+                      color: AppColors.primary, fontSize: AppFontSize.sm),
                 ),
                 const SizedBox(width: 8),
                 Flexible(
                   child: Text(
                     song.artist,
                     style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: 12),
+                        color: AppColors.textMuted, fontSize: AppFontSize.sm),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -247,7 +247,7 @@ class _LibraryDownloadedList extends ConsumerWidget {
                   song.durationFormatted,
                   style: const TextStyle(
                     color: AppColors.textMuted,
-                    fontSize: 13,
+                    fontSize: AppFontSize.md,
                   ),
                 ),
                 AppIconButton(
@@ -321,7 +321,7 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
                             borderRadius:
                                 BorderRadius.circular(AppRadius.md),
                             border: Border.all(
-                                color: AppColors.accent, width: 2),
+                                color: AppColors.primary, width: 2),
                           )
                         : null,
                     child: ClipRRect(
@@ -386,7 +386,7 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
                 color: isNowPlaying
                     ? AppColors.accent
                     : AppColors.textPrimary,
-                fontSize: 13,
+                fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
               maxLines: 1,
@@ -396,7 +396,7 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
               song.artist,
               style: const TextStyle(
                 color: AppColors.textMuted,
-                fontSize: 11,
+                fontSize: AppFontSize.xs,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -582,7 +582,7 @@ class _DeviceMusicList extends ConsumerWidget {
                   song.durationFormatted,
                   style: const TextStyle(
                     color: AppColors.textMuted,
-                    fontSize: 12,
+                    fontSize: AppFontSize.sm,
                   ),
                 ),
                 AppIconButton(
@@ -642,7 +642,7 @@ class _DeviceMusicGridCard extends ConsumerWidget {
                             borderRadius:
                                 BorderRadius.circular(AppRadius.md),
                             border: Border.all(
-                                color: AppColors.accent, width: 2),
+                                color: AppColors.primary, width: 2),
                           )
                         : null,
                     child: ClipRRect(
@@ -716,7 +716,7 @@ class _DeviceMusicGridCard extends ConsumerWidget {
                 color: isNowPlaying
                     ? AppColors.accent
                     : AppColors.textPrimary,
-                fontSize: 13,
+                fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
               maxLines: 1,
@@ -726,7 +726,7 @@ class _DeviceMusicGridCard extends ConsumerWidget {
               song.artist,
               style: const TextStyle(
                 color: AppColors.textMuted,
-                fontSize: 11,
+                fontSize: AppFontSize.xs,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,

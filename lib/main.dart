@@ -344,7 +344,7 @@ class _InitErrorScreen extends StatelessWidget {
                 'Unable to initialize services',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 16,
+                  fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w600,
                 ),
               ),

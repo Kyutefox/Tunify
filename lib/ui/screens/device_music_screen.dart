@@ -83,9 +83,9 @@ class _DeviceMusicScreenState extends ConsumerState<DeviceMusicScreen>
                           'Device Music',
                           style: TextStyle(
                             color: AppColors.textPrimary,
-                            fontSize: 24,
+                            fontSize: AppFontSize.h1,
                             fontWeight: FontWeight.w700,
-                            letterSpacing: -0.5,
+                            letterSpacing: AppLetterSpacing.display,
                           ),
                         ),
                         if (state.songs.isNotEmpty) ...[
@@ -94,7 +94,7 @@ class _DeviceMusicScreenState extends ConsumerState<DeviceMusicScreen>
                             '${state.songs.length} songs',
                             style: const TextStyle(
                               color: AppColors.textMuted,
-                              fontSize: 13,
+                              fontSize: AppFontSize.md,
                             ),
                           ),
                         ],
@@ -142,7 +142,7 @@ class _DeviceMusicScreenState extends ConsumerState<DeviceMusicScreen>
                         width: 42,
                         height: 42,
                         decoration: const BoxDecoration(
-                          color: AppColors.accent,
+                          color: AppColors.primary,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
@@ -296,7 +296,7 @@ class _DeviceMusicScreenState extends ConsumerState<DeviceMusicScreen>
                 song.durationFormatted,
                 style: const TextStyle(
                   color: AppColors.textMuted,
-                  fontSize: 12,
+                  fontSize: AppFontSize.sm,
                 ),
               ),
               AppIconButton(
@@ -345,7 +345,7 @@ class _PermissionPrompt extends StatelessWidget {
               'Allow access to device music',
               style: TextStyle(
                 color: AppColors.textPrimary,
-                fontSize: 18,
+                fontSize: AppFontSize.xxl,
                 fontWeight: FontWeight.w600,
               ),
               textAlign: TextAlign.center,
@@ -357,7 +357,7 @@ class _PermissionPrompt extends StatelessWidget {
                   : '${AppStrings.appName} needs permission to read audio files stored on your device.',
               style: const TextStyle(
                 color: AppColors.textMuted,
-                fontSize: 14,
+                fontSize: AppFontSize.base,
               ),
               textAlign: TextAlign.center,
             ),

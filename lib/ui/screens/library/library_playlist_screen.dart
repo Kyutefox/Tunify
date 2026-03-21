@@ -17,6 +17,7 @@ import '../../../shared/providers/library_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
+import '../../theme/app_routes.dart';
 import '../../../shared/utils/string_utils.dart';
 import '../player/song_options_sheet.dart';
 
@@ -533,7 +534,7 @@ void _openEditSheet(
     BuildContext context, String playlistId, LibraryPlaylist playlist) {
   FocusManager.instance.primaryFocus?.unfocus();
   Navigator.of(context).push(
-    MaterialPageRoute<void>(
+    appPageRoute<void>(
       builder: (_) => _EditPlaylistSheet(
         playlistId: playlistId,
         playlist: playlist,

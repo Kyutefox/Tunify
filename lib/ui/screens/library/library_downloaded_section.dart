@@ -5,6 +5,7 @@ import '../../../config/app_icons.dart';
 import '../../../shared/providers/download_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
+import '../../theme/app_routes.dart';
 import '../download_queue_sheet.dart';
 import 'library_downloaded_screen.dart';
 
@@ -27,7 +28,7 @@ class LibraryDownloadedSection extends ConsumerWidget {
         child: InkWell(
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute<void>(
+              appPageRoute<void>(
                 builder: (_) => const LibraryDownloadedScreen(),
               ),
             );

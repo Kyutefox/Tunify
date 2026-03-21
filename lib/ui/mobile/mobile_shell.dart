@@ -149,24 +149,35 @@ class _OfflineBanner extends ConsumerWidget {
           orElse: () => true,
         );
 
-    if (isOnline) return const SizedBox.shrink();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.orangeAccent.withValues(alpha: 0.12),
-      child: const Row(
-        children: [
-          Icon(Icons.wifi_off, size: 18, color: Colors.orangeAccent),
-          SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Text(
-              "You're offline — some features may be limited",
-              style: TextStyle(color: Colors.orangeAccent, fontSize: 13),
-            ),
-          ),
-        ],
+    return AnimatedSwitcher(
+      duration: AppDuration.normal,
+      transitionBuilder: (child, anim) => SizeTransition(
+        sizeFactor: CurvedAnimation(parent: anim, curve: AppCurves.decelerate),
+        axisAlignment: -1,
+        child: FadeTransition(opacity: anim, child: child),
       ),
+      child: isOnline
+          ? const SizedBox.shrink(key: ValueKey('online'))
+          : Container(
+              key: const ValueKey('offline'),
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.base, vertical: AppSpacing.sm),
+              color: Colors.orangeAccent.withValues(alpha: 0.12),
+              child: const Row(
+                children: [
+                  Icon(Icons.wifi_off, size: 18, color: Colors.orangeAccent),
+                  SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      "You're offline — some features may be limited",
+                      style:
+                          TextStyle(color: Colors.orangeAccent, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
     );
   }
 }

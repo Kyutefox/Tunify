@@ -14,6 +14,7 @@ import '../../../shared/providers/library_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
+import '../../theme/app_routes.dart';
 import '../player/song_options_sheet.dart';
 
 class LibraryLikedSongsScreen extends ConsumerStatefulWidget {
@@ -165,7 +166,7 @@ class _LibraryLikedSongsScreenState
 void _openEditLikedSheet(BuildContext context, List<Song> initialSongs) {
   FocusManager.instance.primaryFocus?.unfocus();
   Navigator.of(context).push(
-    MaterialPageRoute<void>(
+    appPageRoute<void>(
       builder: (_) => _EditLikedSheet(initialSongs: initialSongs),
     ),
   );

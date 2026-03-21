@@ -19,6 +19,7 @@ import '../layout/shell_context.dart';
 import '../../config/app_icons.dart';
 import '../theme/app_colors.dart';
 import '../theme/design_tokens.dart';
+import '../theme/app_routes.dart';
 
 class Debouncer {
   final Duration delay;
@@ -512,7 +513,7 @@ class RecentSearchSection extends ConsumerWidget {
       onQueryTap!(query);
     } else {
       Navigator.of(context).push(
-        MaterialPageRoute<void>(
+        appPageRoute<void>(
           builder: (_) => _FullSearchScreen(initialQuery: query),
         ),
       );
@@ -702,7 +703,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                   ),
                   _SearchBarPlaceholder(
                     onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute<void>(
+                      appPageRoute<void>(
                         builder: (_) => const _FullSearchScreen(),
                       ),
                     ),

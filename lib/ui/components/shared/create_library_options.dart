@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../config/app_icons.dart';
 import '../../../shared/providers/library_provider.dart';
 import '../../screens/library/create_library_item_screen.dart';
+import '../../theme/app_routes.dart';
 import 'adaptive_menu.dart';
 
 /// Shared logic for the "Create playlist / folder" flow.
@@ -13,7 +14,7 @@ import 'adaptive_menu.dart';
 /// dropdown on desktop) — single call site for both platforms.
 Future<void> createPlaylist(BuildContext context, WidgetRef ref) async {
   final name = await Navigator.of(context).push<String>(
-    MaterialPageRoute<String>(
+    appPageRoute<String>(
       builder: (_) => const CreateLibraryItemScreen(
         mode: CreateLibraryItemMode.createPlaylist,
       ),
@@ -26,7 +27,7 @@ Future<void> createPlaylist(BuildContext context, WidgetRef ref) async {
 
 Future<void> createFolder(BuildContext context, WidgetRef ref) async {
   final name = await Navigator.of(context).push<String>(
-    MaterialPageRoute<String>(
+    appPageRoute<String>(
       builder: (_) => const CreateLibraryItemScreen(
         mode: CreateLibraryItemMode.createFolder,
       ),

@@ -13,6 +13,7 @@ import '../../screens/home/home_shared.dart';
 import '../../screens/home/home_user_menu.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
+import '../../theme/app_routes.dart';
 import '../ui/sheet.dart';
 import 'adaptive_menu.dart';
 
@@ -106,7 +107,7 @@ void _showMobileSheet(
           ? () {
               Navigator.of(context).pop();
               Navigator.of(context).push(
-                MaterialPageRoute<void>(
+                appPageRoute<void>(
                   builder: (_) => const GuestProfileSetupScreen(isInitial: false),
                 ),
               );

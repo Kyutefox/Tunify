@@ -12,6 +12,7 @@ import '../../config/app_strings.dart';
 import '../components/ui/sheet.dart';
 import '../theme/app_colors.dart';
 import '../theme/design_tokens.dart';
+import '../theme/app_routes.dart';
 import 'auth_screen.dart';
 import 'guest_profile_setup_screen.dart';
 
@@ -154,7 +155,7 @@ class WelcomeScreen extends ConsumerWidget {
                         ref.read(guestModeProvider.notifier).enterGuestMode();
                       } else {
                         Navigator.of(context).push(
-                          MaterialPageRoute<void>(
+                          appPageRoute<void>(
                             builder: (_) =>
                                 const GuestProfileSetupScreen(isInitial: true),
                           ),

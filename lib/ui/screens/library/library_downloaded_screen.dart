@@ -12,6 +12,7 @@ import '../../../shared/providers/download_provider.dart';
 import '../../../shared/providers/library_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/app_routes.dart';
 import '../player/song_options_sheet.dart';
 import '../../theme/design_tokens.dart';
 
@@ -183,7 +184,7 @@ class LibraryDownloadedScreen extends ConsumerWidget {
 
 void openEditDownloadedSheet(BuildContext context, List<Song> initialSongs) {
   Navigator.of(context).push(
-    MaterialPageRoute<void>(
+    appPageRoute<void>(
       builder: (_) => _EditDownloadedSheet(initialSongs: initialSongs),
     ),
   );

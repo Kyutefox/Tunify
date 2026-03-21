@@ -8,6 +8,7 @@ import '../../../models/library_playlist.dart';
 import '../../../shared/providers/library_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
+import '../../theme/app_routes.dart';
 import '../../../shared/utils/string_utils.dart';
 import 'library_playlist_screen.dart';
 
@@ -80,7 +81,7 @@ class LibraryFolderScreen extends ConsumerWidget {
                   child: InkWell(
                     onTap: () {
                       Navigator.of(context).push(
-                        MaterialPageRoute<void>(
+                        appPageRoute<void>(
                           builder: (_) =>
                               LibraryPlaylistScreen(playlistId: playlist.id),
                         ),

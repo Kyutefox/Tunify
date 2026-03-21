@@ -16,6 +16,7 @@ import '../../system/bridges/database_repository.dart';
 import '../layout/shell_context.dart';
 import '../theme/app_colors.dart';
 import '../theme/design_tokens.dart';
+import '../theme/app_routes.dart';
 import '../../shared/utils/string_utils.dart';
 import 'library/create_library_item_screen.dart';
 import 'library/library_playlist_screen.dart';
@@ -94,7 +95,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           songCount: ref.read(libraryLikedCountProvider),
           onTap: () {
             Navigator.of(context).push(
-              MaterialPageRoute<void>(
+              appPageRoute<void>(
                 builder: (_) => const LibraryLikedSongsScreen(),
               ),
             );
@@ -354,7 +355,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
               child: AnimatedSwitcher(
-                duration: Duration.zero,
+                duration: AppDuration.fast,
+                switchInCurve: AppCurves.decelerate,
+                switchOutCurve: AppCurves.decelerate,
                 child: KeyedSubtree(
                   key: ValueKey('albums-$viewMode'),
                   child: viewMode == LibraryViewMode.grid
@@ -385,7 +388,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
               child: AnimatedSwitcher(
-                duration: Duration.zero,
+                duration: AppDuration.fast,
+                switchInCurve: AppCurves.decelerate,
+                switchOutCurve: AppCurves.decelerate,
                 child: KeyedSubtree(
                   key: ValueKey('artists-$viewMode'),
                   child: viewMode == LibraryViewMode.grid
@@ -440,7 +445,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   void _onPlaylistTap(LibraryPlaylist playlist) {
     Navigator.of(context).push(
-      MaterialPageRoute<void>(
+      appPageRoute<void>(
         builder: (_) => LibraryPlaylistScreen(playlistId: playlist.id),
       ),
     );
@@ -479,13 +484,15 @@ class _FollowedArtistsList extends ConsumerWidget {
         return Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => ArtistPage(
-                artistName: artist.name,
-                thumbnailUrl: artist.thumbnailUrl,
-                artistBrowseId: artist.browseId,
+            onTap: () => Navigator.of(context).push(
+              appPageRoute<void>(
+                builder: (_) => ArtistPage(
+                  artistName: artist.name,
+                  thumbnailUrl: artist.thumbnailUrl,
+                  artistBrowseId: artist.browseId,
+                ),
               ),
-            )),
+            ),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Padding(
               padding: const EdgeInsets.symmetric(
@@ -563,13 +570,15 @@ class _FollowedArtistsGrid extends ConsumerWidget {
       itemBuilder: (context, index) {
         final artist = artists[index];
         return GestureDetector(
-          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => ArtistPage(
-              artistName: artist.name,
-              thumbnailUrl: artist.thumbnailUrl,
-              artistBrowseId: artist.browseId,
+          onTap: () => Navigator.of(context).push(
+            appPageRoute<void>(
+              builder: (_) => ArtistPage(
+                artistName: artist.name,
+                thumbnailUrl: artist.thumbnailUrl,
+                artistBrowseId: artist.browseId,
+              ),
             ),
-          )),
+          ),
           onLongPress: () => ref.read(libraryProvider.notifier).toggleFollowArtist(artist),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,15 +648,17 @@ class _FollowedAlbumsList extends ConsumerWidget {
         return Material(
           color: Colors.transparent,
           child: InkWell(
-            onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-              builder: (_) => AlbumPage(
-                songTitle: album.title,
-                artistName: album.artistName,
-                thumbnailUrl: album.thumbnailUrl,
-                albumBrowseId: album.browseId,
-                albumName: album.title,
+            onTap: () => Navigator.of(context).push(
+              appPageRoute<void>(
+                builder: (_) => AlbumPage(
+                  songTitle: album.title,
+                  artistName: album.artistName,
+                  thumbnailUrl: album.thumbnailUrl,
+                  albumBrowseId: album.browseId,
+                  albumName: album.title,
+                ),
               ),
-            )),
+            ),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Padding(
               padding: const EdgeInsets.symmetric(
@@ -728,15 +739,17 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
       itemBuilder: (context, index) {
         final album = albums[index];
         return GestureDetector(
-          onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-            builder: (_) => AlbumPage(
-              songTitle: album.title,
-              artistName: album.artistName,
-              thumbnailUrl: album.thumbnailUrl,
-              albumBrowseId: album.browseId,
-              albumName: album.title,
+          onTap: () => Navigator.of(context).push(
+            appPageRoute<void>(
+              builder: (_) => AlbumPage(
+                songTitle: album.title,
+                artistName: album.artistName,
+                thumbnailUrl: album.thumbnailUrl,
+                albumBrowseId: album.browseId,
+                albumName: album.title,
+              ),
             ),
-          )),
+          ),
           onLongPress: () => ref.read(libraryProvider.notifier).toggleFollowAlbum(album),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1182,7 +1195,7 @@ void showLibraryFolderOptionsSheet(
       onRename: () async {
         final navigator = Navigator.of(context);
         final newName = await navigator.push<String>(
-          MaterialPageRoute<String>(
+          appPageRoute<String>(
             builder: (_) => CreateLibraryItemScreen(
               mode: CreateLibraryItemMode.renameFolder,
               initialName: folder.name,

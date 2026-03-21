@@ -14,6 +14,7 @@ import '../../../shared/providers/library_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
+import '../../theme/app_routes.dart';
 import '../library/add_to_playlist_sheet.dart';
 import 'artist_page.dart';
 import 'album_page.dart';
@@ -195,7 +196,7 @@ void _showDesktopSongMenu(
         if (pushDetail != null) {
           pushDetail(page);
         } else {
-          navigator.push(MaterialPageRoute<void>(builder: (_) => page));
+          navigator.push(appPageRoute<void>(builder: (_) => page));
         }
       },
     ),
@@ -215,7 +216,7 @@ void _showDesktopSongMenu(
         if (pushDetail != null) {
           pushDetail(page);
         } else {
-          navigator.push(MaterialPageRoute<void>(builder: (_) => page));
+          navigator.push(appPageRoute<void>(builder: (_) => page));
         }
       },
     ),
@@ -376,7 +377,7 @@ class _SongOptionsContent extends ConsumerWidget {
             onTap: () {
               Navigator.of(context).pop();
               Navigator.of(context).push(
-                MaterialPageRoute<void>(
+                appPageRoute<void>(
                   builder: (_) => ArtistPage(
                     artistName: songForNav.artist,
                     thumbnailUrl: songForNav.thumbnailUrl,
@@ -392,7 +393,7 @@ class _SongOptionsContent extends ConsumerWidget {
             onTap: () {
               Navigator.of(context).pop();
               Navigator.of(context).push(
-                MaterialPageRoute<void>(
+                appPageRoute<void>(
                   builder: (_) => AlbumPage(
                     songTitle: songForNav.title,
                     artistName: songForNav.artist,

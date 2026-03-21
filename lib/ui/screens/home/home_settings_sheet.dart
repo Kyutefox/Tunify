@@ -22,6 +22,7 @@ import '../../../shared/services/music_stream_manager.dart';
 import '../../../shared/services/stream_cache_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
+import '../../theme/app_routes.dart';
 import 'about_screen.dart';
 
 void _showDataResultSnackBar(BuildContext context,
@@ -80,7 +81,7 @@ class HomeSettingsSheet extends ConsumerWidget {
               subtitle: 'Volume Normalization & Audio',
               onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(
+                  appPageRoute<void>(
                     builder: (_) => const _PlaybackSettingsScreen(),
                   ),
                 );
@@ -95,7 +96,7 @@ class HomeSettingsSheet extends ConsumerWidget {
               subtitle: 'Clear Cache, Clear Downloads, Reset Recommendations',
               onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(
+                  appPageRoute<void>(
                     builder: (_) => const _DataSettingsScreen(),
                   ),
                 );
@@ -110,7 +111,7 @@ class HomeSettingsSheet extends ConsumerWidget {
               subtitle: 'Use your own project or leave default',
               onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(
+                  appPageRoute<void>(
                     builder: (_) => const _SupabaseSettingsScreen(),
                   ),
                 );
@@ -125,7 +126,7 @@ class HomeSettingsSheet extends ConsumerWidget {
               subtitle: 'Developer, version & legal info',
               onTap: () {
                 Navigator.of(context).push(
-                  MaterialPageRoute<void>(
+                  appPageRoute<void>(
                     builder: (_) => const AboutScreen(),
                   ),
                 );

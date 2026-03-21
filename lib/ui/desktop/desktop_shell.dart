@@ -13,6 +13,7 @@ import '../screens/library_screen.dart';
 import '../screens/search_screen.dart';
 import '../theme/app_colors.dart';
 import '../theme/design_tokens.dart';
+import '../theme/app_routes.dart';
 import 'desktop_player_bar.dart';
 import 'desktop_right_sidebar.dart';
 import 'desktop_search_dropdown.dart';
@@ -190,7 +191,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
 
   void _pushDetail(Widget page) {
     _contentNavKey.currentState?.push(
-      MaterialPageRoute<void>(builder: (_) => page),
+      appPageRoute<void>(builder: (_) => page),
     );
   }
 

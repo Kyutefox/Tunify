@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../../config/app_icons.dart';
 import '../../theme/app_colors.dart';
+import '../../theme/design_tokens.dart';
 
 class PlayerBlurredBackground extends StatelessWidget {
   const PlayerBlurredBackground({
@@ -39,7 +40,8 @@ class PlayerBlurredBackground extends StatelessWidget {
           ),
         ),
         AnimatedContainer(
-          duration: const Duration(milliseconds: 800),
+          duration: AppDuration.medium,
+          curve: AppCurves.decelerate,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [

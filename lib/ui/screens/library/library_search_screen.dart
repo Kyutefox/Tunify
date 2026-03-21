@@ -12,6 +12,7 @@ import '../../../shared/providers/library_provider.dart';
 import '../../../shared/utils/string_utils.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
+import '../../theme/app_routes.dart';
 import 'library_playlist_screen.dart';
 
 /// Full-screen library search using [SharedSearchPage]. Filters playlists
@@ -191,7 +192,7 @@ class LibrarySearchBody extends ConsumerWidget {
                     : () {
                         Navigator.pop(context);
                         Navigator.of(context).push(
-                          MaterialPageRoute<void>(
+                          appPageRoute<void>(
                             builder: (_) =>
                                 LibraryPlaylistScreen(playlistId: playlist.id),
                           ),

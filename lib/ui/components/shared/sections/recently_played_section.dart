@@ -9,6 +9,7 @@ import '../../../../shared/providers/home_state_provider.dart';
 import '../../../../ui/screens/home/recently_played_screen.dart';
 import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
+import '../../../../ui/theme/app_routes.dart';
 import '../../ui/widgets/section_header.dart';
 import '../../../../ui/layout/shell_context.dart';
 import '../../../../ui/desktop/desktop_right_sidebar.dart';
@@ -124,7 +125,7 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
               ],
               GestureDetector(
                 onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
+                  appPageRoute<void>(
                     builder: (_) => const RecentlyPlayedScreen(),
                   ),
                 ),

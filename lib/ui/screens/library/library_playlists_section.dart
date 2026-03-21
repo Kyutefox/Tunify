@@ -106,7 +106,9 @@ class LibraryPlaylistsSection extends StatelessWidget {
             )
           else
             AnimatedSwitcher(
-              duration: Duration.zero,
+              duration: AppDuration.fast,
+              switchInCurve: AppCurves.decelerate,
+              switchOutCurve: AppCurves.decelerate,
               child: KeyedSubtree(
                 key: ValueKey(viewMode),
                 child: viewMode == LibraryViewMode.grid

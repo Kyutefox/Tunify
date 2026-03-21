@@ -7,6 +7,11 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData.dark(useMaterial3: true).copyWith(
       scaffoldBackgroundColor: AppColors.background,
+      // Kill the spreading ripple globally — it bleeds through page transitions.
+      // Press feedback is handled by highlightColor only (clears on finger lift).
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.white.withValues(alpha: 0.06),
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         primaryContainer: AppColors.primaryContainer,

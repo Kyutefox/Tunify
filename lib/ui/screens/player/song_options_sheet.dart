@@ -1,9 +1,13 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../components/shared/adaptive_menu.dart';
 import '../../components/ui/sheet.dart' show showAppSheet, kSheetHorizontalPadding, SheetOptionTile;
+import '../../layout/shell_context.dart';
 import '../../../config/app_icons.dart';
+import '../../../models/library_playlist.dart';
 import '../../../models/song.dart';
 import '../../../shared/providers/download_provider.dart';
 import '../../../shared/providers/library_provider.dart';
@@ -29,11 +33,27 @@ class SongOptionExtra {
 void showSongOptionsSheet(
   BuildContext context, {
   required Song song,
+  required WidgetRef ref,
   List<SongOptionExtra> extraOptions = const [],
   bool showAddToPlaylist = true,
   VoidCallback? onRemoveFromPlaylist,
   int? queueIndex,
+  Rect? anchorRect,
+  BuildContext? buttonContext,
 }) {
+  if (_isDesktop()) {
+    _showDesktopSongMenu(
+      context,
+      ref: ref,
+      song: song,
+      extraOptions: extraOptions,
+      showAddToPlaylist: showAddToPlaylist,
+      onRemoveFromPlaylist: onRemoveFromPlaylist,
+      queueIndex: queueIndex,
+      anchorRect: anchorRect ?? _rectFromContext(buttonContext ?? context),
+    );
+    return;
+  }
   showAppSheet(
     context,
     child: _SongOptionsContent(
@@ -44,6 +64,186 @@ void showSongOptionsSheet(
       queueIndex: queueIndex,
     ),
   );
+}
+
+void _showDesktopSongMenu(
+  BuildContext context, {
+  required WidgetRef ref,
+  required Song song,
+  List<SongOptionExtra> extraOptions = const [],
+  bool showAddToPlaylist = true,
+  VoidCallback? onRemoveFromPlaylist,
+  int? queueIndex,
+  Rect? anchorRect,
+}) {
+  final effectiveRect = anchorRect ?? _rectFromContext(context);
+
+  // Capture navigator before the menu opens — the context may be deactivated
+  // by the time a menu item's onTap fires (e.g. search screen gets popped).
+  // Use rootNavigator: true so we always get a valid navigator for sheets/dialogs.
+  final navigator = Navigator.of(context, rootNavigator: true);
+  // Capture the shell's content-navigator push callback so Artist/Album pages
+  // open inside the desktop content panel instead of full-screen.
+  // Use getElementForInheritedWidgetOfExactType (read-only, no rebuild
+  // subscription) because this is a one-shot call, not a build method.
+  final pushDetail = (context.getElementForInheritedWidgetOfExactType<ShellContext>()
+          ?.widget as ShellContext?)
+      ?.onPushDetail;
+
+  final downloadService = ref.read(downloadServiceProvider);
+  final isDownloaded = downloadService.isDownloaded(song.id);
+  final isLiked = ref.read(libraryProvider).likedSongIds.contains(song.id);
+  final queue = ref.read(playerProvider).queue;
+  final effectiveQueueIndex =
+      queueIndex ?? queue.indexWhere((s) => s.id == song.id);
+  final isInQueue = effectiveQueueIndex >= 0;
+
+  // Build folder-aware playlist sub-entries for the hover submenu (desktop only).
+  final playlists = ref.read(libraryPlaylistsProvider);
+  final folders = ref.read(libraryFoldersProvider);
+
+  // IDs of playlists that belong to any folder.
+  final folderedIds = {
+    for (final f in folders)
+      for (final id in f.playlistIds) id,
+  };
+
+  AppMenuEntry playlistEntry(LibraryPlaylist p) {
+    final alreadyIn = p.songs.any((s) => s.id == song.id);
+    return AppMenuEntry(
+      icon: alreadyIn ? AppIcons.checkCircle : AppIcons.musicNote,
+      label: p.name,
+      color: alreadyIn ? AppColors.primary : null,
+      onTap: () =>
+          ref.read(libraryProvider.notifier).addSongsToPlaylist(p.id, [song]),
+    );
+  }
+
+  final idToPlaylist = {for (final p in playlists) p.id: p};
+
+  final playlistSubEntries = <AppMenuEntry>[
+    // Folders first — each opens a sub-sub-menu with its playlists.
+    for (final f in folders)
+      AppMenuEntry(
+        icon: AppIcons.folder,
+        label: f.name,
+        onTap: () {},
+        subEntries: f.playlistIds
+            .map((id) => idToPlaylist[id])
+            .whereType<LibraryPlaylist>()
+            .map(playlistEntry)
+            .toList(),
+      ),
+    // Then playlists not in any folder.
+    for (final p in playlists)
+      if (!folderedIds.contains(p.id)) playlistEntry(p),
+  ];
+
+  final entries = <AppMenuEntry>[
+    AppMenuEntry(
+      icon: AppIcons.favourite,
+      label: isLiked ? 'Unlike' : 'Like',
+      color: isLiked ? AppColors.loveThemeColorFor(song.id) : null,
+      onTap: () => ref.read(libraryProvider.notifier).toggleLiked(song),
+    ),
+    if (showAddToPlaylist || onRemoveFromPlaylist != null)
+      AppMenuEntry(
+        icon: onRemoveFromPlaylist != null
+            ? AppIcons.removeCircleOutline
+            : AppIcons.playlistAdd,
+        label: onRemoveFromPlaylist != null
+            ? 'Remove from playlist'
+            : 'Add to playlist',
+        // When removing from playlist, use a direct tap action.
+        // When adding, show a hover submenu with the playlist list.
+        onTap: onRemoveFromPlaylist ?? () {},
+        subEntries: onRemoveFromPlaylist == null ? playlistSubEntries : null,
+      ),
+    AppMenuEntry(
+      icon: isInQueue ? AppIcons.removeCircleOutline : AppIcons.queueMusic,
+      label: isInQueue ? 'Remove from queue' : 'Add to queue',
+      onTap: () {
+        if (isInQueue) {
+          ref.read(playerProvider.notifier).removeFromQueue(effectiveQueueIndex);
+        } else {
+          ref.read(playerProvider.notifier).addToQueue(song);
+        }
+      },
+    ),
+    AppMenuEntry(
+      icon: isDownloaded ? AppIcons.checkCircle : AppIcons.download,
+      label: isDownloaded ? 'Remove download' : 'Download',
+      onTap: () {
+        if (isDownloaded) {
+          ref.read(downloadServiceProvider).removeDownload(song.id);
+        } else {
+          ref.read(downloadServiceProvider).enqueue(song);
+        }
+      },
+    ),
+    const AppMenuEntry.divider(),
+    AppMenuEntry(
+      icon: AppIcons.artist,
+      label: 'Go to Artist',
+      showChevron: true,
+      onTap: () {
+        final page = ArtistPage(
+          artistName: song.artist,
+          thumbnailUrl: song.thumbnailUrl,
+          artistBrowseId: song.artistBrowseId,
+        );
+        if (pushDetail != null) {
+          pushDetail(page);
+        } else {
+          navigator.push(MaterialPageRoute<void>(builder: (_) => page));
+        }
+      },
+    ),
+    AppMenuEntry(
+      icon: AppIcons.album,
+      label: 'Go to Album',
+      showChevron: true,
+      onTap: () {
+        final page = AlbumPage(
+          songTitle: song.title,
+          artistName: song.artist,
+          thumbnailUrl: song.thumbnailUrl,
+          albumBrowseId: song.albumBrowseId,
+          albumName: song.albumName,
+          songId: song.id,
+        );
+        if (pushDetail != null) {
+          pushDetail(page);
+        } else {
+          navigator.push(MaterialPageRoute<void>(builder: (_) => page));
+        }
+      },
+    ),
+    for (final extra in extraOptions)
+      AppMenuEntry(icon: extra.icon, label: extra.label, onTap: extra.onTap),
+  ];
+
+  showAdaptiveMenu(
+    context,
+    title: song.title,
+    entries: entries,
+    anchorRect: effectiveRect,
+    forceDesktop: true,
+  );
+}
+
+bool _isDesktop() {
+  return defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.linux;
+}
+
+Rect? _rectFromContext(BuildContext context) {
+  final obj = context.findRenderObject();
+  if (obj is RenderBox && obj.hasSize) {
+    return obj.localToGlobal(Offset.zero) & obj.size;
+  }
+  return null;
 }
 
 class _SongOptionsContent extends ConsumerWidget {

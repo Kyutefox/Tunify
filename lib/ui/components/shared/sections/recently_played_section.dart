@@ -12,32 +12,44 @@ import '../../../../ui/theme/design_tokens.dart';
 import '../../ui/widgets/section_header.dart';
 import '../../../../ui/layout/shell_context.dart';
 
-/// Reusable "Recently Played" section: header with "See all" opening [RecentlyPlayedScreen],
-/// and a horizontal list of song cards. Use on home and search from one source.
-class RecentlyPlayedSection extends ConsumerWidget {
-  const RecentlyPlayedSection({
-    super.key,
-    required this.onPlay,
-  });
-
+class RecentlyPlayedSection extends ConsumerStatefulWidget {
+  const RecentlyPlayedSection({super.key, required this.onPlay});
   final void Function(Song song) onPlay;
 
-  static const int _maxVisible = 8;
+  @override
+  ConsumerState<RecentlyPlayedSection> createState() =>
+      _RecentlyPlayedSectionState();
+}
+
+class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
+  final _pageCtrl = PageController();
+  int _page = 0;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final recentlyPlayed = ref.watch(recentlyPlayedProvider);
+  void initState() {
+    super.initState();
+    _pageCtrl.addListener(() {
+      final p = _pageCtrl.page?.round() ?? 0;
+      if (p != _page) setState(() => _page = p);
+    });
+  }
 
-    if (recentlyPlayed.isEmpty) {
-      return const SizedBox(height: AppSpacing.sm);
-    }
+  @override
+  void dispose() {
+    _pageCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final songs = ref.watch(recentlyPlayedProvider);
+    if (songs.isEmpty) return const SizedBox(height: AppSpacing.sm);
 
     final isDesktop = ShellContext.isDesktopOf(context);
-    final cardSize = isDesktop ? 176.0 : 148.0;
-    final rowHeight = isDesktop ? 222.0 : 188.0;
+    final cols = isDesktop ? 5 : 2;
     final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
-
-    final visible = recentlyPlayed.take(_maxVisible).toList(growable: false);
+    const gap = AppSpacing.md;
+    final hasOverflow = songs.length > cols;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -45,39 +57,149 @@ class RecentlyPlayedSection extends ConsumerWidget {
         const SizedBox(height: AppSpacing.sm),
         SectionHeader(
           title: 'Recently Played',
-          seeAllLabel: 'See all',
-          onSeeAll: () {
-            Navigator.of(context).push(
-              MaterialPageRoute<void>(
-                builder: (_) => const RecentlyPlayedScreen(),
-              ),
-            );
-          },
           useCompactStyle: true,
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasOverflow) ...[
+                _NavBtn(
+                  icon: AppIcons.back,
+                  enabled: _page > 0,
+                  onTap: () => _pageCtrl.animateToPage(0,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut),
+                ),
+                const SizedBox(width: AppSpacing.xs),
+                _NavBtn(
+                  icon: AppIcons.forward,
+                  enabled: _page == 0,
+                  onTap: () => _pageCtrl.animateToPage(1,
+                      duration: const Duration(milliseconds: 300),
+                      curve: Curves.easeInOut),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+              ],
+              GestureDetector(
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const RecentlyPlayedScreen(),
+                  ),
+                ),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Text(
+                    'See all',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        SizedBox(
-          height: rowHeight,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: EdgeInsets.symmetric(horizontal: hPad),
-            itemCount: visible.length,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-            itemBuilder: (_, i) {
-              final song = visible[i];
-              return _RecentSongCard(
-                song: song,
-                size: cardSize,
-                onTap: () {
-                  HapticFeedback.lightImpact();
-                  onPlay(song);
-                },
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: hPad),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final tileW = (constraints.maxWidth - gap * (cols - 1)) / cols;
+              final tileH = tileW + 40.0;
+
+              final pageItems = songs.take(cols).toList();
+              final overflowPage = hasOverflow
+                  ? songs.sublist(cols).take(cols).toList()
+                  : <Song>[];
+
+              Widget buildRow(List<Song> items) => Row(
+                    children: [
+                      for (var i = 0; i < items.length; i++) ...[
+                        if (i > 0) const SizedBox(width: gap),
+                        SizedBox(
+                          width: tileW,
+                          child: _RecentSongCard(
+                            song: items[i],
+                            size: tileW,
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              widget.onPlay(items[i]);
+                            },
+                          ),
+                        ),
+                      ],
+                    ],
+                  );
+
+              if (!hasOverflow) return buildRow(pageItems);
+
+              return _RecentlyPlayedPager(
+                height: tileH,
+                controller: _pageCtrl,
+                pages: [buildRow(pageItems), buildRow(overflowPage)],
               );
             },
           ),
         ),
         const SizedBox(height: AppSpacing.xxl),
       ],
+    );
+  }
+}
+
+class _RecentlyPlayedPager extends StatelessWidget {
+  const _RecentlyPlayedPager({
+    required this.height,
+    required this.controller,
+    required this.pages,
+  });
+  final double height;
+  final PageController controller;
+  final List<Widget> pages;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: PageView(
+        controller: controller,
+        children: pages,
+      ),
+    );
+  }
+}
+
+class _NavBtn extends StatelessWidget {
+  const _NavBtn({required this.icon, required this.onTap, this.enabled = true});
+  final List<List<dynamic>> icon;
+  final VoidCallback onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: enabled
+              ? AppColors.surfaceLight
+              : AppColors.surfaceLight.withValues(alpha: 0.4),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: AppIcon(
+            icon: icon,
+            size: 14,
+            color: enabled ? AppColors.textPrimary : AppColors.textMuted,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -96,66 +218,55 @@ class _RecentSongCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
-        width: size,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: CachedNetworkImage(
-                imageUrl: song.thumbnailUrl,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: CachedNetworkImage(
+              imageUrl: song.thumbnailUrl,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(
                 width: size,
                 height: size,
-                fit: BoxFit.cover,
-                placeholder: (_, __) => Container(
-                  width: size,
-                  height: size,
-                  color: AppColors.surfaceLight,
-                ),
-                errorWidget: (_, __, ___) => Container(
-                  width: size,
-                  height: size,
-                  color: AppColors.surfaceLight,
-                  child: AppIcon(
-                    icon: AppIcons.musicNote,
-                    color: AppColors.textMuted,
-                    size: 32,
-                  ),
+                color: AppColors.surfaceLight,
+              ),
+              errorWidget: (_, __, ___) => Container(
+                width: size,
+                height: size,
+                color: AppColors.surfaceLight,
+                child: AppIcon(
+                  icon: AppIcons.musicNote,
+                  color: AppColors.textMuted,
+                  size: 32,
                 ),
               ),
             ),
-            const SizedBox(height: AppSpacing.xs),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    song.title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  Text(
-                    song.artist,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 11,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+          ),
+          const SizedBox(height: AppSpacing.xs),
+          Text(
+            song.title,
+            style: const TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
             ),
-          ],
-        ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          Text(
+            song.artist,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 11,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
       ),
     );
   }

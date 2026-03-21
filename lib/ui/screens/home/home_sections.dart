@@ -18,6 +18,31 @@ import '../../components/ui/widgets/now_playing_indicator.dart';
 import '../../layout/shell_context.dart';
 import 'home_shared.dart';
 
+/// A stable [PageView] wrapper that lives outside [LayoutBuilder] to prevent
+/// the [PageController] from being detached/reattached on every layout pass,
+/// which causes `_elements.contains(element)` assertion failures.
+class _StablePager extends StatelessWidget {
+  const _StablePager({
+    required this.height,
+    required this.controller,
+    required this.pages,
+  });
+  final double height;
+  final PageController controller;
+  final List<Widget> pages;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: PageView(
+        controller: controller,
+        children: pages,
+      ),
+    );
+  }
+}
+
 class RecentlyPlayedRow extends StatelessWidget {
   const RecentlyPlayedRow({
     super.key,
@@ -134,58 +159,153 @@ class SquareSongCard extends ConsumerWidget {
   }
 }
 
-class QuickPicksRow extends StatelessWidget {
+class QuickPicksRow extends StatefulWidget {
   const QuickPicksRow({
     super.key,
     required this.songs,
     required this.onPlay,
+    this.pageController,
   });
   final List<Song> songs;
   final void Function(Song song) onPlay;
+  /// Optional external controller so the section header can drive page changes.
+  final PageController? pageController;
 
-  static const int _perColumn = 4;
+  @override
+  State<QuickPicksRow> createState() => _QuickPicksRowState();
+}
+
+class _QuickPicksRowState extends State<QuickPicksRow> {
+  late final PageController _ctrl;
+  bool _ownsController = false;
+  int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.pageController != null) {
+      _ctrl = widget.pageController!;
+    } else {
+      _ctrl = PageController();
+      _ownsController = true;
+    }
+    _ctrl.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final p = _ctrl.page?.round() ?? 0;
+    if (p != _page) setState(() => _page = p);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.removeListener(_onScroll);
+    if (_ownsController) _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = ShellContext.isDesktopOf(context);
+    final cols = isDesktop ? 5 : 2;
+    final maxRows = 4;
     final tileH = isDesktop ? 76.0 : 64.0;
-    final tileW = isDesktop ? 264.0 : 220.0;
-    const gap = AppSpacing.sm;
-    final listH = tileH * _perColumn + gap * (_perColumn - 1);
     final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    const gap = AppSpacing.sm;
 
-    final capped = songs.take(20).toList();
-    final columns = <List<Song>>[];
-    for (var i = 0; i < capped.length; i += _perColumn) {
-      columns.add(capped.sublist(i, (i + _perColumn).clamp(0, capped.length)));
-    }
-    return SizedBox(
-      height: listH,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const ClampingScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: hPad),
-        addRepaintBoundaries: false,
-        addAutomaticKeepAlives: false,
-        itemCount: columns.length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (ctx, colIdx) {
-          final col = columns[colIdx];
-          return Column(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(col.length, (rowIdx) {
-              return Padding(
-                padding: EdgeInsets.only(
-                  bottom: rowIdx < col.length - 1 ? gap : 0,
-                ),
-                child: QuickPickTile(
-                  song: col[rowIdx],
-                  height: tileH,
-                  width: tileW,
-                  onTap: () => onPlay(col[rowIdx]),
-                ),
+    final capped = widget.songs.take(40).toList();
+    final pageSize = cols * maxRows; // items per grid page
+    final gridItems = capped.take(pageSize).toList();
+    final overflowItems = capped.length > pageSize
+        ? capped.sublist(pageSize)
+        : <Song>[];
+    final hasOverflow = overflowItems.isNotEmpty;
+
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPad),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final totalGap = gap * (cols - 1);
+          final tileW = (constraints.maxWidth - totalGap) / cols;
+          final gridH = tileH * maxRows + gap * (maxRows - 1);
+
+          // Build grid rows for page 0
+          final gridRows = <List<Song>>[];
+          for (var i = 0; i < gridItems.length; i += cols) {
+            gridRows.add(gridItems.sublist(i, (i + cols).clamp(0, gridItems.length)));
+          }
+
+          Widget buildGrid() => Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var r = 0; r < gridRows.length; r++) ...[
+                    if (r > 0) const SizedBox(height: gap),
+                    Row(
+                      children: [
+                        for (var c = 0; c < gridRows[r].length; c++) ...[
+                          if (c > 0) const SizedBox(width: gap),
+                          SizedBox(
+                            width: tileW,
+                            height: tileH,
+                            child: QuickPickTile(
+                              song: gridRows[r][c],
+                              height: tileH,
+                              width: tileW,
+                              onTap: () => widget.onPlay(gridRows[r][c]),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ],
               );
-            }),
+
+          Widget buildOverflowGrid() {
+            // Cap to same page size so it never exceeds gridH
+            final cappedOverflow = overflowItems.take(pageSize).toList();
+            final overflowRows = <List<Song>>[];
+            for (var i = 0; i < cappedOverflow.length; i += cols) {
+              overflowRows.add(cappedOverflow.sublist(i, (i + cols).clamp(0, cappedOverflow.length)));
+            }
+            return SizedBox(
+              height: gridH,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (var r = 0; r < overflowRows.length; r++) ...[
+                    if (r > 0) const SizedBox(height: gap),
+                    Row(
+                      children: [
+                        for (var c = 0; c < overflowRows[r].length; c++) ...[
+                          if (c > 0) const SizedBox(width: gap),
+                          SizedBox(
+                            width: tileW,
+                            height: tileH,
+                            child: QuickPickTile(
+                              song: overflowRows[r][c],
+                              height: tileH,
+                              width: tileW,
+                              onTap: () => widget.onPlay(overflowRows[r][c]),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }
+
+          if (!hasOverflow) {
+            return buildGrid();
+          }
+
+          return _StablePager(
+            height: gridH,
+            controller: _ctrl,
+            pages: [buildGrid(), buildOverflowGrid()],
           );
         },
       ),
@@ -303,31 +423,114 @@ class QuickPickTile extends ConsumerWidget {
   }
 }
 
-class PlaylistsRow extends StatelessWidget {
-  const PlaylistsRow({super.key, required this.playlists});
+class PlaylistsRow extends StatefulWidget {
+  const PlaylistsRow({super.key, required this.playlists, this.pageController});
   final List<Playlist> playlists;
+  final PageController? pageController;
+
+  @override
+  State<PlaylistsRow> createState() => _PlaylistsRowState();
+}
+
+class _PlaylistsRowState extends State<PlaylistsRow> {
+  late final PageController _ctrl;
+  bool _ownsController = false;
+  int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.pageController != null) {
+      _ctrl = widget.pageController!;
+    } else {
+      _ctrl = PageController();
+      _ownsController = true;
+    }
+    _ctrl.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final p = _ctrl.page?.round() ?? 0;
+    if (p != _page) setState(() => _page = p);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.removeListener(_onScroll);
+    if (_ownsController) _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = ShellContext.isDesktopOf(context);
-    final cardSize = isDesktop ? 176.0 : 148.0;
-    final rowHeight = cardSize + 48; // artwork + text labels
     final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    const gap = AppSpacing.md;
+    // 5 cols on desktop, 2 on mobile — always 1 row visible, rest on page 2
+    final cols = isDesktop ? 5 : 2;
+    const rows = 1;
+    final pageSize = cols * rows;
+    final hasOverflow = widget.playlists.length > pageSize;
 
-    return SizedBox(
-      height: rowHeight,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const ClampingScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: hPad),
-        addRepaintBoundaries: false,
-        addAutomaticKeepAlives: false,
-        itemCount: playlists.take(6).length,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (ctx, i) => BrowsePlaylistCard(
-          playlist: playlists[i],
-          size: cardSize,
-        ),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPad),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final tileW = (constraints.maxWidth - gap * (cols - 1)) / cols;
+          final tileH = tileW + 48.0;
+          final gridH = tileH * rows + gap * (rows - 1);
+
+          final pageItems = widget.playlists.take(pageSize).toList();
+          final overflowItems = hasOverflow ? widget.playlists.sublist(pageSize) : <Playlist>[];
+
+          Widget buildGrid() {
+            final gridRows = <List<Playlist>>[];
+            for (var i = 0; i < pageItems.length; i += cols) {
+              gridRows.add(pageItems.sublist(i, (i + cols).clamp(0, pageItems.length)));
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var r = 0; r < gridRows.length; r++) ...[
+                  if (r > 0) const SizedBox(height: gap),
+                  Row(
+                    children: [
+                      for (var c = 0; c < gridRows[r].length; c++) ...[
+                        if (c > 0) const SizedBox(width: gap),
+                        SizedBox(
+                          width: tileW,
+                          child: BrowsePlaylistCard(playlist: gridRows[r][c], size: tileW),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ],
+            );
+          }
+
+          Widget buildOverflow() => SizedBox(
+                height: gridH,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: overflowItems.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: gap),
+                  itemBuilder: (_, i) => SizedBox(
+                    width: tileW,
+                    child: BrowsePlaylistCard(playlist: overflowItems[i], size: tileW),
+                  ),
+                ),
+              );
+
+          if (!hasOverflow) return buildGrid();
+
+          return _StablePager(
+            height: gridH,
+            controller: _ctrl,
+            pages: [buildGrid(), buildOverflow()],
+          );
+        },
       ),
     );
   }
@@ -519,32 +722,116 @@ class HomeMoodTile extends StatelessWidget {
   }
 }
 
-class ArtistsRow extends StatelessWidget {
-  const ArtistsRow({super.key, required this.artists});
+class ArtistsRow extends StatefulWidget {
+  const ArtistsRow({super.key, required this.artists, this.pageController});
   final List<Artist> artists;
+  final PageController? pageController;
+
+  @override
+  State<ArtistsRow> createState() => _ArtistsRowState();
+}
+
+class _ArtistsRowState extends State<ArtistsRow> {
+  late final PageController _ctrl;
+  bool _ownsController = false;
+  int _page = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.pageController != null) {
+      _ctrl = widget.pageController!;
+    } else {
+      _ctrl = PageController();
+      _ownsController = true;
+    }
+    _ctrl.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    final p = _ctrl.page?.round() ?? 0;
+    if (p != _page) setState(() => _page = p);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.removeListener(_onScroll);
+    if (_ownsController) _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = ShellContext.isDesktopOf(context);
-    final avatarSize = isDesktop ? 88.0 : 72.0;
-    final rowHeight = isDesktop ? 130.0 : 108.0;
-    final separator = isDesktop ? AppSpacing.xxl : AppSpacing.xl;
     final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    const gap = AppSpacing.xl;
+    final cols = isDesktop ? 5 : 2;
+    const rows = 1;
+    final pageSize = cols * rows;
+    final avatarSize = isDesktop ? 88.0 : 72.0;
+    final rowH = avatarSize + 28.0;
+    final gridH = rowH * rows + gap * (rows - 1);
+    final hasOverflow = widget.artists.length > pageSize;
 
-    return SizedBox(
-      height: rowHeight,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const ClampingScrollPhysics(),
-        padding: EdgeInsets.symmetric(horizontal: hPad),
-        addRepaintBoundaries: false,
-        addAutomaticKeepAlives: false,
-        itemCount: artists.take(10).length,
-        separatorBuilder: (_, __) => SizedBox(width: separator),
-        itemBuilder: (ctx, i) => HomeArtistAvatar(
-          artist: artists[i],
-          size: avatarSize,
-        ),
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: hPad),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final itemW = (constraints.maxWidth - gap * (cols - 1)) / cols;
+
+          final pageItems = widget.artists.take(pageSize).toList();
+          final overflowItems = hasOverflow ? widget.artists.sublist(pageSize) : <Artist>[];
+
+          Widget buildGrid() {
+            final gridRows = <List<Artist>>[];
+            for (var i = 0; i < pageItems.length; i += cols) {
+              gridRows.add(pageItems.sublist(i, (i + cols).clamp(0, pageItems.length)));
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (var r = 0; r < gridRows.length; r++) ...[
+                  if (r > 0) const SizedBox(height: gap),
+                  Row(
+                    children: [
+                      for (var c = 0; c < gridRows[r].length; c++) ...[
+                        if (c > 0) const SizedBox(width: gap),
+                        SizedBox(
+                          width: itemW,
+                          height: rowH,
+                          child: HomeArtistAvatar(artist: gridRows[r][c], size: avatarSize),
+                        ),
+                      ],
+                    ],
+                  ),
+                ],
+              ],
+            );
+          }
+
+          Widget buildOverflow() => SizedBox(
+                height: gridH,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: overflowItems.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: gap),
+                  itemBuilder: (_, i) => SizedBox(
+                    width: itemW,
+                    height: rowH,
+                    child: HomeArtistAvatar(artist: overflowItems[i], size: avatarSize),
+                  ),
+                ),
+              );
+
+          if (!hasOverflow) return buildGrid();
+
+          return _StablePager(
+            height: gridH,
+            controller: _ctrl,
+            pages: [buildGrid(), buildOverflow()],
+          );
+        },
       ),
     );
   }

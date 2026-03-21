@@ -123,7 +123,7 @@ class RecentlyPlayedScreen extends ConsumerWidget {
 
 enum _DateGroup { today, yesterday, older }
 
-class _DateGroupedSongList extends StatelessWidget {
+class _DateGroupedSongList extends ConsumerWidget {
   const _DateGroupedSongList({
     required this.songs,
     required this.timestamps,
@@ -135,7 +135,7 @@ class _DateGroupedSongList extends StatelessWidget {
   final void Function(Song song) onPlay;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final yesterday = today.subtract(const Duration(days: 1));
@@ -219,8 +219,8 @@ class _DateGroupedSongList extends StatelessWidget {
                   color: AppColors.textMuted,
                   size: 20,
                 ),
-                onPressed: () =>
-                    showSongOptionsSheet(context, song: songs[index]),
+                onPressedWithContext: (btnCtx) =>
+                    showSongOptionsSheet(context, song: songs[index], ref: ref, buttonContext: btnCtx),
                 size: 40,
                 iconSize: 20,
               ),
@@ -280,7 +280,7 @@ class _DateGroupedSongList extends StatelessWidget {
                   color: AppColors.textMuted,
                   size: 20,
                 ),
-                onPressed: () => showSongOptionsSheet(context, song: song),
+                onPressedWithContext: (btnCtx) => showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
                 size: 40,
                 iconSize: 20,
               ),

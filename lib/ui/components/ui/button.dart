@@ -169,99 +169,127 @@ class AppIconButton extends StatelessWidget {
   const AppIconButton({
     super.key,
     required this.icon,
-    required this.onPressed,
+    this.onPressed,
     this.tooltip,
     this.style = AppIconButtonStyle.ghost,
     this.size = 48,
     this.iconSize = 24,
     this.color,
+    this.onPressedWithContext,
   });
 
   final Widget icon;
   final VoidCallback? onPressed;
+  /// Called with the button's own [BuildContext] — use this when you need
+  /// to compute the button's screen rect for dropdown positioning.
+  final void Function(BuildContext ctx)? onPressedWithContext;
   final String? tooltip;
   final AppIconButtonStyle style;
   final double size;
   final double iconSize;
   final Color? color;
 
+  void _handleTap(BuildContext ctx) {
+    if (onPressedWithContext != null) {
+      onPressedWithContext!(ctx);
+    } else {
+      onPressed?.call();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final effectiveColor = color ?? AppColors.textPrimary;
-    Widget button = Material(
-      color: style == AppIconButtonStyle.ghost ? Colors.transparent : null,
-      shape: const CircleBorder(),
-      child: InkWell(
-        onTap: onPressed,
-        customBorder: const CircleBorder(),
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Center(
-            child: IconTheme(
-              data: IconThemeData(size: iconSize, color: effectiveColor),
-              child: icon,
+    
+    // Wrap in Builder first so the context passed to _handleTap has the
+    // button's full size and position for accurate dropdown positioning
+    return Builder(
+      builder: (btnCtx) {
+        Widget button;
+        
+        if (style == AppIconButtonStyle.ghost) {
+          button = Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: (onPressedWithContext != null || onPressed != null)
+                  ? () => _handleTap(btnCtx)
+                  : null,
+              customBorder: const CircleBorder(),
+              child: SizedBox(
+                width: size,
+                height: size,
+                child: Center(
+                  child: IconTheme(
+                    data: IconThemeData(size: iconSize, color: effectiveColor),
+                    child: icon,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
+          );
+        } else if (style == AppIconButtonStyle.filled) {
+          button = Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.glassWhite,
+              border: Border.all(color: AppColors.glassBorder, width: 0.5),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: (onPressedWithContext != null || onPressed != null)
+                    ? () => _handleTap(btnCtx)
+                    : null,
+                customBorder: const CircleBorder(),
+                child: Center(
+                  child: IconTheme(
+                    data: IconThemeData(size: iconSize, color: effectiveColor),
+                    child: icon,
+                  ),
+                ),
+              ),
+            ),
+          );
+        } else {
+          // outlined
+          button = Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.glassWhite,
+              border: Border.all(color: AppColors.glassBorder, width: 0.5),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: (onPressedWithContext != null || onPressed != null)
+                    ? () => _handleTap(btnCtx)
+                    : null,
+                customBorder: const CircleBorder(),
+                child: Center(
+                  child: IconTheme(
+                    data: IconThemeData(size: iconSize, color: effectiveColor),
+                    child: icon,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (tooltip != null && tooltip!.isNotEmpty) {
+          return Tooltip(
+            message: tooltip!,
+            child: button,
+          );
+        }
+        return button;
+      },
     );
-
-    if (style == AppIconButtonStyle.filled) {
-      button = Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.glassWhite,
-          border: Border.all(color: AppColors.glassBorder, width: 0.5),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onPressed,
-            customBorder: const CircleBorder(),
-            child: Center(
-              child: IconTheme(
-                data: IconThemeData(size: iconSize, color: effectiveColor),
-                child: icon,
-              ),
-            ),
-          ),
-        ),
-      );
-    } else if (style == AppIconButtonStyle.outlined) {
-      button = Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.glassWhite,
-          border: Border.all(color: AppColors.glassBorder, width: 0.5),
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: onPressed,
-            customBorder: const CircleBorder(),
-            child: Center(
-              child: IconTheme(
-                data: IconThemeData(size: iconSize, color: effectiveColor),
-                child: icon,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    if (tooltip != null && tooltip!.isNotEmpty) {
-      return Tooltip(
-        message: tooltip!,
-        child: button,
-      );
-    }
-    return button;
   }
 }
 

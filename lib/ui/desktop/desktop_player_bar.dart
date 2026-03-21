@@ -12,6 +12,7 @@ import '../screens/player/player_screen.dart';
 import '../screens/player/song_options_sheet.dart';
 import '../theme/app_colors.dart';
 import '../theme/design_tokens.dart';
+import 'desktop_right_sidebar.dart';
 
 /// Full-width persistent player bar matching the Spotify desktop layout.
 ///
@@ -147,7 +148,7 @@ class _SongInfo extends ConsumerWidget {
               icon: AppIcons.moreHoriz,
               size: 18,
               color: AppColors.textSecondary),
-          onTap: () => showSongOptionsSheet(context, song: song),
+          onTap: (btnCtx) => showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
         ),
       ],
     );
@@ -269,6 +270,7 @@ class _RightControlsState extends ConsumerState<_RightControls> {
   Widget build(BuildContext context) {
     final sleepActive =
         ref.watch(sleepTimerProvider.select((s) => s.isActive));
+    final activeTab = ref.watch(rightSidebarTabProvider);
 
     final IconData volIcon = _volume == 0
         ? Icons.volume_off_rounded
@@ -276,8 +278,17 @@ class _RightControlsState extends ConsumerState<_RightControls> {
             ? Icons.volume_down_rounded
             : Icons.volume_up_rounded;
 
+    // Returns the icon color for a sidebar-toggle button.
+    Color tabColor(RightSidebarTab tab) => activeTab == tab
+        ? AppColors.primary
+        : Colors.white.withValues(alpha: 0.75);
+
+    void toggleTab(RightSidebarTab tab) {
+      final notifier = ref.read(rightSidebarTabProvider.notifier);
+      notifier.state = activeTab == tab ? null : tab;
+    }
+
     // Layout: [sleep · lyrics] [vol-icon ── vol-slider ──] [queue · devices]
-    // The slider is Expanded so it shrinks instead of overflowing at narrow widths.
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -299,15 +310,16 @@ class _RightControlsState extends ConsumerState<_RightControls> {
           icon: AppIcon(
             icon: AppIcons.lyrics,
             size: 18,
-            color: Colors.white.withValues(alpha: 0.75),
+            color: tabColor(RightSidebarTab.lyrics),
           ),
-          onPressed: () => showLyricsSheet(context),
+          onPressed: () => toggleTab(RightSidebarTab.lyrics),
           size: 30,
           iconSize: 18,
+          tooltip: 'Lyrics',
         ),
         const SizedBox(width: 8),
 
-        // ── Volume (icon + slider) in the centre ──────────────────────────
+        // ── Volume (icon + slider) ────────────────────────────────────────
         GestureDetector(
           onTap: () =>
               setState(() => _volume = _volume == 0 ? 1.0 : 0),
@@ -348,22 +360,24 @@ class _RightControlsState extends ConsumerState<_RightControls> {
           icon: AppIcon(
             icon: AppIcons.queueMusic,
             size: 18,
-            color: Colors.white.withValues(alpha: 0.75),
+            color: tabColor(RightSidebarTab.queue),
           ),
-          onPressed: () => showQueueSheet(context),
+          onPressed: () => toggleTab(RightSidebarTab.queue),
           size: 30,
           iconSize: 18,
+          tooltip: 'Queue',
         ),
         const SizedBox(width: 2),
         AppIconButton(
           icon: AppIcon(
             icon: AppIcons.devices,
             size: 18,
-            color: Colors.white.withValues(alpha: 0.75),
+            color: tabColor(RightSidebarTab.devices),
           ),
-          onPressed: () => showDevicesSheet(context),
+          onPressed: () => toggleTab(RightSidebarTab.devices),
           size: 30,
           iconSize: 18,
+          tooltip: 'Connect',
         ),
       ],
     );
@@ -435,23 +449,25 @@ class _BarIconBtn extends StatelessWidget {
   final bool isActive;
   final Widget activeIcon;
   final Widget inactiveIcon;
-  final VoidCallback onTap;
+  final void Function(BuildContext ctx) onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: SizedBox(
-          width: 20,
-          height: 20,
-          child: AnimatedSwitcher(
-            duration: AppDuration.fast,
-            child: isActive
-                ? KeyedSubtree(key: const ValueKey('a'), child: activeIcon)
-                : KeyedSubtree(key: const ValueKey('i'), child: inactiveIcon),
+    return Builder(
+      builder: (ctx) => GestureDetector(
+        onTap: () => onTap(ctx),
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: AnimatedSwitcher(
+              duration: AppDuration.fast,
+              child: isActive
+                  ? KeyedSubtree(key: const ValueKey('a'), child: activeIcon)
+                  : KeyedSubtree(key: const ValueKey('i'), child: inactiveIcon),
+            ),
           ),
         ),
       ),

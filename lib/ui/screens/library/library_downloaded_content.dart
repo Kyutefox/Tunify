@@ -205,7 +205,7 @@ class _LibraryDownloadedList extends ConsumerWidget {
                       queue: displaySongs,
                       queueSource: 'downloads',
                     ),
-                onOptions: () => showSongOptionsSheet(context, song: song),
+                onOptions: () => showSongOptionsSheet(context, song: song, ref: ref),
                 onRemove: () => _confirmRemoveDownload(context, ref, song),
               );
             },
@@ -267,8 +267,8 @@ class _LibraryDownloadedList extends ConsumerWidget {
                       icon: AppIcons.moreVert,
                       color: AppColors.textMuted,
                       size: 20),
-                  onPressed: () =>
-                      showSongOptionsSheet(context, song: song),
+                  onPressedWithContext: (btnCtx) =>
+                      showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
                   size: 40,
                   iconSize: 20,
                 ),
@@ -582,7 +582,7 @@ class _DeviceMusicList extends ConsumerWidget {
                       queue: displaySongs,
                       queueSource: 'device',
                     ),
-                onOptions: () => showSongOptionsSheet(context, song: song),
+                onOptions: () => showSongOptionsSheet(context, song: song, ref: ref),
               );
             },
           ),
@@ -645,8 +645,8 @@ class _DeviceMusicList extends ConsumerWidget {
                       icon: AppIcons.moreVert,
                       color: AppColors.textMuted,
                       size: 20),
-                  onPressed: () =>
-                      showSongOptionsSheet(context, song: song),
+                  onPressedWithContext: (btnCtx) =>
+                      showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
                   size: 40,
                   iconSize: 20,
                 ),

@@ -62,8 +62,7 @@ class AppInputField extends StatelessWidget {
           border: InputBorder.none,
           enabledBorder: InputBorder.none,
           focusedBorder: InputBorder.none,
-          filled: true,
-          fillColor: Colors.transparent,
+          filled: false,
           isDense: true,
           contentPadding: EdgeInsets.zero,
         );

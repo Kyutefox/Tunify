@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../components/shared/adaptive_menu.dart';
 import '../../components/shared/library_filter_chips.dart';
 import '../../components/ui/button.dart';
-import '../../components/ui/sheet.dart';
 import '../../components/ui/widgets/widgets.dart';
 import '../../../config/app_icons.dart';
 import '../../../shared/providers/library_provider.dart';
@@ -76,59 +76,27 @@ class LibraryAppBar extends StatefulWidget {
   State<LibraryAppBar> createState() => _LibraryAppBarState();
 }
 
-/// Shows the library sort-order bottom sheet.
+/// Shows the library sort-order menu.
+/// Mobile: bottom sheet. Desktop: dropdown anchored to [anchorRect].
 /// Shared between [LibraryAppBar] (mobile) and the desktop sidebar.
 void showLibrarySortSheet(
   BuildContext context,
   LibrarySortOrder current,
-  ValueChanged<LibrarySortOrder> onSelected,
-) {
-  showAppSheet(
+  ValueChanged<LibrarySortOrder> onSelected, {
+  Rect? anchorRect,
+}) {
+  showAdaptiveMenu(
     context,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.sm),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Sort by',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-        _SortOption(
-          label: LibrarySortOrder.recent.label,
-          selected: current == LibrarySortOrder.recent,
-          onTap: () {
-            Navigator.pop(context);
-            onSelected(LibrarySortOrder.recent);
-          },
-        ),
-        _SortOption(
-          label: LibrarySortOrder.recentlyAdded.label,
-          selected: current == LibrarySortOrder.recentlyAdded,
-          onTap: () {
-            Navigator.pop(context);
-            onSelected(LibrarySortOrder.recentlyAdded);
-          },
-        ),
-        _SortOption(
-          label: LibrarySortOrder.alphabetical.label,
-          selected: current == LibrarySortOrder.alphabetical,
-          onTap: () {
-            Navigator.pop(context);
-            onSelected(LibrarySortOrder.alphabetical);
-          },
-        ),
-        const SizedBox(height: AppSpacing.lg),
-      ],
-    ),
+    title: 'Sort by',
+    anchorRect: anchorRect,
+    entries: LibrarySortOrder.values
+        .map((o) => AppMenuEntry(
+              icon: o == current ? AppIcons.check : AppIcons.sort,
+              label: o.label,
+              color: o == current ? AppColors.primary : null,
+              onTap: () => onSelected(o),
+            ))
+        .toList(),
   );
 }
 
@@ -265,39 +233,6 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
   }
 }
 
-class _SortOption extends StatelessWidget {
-  const _SortOption({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      title: Text(
-        label,
-        style: TextStyle(
-          color: selected ? AppColors.primary : AppColors.textPrimary,
-          fontSize: 16,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-        ),
-      ),
-      trailing: selected
-          ? AppIcon(
-              icon: AppIcons.check,
-              color: AppColors.primary,
-              size: 22,
-            )
-          : null,
-      onTap: onTap,
-    );
-  }
-}
 
 class _LibraryDeviceSwitch extends StatelessWidget {
   const _LibraryDeviceSwitch({

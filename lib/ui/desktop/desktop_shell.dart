@@ -3,15 +3,18 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../shared/providers/home_state_provider.dart';
-import '../../shared/providers/library_provider.dart';
 import '../../shared/providers/search_provider.dart';
+import '../components/shared/create_library_options.dart';
+import '../components/shared/sections/mood_section.dart';
 import '../layout/shell_context.dart';
 import '../screens/home_screen.dart';
 import '../screens/library/create_library_item_screen.dart';
 import '../screens/library_screen.dart';
 import '../screens/search_screen.dart';
 import '../theme/app_colors.dart';
+import '../theme/design_tokens.dart';
 import 'desktop_player_bar.dart';
+import 'desktop_right_sidebar.dart';
 import 'desktop_search_dropdown.dart';
 import 'desktop_sidebar.dart';
 import 'desktop_top_bar.dart';
@@ -20,15 +23,17 @@ import 'desktop_top_bar.dart';
 ///
 /// Layout (Spotify-inspired):
 /// ```
-/// ┌─────────────────────────────────────────────────┐
-/// │           DesktopTopBar  (64 px)                 │
-/// ├──────────────┬──────────────────────────────────┤
-/// │  Sidebar     │  Content Navigator                │
-/// │  300 px      │  Home · Search · Library          │
-/// │              │  + detail pages pushed in-place   │
-/// ├──────────────┴──────────────────────────────────┤
-/// │           DesktopPlayerBar  (92 px)              │
-/// └─────────────────────────────────────────────────┘
+/// ┌────────────────────────────────────────────────────────────────┐
+/// │                  DesktopTopBar  (64 px)                        │
+/// ├──────────────┬─────────────────────────────┬───────────────────┤
+/// │  Left        │  Content Navigator           │  Right Sidebar    │
+/// │  Sidebar     │  Home · Search · Library     │  (hidden by       │
+/// │  340 px      │  + detail pages in-place     │   default)        │
+/// │              │                              │  Queue/Lyrics/    │
+/// │              │                              │  Connect  320 px  │
+/// ├──────────────┴─────────────────────────────┴───────────────────┤
+/// │                  DesktopPlayerBar  (92 px)                     │
+/// └────────────────────────────────────────────────────────────────┘
 /// ```
 ///
 /// The main content area is a nested [Navigator] so that detail pages
@@ -87,6 +92,18 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
 
   void _openSearchOverlay() {
     if (!_searchOverlayOpen) setState(() => _searchOverlayOpen = true);
+  }
+
+  void _openBrowse() {
+    // Close search overlay and navigate to browse tab (index 3).
+    if (_searchOverlayOpen) _closeSearchOverlay();
+    _contentNavKey.currentState?.popUntil((r) => r.isFirst);
+    if (_selectedIndex != 3) {
+      _future.clear();
+      _history.add(3);
+      setState(() => _selectedIndex = 3);
+      _tabIndexNotifier.value = 3;
+    }
   }
 
   void _closeSearchOverlay() {
@@ -170,17 +187,28 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   static const double _radius = 12;
   static const double _topBarHeight = 64;
 
-  // Dropdown aligns exactly with the search bar in DesktopTopBar.
-  // Left  = outer gap + sidebar + panel gap + home btn (40) + home→search gap (8)
-  static const double _dropdownLeft =
-      _gap + kDesktopSidebarWidth + _gap + 40 + 8;
-  // Right = outer gap + content right padding (16) + search→avatar gap (12) + avatar (36)
-  static const double _dropdownRight = _gap + 16 + 12 + 36;
+  // The search bar is centered (maxWidth 380) inside the content section.
+  // Content section left edge = _gap + kDesktopSidebarWidth + _gap
+  // Content section right edge = total width - _gap
+  // Inside content: left padding = home(40) + gap(8), right padding = gap(12) + avatar(36) + right(16)
+  // Search bar is Center(ConstrainedBox(maxWidth:380)) inside the remaining Expanded.
+  // We compute dropdown bounds dynamically in build() using MediaQuery width.
 
   @override
   Widget build(BuildContext context) {
+    final rightTab = ref.watch(rightSidebarTabProvider);
+    final screenWidth = MediaQuery.sizeOf(context).width;
+
+    // Home btn (40) + gap (8) + search bar (maxWidth 380) are centered on the full screen.
+    const homeBtnWidth = 40.0 + 8.0;
+    const searchMaxWidth = 380.0;
+    final groupWidth = homeBtnWidth + searchMaxWidth;
+    final searchLeft = (screenWidth - groupWidth) / 2 + homeBtnWidth;
+    final searchRight = screenWidth - searchLeft - searchMaxWidth;
+
     return ShellContext(
       isDesktop: true,
+      onPushDetail: _pushDetail,
       child: Scaffold(
         // True-black canvas — visible in the gaps between floating panels.
         backgroundColor: const Color(0xFF0A0A0A),
@@ -205,6 +233,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                   searchFocusNode: _searchFocusNode,
                   sidebarWidth: kDesktopSidebarWidth,
                   isSearchOverlayOpen: _searchOverlayOpen,
+                  onBrowsePressed: _openBrowse,
                 ),
               ),
 
@@ -246,6 +275,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                                     HomeScreen(),
                                     SearchScreen(),
                                     LibraryScreen(),
+                                    _BrowsePage(),
                                   ],
                                 ),
                               ),
@@ -253,6 +283,26 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                           ),
                         ),
                       ),
+                    ),
+
+                    // Right sidebar — slides in/out via AnimatedSize
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 240),
+                      curve: Curves.easeInOutCubic,
+                      alignment: Alignment.centerRight,
+                      child: rightTab != null
+                          ? Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const SizedBox(width: _gap),
+                                ClipRRect(
+                                  borderRadius:
+                                      BorderRadius.circular(_radius),
+                                  child: const DesktopRightSidebar(),
+                                ),
+                              ],
+                            )
+                          : const SizedBox.shrink(),
                     ),
                   ],
                 ),
@@ -282,8 +332,8 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
               // Dropdown panel — left/right match the search bar exactly.
               Positioned(
                 top: _gap + _topBarHeight + _gap,
-                left: _dropdownLeft,
-                right: _dropdownRight,
+                left: searchLeft,
+                right: searchRight,
                 child: TapRegion(
                   groupId: 'desktop-search',
                   child: DesktopSearchDropdown(
@@ -311,18 +361,40 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
   /// Opens the same [CreateLibraryItemScreen] used by the mobile shell so the
   /// creation flow is identical on both platforms.
   Future<void> _showCreateDialog(CreateLibraryItemMode mode) async {
-    final name = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(
-        builder: (_) => CreateLibraryItemScreen(mode: mode),
+    if (mode == CreateLibraryItemMode.createPlaylist) {
+      await createPlaylist(context, ref);
+    } else {
+      await createFolder(context, ref);
+    }
+  }
+}
+
+// ── Browse page ───────────────────────────────────────────────────────────────
+
+/// Full-page moods & genres browser shown in the desktop main content area.
+/// Reuses [MoodSection] which already handles loading/empty states.
+class _BrowsePage extends StatelessWidget {
+  const _BrowsePage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.surface,
+      body: CustomScrollView(
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(
+                0, AppSpacing.xl, 0, AppSpacing.max),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate(const [
+                MoodSection(showAll: true),
+              ]),
+            ),
+          ),
+        ],
       ),
     );
-    if (name != null && name.trim().isNotEmpty && mounted) {
-      if (mode == CreateLibraryItemMode.createPlaylist) {
-        await ref.read(libraryProvider.notifier).createPlaylist(name.trim());
-      } else {
-        await ref.read(libraryProvider.notifier).createFolder(name.trim());
-      }
-    }
   }
 }
 

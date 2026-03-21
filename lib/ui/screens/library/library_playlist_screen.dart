@@ -966,9 +966,11 @@ class _TrackTile extends ConsumerWidget {
               color: AppColors.textMuted,
               size: 20,
             ),
-            onPressed: () => showSongOptionsSheet(
+            onPressedWithContext: (btnCtx) => showSongOptionsSheet(
               context,
               song: song,
+              ref: ref,
+              buttonContext: btnCtx,
               showAddToPlaylist: false,
               onRemoveFromPlaylist: () {
                 ref

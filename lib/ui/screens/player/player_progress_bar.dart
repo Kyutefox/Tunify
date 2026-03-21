@@ -36,68 +36,61 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar> {
 
     final compact = widget.compact;
 
-    return Column(
+    final positionText = _isDragging
+        ? _fmt(Duration(
+            milliseconds: (_dragValue * safeDuration.inMilliseconds).round()))
+        : _fmt(position);
+    final durationText = durationKnown ? _fmt(safeDuration) : '--:--';
+
+    const timeStyle = TextStyle(
+      color: Color(0x80FFFFFF),
+      fontSize: 12,
+      fontWeight: FontWeight.w500,
+    );
+
+    return Row(
       children: [
-        SliderTheme(
-          data: SliderTheme.of(context).copyWith(
-            activeTrackColor: Colors.white,
-            inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
-            thumbColor: Colors.white,
-            overlayColor: Colors.white.withValues(alpha: 0.08),
-            trackHeight: compact ? 3 : 4,
-            thumbShape: RoundSliderThumbShape(
-                enabledThumbRadius: compact ? 6 : 7),
-            overlayShape: RoundSliderOverlayShape(
-                overlayRadius: compact ? 12 : 16),
-          ),
-          child: Slider(
-            value: displayProgress,
-            onChangeStart: (v) {
-              setState(() {
-                _isDragging = true;
-                _dragValue = v;
-              });
-            },
-            onChanged: (v) {
-              setState(() => _dragValue = v);
-            },
-            onChangeEnd: (v) {
-              final target = Duration(
-                milliseconds: (v * safeDuration.inMilliseconds).round(),
-              );
-              ref.read(playerProvider.notifier).seekTo(target);
-              setState(() => _isDragging = false);
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                _isDragging
-                    ? _fmt(Duration(
-                        milliseconds:
-                            (_dragValue * safeDuration.inMilliseconds).round()))
-                    : _fmt(position),
-                style: const TextStyle(
-                  color: Color(0x80FFFFFF),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                durationKnown ? _fmt(safeDuration) : '--:--',
-                style: const TextStyle(
-                  color: Color(0x80FFFFFF),
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ],
+        // Start time
+        Text(positionText, style: timeStyle),
+        const SizedBox(width: 8),
+        // Seek bar
+        Expanded(
+          child: SliderTheme(
+            data: SliderTheme.of(context).copyWith(
+              activeTrackColor: Colors.white,
+              inactiveTrackColor: Colors.white.withValues(alpha: 0.15),
+              thumbColor: Colors.white,
+              overlayColor: Colors.white.withValues(alpha: 0.08),
+              trackHeight: compact ? 3 : 4,
+              thumbShape: RoundSliderThumbShape(
+                  enabledThumbRadius: compact ? 6 : 7),
+              overlayShape: RoundSliderOverlayShape(
+                  overlayRadius: compact ? 12 : 16),
+            ),
+            child: Slider(
+              value: displayProgress,
+              onChangeStart: (v) {
+                setState(() {
+                  _isDragging = true;
+                  _dragValue = v;
+                });
+              },
+              onChanged: (v) {
+                setState(() => _dragValue = v);
+              },
+              onChangeEnd: (v) {
+                final target = Duration(
+                  milliseconds: (v * safeDuration.inMilliseconds).round(),
+                );
+                ref.read(playerProvider.notifier).seekTo(target);
+                setState(() => _isDragging = false);
+              },
+            ),
           ),
         ),
+        const SizedBox(width: 8),
+        // End time
+        Text(durationText, style: timeStyle),
       ],
     );
   }

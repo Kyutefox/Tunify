@@ -5,14 +5,12 @@ import '../../config/app_icons.dart';
 import '../../shared/providers/auth_provider.dart';
 import '../../shared/providers/connectivity_provider.dart';
 import '../../shared/providers/home_state_provider.dart';
-import '../../shared/providers/library_provider.dart';
 import '../../shared/providers/player_state_provider.dart';
 import '../../shared/providers/search_provider.dart';
-import '../components/ui/sheet.dart';
+import '../components/shared/create_library_options.dart';
 import '../components/ui/widgets/mini_player.dart';
 import '../layout/shell_context.dart';
 import '../screens/home_screen.dart';
-import '../screens/library/create_library_item_screen.dart';
 import '../screens/library_screen.dart';
 import '../screens/loading_screen.dart';
 import '../screens/search_screen.dart';
@@ -99,60 +97,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
     );
   }
 
-  void _showCreateSheet() {
-    showAppSheet(
-      context,
-      child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SheetOptionTile(
-              icon: AppIcons.playlistAdd,
-              label: 'Create playlist',
-              showChevron: false,
-              onTap: () async {
-                Navigator.of(context).pop();
-                final name = await Navigator.of(context).push<String>(
-                  MaterialPageRoute<String>(
-                    builder: (_) => const CreateLibraryItemScreen(
-                      mode: CreateLibraryItemMode.createPlaylist,
-                    ),
-                  ),
-                );
-                if (name != null && name.trim().isNotEmpty && mounted) {
-                  await ref
-                      .read(libraryProvider.notifier)
-                      .createPlaylist(name.trim());
-                }
-              },
-            ),
-            SheetOptionTile(
-              icon: AppIcons.newFolder,
-              label: 'Create folder',
-              showChevron: false,
-              onTap: () async {
-                Navigator.of(context).pop();
-                final name = await Navigator.of(context).push<String>(
-                  MaterialPageRoute<String>(
-                    builder: (_) => const CreateLibraryItemScreen(
-                      mode: CreateLibraryItemMode.createFolder,
-                    ),
-                  ),
-                );
-                if (name != null && name.trim().isNotEmpty && mounted) {
-                  await ref
-                      .read(libraryProvider.notifier)
-                      .createFolder(name.trim());
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+  void _showCreateSheet() => showCreateLibrarySheet(context, ref);
 
   Widget _buildNavBar() {
     const navToPage = [0, 1, 2, -1];

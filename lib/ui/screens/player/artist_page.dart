@@ -350,7 +350,7 @@ class _ArtistTrackTile extends ConsumerWidget {
               color: AppColors.textMuted,
               size: 20,
             ),
-            onPressed: () => showSongOptionsSheet(context, song: song),
+            onPressedWithContext: (btnCtx) => showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
             size: 40,
             iconSize: 20,
           ),

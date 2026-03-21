@@ -43,7 +43,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // Desktop has its own top bar — skip the mobile app bar.
           if (!isDesktop) HomeAppBar(greeting: greeting, asSliver: false),
           Expanded(
             child: RefreshIndicator(
@@ -61,7 +60,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 slivers: [
                   if (isDesktop)
-                    const SliverToBoxAdapter(child: _DesktopGreetingHeader()),
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _DesktopGreetingDelegate(),
+                    ),
                   HomeContent(onPlay: _play),
                   SliverToBoxAdapter(
                     child: SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
@@ -76,10 +78,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 }
 
-// ── Desktop-only greeting header ──────────────────────────────────────────────
+// ── Desktop sticky greeting header ───────────────────────────────────────────
+
+class _DesktopGreetingDelegate extends SliverPersistentHeaderDelegate {
+  static const double _height = 48.0;
+
+  @override
+  double get minExtent => _height;
+  @override
+  double get maxExtent => _height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return _DesktopGreetingHeader(overlaps: overlapsContent || shrinkOffset > 0);
+  }
+
+  @override
+  bool shouldRebuild(_DesktopGreetingDelegate old) => false;
+}
 
 class _DesktopGreetingHeader extends ConsumerWidget {
-  const _DesktopGreetingHeader();
+  const _DesktopGreetingHeader({this.overlaps = false});
+  final bool overlaps;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -91,36 +111,28 @@ class _DesktopGreetingHeader extends ConsumerWidget {
         (user?.email?.split('@').first) ??
         (isGuest ? (guestUsername ?? 'Guest') : '');
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ShaderMask(
-            shaderCallback: (bounds) =>
-                AppColors.primaryGradient.createShader(bounds),
-            child: Text(
-              username.isNotEmpty ? '$greeting, $username' : greeting,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.2,
-              ),
-            ),
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 150),
+      decoration: BoxDecoration(
+        color: overlaps ? AppColors.background.withValues(alpha: 0.95) : AppColors.background,
+        border: overlaps
+            ? Border(bottom: BorderSide(color: AppColors.surfaceLight, width: 0.5))
+            : null,
+      ),
+      padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, 0),
+      alignment: Alignment.centerLeft,
+      child: ShaderMask(
+        shaderCallback: (bounds) =>
+            AppColors.primaryGradient.createShader(bounds),
+        child: Text(
+          username.isNotEmpty ? '$greeting, $username' : greeting,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.2,
           ),
-          const SizedBox(height: 4),
-          const Text(
-            'Home',
-            style: TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              letterSpacing: -1.0,
-              height: 1.1,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

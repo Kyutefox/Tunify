@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../config/app_icons.dart';
+import '../../../../ui/layout/shell_context.dart';
 import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
 
@@ -26,13 +27,10 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
     final resolvedPadding = padding ??
-        const EdgeInsets.fromLTRB(
-          AppSpacing.base,
-          0,
-          AppSpacing.base,
-          AppSpacing.md,
-        );
+        EdgeInsets.fromLTRB(hPad, 0, hPad, AppSpacing.md);
     final titleFontSize = useCompactStyle ? 20.0 : 22.0;
     final subtitleFontSize = useCompactStyle ? 12.0 : 13.0;
 

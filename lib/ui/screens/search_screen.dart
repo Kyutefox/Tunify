@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/song.dart';
 import '../../shared/providers/content_settings_provider.dart';
+import '../../shared/providers/home_state_provider.dart';
 import '../../shared/providers/player_state_provider.dart';
 import '../../shared/providers/recent_search_provider.dart';
 import '../../shared/providers/search_provider.dart';
@@ -12,7 +13,9 @@ import 'player/song_options_sheet.dart';
 import '../components/shared/components_shared.dart';
 import '../components/ui/button.dart';
 import '../components/ui/widgets/mini_player.dart';
+import '../components/ui/widgets/mood_browse_sheet.dart';
 import '../components/ui/widgets/song_list_tile.dart';
+import '../layout/shell_context.dart';
 import '../../config/app_icons.dart';
 import '../theme/app_colors.dart';
 import '../theme/design_tokens.dart';
@@ -39,45 +42,88 @@ class Debouncer {
   }
 }
 
-class _SearchBarPlaceholder extends StatelessWidget {
+class _SearchBarPlaceholder extends ConsumerWidget {
   const _SearchBarPlaceholder({required this.onTap});
 
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 50,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(AppRadius.input),
-          border: Border.all(color: Colors.transparent, width: 1),
-        ),
-        child: Row(
-          children: [
-            const SizedBox(width: AppSpacing.base),
-            AppIcon(
-              icon: AppIcons.search,
-              color: AppColors.textMuted,
-              size: 22,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Expanded(
-              child: Text(
-                'Search songs, artists, and more',
-                style: TextStyle(
-                  color: AppColors.textMuted.withValues(alpha: 0.7),
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final moods = ref.watch(moodsProvider);
+    return Container(
+      height: 50,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(AppRadius.input),
+        border: Border.all(color: Colors.transparent, width: 1),
+      ),
+      child: Row(
+        children: [
+          // Search tap area
+          Expanded(
+            child: GestureDetector(
+              onTap: onTap,
+              behavior: HitTestBehavior.opaque,
+              child: Row(
+                children: [
+                  const SizedBox(width: AppSpacing.base),
+                  AppIcon(
+                    icon: AppIcons.search,
+                    color: AppColors.textMuted,
+                    size: 22,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      'Search songs, artists, and more',
+                      style: TextStyle(
+                        color: AppColors.textMuted.withValues(alpha: 0.7),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(width: AppSpacing.base),
-          ],
-        ),
+          ),
+          // Divider
+          Container(
+            width: 1,
+            height: 22,
+            color: AppColors.textMuted.withValues(alpha: 0.3),
+          ),
+          // Browse button — desktop only
+          if (ShellContext.isDesktopOf(context))
+            GestureDetector(
+              onTap: () => showMoodBrowseSheet(context, moods: moods),
+              behavior: HitTestBehavior.opaque,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    AppIcon(
+                      icon: AppIcons.gridView,
+                      color: AppColors.textSecondary,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 6),
+                    const Text(
+                      'Browse',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            const SizedBox(width: 12),
+        ],
       ),
     );
   }
@@ -418,8 +464,8 @@ class SearchResultsBody extends ConsumerWidget {
                   color: AppColors.textMuted,
                   size: 20,
                 ),
-                onPressed: () =>
-                    showSongOptionsSheet(context, song: song),
+                onPressedWithContext: (btnCtx) =>
+                    showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
                 iconSize: 20,
                 size: 40,
               ),
@@ -446,7 +492,7 @@ class _SearchMoodGrid extends ConsumerWidget {
               .read(playerProvider.notifier)
               .playSong(song, queueSource: 'autoqueue'),
         ),
-        const MoodSection(),
+        const MoodSection(showAll: true),
       ],
     );
   }

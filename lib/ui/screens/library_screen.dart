@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -23,6 +24,7 @@ import 'library/library_app_bar.dart';
 import 'library/library_downloaded_content.dart';
 import 'library/library_liked_songs_screen.dart';
 import 'library/library_search_screen.dart';
+import '../components/shared/adaptive_menu.dart';
 import 'download_queue_sheet.dart';
 import 'player/album_page.dart';
 import 'player/artist_page.dart';
@@ -278,7 +280,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         if (disableEmptyFadeTransition) {
           return [
             SliverFillRemaining(
-              child: _FilterPlaceholder(
+              child: LibraryFilterPlaceholder(
                 icon: AppIcons.playlist,
                 message: 'Playlists you create will appear here',
               ),
@@ -337,7 +339,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         if (rawAlbums.isEmpty) {
           return [
             SliverFillRemaining(
-              child: _FilterPlaceholder(
+              child: LibraryFilterPlaceholder(
                 icon: AppIcons.album,
                 message: 'Albums you save will appear here',
               ),
@@ -348,7 +350,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         return [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               child: AnimatedSwitcher(
                 duration: Duration.zero,
                 child: KeyedSubtree(
@@ -368,7 +370,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         if (rawArtists.isEmpty) {
           return [
             SliverFillRemaining(
-              child: _FilterPlaceholder(
+              child: LibraryFilterPlaceholder(
                 icon: AppIcons.artist,
                 message: 'Artists you follow will appear here',
               ),
@@ -379,7 +381,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
         return [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
               child: AnimatedSwitcher(
                 duration: Duration.zero,
                 child: KeyedSubtree(
@@ -446,14 +448,14 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     setState(() => _selectedFolderId = folder.id);
   }
 
-  void _onFolderOptions(LibraryFolder folder) {
+  void _onFolderOptions(LibraryFolder folder, Rect? anchorRect) {
     _unfocus();
-    showLibraryFolderOptionsSheet(context, ref, folder);
+    showLibraryFolderOptionsSheet(context, ref, folder, anchorRect: anchorRect);
   }
 
-  void _onPlaylistOptions(LibraryPlaylist playlist) {
+  void _onPlaylistOptions(LibraryPlaylist playlist, Rect? anchorRect) {
     _unfocus();
-    showLibraryPlaylistOptionsSheet(context, ref, playlist);
+    showLibraryPlaylistOptionsSheet(context, ref, playlist, anchorRect: anchorRect);
   }
 }
 
@@ -785,8 +787,11 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
   }
 }
 
-class _FilterPlaceholder extends StatelessWidget {
-  const _FilterPlaceholder({
+/// Shared empty-state widget used by both mobile [LibraryScreen] and
+/// desktop [DesktopSidebar] for playlists / albums / artists filters.
+class LibraryFilterPlaceholder extends StatelessWidget {
+  const LibraryFilterPlaceholder({
+    super.key,
     required this.icon,
     required this.message,
   });
@@ -1014,8 +1019,71 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
 void showLibraryPlaylistOptionsSheet(
   BuildContext context,
   WidgetRef ref,
-  LibraryPlaylist playlist,
-) {
+  LibraryPlaylist playlist, {
+  Rect? anchorRect,
+}) {
+  final isDesktop = defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.linux;
+
+  if (isDesktop) {
+    final folders = ref.read(libraryFoldersProvider);
+    final folderSubEntries = folders.map((f) {
+      final alreadyIn = f.playlistIds.contains(playlist.id);
+      return AppMenuEntry(
+        icon: alreadyIn ? AppIcons.checkCircle : AppIcons.folder,
+        label: f.name,
+        color: alreadyIn ? AppColors.primary : null,
+        onTap: () {
+          if (alreadyIn) {
+            ref.read(libraryProvider.notifier).removePlaylistFromFolder(f.id, playlist.id);
+          } else {
+            ref.read(libraryProvider.notifier).addPlaylistToFolder(f.id, playlist.id);
+          }
+        },
+      );
+    }).toList();
+
+    showAdaptiveMenu(
+      context,
+      title: playlist.name,
+      entries: [
+        AppMenuEntry(
+          icon: playlist.isPinned ? AppIcons.pinOff : AppIcons.pin,
+          label: playlist.isPinned ? 'Unpin' : 'Pin to top',
+          onTap: () => ref.read(libraryProvider.notifier).togglePlaylistPin(playlist.id),
+        ),
+        if (folders.isNotEmpty)
+          AppMenuEntry(
+            icon: AppIcons.folder,
+            label: 'Add to folder',
+            onTap: () {},
+            subEntries: folderSubEntries,
+          ),
+        const AppMenuEntry.divider(),
+        AppMenuEntry(
+          icon: AppIcons.deleteOutline,
+          label: 'Delete',
+          color: AppColors.secondary,
+          onTap: () async {
+            final confirmed = await showConfirmDialog(
+              context,
+              title: 'Delete playlist?',
+              message: '${playlist.name.capitalized} will be removed from your library.',
+              confirmLabel: 'Delete',
+            );
+            if (confirmed) {
+              await ref.read(libraryProvider.notifier).deletePlaylist(playlist.id);
+            }
+          },
+        ),
+      ],
+      anchorRect: anchorRect,
+      forceDesktop: true,
+    );
+    return;
+  }
+
   showAppSheet(
     context,
     child: LibraryPlaylistSheet(
@@ -1027,8 +1095,7 @@ void showLibraryPlaylistOptionsSheet(
         final confirmed = await showConfirmDialog(
           context,
           title: 'Delete playlist?',
-          message:
-              '${playlist.name.capitalized} will be removed from your library.',
+          message: '${playlist.name.capitalized} will be removed from your library.',
           confirmLabel: 'Delete',
         );
         if (confirmed) {
@@ -1048,8 +1115,63 @@ void showLibraryPlaylistOptionsSheet(
 void showLibraryFolderOptionsSheet(
   BuildContext context,
   WidgetRef ref,
-  LibraryFolder folder,
-) {
+  LibraryFolder folder, {
+  Rect? anchorRect,
+}) {
+  final isDesktop = defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.linux;
+
+  if (isDesktop) {
+    showAdaptiveMenu(
+      context,
+      title: folder.name,
+      entries: [
+        AppMenuEntry(
+          icon: folder.isPinned ? AppIcons.pinOff : AppIcons.pin,
+          label: folder.isPinned ? 'Unpin' : 'Pin to top',
+          onTap: () => ref.read(libraryProvider.notifier).toggleFolderPin(folder.id),
+        ),
+        AppMenuEntry(
+          icon: AppIcons.edit,
+          label: 'Rename',
+          onTap: () async {
+            final newName = await showDialog<String>(
+              context: context,
+              builder: (_) => CreateLibraryItemScreen(
+                mode: CreateLibraryItemMode.renameFolder,
+                initialName: folder.name,
+              ),
+            );
+            if (newName != null && newName.trim().isNotEmpty) {
+              ref.read(libraryProvider.notifier).renameFolder(folder.id, newName.trim());
+            }
+          },
+        ),
+        const AppMenuEntry.divider(),
+        AppMenuEntry(
+          icon: AppIcons.deleteOutline,
+          label: 'Delete',
+          color: AppColors.secondary,
+          onTap: () async {
+            final confirmed = await showConfirmDialog(
+              context,
+              title: 'Delete folder?',
+              message: '${folder.name.capitalized} will be removed. Playlists inside will not be deleted.',
+              confirmLabel: 'Delete',
+            );
+            if (confirmed) {
+              ref.read(libraryProvider.notifier).deleteFolder(folder.id);
+            }
+          },
+        ),
+      ],
+      anchorRect: anchorRect,
+      forceDesktop: true,
+    );
+    return;
+  }
+
   showAppSheet(
     context,
     child: LibraryFolderSheet(
@@ -1069,18 +1191,14 @@ void showLibraryFolderOptionsSheet(
         );
         if (navigator.mounted) navigator.pop();
         if (newName != null && newName.trim().isNotEmpty) {
-          ref.read(libraryProvider.notifier).renameFolder(
-                folder.id,
-                newName.trim(),
-              );
+          ref.read(libraryProvider.notifier).renameFolder(folder.id, newName.trim());
         }
       },
       onDelete: () async {
         final confirmed = await showConfirmDialog(
           context,
           title: 'Delete folder?',
-          message:
-              '${folder.name.capitalized} will be removed. Playlists inside will not be deleted.',
+          message: '${folder.name.capitalized} will be removed. Playlists inside will not be deleted.',
           confirmLabel: 'Delete',
         );
         if (confirmed) {

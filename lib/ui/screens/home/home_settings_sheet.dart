@@ -285,171 +285,70 @@ class _CrossfadeTile extends StatelessWidget {
   }
 }
 
-class _DataSettingsScreen extends ConsumerWidget {
-  const _DataSettingsScreen();
+// ── Data Settings ─────────────────────────────────────────────────────────────
+
+/// Body-only widget for Data settings — no Scaffold wrapper.
+/// Used directly in the desktop 2-pane settings screen and wrapped in a
+/// Scaffold by [_DataSettingsScreen] on mobile.
+class DataSettingsBody extends ConsumerWidget {
+  const DataSettingsBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const BackTitleAppBar(title: 'Data'),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.base, vertical: AppSpacing.sm),
-        children: [
-          _DataTile(
-            icon: AppIcons.devices,
-            label: 'Cache Size',
-            subtitle: 'View stream cache usage',
-            onTap: () => _showCacheStats(context, ref),
-          ),
-          _DataTile(
-            icon: AppIcons.clear,
-            label: 'Clear Cache',
-            subtitle: 'Stream and playback cache',
-            onTap: () => _clearCache(context, ref),
-          ),
-          _DataTile(
-            icon: AppIcons.refresh,
-            label: 'Clear Old Cache',
-            subtitle: 'Remove cache files older than 7 days',
-            onTap: () => _clearOldCache(context, ref),
-          ),
-          _DataTile(
-            icon: AppIcons.download,
-            label: 'Clear Downloads',
-            subtitle: 'Remove all downloaded songs from device',
-            onTap: () => _clearDownloads(context, ref),
-          ),
-          _DataTile(
-            icon: AppIcons.refresh,
-            label: 'Reset Recommendations',
-            subtitle: 'Clear personalization; home feed will refresh',
-            onTap: () => _resetRecommendations(context, ref),
-          ),
-          _DataTile(
-            icon: AppIcons.search,
-            label: 'Clear recent search',
-            subtitle: 'Remove all recent search queries',
-            onTap: () => _clearRecentSearch(context, ref),
-          ),
-        ],
-      ),
+    return ListView(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.base, vertical: AppSpacing.sm),
+      children: [
+        _DataTile(
+          icon: AppIcons.devices,
+          label: 'Cache Size',
+          subtitle: 'View stream cache usage',
+          onTap: () => _dataCacheStats(context, ref),
+        ),
+        _DataTile(
+          icon: AppIcons.clear,
+          label: 'Clear Cache',
+          subtitle: 'Stream and playback cache',
+          onTap: () => _dataClearCache(context, ref),
+        ),
+        _DataTile(
+          icon: AppIcons.refresh,
+          label: 'Clear Old Cache',
+          subtitle: 'Remove cache files older than 7 days',
+          onTap: () => _dataClearOldCache(context, ref),
+        ),
+        _DataTile(
+          icon: AppIcons.download,
+          label: 'Clear Downloads',
+          subtitle: 'Remove all downloaded songs from device',
+          onTap: () => _dataClearDownloads(context, ref),
+        ),
+        _DataTile(
+          icon: AppIcons.refresh,
+          label: 'Reset Recommendations',
+          subtitle: 'Clear personalization; home feed will refresh',
+          onTap: () => _dataResetRecommendations(context, ref),
+        ),
+        _DataTile(
+          icon: AppIcons.search,
+          label: 'Clear recent search',
+          subtitle: 'Remove all recent search queries',
+          onTap: () => _dataClearRecentSearch(context, ref),
+        ),
+      ],
     );
   }
+}
 
-  Future<void> _showCacheStats(BuildContext context, WidgetRef ref) async {
-    try {
-      final cacheService = StreamCacheService();
-      final stats = await cacheService.getCacheStats();
-      if (context.mounted) {
-        showDialog(
-          context: context,
-          builder: (ctx) => AlertDialog(
-            backgroundColor: AppColors.surfaceLight,
-            title: const Text('Cache Statistics'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Total size: ${stats.formattedSize}'),
-                const SizedBox(height: 8),
-                Text('Files: ${stats.fileCount}'),
-                const SizedBox(height: 8),
-                Text('Old files (>7 days): ${stats.oldFilesCount}'),
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Close'),
-              ),
-            ],
-          ),
-        );
-      }
-    } catch (e) {
-      logError('Failed to get cache stats: $e', tag: 'Settings');
-      if (context.mounted) {
-        _showDataResultSnackBar(context, error: e);
-      }
-    }
-  }
+class _DataSettingsScreen extends StatelessWidget {
+  const _DataSettingsScreen();
 
-  Future<void> _clearCache(BuildContext context, WidgetRef ref) async {
-    try {
-      ref.read(streamManagerProvider).clearCache();
-      await ref.read(playerProvider.notifier).clearPersistentStreamCache();
-      if (context.mounted) {
-        _showDataResultSnackBar(context, success: 'Cache cleared');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        _showDataResultSnackBar(context, error: e);
-      }
-    }
-  }
-
-  Future<void> _clearOldCache(BuildContext context, WidgetRef ref) async {
-    try {
-      final cacheService = StreamCacheService();
-      await cacheService.clearCacheOlderThan(const Duration(days: 7));
-      if (context.mounted) {
-        _showDataResultSnackBar(context, success: 'Old cache files cleared');
-      }
-    } catch (e) {
-      logError('Failed to clear old cache: $e', tag: 'Settings');
-      if (context.mounted) {
-        _showDataResultSnackBar(context, error: e);
-      }
-    }
-  }
-
-  Future<void> _clearDownloads(BuildContext context, WidgetRef ref) async {
-    try {
-      await ref.read(downloadServiceProvider).clearAllDownloads();
-      if (context.mounted) {
-        _showDataResultSnackBar(context, success: 'Downloads cleared');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        _showDataResultSnackBar(context, error: e);
-      }
-    }
-  }
-
-  Future<void> _resetRecommendations(
-      BuildContext context, WidgetRef ref) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(kYtVisitorDataKey);
-      ref.read(streamManagerProvider).setVisitorData(null);
-      ref.invalidate(homeProvider);
-      if (context.mounted) {
-        _showDataResultSnackBar(
-          context,
-          success: 'Recommendations reset. Home will refresh.',
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        _showDataResultSnackBar(context, error: e);
-      }
-    }
-  }
-
-  Future<void> _clearRecentSearch(BuildContext context, WidgetRef ref) async {
-    try {
-      await ref.read(recentSearchProvider.notifier).clearAll();
-      if (context.mounted) {
-        _showDataResultSnackBar(context, success: 'Recent search cleared');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        _showDataResultSnackBar(context, error: e);
-      }
-    }
-  }
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: const BackTitleAppBar(title: 'Data'),
+        body: const DataSettingsBody(),
+      );
 }
 
 class _DataTile extends StatelessWidget {
@@ -506,8 +405,127 @@ class _DataTile extends StatelessWidget {
   }
 }
 
-class _PlaybackSettingsScreen extends ConsumerWidget {
-  const _PlaybackSettingsScreen();
+Future<void> _dataCacheStats(BuildContext context, WidgetRef ref) async {
+  try {
+    final cacheService = StreamCacheService();
+    final stats = await cacheService.getCacheStats();
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppColors.surfaceLight,
+          title: const Text('Cache Statistics'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Total size: ${stats.formattedSize}'),
+              const SizedBox(height: 8),
+              Text('Files: ${stats.fileCount}'),
+              const SizedBox(height: 8),
+              Text('Old files (>7 days): ${stats.oldFilesCount}'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    }
+  } catch (e) {
+    logError('Failed to get cache stats: $e', tag: 'Settings');
+    if (context.mounted) {
+      _showDataResultSnackBar(context, error: e);
+    }
+  }
+}
+
+Future<void> _dataClearCache(BuildContext context, WidgetRef ref) async {
+  try {
+    ref.read(streamManagerProvider).clearCache();
+    await ref.read(playerProvider.notifier).clearPersistentStreamCache();
+    if (context.mounted) {
+      _showDataResultSnackBar(context, success: 'Cache cleared');
+    }
+  } catch (e) {
+    if (context.mounted) {
+      _showDataResultSnackBar(context, error: e);
+    }
+  }
+}
+
+Future<void> _dataClearOldCache(BuildContext context, WidgetRef ref) async {
+  try {
+    final cacheService = StreamCacheService();
+    await cacheService.clearCacheOlderThan(const Duration(days: 7));
+    if (context.mounted) {
+      _showDataResultSnackBar(context, success: 'Old cache files cleared');
+    }
+  } catch (e) {
+    logError('Failed to clear old cache: $e', tag: 'Settings');
+    if (context.mounted) {
+      _showDataResultSnackBar(context, error: e);
+    }
+  }
+}
+
+Future<void> _dataClearDownloads(BuildContext context, WidgetRef ref) async {
+  try {
+    await ref.read(downloadServiceProvider).clearAllDownloads();
+    if (context.mounted) {
+      _showDataResultSnackBar(context, success: 'Downloads cleared');
+    }
+  } catch (e) {
+    if (context.mounted) {
+      _showDataResultSnackBar(context, error: e);
+    }
+  }
+}
+
+Future<void> _dataResetRecommendations(
+    BuildContext context, WidgetRef ref) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(kYtVisitorDataKey);
+    ref.read(streamManagerProvider).setVisitorData(null);
+    ref.invalidate(homeProvider);
+    if (context.mounted) {
+      _showDataResultSnackBar(
+        context,
+        success: 'Recommendations reset. Home will refresh.',
+      );
+    }
+  } catch (e) {
+    if (context.mounted) {
+      _showDataResultSnackBar(context, error: e);
+    }
+  }
+}
+
+Future<void> _dataClearRecentSearch(
+    BuildContext context, WidgetRef ref) async {
+  try {
+    await ref.read(recentSearchProvider.notifier).clearAll();
+    if (context.mounted) {
+      _showDataResultSnackBar(context, success: 'Recent search cleared');
+    }
+  } catch (e) {
+    if (context.mounted) {
+      _showDataResultSnackBar(context, error: e);
+    }
+  }
+}
+
+// ── Playback Settings ─────────────────────────────────────────────────────────
+
+/// Body-only widget for Playback settings — no Scaffold wrapper.
+/// Used directly in the desktop 2-pane settings screen and wrapped in a
+/// Scaffold by [_PlaybackSettingsScreen] on mobile.
+class PlaybackSettingsBody extends ConsumerWidget {
+  const PlaybackSettingsBody({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -516,57 +534,64 @@ class _PlaybackSettingsScreen extends ConsumerWidget {
     final showExplicit = ref.watch(showExplicitContentProvider);
     final smartRecShuffle = ref.watch(smartRecommendationShuffleProvider);
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const BackTitleAppBar(title: 'Playback'),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.base, vertical: AppSpacing.sm),
-        children: [
-          _PlaybackToggleTile(
-            icon: AppIcons.equalizer,
-            label: 'Volume normalization',
-            subtitle: 'Set the same volume level for all songs',
-            value: normEnabled,
-            onChanged: (v) =>
-                ref.read(playerProvider.notifier).setNormalization(v),
-          ),
-          _PlaybackToggleTile(
-            icon: AppIcons.musicNote,
-            label: 'Show Explicit Content',
-            subtitle: 'Show songs tagged with "E" in lists',
-            value: showExplicit,
-            onChanged: (v) => ref
-                .read(showExplicitContentProvider.notifier)
-                .setShowExplicit(v),
-          ),
-          _PlaybackToggleTile(
-            icon: AppIcons.shuffle,
-            label: 'Smart Recommendation Shuffle',
-            subtitle:
-                'When queue has one song from a playlist or library, fill with recommendations only if shuffle is on',
-            value: smartRecShuffle,
-            onChanged: (v) => ref
-                .read(smartRecommendationShuffleProvider.notifier)
-                .setSmartRecommendationShuffle(v),
-          ),
-          _PlaybackToggleTile(
-            icon: AppIcons.musicNote,
-            label: 'Gapless Playback',
-            subtitle: 'Remove silence between tracks',
-            value: playerState.isGaplessEnabled,
-            onChanged: (v) =>
-                ref.read(playerProvider.notifier).setGaplessPlayback(v),
-          ),
-          _CrossfadeTile(
-            value: playerState.crossfadeDurationSeconds,
-            onChanged: (v) =>
-                ref.read(playerProvider.notifier).setCrossfadeDuration(v),
-          ),
-        ],
-      ),
+    return ListView(
+      padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.base, vertical: AppSpacing.sm),
+      children: [
+        _PlaybackToggleTile(
+          icon: AppIcons.equalizer,
+          label: 'Volume normalization',
+          subtitle: 'Set the same volume level for all songs',
+          value: normEnabled,
+          onChanged: (v) =>
+              ref.read(playerProvider.notifier).setNormalization(v),
+        ),
+        _PlaybackToggleTile(
+          icon: AppIcons.musicNote,
+          label: 'Show Explicit Content',
+          subtitle: 'Show songs tagged with "E" in lists',
+          value: showExplicit,
+          onChanged: (v) => ref
+              .read(showExplicitContentProvider.notifier)
+              .setShowExplicit(v),
+        ),
+        _PlaybackToggleTile(
+          icon: AppIcons.shuffle,
+          label: 'Smart Recommendation Shuffle',
+          subtitle:
+              'When queue has one song from a playlist or library, fill with recommendations only if shuffle is on',
+          value: smartRecShuffle,
+          onChanged: (v) => ref
+              .read(smartRecommendationShuffleProvider.notifier)
+              .setSmartRecommendationShuffle(v),
+        ),
+        _PlaybackToggleTile(
+          icon: AppIcons.musicNote,
+          label: 'Gapless Playback',
+          subtitle: 'Remove silence between tracks',
+          value: playerState.isGaplessEnabled,
+          onChanged: (v) =>
+              ref.read(playerProvider.notifier).setGaplessPlayback(v),
+        ),
+        _CrossfadeTile(
+          value: playerState.crossfadeDurationSeconds,
+          onChanged: (v) =>
+              ref.read(playerProvider.notifier).setCrossfadeDuration(v),
+        ),
+      ],
     );
   }
+}
+
+class _PlaybackSettingsScreen extends StatelessWidget {
+  const _PlaybackSettingsScreen();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: const BackTitleAppBar(title: 'Playback'),
+        body: const PlaybackSettingsBody(),
+      );
 }
 
 class _PlaybackToggleTile extends StatelessWidget {
@@ -624,16 +649,20 @@ class _PlaybackToggleTile extends StatelessWidget {
   }
 }
 
-class _SupabaseSettingsScreen extends ConsumerStatefulWidget {
-  const _SupabaseSettingsScreen();
+// ── Supabase Settings ─────────────────────────────────────────────────────────
+
+/// Body-only widget for Supabase settings — no Scaffold wrapper.
+/// Used directly in the desktop 2-pane settings screen and wrapped in a
+/// Scaffold by [_SupabaseSettingsScreen] on mobile.
+class SupabaseSettingsBody extends ConsumerStatefulWidget {
+  const SupabaseSettingsBody({super.key});
 
   @override
-  ConsumerState<_SupabaseSettingsScreen> createState() =>
-      _SupabaseSettingsScreenState();
+  ConsumerState<SupabaseSettingsBody> createState() =>
+      _SupabaseSettingsBodyState();
 }
 
-class _SupabaseSettingsScreenState
-    extends ConsumerState<_SupabaseSettingsScreen> {
+class _SupabaseSettingsBodyState extends ConsumerState<SupabaseSettingsBody> {
   final _urlController = TextEditingController();
   final _anonKeyController = TextEditingController();
   bool _testing = false;
@@ -797,81 +826,88 @@ class _SupabaseSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: const BackTitleAppBar(title: 'Supabase'),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _usingCustomConfig
-                  ? 'Currently using your Supabase config'
-                  : 'Currently using default config',
-              style: TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 13,
-              ),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _usingCustomConfig
+                ? 'Currently using your Supabase config'
+                : 'Currently using default config',
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: 13,
             ),
-            const SizedBox(height: AppSpacing.sm),
-            const Text(
-              'Leave URL and anon key empty to use the default config. Enter both to use your own project.',
-              style: TextStyle(
-                color: AppColors.textSecondary,
-                fontSize: 13,
-              ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            'Leave URL and anon key empty to use the default config. Enter both to use your own project.',
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
             ),
-            const SizedBox(height: AppSpacing.xl),
-            AppInputField(
-              controller: _urlController,
-              labelText: 'URL',
-              hintText: 'Empty = use default',
-              style: InputFieldStyle.outlined,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            AppInputField(
-              controller: _anonKeyController,
-              labelText: 'Anon key',
-              hintText: 'Empty = use default',
-              style: InputFieldStyle.outlined,
-              obscureText: true,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            Row(
-              children: [
-                Expanded(
-                  child: AppButton(
-                    label: _testing ? 'Testing…' : 'Test',
-                    icon: AppIcon(
-                      icon: AppIcons.check,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                    onPressed: _test,
-                    isLoading: _testing,
-                    fullWidth: true,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppInputField(
+            controller: _urlController,
+            labelText: 'URL',
+            hintText: 'Empty = use default',
+            style: InputFieldStyle.outlined,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppInputField(
+            controller: _anonKeyController,
+            labelText: 'Anon key',
+            hintText: 'Empty = use default',
+            style: InputFieldStyle.outlined,
+            obscureText: true,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Row(
+            children: [
+              Expanded(
+                child: AppButton(
+                  label: _testing ? 'Testing…' : 'Test',
+                  icon: AppIcon(
+                    icon: AppIcons.check,
+                    size: 18,
+                    color: Colors.white,
                   ),
+                  onPressed: _test,
+                  isLoading: _testing,
+                  fullWidth: true,
                 ),
-                const SizedBox(width: AppSpacing.md),
-                Expanded(
-                  child: AppButton(
-                    label: 'Save',
-                    icon: AppIcon(
-                      icon: AppIcons.check,
-                      size: 18,
-                      color: Colors.white,
-                    ),
-                    onPressed: _save,
-                    isLoading: _saving,
-                    fullWidth: true,
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: AppButton(
+                  label: 'Save',
+                  icon: AppIcon(
+                    icon: AppIcons.check,
+                    size: 18,
+                    color: Colors.white,
                   ),
+                  onPressed: _save,
+                  isLoading: _saving,
+                  fullWidth: true,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
+}
+
+class _SupabaseSettingsScreen extends StatelessWidget {
+  const _SupabaseSettingsScreen();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: const BackTitleAppBar(title: 'Supabase'),
+        body: const SupabaseSettingsBody(),
+      );
 }

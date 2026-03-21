@@ -609,6 +609,155 @@ class _TechChip extends StatelessWidget {
   }
 }
 
+// ─── About Screen Body (desktop-embeddable, no Scaffold) ──────────────────────
+
+/// Scroll-only version of [AboutScreen] without a [Scaffold] or back button.
+/// Used in the desktop 2-pane settings screen.
+class AboutScreenBody extends StatefulWidget {
+  const AboutScreenBody({super.key});
+
+  @override
+  State<AboutScreenBody> createState() => _AboutScreenBodyState();
+}
+
+class _AboutScreenBodyState extends State<AboutScreenBody> {
+  String _version = '';
+  String _build = '';
+
+  @override
+  void initState() {
+    super.initState();
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) {
+        setState(() {
+          _version = info.version;
+          _build = info.buildNumber;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.fromLTRB(
+        AppSpacing.base,
+        AppSpacing.xl,
+        AppSpacing.base,
+        AppSpacing.xxl,
+      ),
+      child: Column(
+        children: [
+          // Compact app identity (no back button, no top padding)
+          Container(
+            width: 80,
+            height: 80,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withValues(alpha: 0.35),
+                  blurRadius: 24,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              child: SvgPicture.asset(
+                'assets/app-icon.svg',
+                width: 80,
+                height: 80,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.base),
+          const Text(
+            _kAppName,
+            style: TextStyle(
+              color: AppColors.textPrimary,
+              fontSize: 26,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          const Text(
+            _kAppTagline,
+            style: TextStyle(
+              color: AppColors.textSecondary,
+              fontSize: 13,
+            ),
+          ),
+          if (_version.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.md,
+                vertical: AppSpacing.xs,
+              ),
+              decoration: BoxDecoration(
+                color: AppColors.glassWhite,
+                borderRadius: BorderRadius.circular(AppRadius.full),
+                border: Border.all(color: AppColors.glassBorder, width: 1),
+              ),
+              child: Text(
+                'v$_version (build $_build)',
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.xl),
+          _AppInfoCard(),
+          const SizedBox(height: AppSpacing.md),
+          _PersonCard(
+            sectionTitle: 'Developer',
+            name: _kDeveloperName,
+            role: _kDeveloperRole,
+            avatarUrl: _kDeveloperAvatarUrl,
+            avatarIsCircle: true,
+            avatarFallbackGradient: const LinearGradient(
+              colors: [Color(0xFF1DB954), Color(0xFF00D2FF)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            githubUrl: _kDevGithubUrl,
+            githubLabel: _kDevGithubLabel,
+            webUrl: _kDevWebUrl,
+            webLabel: _kDevWebLabel,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _PersonCard(
+            sectionTitle: 'Organization',
+            name: _kOrgName,
+            role: _kOrgRole,
+            avatarUrl: _kOrgLogoUrl,
+            avatarIsCircle: false,
+            avatarFallbackGradient: const LinearGradient(
+              colors: [Color(0xFFFF6B35), Color(0xFFFF2D78)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            githubUrl: _kOrgGithubUrl,
+            githubLabel: _kOrgGithubLabel,
+            webUrl: _kOrgWebUrl,
+            webLabel: _kOrgWebLabel,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          _TechStackCard(),
+          const SizedBox(height: AppSpacing.xl),
+          _FooterText(),
+        ],
+      ),
+    );
+  }
+}
+
 // ─── Footer ───────────────────────────────────────────────────────────────────
 
 class _FooterText extends StatelessWidget {

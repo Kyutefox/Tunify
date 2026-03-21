@@ -44,9 +44,9 @@ class LibraryPlaylistsSection extends StatelessWidget {
   final List<LibrarySectionEntry> entries;
   final LibraryViewMode viewMode;
   final void Function(LibraryPlaylist) onPlaylistTap;
-  final void Function(LibraryPlaylist) onPlaylistOptions;
+  final void Function(LibraryPlaylist, Rect?) onPlaylistOptions;
   final void Function(LibraryFolder) onFolderTap;
-  final void Function(LibraryFolder) onFolderOptions;
+  final void Function(LibraryFolder, Rect?) onFolderOptions;
   /// When true and there are no entries (Playlists tab with no folders/playlists), show empty state.
   final bool showCreateFirstPlaylistEmptyState;
   /// When true, we're showing a folder's playlists; empty content shows folder empty message.
@@ -61,12 +61,11 @@ class LibraryPlaylistsSection extends StatelessWidget {
         isFolderView && contentEntries.isEmpty;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (showFolderEmptyState)
-            _SectionEmptyState(
+          if (showFolderEmptyState)            _SectionEmptyState(
               child: Text(
                 'No playlists in this folder',
                 style: TextStyle(
@@ -166,9 +165,9 @@ class _LibrarySectionGrid extends StatelessWidget {
 
   final List<LibrarySectionEntry> entries;
   final void Function(LibraryPlaylist) onPlaylistTap;
-  final void Function(LibraryPlaylist) onPlaylistOptions;
+  final void Function(LibraryPlaylist, Rect?) onPlaylistOptions;
   final void Function(LibraryFolder) onFolderTap;
-  final void Function(LibraryFolder) onFolderOptions;
+  final void Function(LibraryFolder, Rect?) onFolderOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -199,12 +198,12 @@ class _LibrarySectionGrid extends StatelessWidget {
           FolderEntry(:final folder) => _LibraryFolderGridCard(
               folder: folder,
               onTap: () => onFolderTap(folder),
-              onOptions: () => onFolderOptions(folder),
+              onOptions: (rect) => onFolderOptions(folder, rect),
             ),
           PlaylistEntry(:final playlist) => _LibraryPlaylistGridCard(
               playlist: playlist,
               onTap: () => onPlaylistTap(playlist),
-              onOptions: () => onPlaylistOptions(playlist),
+              onOptions: (rect) => onPlaylistOptions(playlist, rect),
             ),
         };
       },
@@ -289,7 +288,7 @@ class _LibraryPlaylistGridCard extends StatelessWidget {
 
   final LibraryPlaylist playlist;
   final VoidCallback onTap;
-  final VoidCallback onOptions;
+  final void Function(Rect?) onOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -298,7 +297,7 @@ class _LibraryPlaylistGridCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: onTap,
-      onLongPress: onOptions,
+      onLongPress: () => onOptions(null),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -353,12 +352,19 @@ class _LibraryPlaylistGridCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              GestureDetector(
-                onTap: onOptions,
-                child: AppIcon(
-                  icon: AppIcons.moreHoriz,
-                  color: AppColors.textMuted,
-                  size: 20,
+              Builder(
+                builder: (btnCtx) => GestureDetector(
+                  onTap: () {
+                    final box = btnCtx.findRenderObject() as RenderBox?;
+                    onOptions(box != null && box.hasSize
+                        ? box.localToGlobal(Offset.zero) & box.size
+                        : null);
+                  },
+                  child: AppIcon(
+                    icon: AppIcons.moreHoriz,
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
                 ),
               ),
             ],
@@ -385,13 +391,13 @@ class _LibraryFolderGridCard extends StatelessWidget {
 
   final LibraryFolder folder;
   final VoidCallback onTap;
-  final VoidCallback onOptions;
+  final void Function(Rect?) onOptions;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      onLongPress: onOptions,
+      onLongPress: () => onOptions(null),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -435,12 +441,19 @@ class _LibraryFolderGridCard extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
-              GestureDetector(
-                onTap: onOptions,
-                child: AppIcon(
-                  icon: AppIcons.moreHoriz,
-                  color: AppColors.textMuted,
-                  size: 20,
+              Builder(
+                builder: (btnCtx) => GestureDetector(
+                  onTap: () {
+                    final box = btnCtx.findRenderObject() as RenderBox?;
+                    onOptions(box != null && box.hasSize
+                        ? box.localToGlobal(Offset.zero) & box.size
+                        : null);
+                  },
+                  child: AppIcon(
+                    icon: AppIcons.moreHoriz,
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
                 ),
               ),
             ],
@@ -469,7 +482,7 @@ class _LibraryFolderListTile extends StatelessWidget {
 
   final LibraryFolder folder;
   final VoidCallback onTap;
-  final VoidCallback onOptions;
+  final void Function(Rect?) onOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -477,7 +490,7 @@ class _LibraryFolderListTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        onLongPress: onOptions,
+        onLongPress: () => onOptions(null),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -537,15 +550,22 @@ class _LibraryFolderListTile extends StatelessWidget {
                     color: AppColors.primary,
                   ),
                 ),
-              IconButton(
-                icon: AppIcon(
-                  icon: AppIcons.moreHoriz,
-                  size: 22,
+              Builder(
+                builder: (btnCtx) => IconButton(
+                  icon: AppIcon(
+                    icon: AppIcons.moreHoriz,
+                    size: 22,
+                    color: AppColors.textMuted,
+                  ),
+                  onPressed: () {
+                    final box = btnCtx.findRenderObject() as RenderBox?;
+                    onOptions(box != null && box.hasSize
+                        ? box.localToGlobal(Offset.zero) & box.size
+                        : null);
+                  },
                   color: AppColors.textMuted,
+                  iconSize: 22,
                 ),
-                onPressed: onOptions,
-                color: AppColors.textMuted,
-                iconSize: 22,
               ),
             ],
           ),
@@ -566,9 +586,9 @@ class _LibrarySectionList extends StatelessWidget {
 
   final List<LibrarySectionEntry> entries;
   final void Function(LibraryPlaylist) onPlaylistTap;
-  final void Function(LibraryPlaylist) onPlaylistOptions;
+  final void Function(LibraryPlaylist, Rect?) onPlaylistOptions;
   final void Function(LibraryFolder) onFolderTap;
-  final void Function(LibraryFolder) onFolderOptions;
+  final void Function(LibraryFolder, Rect?) onFolderOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -595,12 +615,12 @@ class _LibrarySectionList extends StatelessWidget {
           FolderEntry(:final folder) => _LibraryFolderListTile(
               folder: folder,
               onTap: () => onFolderTap(folder),
-              onOptions: () => onFolderOptions(folder),
+              onOptions: (rect) => onFolderOptions(folder, rect),
             ),
           PlaylistEntry(:final playlist) => _LibraryPlaylistListTile(
               playlist: playlist,
               onTap: () => onPlaylistTap(playlist),
-              onOptions: () => onPlaylistOptions(playlist),
+              onOptions: (rect) => onPlaylistOptions(playlist, rect),
             ),
         };
       },
@@ -700,7 +720,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
 
   final LibraryPlaylist playlist;
   final VoidCallback onTap;
-  final VoidCallback onOptions;
+  final void Function(Rect?) onOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -711,7 +731,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        onLongPress: onOptions,
+        onLongPress: () => onOptions(null),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: const EdgeInsets.symmetric(
@@ -780,15 +800,22 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                     color: AppColors.primary,
                   ),
                 ),
-              IconButton(
-                icon: AppIcon(
-                  icon: AppIcons.moreHoriz,
-                  size: 22,
+              Builder(
+                builder: (btnCtx) => IconButton(
+                  icon: AppIcon(
+                    icon: AppIcons.moreHoriz,
+                    size: 22,
+                    color: AppColors.textMuted,
+                  ),
+                  onPressed: () {
+                    final box = btnCtx.findRenderObject() as RenderBox?;
+                    onOptions(box != null && box.hasSize
+                        ? box.localToGlobal(Offset.zero) & box.size
+                        : null);
+                  },
                   color: AppColors.textMuted,
+                  iconSize: 22,
                 ),
-                onPressed: onOptions,
-                color: AppColors.textMuted,
-                iconSize: 22,
               ),
             ],
           ),

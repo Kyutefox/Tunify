@@ -8,6 +8,7 @@ import '../../models/library_folder.dart';
 import '../../models/library_playlist.dart';
 import '../../shared/providers/download_provider.dart';
 import '../../shared/providers/library_provider.dart';
+import '../components/shared/adaptive_menu.dart';
 import '../components/shared/library_filter_chips.dart';
 import '../components/shared/library_thumbnail_tile.dart';
 import '../components/ui/button.dart';
@@ -216,8 +217,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
 
             // ── Filter chips — passes folderName to show folder chip ───────
             Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.sm, vertical: 2),
+              padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.base, 0, AppSpacing.base, 2),
               child: LibraryFilterChips(
                 selectedFilter: _filter,
                 onFilterChanged: _onFilterChanged,
@@ -240,49 +241,69 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                       key: const ValueKey('search-field'),
                       padding: const EdgeInsets.fromLTRB(
                           AppSpacing.xs, 0, AppSpacing.xs, 2),
-                      child: Row(
-                        children: [
-                          AppIconButton(
-                            icon: AppIcon(
-                              icon: AppIcons.back,
-                              size: 20,
-                              color: AppColors.textPrimary,
-                            ),
-                            onPressed: _toggleSearch,
-                            size: 36,
-                            iconSize: 20,
-                          ),
-                          const SizedBox(width: AppSpacing.xs),
-                          Expanded(
-                            child: AppInputField(
-                              controller: _searchController,
-                              focusNode: _searchFocusNode,
-                              hintText: 'Search in Library',
-                              textInputAction: TextInputAction.search,
-                              style: InputFieldStyle.transparent,
-                              autofocus: true,
-                              onChanged: (v) =>
-                                  setState(() => _searchQuery = v),
-                            ),
-                          ),
-                          if (_searchQuery.isNotEmpty)
+                      child: Container(
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceLight,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          children: [
                             AppIconButton(
                               icon: AppIcon(
-                                icon: AppIcons.clear,
+                                icon: AppIcons.back,
                                 size: 18,
-                                color: AppColors.textMuted,
+                                color: AppColors.textSecondary,
                               ),
-                              onPressed: () {
-                                _searchController.clear();
-                                _searchFocusNode.unfocus();
-                                setState(() => _searchQuery = '');
-                              },
+                              onPressed: _toggleSearch,
                               size: 36,
                               iconSize: 18,
-                            )
-                          else
-                            const SizedBox(width: AppSpacing.sm),
-                        ],
+                            ),
+                            AppIcon(
+                              icon: AppIcons.search,
+                              size: 15,
+                              color: AppColors.textMuted,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Theme(
+                                data: Theme.of(context).copyWith(
+                                  inputDecorationTheme: const InputDecorationTheme(
+                                    border: InputBorder.none,
+                                    filled: false,
+                                  ),
+                                ),
+                                child: AppInputField(
+                                  controller: _searchController,
+                                  focusNode: _searchFocusNode,
+                                  hintText: 'Search in Library',
+                                  textInputAction: TextInputAction.search,
+                                  style: InputFieldStyle.transparent,
+                                  autofocus: true,
+                                  onChanged: (v) =>
+                                      setState(() => _searchQuery = v),
+                                ),
+                              ),
+                            ),
+                            if (_searchQuery.isNotEmpty)
+                              AppIconButton(
+                                icon: AppIcon(
+                                  icon: AppIcons.clear,
+                                  size: 15,
+                                  color: AppColors.textMuted,
+                                ),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  _searchFocusNode.unfocus();
+                                  setState(() => _searchQuery = '');
+                                },
+                                size: 36,
+                                iconSize: 15,
+                              )
+                            else
+                              const SizedBox(width: 8),
+                          ],
+                        ),
                       ),
                     )
                   : Padding(
@@ -292,68 +313,46 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                       child: Row(
                         children: [
                           // Sort order — desktop inline dropdown
-                          PopupMenuButton<LibrarySortOrder>(
-                            onSelected: (o) =>
-                                ref.read(libraryProvider.notifier).setSortOrder(o),
-                            color: AppColors.surfaceLight,
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10)),
-                            offset: const Offset(0, 28),
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: AppSpacing.sm,
-                                  vertical: AppSpacing.xs),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  AppIcon(
-                                    icon: AppIcons.sort,
-                                    color: AppColors.textSecondary,
-                                    size: 16,
-                                  ),
-                                  const SizedBox(width: AppSpacing.xs),
-                                  Text(
-                                    sortOrder.label,
-                                    style: const TextStyle(
+                          Builder(
+                            builder: (btnCtx) => GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: () {
+                                final box = btnCtx.findRenderObject() as RenderBox?;
+                                Rect? rect;
+                                if (box != null && box.hasSize) {
+                                  rect = box.localToGlobal(Offset.zero) & box.size;
+                                }
+                                showLibrarySortSheet(
+                                  context,
+                                  sortOrder,
+                                  (o) => ref.read(libraryProvider.notifier).setSortOrder(o),
+                                  anchorRect: rect,
+                                );
+                              },
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    vertical: AppSpacing.xs),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    AppIcon(
+                                      icon: AppIcons.sort,
                                       color: AppColors.textSecondary,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
+                                      size: 16,
                                     ),
-                                  ),
-                                ],
+                                    const SizedBox(width: AppSpacing.xs),
+                                    Text(
+                                      sortOrder.label,
+                                      style: const TextStyle(
+                                        color: AppColors.textSecondary,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
-                            itemBuilder: (_) => LibrarySortOrder.values
-                                .map(
-                                  (o) => PopupMenuItem<LibrarySortOrder>(
-                                    value: o,
-                                    child: Row(
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            o.label,
-                                            style: TextStyle(
-                                              color: o == sortOrder
-                                                  ? AppColors.primary
-                                                  : AppColors.textPrimary,
-                                              fontSize: 14,
-                                              fontWeight: o == sortOrder
-                                                  ? FontWeight.w600
-                                                  : FontWeight.w500,
-                                            ),
-                                          ),
-                                        ),
-                                        if (o == sortOrder)
-                                          AppIcon(
-                                            icon: AppIcons.check,
-                                            color: AppColors.primary,
-                                            size: 16,
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                                .toList(),
                           ),
                           const Spacer(),
                           // Search toggle
@@ -405,7 +404,22 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                       onPlaylistTap: _openPlaylist,
                     )
                   // ── Normal mode: full library list ─────────────────────────
-                  : ListView(
+                  : !hasContent
+                      ? LibraryFilterPlaceholder(
+                          icon: _filter == LibraryFilter.albums
+                              ? AppIcons.album
+                              : _filter == LibraryFilter.artists
+                                  ? AppIcons.artist
+                                  : AppIcons.playlist,
+                          message: _filter == LibraryFilter.playlists
+                              ? 'Playlists you create will appear here'
+                              : _filter == LibraryFilter.albums
+                                  ? 'Albums you save will appear here'
+                                  : _filter == LibraryFilter.artists
+                                      ? 'Artists you follow will appear here'
+                                      : 'Your library is empty.\nTap + to get started.',
+                        )
+                      : ListView(
                       padding: const EdgeInsets.only(bottom: 8),
                       children: [
                         // Folder open: show only that folder's playlists
@@ -425,49 +439,55 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                               entries: folderEntries,
                               viewMode: viewMode,
                               onPlaylistTap: _openPlaylist,
-                              onPlaylistOptions: (p) =>
+                              onPlaylistOptions: (p, rect) =>
                                   showLibraryPlaylistOptionsSheet(
-                                      context, ref, p),
+                                      context, ref, p, anchorRect: rect),
                               onFolderTap: _openFolderInline,
-                              onFolderOptions: (f) =>
+                              onFolderOptions: (f, rect) =>
                                   showLibraryFolderOptionsSheet(
-                                      context, ref, f),
+                                      context, ref, f, anchorRect: rect),
                             ),
                         ] else ...[
                           // Normal library list
                           if (downloadCount > 0)
-                            LibraryThumbnailTile(
-                              title: 'Downloads',
-                              subtitle: '$downloadCount songs',
-                              onTap: () => widget.onNavigateTo(
-                                  const LibraryDownloadedScreen()),
-                              icon: AppIcons.download,
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                              child: LibraryThumbnailTile(
+                                title: 'Downloads',
+                                subtitle: '$downloadCount songs',
+                                onTap: () => widget.onNavigateTo(
+                                    const LibraryDownloadedScreen()),
+                                icon: AppIcons.download,
+                              ),
                             ),
                           if (playlistEntries.isNotEmpty)
                             LibraryPlaylistsSection(
                               entries: playlistEntries,
                               viewMode: viewMode,
                               onPlaylistTap: _openPlaylist,
-                              onPlaylistOptions: (p) =>
+                              onPlaylistOptions: (p, rect) =>
                                   showLibraryPlaylistOptionsSheet(
-                                      context, ref, p),
+                                      context, ref, p, anchorRect: rect),
                               onFolderTap: _openFolderInline,
-                              onFolderOptions: (f) =>
+                              onFolderOptions: (f, rect) =>
                                   showLibraryFolderOptionsSheet(
-                                      context, ref, f),
+                                      context, ref, f, anchorRect: rect),
                             ),
 
                           if (albums.isNotEmpty) ...[
                             if (showAll)
                               const _SectionLabel(label: 'ALBUMS'),
                             for (final a in albums)
-                              LibraryThumbnailTile(
-                                thumbnailUrl: a.thumbnailUrl.isNotEmpty
-                                    ? a.thumbnailUrl
-                                    : null,
-                                title: a.title,
-                                subtitle: a.artistName,
-                                onTap: () => _openAlbum(a),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                                child: LibraryThumbnailTile(
+                                  thumbnailUrl: a.thumbnailUrl.isNotEmpty
+                                      ? a.thumbnailUrl
+                                      : null,
+                                  title: a.title,
+                                  subtitle: a.artistName,
+                                  onTap: () => _openAlbum(a),
+                                ),
                               ),
                           ],
 
@@ -475,19 +495,19 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                             if (showAll)
                               const _SectionLabel(label: 'ARTISTS'),
                             for (final a in artists)
-                              LibraryThumbnailTile(
-                                thumbnailUrl: a.thumbnailUrl.isNotEmpty
-                                    ? a.thumbnailUrl
-                                    : null,
-                                title: a.name,
-                                subtitle: 'Artist',
-                                isCircle: true,
-                                onTap: () => _openArtist(a),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+                                child: LibraryThumbnailTile(
+                                  thumbnailUrl: a.thumbnailUrl.isNotEmpty
+                                      ? a.thumbnailUrl
+                                      : null,
+                                  title: a.name,
+                                  subtitle: 'Artist',
+                                  isCircle: true,
+                                  onTap: () => _openArtist(a),
+                                ),
                               ),
                           ],
-
-                          if (!hasContent)
-                            _EmptyState(filter: _filter),
                         ],
                       ],
                     ),
@@ -501,7 +521,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
 
 // ── Create menu button ────────────────────────────────────────────────────────
 
-/// Shows a compact popup menu with "Create playlist" and "Create folder" options.
+/// Shows an adaptive menu (sheet on mobile, dropdown on desktop) with
+/// "Create playlist" and "Create folder" options.
 class _CreateMenuButton extends StatelessWidget {
   const _CreateMenuButton({
     required this.onCreatePlaylist,
@@ -513,53 +534,29 @@ class _CreateMenuButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return PopupMenuButton<_CreateOption>(
-      onSelected: (opt) {
-        if (opt == _CreateOption.playlist) onCreatePlaylist();
-        if (opt == _CreateOption.folder) onCreateFolder();
-      },
-      color: AppColors.surfaceLight,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      offset: const Offset(0, 36),
+    return AdaptiveMenuAnchor(
+      title: 'Create',
+      entries: [
+        AppMenuEntry(
+          icon: AppIcons.playlistAdd,
+          label: 'Create playlist',
+          onTap: onCreatePlaylist,
+        ),
+        AppMenuEntry(
+          icon: AppIcons.newFolder,
+          label: 'Create folder',
+          onTap: onCreateFolder,
+        ),
+      ],
       child: AppIconButton(
         icon: AppIcon(icon: AppIcons.add, size: 20, color: AppColors.textPrimary),
-        onPressed: null, // tap handled by PopupMenuButton
+        onPressed: null, // tap handled by AdaptiveMenuAnchor
         size: 36,
         iconSize: 20,
       ),
-      itemBuilder: (_) => [
-        PopupMenuItem(
-          value: _CreateOption.playlist,
-          child: Row(
-            children: [
-              AppIcon(icon: AppIcons.playlistAdd, size: 18, color: AppColors.textPrimary),
-              const SizedBox(width: 10),
-              const Text(
-                'Create playlist',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-        PopupMenuItem(
-          value: _CreateOption.folder,
-          child: Row(
-            children: [
-              AppIcon(icon: AppIcons.newFolder, size: 18, color: AppColors.textPrimary),
-              const SizedBox(width: 10),
-              const Text(
-                'Create folder',
-                style: TextStyle(color: AppColors.textPrimary, fontSize: 14),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }
-
-enum _CreateOption { playlist, folder }
 
 // ── Section label ─────────────────────────────────────────────────────────────
 
@@ -585,35 +582,4 @@ class _SectionLabel extends StatelessWidget {
   }
 }
 
-// ── Empty state ───────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({required this.filter});
-  final LibraryFilter? filter;
-
-  @override
-  Widget build(BuildContext context) {
-    final msg = filter == LibraryFilter.playlists
-        ? 'No playlists yet.\nTap Create to add one.'
-        : filter == LibraryFilter.albums
-            ? 'No followed albums yet.'
-            : filter == LibraryFilter.artists
-                ? 'No followed artists yet.'
-                : 'Your library is empty.\nTap Create to get started.';
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.xl, vertical: AppSpacing.xxl),
-      child: Text(
-        msg,
-        textAlign: TextAlign.center,
-        style: const TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 13,
-          height: 1.6,
-        ),
-      ),
-    );
-  }
-}
 

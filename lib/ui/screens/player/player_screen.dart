@@ -1,4 +1,5 @@
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -237,7 +238,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           onTap: () {
             final currentSong = ref.read(playerProvider).currentSong;
             if (currentSong == null) return;
-            showSongOptionsSheet(context, song: currentSong);
+            showSongOptionsSheet(context, song: currentSong, ref: ref);
           },
         ),
       ],
@@ -389,15 +390,37 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
 // ── Public sheet launchers — shared by PlayerScreen and DesktopPlayerBar ──────
 
-void showQueueSheet(BuildContext context) {
+void showQueueSheet(BuildContext context, {BuildContext? buttonContext}) {
+  if (_isDesktopPlatform()) {
+    _showDesktopQueuePanel(context, buttonContext: buttonContext);
+    return;
+  }
   showAppDraggableSheet(
     context,
     initialChildSize: 0.55,
     minChildSize: 0.3,
     maxChildSize: 0.85,
     builder: (scrollController) =>
-        _QueueSheetContent(scrollController: scrollController),
+        QueuePanelContent(scrollController: scrollController),
   );
+}
+
+bool _isDesktopPlatform() {
+  return defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.linux;
+}
+
+void _showDesktopQueuePanel(BuildContext context, {BuildContext? buttonContext}) {
+  final overlay = Overlay.of(context);
+  late OverlayEntry entry;
+  entry = OverlayEntry(
+    builder: (_) => _DesktopQueueOverlay(
+      onDismiss: () => entry.remove(),
+      anchorContext: buttonContext,
+    ),
+  );
+  overlay.insert(entry);
 }
 
 void showLyricsSheet(
@@ -427,7 +450,7 @@ void showLyricsSheet(
         top: BorderSide(color: Colors.white.withValues(alpha: 0.08), width: 1),
       ),
     ),
-    builder: (scrollController) => _LyricsSheetContent(
+    builder: (scrollController) => LyricsPanelContent(
       dominantColor: dominantColor,
       scrollController: scrollController,
     ),
@@ -441,7 +464,7 @@ void showDevicesSheet(BuildContext context) {
     minChildSize: 0.30,
     maxChildSize: 0.85,
     builder: (scrollController) =>
-        _DevicesSheetContent(scrollController: scrollController),
+        DevicesPanelContent(scrollController: scrollController),
   );
 }
 
@@ -729,15 +752,15 @@ class _SleepTimerChip extends StatelessWidget {
   }
 }
 
-class _DevicesSheetContent extends StatefulWidget {
-  const _DevicesSheetContent({required this.scrollController});
+class DevicesPanelContent extends StatefulWidget {
+  const DevicesPanelContent({super.key, required this.scrollController});
   final ScrollController scrollController;
 
   @override
-  State<_DevicesSheetContent> createState() => _DevicesSheetContentState();
+  State<DevicesPanelContent> createState() => _DevicesPanelContentState();
 }
 
-class _DevicesSheetContentState extends State<_DevicesSheetContent>
+class _DevicesPanelContentState extends State<DevicesPanelContent>
     with SingleTickerProviderStateMixin {
   final _service = DeviceDiscoveryService();
   AudioDevice _activeDevice = const AudioDevice(
@@ -1384,8 +1407,8 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
   }
 }
 
-class _QueueSheetContent extends ConsumerWidget {
-  const _QueueSheetContent({required this.scrollController});
+class QueuePanelContent extends ConsumerWidget {
+  const QueuePanelContent({super.key, required this.scrollController});
   final ScrollController scrollController;
 
   @override
@@ -1576,7 +1599,119 @@ class _QueueSheetContent extends ConsumerWidget {
   }
 }
 
-class _QueueItem extends StatelessWidget {
+// ── Desktop queue overlay panel ───────────────────────────────────────────────
+
+class _DesktopQueueOverlay extends StatefulWidget {
+  const _DesktopQueueOverlay({
+    required this.onDismiss,
+    this.anchorContext,
+  });
+
+  final VoidCallback onDismiss;
+  final BuildContext? anchorContext;
+
+  @override
+  State<_DesktopQueueOverlay> createState() => _DesktopQueueOverlayState();
+}
+
+class _DesktopQueueOverlayState extends State<_DesktopQueueOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 160),
+  )..forward();
+
+  final _scrollController = ScrollController();
+
+  void _dismiss() {
+    _ctrl.reverse().then((_) => widget.onDismiss());
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenSize = MediaQuery.sizeOf(context);
+    const panelWidth = 340.0;
+    const panelHeight = 480.0;
+
+    // Position: bottom-right area near the player bar
+    double left = screenSize.width - panelWidth - 16;
+    double top = screenSize.height - panelHeight - 100; // above player bar
+
+    // If anchor context provided, position near it
+    if (widget.anchorContext != null) {
+      final box = widget.anchorContext!.findRenderObject() as RenderBox?;
+      if (box != null && box.hasSize) {
+        final offset = box.localToGlobal(Offset.zero);
+        left = (offset.dx - panelWidth + box.size.width).clamp(8.0, screenSize.width - panelWidth - 8);
+        top = offset.dy - panelHeight - 4;
+        if (top < 8) top = offset.dy + box.size.height + 4;
+      }
+    }
+
+    return Stack(
+      children: [
+        // Dismiss barrier
+        Positioned.fill(
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _dismiss,
+          ),
+        ),
+        // Panel
+        Positioned(
+          top: top,
+          left: left,
+          width: panelWidth,
+          height: panelHeight,
+          child: FadeTransition(
+            opacity: CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+            child: ScaleTransition(
+              scale: Tween<double>(begin: 0.94, end: 1.0).animate(
+                CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic),
+              ),
+              alignment: Alignment.bottomRight,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                      width: 0.5,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        blurRadius: 24,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: QueuePanelContent(
+                      scrollController: _scrollController,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _QueueItem extends ConsumerWidget {
   const _QueueItem({
     super.key,
     required this.song,
@@ -1590,7 +1725,7 @@ class _QueueItem extends StatelessWidget {
   final Widget? dragHandle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.only(top: 4, bottom: 4),
       child: Row(
@@ -1622,10 +1757,12 @@ class _QueueItem extends StatelessWidget {
                       color: AppColors.textMuted,
                       size: 20,
                     ),
-                    onPressed: () => showSongOptionsSheet(
+                    onPressedWithContext: (btnCtx) => showSongOptionsSheet(
                       context,
                       song: song,
+                      ref: ref,
                       queueIndex: queueIndex,
+                      buttonContext: btnCtx,
                     ),
                     iconSize: 20,
                     size: 40,
@@ -1646,20 +1783,21 @@ class _QueueItem extends StatelessWidget {
 }
 
 
-class _LyricsSheetContent extends ConsumerStatefulWidget {
-  const _LyricsSheetContent({
-    required this.dominantColor,
+class LyricsPanelContent extends ConsumerStatefulWidget {
+  const LyricsPanelContent({
+    super.key,
+    this.dominantColor = AppColors.primary,
     required this.scrollController,
   });
   final Color dominantColor;
   final ScrollController scrollController;
 
   @override
-  ConsumerState<_LyricsSheetContent> createState() =>
-      _LyricsSheetContentState();
+  ConsumerState<LyricsPanelContent> createState() =>
+      _LyricsPanelContentState();
 }
 
-class _LyricsSheetContentState extends ConsumerState<_LyricsSheetContent> {
+class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
   List<GlobalKey> _lineKeys = [];
   int _activeIndex = -1;
   ProviderSubscription<Duration>? _positionSubscription;

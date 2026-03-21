@@ -1,18 +1,11 @@
 import 'dart:async';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../config/app_icons.dart';
-import '../../shared/providers/auth_provider.dart';
-import '../../shared/providers/guest_profile_provider.dart';
 import '../../shared/providers/search_provider.dart';
-import '../screens/guest_profile_setup_screen.dart';
-import '../screens/home/home_settings_sheet.dart';
-import '../screens/home/home_shared.dart';
-import '../screens/home/home_user_menu.dart';
-import '../components/ui/sheet.dart';
+import '../components/shared/user_avatar_button.dart';
 import '../theme/app_colors.dart';
 
 /// Full-width top bar spanning both sidebar and content area.
@@ -32,6 +25,7 @@ class DesktopTopBar extends ConsumerStatefulWidget {
     required this.onForward,
     required this.onHomePressed,
     required this.onSearchActivated,
+    required this.onBrowsePressed,
     required this.searchController,
     required this.searchFocusNode,
     required this.sidebarWidth,
@@ -47,6 +41,9 @@ class DesktopTopBar extends ConsumerStatefulWidget {
 
   /// Called when the user activates the search bar (shell opens overlay).
   final ValueChanged<String> onSearchActivated;
+
+  /// Called when the Browse button is tapped.
+  final VoidCallback onBrowsePressed;
 
   /// Owned by the shell so it can programmatically update the text.
   final TextEditingController searchController;
@@ -113,207 +110,75 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar> {
     });
   }
 
-  void _showUserMenu(BuildContext context, String username, String? email) {
-    final isGuest = ref.read(guestModeProvider);
-    showRawSheet(
-      context,
-      child: HomeUserMenuSheet(
-        username: username,
-        email: email,
-        onSignOut: () async {
-          Navigator.of(context).pop();
-          if (isGuest) {
-            ref.read(guestModeProvider.notifier).exitGuestMode();
-          } else {
-            await ref.read(authNotifierProvider.notifier).signOut();
-          }
-        },
-        onSettings: () {
-          Navigator.of(context).pop();
-          showRawSheet(context, child: const HomeSettingsSheet());
-        },
-        onEditProfile: isGuest
-            ? () {
-                Navigator.of(context).pop();
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) =>
-                        const GuestProfileSetupScreen(isInitial: false),
-                  ),
-                );
-              }
-            : null,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(currentUserProvider);
-    final isGuest = ref.watch(guestModeProvider);
-    final guestUsername =
-        isGuest ? ref.watch(guestUsernameProvider).value : null;
-    final username = (user?.userMetadata?['username'] as String?) ??
-        (user?.email?.split('@').first) ??
-        (isGuest ? (guestUsername ?? 'Guest') : 'V');
-    final avatarUrl =
-        'https://api.dicebear.com/9.x/fun-emoji/png?seed=${Uri.encodeComponent(username)}&size=72';
-
     return Container(
       height: 64,
       color: AppColors.surface,
-      child: Row(
+      child: Stack(
         children: [
-          // ── Back / Forward — sits above the sidebar ──────────────────────
-          SizedBox(
-            width: widget.sidebarWidth,
+          // ── Left: back/forward above sidebar | Right: avatar ─────────────
+          Positioned.fill(
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                _NavArrowBtn(
-                  icon: AppIcons.back,
-                  enabled: widget.canGoBack,
-                  onTap: widget.onBack,
+              SizedBox(
+                width: widget.sidebarWidth,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _NavArrowBtn(
+                      icon: AppIcons.back,
+                      enabled: widget.canGoBack,
+                      onTap: widget.onBack,
+                    ),
+                    const SizedBox(width: 10),
+                    _NavArrowBtn(
+                      icon: AppIcons.forward,
+                      enabled: widget.canGoForward,
+                      onTap: widget.onForward,
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 10),
-                _NavArrowBtn(
-                  icon: AppIcons.forward,
-                  enabled: widget.canGoForward,
-                  onTap: widget.onForward,
-                ),
-              ],
+              ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: const UserAvatarButton(),
+              ),
+            ],
             ),
           ),
 
-          // Gap that mirrors the 8 px gutter between sidebar and content
-          const SizedBox(width: 8),
-
-          // ── Main content section — home · search · avatar ────────────────
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16),
-              child: Row(
-                children: [
-                  // Home button left of the search bar
-                  _HomeBtn(
-                    isActive: widget.selectedIndex == 0,
-                    onTap: widget.onHomePressed,
-                  ),
-                  const SizedBox(width: 8),
-
-                  // Search bar fills remaining space
-                  Expanded(
-                    child: TapRegion(
-                      groupId: 'desktop-search',
-                      child: Container(
-                        height: 36,
-                        decoration: BoxDecoration(
-                          color: Colors.transparent,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: (_hasFocus || widget.isSearchOverlayOpen)
-                                ? Colors.white.withValues(alpha: 0.6)
-                                : Colors.white.withValues(alpha: 0.18),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            const SizedBox(width: 12),
-                            AppIcon(
-                              icon: AppIcons.search,
-                              size: 16,
-                              color: AppColors.textSecondary,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextField(
-                                controller: widget.searchController,
-                                focusNode: widget.searchFocusNode,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                                decoration: const InputDecoration(
-                                  hintText: 'What do you want to play?',
-                                  hintStyle: TextStyle(
-                                    color: AppColors.textMuted,
-                                    fontSize: 13,
-                                  ),
-                                  border: InputBorder.none,
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.zero,
-                                ),
-                                onChanged: _onChanged,
-                                onSubmitted: _onSubmit,
-                              ),
-                            ),
-                            if (widget.searchController.text.isNotEmpty) ...[
-                              GestureDetector(
-                                onTap: () {
-                                  widget.searchController.clear();
-                                  _onChanged('');
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 10),
-                                  child: AppIcon(
-                                    icon: AppIcons.close,
-                                    size: 14,
-                                    color: AppColors.textSecondary,
-                                  ),
-                                ),
-                              ),
-                            ] else
-                              const SizedBox(width: 12),
-                          ],
-                        ),
-                      ),
+          // ── Center: home + search bar — true screen center ───────────────
+          Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _HomeBtn(
+                  isActive: widget.selectedIndex == 0,
+                  onTap: widget.onHomePressed,
+                ),
+                const SizedBox(width: 8),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 380),
+                  child: TapRegion(
+                    groupId: 'desktop-search',
+                    child: _DesktopSearchBar(
+                      controller: widget.searchController,
+                      focusNode: widget.searchFocusNode,
+                      isActive: _hasFocus || widget.isSearchOverlayOpen,
+                      onChanged: _onChanged,
+                      onSubmitted: _onSubmit,
+                      onClear: () {
+                        widget.searchController.clear();
+                        _onChanged('');
+                      },
+                      onBrowse: widget.onBrowsePressed,
                     ),
                   ),
-                  const SizedBox(width: 12),
-
-                  // Avatar
-                  GestureDetector(
-                    onTap: () => _showUserMenu(context, username, user?.email),
-                    child: ClipOval(
-                      clipBehavior: Clip.hardEdge,
-                      child: CachedNetworkImage(
-                        imageUrl: avatarUrl,
-                        width: 36,
-                        height: 36,
-                        fit: BoxFit.cover,
-                        fadeInDuration: Duration.zero,
-                        fadeOutDuration: Duration.zero,
-                        memCacheWidth: cachePx(context, 36),
-                        memCacheHeight: cachePx(context, 36),
-                        placeholder: (_, __) => Container(
-                          width: 36,
-                          height: 36,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: AppColors.primaryGradient,
-                          ),
-                        ),
-                        errorWidget: (_, __, ___) => Container(
-                          width: 36,
-                          height: 36,
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: AppColors.primaryGradient,
-                          ),
-                          child: AppIcon(
-                            icon: AppIcons.person,
-                            color: Colors.white,
-                            size: 18,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -361,6 +226,134 @@ class _NavArrowBtn extends StatelessWidget {
   }
 }
 
+/// Clean single-layer search bar for the desktop top bar.
+/// Matches the mobile _SearchBarPlaceholder style: filled container with a
+/// single border, search icon, and a fully transparent TextField inside —
+/// no double-border / double-background artefact.
+class _DesktopSearchBar extends StatelessWidget {
+  const _DesktopSearchBar({
+    required this.controller,
+    required this.focusNode,
+    required this.isActive,
+    required this.onChanged,
+    required this.onSubmitted,
+    required this.onClear,
+    required this.onBrowse,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool isActive;
+  final ValueChanged<String> onChanged;
+  final ValueChanged<String> onSubmitted;
+  final VoidCallback onClear;
+  final VoidCallback onBrowse;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 36,
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isActive
+              ? Colors.white.withValues(alpha: 0.55)
+              : Colors.transparent,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          const SizedBox(width: 12),
+          AppIcon(icon: AppIcons.search, size: 16, color: AppColors.textMuted),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Theme(
+              data: Theme.of(context).copyWith(
+                textSelectionTheme: const TextSelectionThemeData(
+                  cursorColor: Colors.white,
+                ),
+                inputDecorationTheme: const InputDecorationTheme(
+                  border: InputBorder.none,
+                  filled: false,
+                ),
+              ),
+              child: TextField(
+                controller: controller,
+                focusNode: focusNode,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'What do you want to play?',
+                  hintStyle: TextStyle(
+                    color: AppColors.textMuted.withValues(alpha: 0.7),
+                    fontSize: 13,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  isDense: true,
+                  contentPadding: EdgeInsets.zero,
+                ),
+                onChanged: onChanged,
+                onSubmitted: onSubmitted,
+              ),
+            ),
+          ),
+          if (controller.text.isNotEmpty)
+            GestureDetector(
+              onTap: onClear,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: AppIcon(
+                    icon: AppIcons.close,
+                    size: 14,
+                    color: AppColors.textSecondary),
+              ),
+            ),
+          // Divider
+          Container(
+            width: 1,
+            height: 18,
+            color: AppColors.textMuted.withValues(alpha: 0.3),
+          ),
+          // Browse button
+          GestureDetector(
+            onTap: onBrowse,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 10),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AppIcon(
+                      icon: AppIcons.gridView,
+                      size: 14,
+                      color: AppColors.textSecondary),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Browse',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _HomeBtn extends StatelessWidget {
   const _HomeBtn({required this.isActive, required this.onTap});
 
@@ -375,15 +368,17 @@ class _HomeBtn extends StatelessWidget {
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(
-          color: isActive ? Colors.white : AppColors.surfaceLight,
+        decoration: const BoxDecoration(
+          color: Colors.white,
           shape: BoxShape.circle,
         ),
         child: Center(
           child: AppIcon(
             icon: AppIcons.home,
             size: 20,
-            color: isActive ? AppColors.background : AppColors.textSecondary,
+            color: isActive
+                ? AppColors.background
+                : AppColors.background.withValues(alpha: 0.45),
           ),
         ),
       ),

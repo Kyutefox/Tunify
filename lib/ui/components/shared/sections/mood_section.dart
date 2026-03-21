@@ -13,7 +13,11 @@ import '../../../../ui/layout/shell_context.dart';
 /// Mood section: moods and genres from the main home feed API.
 /// Shows skeleton while home is loading; uses [moodsProvider] when loaded.
 class MoodSection extends ConsumerWidget {
-  const MoodSection({super.key});
+  const MoodSection({super.key, this.showAll = false});
+
+  /// When true, shows all moods with "Browse All" header and no "See all" button.
+  /// When false (default), shows [_visibleCount] moods with "Browse By Mood" header.
+  final bool showAll;
 
   static const int _visibleCount = 8;
 
@@ -23,23 +27,26 @@ class MoodSection extends ConsumerWidget {
     final moods = ref.watch(moodsProvider);
 
     if (isLoading && moods.isEmpty) {
-      return const _MoodSectionSkeleton();
+      return _MoodSectionSkeleton(showAll: showAll);
     }
     if (moods.isEmpty) return const SizedBox.shrink();
 
-    final visible = moods.take(_visibleCount).toList(growable: false);
-    final hasSeeAll = moods.length > _visibleCount;
+    final visible = showAll ? moods : moods.take(_visibleCount).toList(growable: false);
+    final hasSeeAll = !showAll && moods.length > _visibleCount;
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SectionHeader(
-          title: 'Browse By Mood',
+          title: showAll ? 'Browse All' : 'Browse By Mood',
           seeAllLabel: hasSeeAll ? 'See all' : null,
           onSeeAll: hasSeeAll
               ? () => showMoodBrowseSheet(context, moods: moods)
               : null,
           useCompactStyle: true,
+          padding: EdgeInsets.fromLTRB(hPad, 0, hPad, AppSpacing.md),
         ),
         _MoodGrid(visibleMoods: visible, allMoods: moods),
         const SizedBox(height: AppSpacing.xxl),
@@ -56,8 +63,7 @@ class _MoodGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = ShellContext.isDesktopOf(context);
-    final columns = isDesktop ? 4 : 2;
-    final aspectRatio = isDesktop ? 3.5 : 3.0;
+    final columns = isDesktop ? 5 : 2;
     final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
 
     return Padding(
@@ -67,9 +73,9 @@ class _MoodGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columns,
-          crossAxisSpacing: AppSpacing.md,
-          mainAxisSpacing: AppSpacing.md,
-          childAspectRatio: aspectRatio,
+          crossAxisSpacing: AppSpacing.sm,
+          mainAxisSpacing: AppSpacing.sm,
+          childAspectRatio: 1.6,
         ),
         itemCount: visibleMoods.length,
         itemBuilder: (_, i) {
@@ -79,29 +85,28 @@ class _MoodGrid extends StatelessWidget {
               HapticFeedback.lightImpact();
               showMoodBrowseSheet(context, initialMood: mood, moods: allMoods);
             },
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: mood.gradient,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppSpacing.md,
-                vertical: AppSpacing.sm,
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  mood.label,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    shadows: [
-                      Shadow(color: Colors.black26, blurRadius: 4),
-                    ],
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: mood.gradient,
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Align(
+                  alignment: Alignment.bottomLeft,
+                  child: Text(
+                    mood.label,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      shadows: [
+                        Shadow(color: Colors.black38, blurRadius: 6),
+                      ],
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
@@ -113,38 +118,40 @@ class _MoodGrid extends StatelessWidget {
 }
 
 class _MoodSectionSkeleton extends StatelessWidget {
-  const _MoodSectionSkeleton();
+  const _MoodSectionSkeleton({this.showAll = false});
+
+  final bool showAll;
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = ShellContext.isDesktopOf(context);
-    final columns = isDesktop ? 4 : 2;
-    final aspectRatio = isDesktop ? 3.5 : 3.0;
+    final columns = isDesktop ? 5 : 2;
     final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionHeader(
-          title: 'Browse By Mood',
+        SectionHeader(
+          title: showAll ? 'Browse All' : 'Browse By Mood',
           useCompactStyle: true,
+          padding: EdgeInsets.fromLTRB(hPad, 0, hPad, AppSpacing.md),
         ),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: hPad),
-          child: GridView.count(
+          child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: columns,
-            crossAxisSpacing: AppSpacing.md,
-            mainAxisSpacing: AppSpacing.md,
-            childAspectRatio: aspectRatio,
-            children: List.generate(
-              8,
-              (_) => Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                ),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: columns,
+              crossAxisSpacing: AppSpacing.sm,
+              mainAxisSpacing: AppSpacing.sm,
+              childAspectRatio: 1.6,
+            ),
+            itemCount: 10,
+            itemBuilder: (_, __) => Container(
+              decoration: BoxDecoration(
+                color: AppColors.surfaceLight,
+                borderRadius: BorderRadius.circular(AppRadius.md),
               ),
             ),
           ),

@@ -1475,7 +1475,12 @@ class PlayerNotifier extends Notifier<PlayerState> {
     state = state.copyWith(queue: newQueue);
 
     // Append to the just_audio playlist if it has been set up.
-    if (_usingPlaylist && _hasLoadedSource) {
+    // iOS/macOS use single-source mode (setAudioSource). Calling addToPlaylist
+    // causes just_audio to wrap into a ConcatenatingAudioSource and emit the
+    // combined duration of both songs, breaking the seek bar. Queue advance is
+    // handled by _syncPlaylistToQueue reloading per song on those platforms.
+    if (_usingPlaylist && _hasLoadedSource &&
+        !Platform.isIOS && !Platform.isMacOS) {
       try {
         final source = await _audioRepository
             .resolveToAudioSource(song)

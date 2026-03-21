@@ -8,6 +8,7 @@ import '../../../models/playlist.dart';
 import '../../../models/song.dart';
 import '../../../shared/providers/home_state_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
+import '../../desktop/desktop_right_sidebar.dart';
 import '../../layout/shell_context.dart';
 import '../../theme/app_colors.dart';
 import '../../components/ui/widgets/section_header.dart';
@@ -106,7 +107,13 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection> {
     final isLoading = ref.watch(homeIsLoadingProvider);
     final quickPicks = ref.watch(quickPicksProvider);
     final isDesktop = ShellContext.isDesktopOf(context);
-    final cols = isDesktop ? 5 : 2;
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final rightOpen = isDesktop && ref.watch(rightSidebarTabProvider) != null;
+    final screenW = MediaQuery.sizeOf(context).width;
+    final maxWidth = isDesktop
+        ? ShellContext.desktopContentInnerWidth(screenWidth: screenW, rightSidebarOpen: rightOpen, hPad: hPad)
+        : screenW - hPad * 2;
+    final cols = isDesktop ? (maxWidth / 200).floor().clamp(2, 5) : 2;
     final hasOverflow = quickPicks.length > cols * 4;
 
     return SectionAsyncSwap(
@@ -341,8 +348,7 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav> {
     super.dispose();
   }
 
-  bool get _hasOverflow {
-    final cols = widget.isDesktop ? 5 : 2;
+  bool _hasOverflow(int cols) {
     const rows = 1;
     final pageSize = cols * rows;
     if (widget.type == HomeSectionType.playlists) return widget.playlists.length > pageSize;
@@ -353,7 +359,15 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav> {
   @override
   Widget build(BuildContext context) {
     final ctrl = widget.pageController;
-    final showNav = ctrl != null && _hasOverflow;
+    final isDesktop = widget.isDesktop;
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final rightOpen = isDesktop && ref.watch(rightSidebarTabProvider) != null;
+    final screenW = MediaQuery.sizeOf(context).width;
+    final maxWidth = isDesktop
+        ? ShellContext.desktopContentInnerWidth(screenWidth: screenW, rightSidebarOpen: rightOpen, hPad: hPad)
+        : screenW - hPad * 2;
+    final cols = isDesktop ? (maxWidth / 160).floor().clamp(2, 5) : 2;
+    final showNav = ctrl != null && _hasOverflow(cols);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,7 +465,13 @@ class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection> {
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
     final isDesktop = ShellContext.isDesktopOf(context);
     final hasDynamicPlaylists = dynamicSections.any((s) => s.type == HomeSectionType.playlists);
-    final cols = isDesktop ? 5 : 2;
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final rightOpen = isDesktop && ref.watch(rightSidebarTabProvider) != null;
+    final screenW = MediaQuery.sizeOf(context).width;
+    final maxWidth = isDesktop
+        ? ShellContext.desktopContentInnerWidth(screenWidth: screenW, rightSidebarOpen: rightOpen, hPad: hPad)
+        : screenW - hPad * 2;
+    final cols = isDesktop ? (maxWidth / 160).floor().clamp(2, 5) : 2;
     final hasOverflow = playlists.length > cols;
 
     return SectionAsyncSwap(
@@ -536,7 +556,13 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection> {
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
     final isDesktop = ShellContext.isDesktopOf(context);
     final hasDynamicArtists = dynamicSections.any((s) => s.type == HomeSectionType.artists);
-    final cols = isDesktop ? 5 : 2;
+    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final rightOpen = isDesktop && ref.watch(rightSidebarTabProvider) != null;
+    final screenW = MediaQuery.sizeOf(context).width;
+    final maxWidth = isDesktop
+        ? ShellContext.desktopContentInnerWidth(screenWidth: screenW, rightSidebarOpen: rightOpen, hPad: hPad)
+        : screenW - hPad * 2;
+    final cols = isDesktop ? (maxWidth / 160).floor().clamp(2, 5) : 2;
     final hasOverflow = artists.length > cols;
 
     return SectionAsyncSwap(
@@ -587,3 +613,4 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection> {
     );
   }
 }
+

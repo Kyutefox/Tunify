@@ -11,6 +11,7 @@ import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
 import '../../ui/widgets/section_header.dart';
 import '../../../../ui/layout/shell_context.dart';
+import '../../../../ui/desktop/desktop_right_sidebar.dart';
 
 class RecentlyPlayedSection extends ConsumerStatefulWidget {
   const RecentlyPlayedSection({super.key, required this.onPlay});
@@ -46,10 +47,52 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
     if (songs.isEmpty) return const SizedBox(height: AppSpacing.sm);
 
     final isDesktop = ShellContext.isDesktopOf(context);
-    final cols = isDesktop ? 5 : 2;
     final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
     const gap = AppSpacing.md;
+
+    final double maxWidth;
+    final int cols;
+    if (isDesktop) {
+      final rightOpen = ref.watch(rightSidebarTabProvider) != null;
+      final screenW = MediaQuery.sizeOf(context).width;
+      maxWidth = ShellContext.desktopContentInnerWidth(
+        screenWidth: screenW,
+        rightSidebarOpen: rightOpen,
+        hPad: hPad,
+      );
+      cols = (maxWidth / 160).floor().clamp(2, 5);
+    } else {
+      maxWidth = MediaQuery.sizeOf(context).width - hPad * 2;
+      cols = 2;
+    }
+
     final hasOverflow = songs.length > cols;
+    final tileW = ((maxWidth - gap * (cols - 1)) / cols).floorToDouble();
+    final tileH = tileW + 40.0;
+
+    final pageItems = songs.take(cols).toList();
+    final overflowPage = hasOverflow
+        ? songs.sublist(cols).take(cols).toList()
+        : <Song>[];
+
+    Widget buildRow(List<Song> items) => Row(
+          children: [
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0) const SizedBox(width: gap),
+              SizedBox(
+                width: tileW,
+                child: _RecentSongCard(
+                  song: items[i],
+                  size: tileW,
+                  onTap: () {
+                    HapticFeedback.lightImpact();
+                    widget.onPlay(items[i]);
+                  },
+                ),
+              ),
+            ],
+          ],
+        );
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -106,44 +149,13 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
         ),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: hPad),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final tileW = (constraints.maxWidth - gap * (cols - 1)) / cols;
-              final tileH = tileW + 40.0;
-
-              final pageItems = songs.take(cols).toList();
-              final overflowPage = hasOverflow
-                  ? songs.sublist(cols).take(cols).toList()
-                  : <Song>[];
-
-              Widget buildRow(List<Song> items) => Row(
-                    children: [
-                      for (var i = 0; i < items.length; i++) ...[
-                        if (i > 0) const SizedBox(width: gap),
-                        SizedBox(
-                          width: tileW,
-                          child: _RecentSongCard(
-                            song: items[i],
-                            size: tileW,
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              widget.onPlay(items[i]);
-                            },
-                          ),
-                        ),
-                      ],
-                    ],
-                  );
-
-              if (!hasOverflow) return buildRow(pageItems);
-
-              return _RecentlyPlayedPager(
-                height: tileH,
-                controller: _pageCtrl,
-                pages: [buildRow(pageItems), buildRow(overflowPage)],
-              );
-            },
-          ),
+          child: hasOverflow
+              ? _RecentlyPlayedPager(
+                  height: tileH,
+                  controller: _pageCtrl,
+                  pages: [buildRow(pageItems), buildRow(overflowPage)],
+                )
+              : buildRow(pageItems),
         ),
         const SizedBox(height: AppSpacing.xxl),
       ],
@@ -271,3 +283,5 @@ class _RecentSongCard extends StatelessWidget {
     );
   }
 }
+
+

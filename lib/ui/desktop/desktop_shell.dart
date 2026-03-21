@@ -47,7 +47,19 @@ class DesktopShell extends ConsumerStatefulWidget {
   ConsumerState<DesktopShell> createState() => _DesktopShellState();
 }
 
-class _DesktopShellState extends ConsumerState<DesktopShell> {
+class _DesktopShellState extends ConsumerState<DesktopShell>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _sidebarAnim = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 220),
+  );
+  late final Animation<Offset> _sidebarSlide = Tween<Offset>(
+    begin: const Offset(1.0, 0.0),
+    end: Offset.zero,
+  ).animate(CurvedAnimation(parent: _sidebarAnim, curve: Curves.easeInOutCubic));
+
+  // Track whether the sidebar is logically open so we can snap layout width.
+  bool _sidebarOpen = false;
   /// 0 = Home · 1 = Search (unused on desktop) · 2 = Library
   int _selectedIndex = 0;
 
@@ -84,6 +96,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
 
   @override
   void dispose() {
+    _sidebarAnim.dispose();
     _tabIndexNotifier.dispose();
     _searchController.dispose();
     _searchFocusNode.dispose();
@@ -199,6 +212,15 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
     final rightTab = ref.watch(rightSidebarTabProvider);
     final screenWidth = MediaQuery.sizeOf(context).width;
 
+    // Drive animation when sidebar open/close state changes.
+    if (rightTab != null && !_sidebarOpen) {
+      _sidebarOpen = true;
+      _sidebarAnim.forward();
+    } else if (rightTab == null && _sidebarOpen) {
+      _sidebarOpen = false;
+      _sidebarAnim.reverse();
+    }
+
     // Home btn (40) + gap (8) + search bar (maxWidth 380) are centered on the full screen.
     const homeBtnWidth = 40.0 + 8.0;
     const searchMaxWidth = 380.0;
@@ -285,25 +307,21 @@ class _DesktopShellState extends ConsumerState<DesktopShell> {
                       ),
                     ),
 
-                    // Right sidebar — slides in/out via AnimatedSize
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 240),
-                      curve: Curves.easeInOutCubic,
-                      alignment: Alignment.centerRight,
-                      child: rightTab != null
-                          ? Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const SizedBox(width: _gap),
-                                ClipRRect(
-                                  borderRadius:
-                                      BorderRadius.circular(_radius),
-                                  child: const DesktopRightSidebar(),
-                                ),
-                              ],
-                            )
-                          : const SizedBox.shrink(),
-                    ),
+                    // Right sidebar — layout snaps instantly, content slides visually.
+                    // Using SlideTransition on content only means LayoutBuilder in
+                    // the main content area never fires during the animation.
+                    if (_sidebarOpen) ...[
+                      const SizedBox(width: _gap),
+                      ClipRect(
+                        child: SlideTransition(
+                          position: _sidebarSlide,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(_radius),
+                            child: const DesktopRightSidebar(),
+                          ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),

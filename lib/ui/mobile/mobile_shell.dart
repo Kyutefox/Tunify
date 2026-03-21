@@ -76,7 +76,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
           mainAxisSize: MainAxisSize.min,
           children: [
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 300),
+              duration: AppDuration.fast,
               transitionBuilder: (child, anim) => SizeTransition(
                 sizeFactor: CurvedAnimation(
                   parent: anim,

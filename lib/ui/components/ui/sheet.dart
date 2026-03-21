@@ -250,6 +250,7 @@ void showRawSheet(
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.5),
     builder: (_) => child,
   );
 }
@@ -271,6 +272,7 @@ void showAppSheet(
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.5),
     builder: (_) => AppSheet(
       showDragHandle: showDragHandle,
       useSafeAreaBottom: useSafeAreaBottom,
@@ -298,6 +300,7 @@ void showAppDraggableSheet(
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
+    barrierColor: Colors.black.withValues(alpha: 0.5),
     builder: (_) => AppDraggableSheet(
       initialChildSize: initialChildSize,
       minChildSize: minChildSize,

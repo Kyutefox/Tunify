@@ -16,17 +16,15 @@ void openFullPlayerRoute(BuildContext context) {
       opaque: true,
       barrierColor: Colors.black,
       pageBuilder: (_, __, ___) => const PlayerScreen(),
-      transitionDuration: const Duration(milliseconds: 420),
-      reverseTransitionDuration: const Duration(milliseconds: 340),
+      transitionDuration: const Duration(milliseconds: 320),
+      reverseTransitionDuration: const Duration(milliseconds: 260),
       transitionsBuilder: (_, anim, __, child) {
-        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic);
+        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic, reverseCurve: Curves.easeOutCubic);
         return FadeTransition(
-          opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
-            CurvedAnimation(parent: anim, curve: const Interval(0.0, 0.6, curve: Curves.easeOut)),
-          ),
+          opacity: curved,
           child: SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(0, 0.06),
+              begin: const Offset(0, 0.04),
               end: Offset.zero,
             ).animate(curved),
             child: child,

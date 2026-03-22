@@ -38,9 +38,6 @@ class LibraryScreen extends ConsumerStatefulWidget {
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-/// Duration for chip and content transitions; must match LibraryAppBar.
-const _chipTransitionDuration = Duration(milliseconds: 320);
-
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   /// Drives the chip row.
   LibraryFilter? _filter;
@@ -49,8 +46,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   DownloadedSource _downloadedSource = DownloadedSource.library;
   /// When non-null, section shows this folder's playlists with a back row instead of main list.
   String? _selectedFolderId;
-  /// Used to skip AnimatedSize when only view mode (list/grid) changed.
-  LibraryViewMode? _previousViewMode;
 
   void _unfocus() => FocusManager.instance.primaryFocus?.unfocus();
 
@@ -197,6 +192,28 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
     final isDesktop = ShellContext.isDesktopOf(context);
 
+    // Key that changes whenever the displayed section changes.
+    final contentKey = ValueKey('$_contentFilter-$_selectedFolderId');
+
+    Widget buildScrollView(bool withRefresh) {
+      final scrollView = CustomScrollView(
+        key: contentKey,
+        physics: withRefresh
+            ? const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics())
+            : const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+        slivers: [
+          ..._buildContentSlivers(viewMode, sortOrder, rootPlaylists),
+          const SliverToBoxAdapter(child: SizedBox(height: 160)),
+        ],
+      );
+      if (withRefresh) {
+        return RefreshIndicator(onRefresh: _onPullToRefresh, child: scrollView);
+      }
+      return scrollView;
+    }
+
+    final isLoggedIn = ref.watch(currentUserProvider) != null;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -206,32 +223,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Desktop sidebar handles the library header/filters — hide here.
               if (!isDesktop) appBar,
               if (!isDesktop) const SizedBox(height: AppSpacing.sm),
               Expanded(
-                child: ref.watch(currentUserProvider) != null
-                    ? RefreshIndicator(
-                        onRefresh: _onPullToRefresh,
-                        child: CustomScrollView(
-                          physics: const AlwaysScrollableScrollPhysics(
-                            parent: BouncingScrollPhysics(),
-                          ),
-                          slivers: [
-                            ..._buildContentSlivers(viewMode, sortOrder, rootPlaylists),
-                            const SliverToBoxAdapter(child: SizedBox(height: 160)),
-                          ],
-                        ),
-                      )
-                    : CustomScrollView(
-                        physics: const BouncingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        slivers: [
-                          ..._buildContentSlivers(viewMode, sortOrder, rootPlaylists),
-                          const SliverToBoxAdapter(child: SizedBox(height: 160)),
-                        ],
-                      ),
+                child: _ContentSwitcher(
+                  contentKey: contentKey,
+                  child: buildScrollView(isLoggedIn),
+                ),
               ),
             ],
           ),
@@ -278,8 +276,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             rootPlaylists.isEmpty;
         final disableEmptyFadeTransition = showCreateFirstPlaylistEmptyState &&
             entries.isEmpty;
-        final viewModeChanged = _previousViewMode != null && _previousViewMode != viewMode;
-        _previousViewMode = viewMode;
         if (disableEmptyFadeTransition) {
           return [
             SliverFillRemaining(
@@ -293,46 +289,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
         return [
           SliverToBoxAdapter(
-            child: AnimatedSize(
-              duration: viewModeChanged ? Duration.zero : _chipTransitionDuration,
-              curve: Curves.easeInOutCubic,
-              alignment: Alignment.topCenter,
-              child: AnimatedSwitcher(
-                duration: viewModeChanged ? Duration.zero : _chipTransitionDuration,
-                switchInCurve: Curves.easeInOutCubic,
-                switchOutCurve: Curves.easeInOutCubic,
-                layoutBuilder: (Widget? currentChild,
-                    List<Widget> previousChildren) {
-                  return Stack(
-                    alignment: Alignment.topCenter,
-                    clipBehavior: Clip.hardEdge,
-                    children: <Widget>[
-                      ...previousChildren,
-                      if (currentChild != null) currentChild,
-                    ],
-                  );
-                },
-                transitionBuilder: (Widget child,
-                    Animation<double> animation) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: child,
-                  );
-                },
-                child: KeyedSubtree(
-                  key: ValueKey('$_contentFilter-$_selectedFolderId-$viewMode'),
-                  child: LibraryPlaylistsSection(
-                    entries: entries,
-                    viewMode: viewMode,
-                    onPlaylistTap: _onPlaylistTap,
-                    onPlaylistOptions: _onPlaylistOptions,
-                    onFolderTap: _onFolderTap,
-                    onFolderOptions: _onFolderOptions,
-                    showCreateFirstPlaylistEmptyState: showCreateFirstPlaylistEmptyState,
-                    isFolderView: _selectedFolderId != null,
-                  ),
-                ),
-              ),
+            child: LibraryPlaylistsSection(
+              entries: entries,
+              viewMode: viewMode,
+              onPlaylistTap: _onPlaylistTap,
+              onPlaylistOptions: _onPlaylistOptions,
+              onFolderTap: _onFolderTap,
+              onFolderOptions: _onFolderOptions,
+              showCreateFirstPlaylistEmptyState: showCreateFirstPlaylistEmptyState,
+              isFolderView: _selectedFolderId != null,
             ),
           ),
         ];
@@ -354,17 +319,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-              child: AnimatedSwitcher(
-                duration: AppDuration.fast,
-                switchInCurve: AppCurves.decelerate,
-                switchOutCurve: AppCurves.decelerate,
-                child: KeyedSubtree(
-                  key: ValueKey('albums-$viewMode'),
-                  child: viewMode == LibraryViewMode.grid
-                      ? _FollowedAlbumsGrid(albums: sortedAlbums)
-                      : _FollowedAlbumsList(albums: sortedAlbums),
-                ),
-              ),
+              child: viewMode == LibraryViewMode.grid
+                  ? _FollowedAlbumsGrid(albums: sortedAlbums)
+                  : _FollowedAlbumsList(albums: sortedAlbums),
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 160)),
@@ -387,17 +344,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-              child: AnimatedSwitcher(
-                duration: AppDuration.fast,
-                switchInCurve: AppCurves.decelerate,
-                switchOutCurve: AppCurves.decelerate,
-                child: KeyedSubtree(
-                  key: ValueKey('artists-$viewMode'),
-                  child: viewMode == LibraryViewMode.grid
-                      ? _FollowedArtistsGrid(artists: sortedArtists)
-                      : _FollowedArtistsList(artists: sortedArtists),
-                ),
-              ),
+              child: viewMode == LibraryViewMode.grid
+                  ? _FollowedArtistsGrid(artists: sortedArtists)
+                  : _FollowedArtistsList(artists: sortedArtists),
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 160)),
@@ -1370,6 +1319,87 @@ class LibraryFolderSheet extends StatelessWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ─── Content switcher ─────────────────────────────────────────────────────────
+//
+// Replicates appPageRoute behaviour in-place:
+// - Outgoing child is removed from the tree immediately (frame 0) — no overlap.
+// - Incoming child animates in with fade + micro-slide, 240ms easeOutCubic.
+// - When the same key is passed again nothing happens.
+
+class _ContentSwitcher extends StatefulWidget {
+  const _ContentSwitcher({
+    required this.contentKey,
+    required this.child,
+  });
+
+  final ValueKey<String> contentKey;
+  final Widget child;
+
+  @override
+  State<_ContentSwitcher> createState() => _ContentSwitcherState();
+}
+
+class _ContentSwitcherState extends State<_ContentSwitcher>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _ctrl;
+  late Animation<double> _fade;
+  late Animation<Offset> _slide;
+
+  late Widget _current;
+  late ValueKey<String> _currentKey;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 240),
+      value: 1.0, // start fully visible
+    );
+    _setupAnimations();
+    _current = widget.child;
+    _currentKey = widget.contentKey;
+  }
+
+  void _setupAnimations() {
+    final curved = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
+    _fade = curved;
+    _slide = Tween<Offset>(
+      begin: const Offset(0, 0.03),
+      end: Offset.zero,
+    ).animate(curved);
+  }
+
+  @override
+  void didUpdateWidget(_ContentSwitcher old) {
+    super.didUpdateWidget(old);
+    if (widget.contentKey != _currentKey) {
+      // Swap child immediately — no outgoing animation, no overlap.
+      _current = widget.child;
+      _currentKey = widget.contentKey;
+      // Restart entrance animation from zero.
+      _ctrl.forward(from: 0.0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _fade,
+      child: SlideTransition(
+        position: _slide,
+        child: _current,
       ),
     );
   }

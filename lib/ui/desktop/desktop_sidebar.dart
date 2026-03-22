@@ -404,7 +404,33 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
 
             // ── Library list / search results ──────────────────────────────
             Expanded(
-              child: _isSearching
+              child: AnimatedSwitcher(
+                duration: AppDuration.normal,
+                switchInCurve: AppCurves.decelerate,
+                switchOutCurve: AppCurves.standard,
+                transitionBuilder: (child, animation) {
+                  final currentKey = ValueKey('sidebar-${_filter}-${_openFolder?.id}-$_isSearching');
+                  final isIncoming = child.key == currentKey;
+                  if (isIncoming) {
+                    return FadeTransition(
+                      opacity: animation,
+                      child: SlideTransition(
+                        position: Tween<Offset>(
+                          begin: const Offset(0, 0.03),
+                          end: Offset.zero,
+                        ).animate(CurvedAnimation(
+                          parent: animation,
+                          curve: AppCurves.decelerate,
+                        )),
+                        child: child,
+                      ),
+                    );
+                  }
+                  return FadeTransition(opacity: animation, child: child);
+                },
+                child: KeyedSubtree(
+                  key: ValueKey('sidebar-${_filter}-${_openFolder?.id}-$_isSearching'),
+                  child: _isSearching
                   // ── Search mode: same body component as LibrarySearchScreen ──
                   ? LibrarySearchBody(
                       query: _searchQuery.trim().toLowerCase(),
@@ -519,6 +545,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                         ],
                       ],
                     ),
+                ),
+              ),
             ),
           ],
         ),

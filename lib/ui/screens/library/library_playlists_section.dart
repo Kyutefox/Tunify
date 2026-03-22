@@ -109,7 +109,26 @@ class LibraryPlaylistsSection extends StatelessWidget {
             AnimatedSwitcher(
               duration: AppDuration.fast,
               switchInCurve: AppCurves.decelerate,
-              switchOutCurve: AppCurves.decelerate,
+              switchOutCurve: AppCurves.standard,
+              transitionBuilder: (child, animation) {
+                final isIncoming = child.key == ValueKey(viewMode);
+                if (isIncoming) {
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: Tween<Offset>(
+                        begin: const Offset(0, 0.04),
+                        end: Offset.zero,
+                      ).animate(CurvedAnimation(
+                        parent: animation,
+                        curve: AppCurves.decelerate,
+                      )),
+                      child: child,
+                    ),
+                  );
+                }
+                return FadeTransition(opacity: animation, child: child);
+              },
               child: KeyedSubtree(
                 key: ValueKey(viewMode),
                 child: viewMode == LibraryViewMode.grid

@@ -94,7 +94,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
           AppSpacing.sm,
         ),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 600),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeOutCubic,
           height: 68,
           decoration: BoxDecoration(
@@ -200,18 +200,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                 right: AppSpacing.md,
                 bottom: 0,
                 child: RepaintBoundary(
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(AppRadius.xl),
-                    ),
-                    child: LinearProgressIndicator(
-                      value: progress.clamp(0.0, 1.0),
-                      minHeight: 3,
-                      backgroundColor: Colors.white.withValues(alpha: 0.06),
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        dominantColor,
-                      ),
-                    ),
+                  child: _MiniPlayerSeekBar(
+                    progress: progress,
+                    dominantColor: dominantColor,
                   ),
                 ),
               ),
@@ -258,3 +249,44 @@ class _AlbumThumb extends StatelessWidget {
   }
 }
 
+
+/// Tappable seek bar at the bottom of the mini player.
+/// Tapping a position seeks to that point; the bar also shows playback progress.
+class _MiniPlayerSeekBar extends ConsumerWidget {
+  const _MiniPlayerSeekBar({
+    required this.progress,
+    required this.dominantColor,
+  });
+
+  final double progress;
+  final Color dominantColor;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapUp: (d) {
+        final box = context.findRenderObject() as RenderBox?;
+        if (box == null) return;
+        final fraction = (d.localPosition.dx / box.size.width).clamp(0.0, 1.0);
+        final duration = ref.read(playerProvider).duration;
+        if (duration != null && duration.inMilliseconds > 0) {
+          ref.read(playerProvider.notifier).seekTo(
+            Duration(milliseconds: (fraction * duration.inMilliseconds).round()),
+          );
+        }
+      },
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(
+          bottom: Radius.circular(AppRadius.xl),
+        ),
+        child: LinearProgressIndicator(
+          value: progress.clamp(0.0, 1.0),
+          minHeight: 3,
+          backgroundColor: Colors.white.withValues(alpha: 0.06),
+          valueColor: AlwaysStoppedAnimation<Color>(dominantColor),
+        ),
+      ),
+    );
+  }
+}

@@ -34,15 +34,26 @@ class LibraryPlaylistScreen extends ConsumerStatefulWidget {
 class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+  Timer? _searchDebounce;
+  String _debouncedQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() => setState(() {}));
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _debouncedQuery = _searchController.text.trim().toLowerCase());
+    });
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -71,7 +82,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final songs = playlist.sortedSongs;
     final isEmpty = songs.isEmpty;
     final hasSong = ref.watch(currentSongProvider) != null;
-    final query = _searchController.text.trim().toLowerCase();
+    final query = _debouncedQuery;
     final queryFiltered = query.isEmpty
         ? songs
         : songs
@@ -318,10 +329,17 @@ class _PlaylistCoverWithPalette extends StatelessWidget {
       width: s,
       height: s,
       child: url != null
-          ? CachedNetworkImage(
-              imageUrl: url,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _placeholder(s),
+          ? Builder(
+              builder: (context) {
+                final cachePx = (s * MediaQuery.devicePixelRatioOf(context)).round();
+                return CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  memCacheWidth: cachePx,
+                  memCacheHeight: cachePx,
+                  errorWidget: (_, __, ___) => _placeholder(s),
+                );
+              },
             )
           : _placeholder(s),
     );

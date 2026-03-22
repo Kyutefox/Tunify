@@ -74,11 +74,13 @@ class PlayerControlIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Ensure minimum 44px touch target per HIG/Material guidelines.
+    final padding = ((44.0 - size) / 2).clamp(8.0, 16.0);
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: EdgeInsets.all(padding),
         child: AppIcon(
           icon: icon,
           size: size,
@@ -213,7 +215,7 @@ class PlayerExtraButton extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.5),
+                color: Colors.white.withValues(alpha: 0.75),
                 fontSize: AppFontSize.micro,
                 fontWeight: FontWeight.w500,
               ),

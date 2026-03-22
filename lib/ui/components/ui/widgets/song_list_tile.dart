@@ -104,7 +104,9 @@ class SongListTile extends ConsumerWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (isNowPlaying)
+                      // Only show the inline indicator when there is no index
+                      // column already displaying it (avoids duplication).
+                      if (isNowPlaying && (index == null || !showIndexIndicator))
                         Padding(
                           padding:
                               const EdgeInsets.only(right: AppSpacing.xs),
@@ -170,19 +172,10 @@ class SongListTile extends ConsumerWidget {
   }
 
   Widget _defaultThumbnail() {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: song.thumbnailUrl.isNotEmpty
-          ? CachedNetworkImage(
-              imageUrl: song.thumbnailUrl,
-              width: thumbnailSize,
-              height: thumbnailSize,
-              memCacheWidth: thumbnailSize.toInt(),
-              memCacheHeight: thumbnailSize.toInt(),
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _thumbPlaceholder(),
-            )
-          : _thumbPlaceholder(),
+    return _DpiAwareThumbnail(
+      url: song.thumbnailUrl,
+      size: thumbnailSize,
+      placeholder: _thumbPlaceholder(),
     );
   }
 
@@ -219,6 +212,40 @@ class _ExplicitBadge extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
+    );
+  }
+}
+
+/// DPI-aware thumbnail that uses [MediaQuery.devicePixelRatio] for correct
+/// [memCacheWidth]/[memCacheHeight] values, preventing blurry upscaling on
+/// high-density screens.
+class _DpiAwareThumbnail extends StatelessWidget {
+  const _DpiAwareThumbnail({
+    required this.url,
+    required this.size,
+    required this.placeholder,
+  });
+
+  final String url;
+  final double size;
+  final Widget placeholder;
+
+  @override
+  Widget build(BuildContext context) {
+    final cachePx = (size * MediaQuery.devicePixelRatioOf(context)).round();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: url.isNotEmpty
+          ? CachedNetworkImage(
+              imageUrl: url,
+              width: size,
+              height: size,
+              memCacheWidth: cachePx,
+              memCacheHeight: cachePx,
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => placeholder,
+            )
+          : placeholder,
     );
   }
 }

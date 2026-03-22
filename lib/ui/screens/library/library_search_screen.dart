@@ -56,7 +56,10 @@ class _LibrarySearchScreenState extends ConsumerState<LibrarySearchScreen> {
     final searchPage = SharedSearchPage(
       controller: _controller,
       focusNode: _focusNode,
-      onBack: () => Navigator.of(context).pop(),
+      onBack: () {
+        _controller.clear();
+        Navigator.of(context).pop();
+      },
       onClear: () => setState(() {}),
       hintText: 'Search in Library',
       autofocus: false,

@@ -104,14 +104,19 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: GestureDetector(
-        onVerticalDragUpdate: (d) {
-          _dragDy += d.delta.dy;
-          if (_dragDy > 50) {
+        onVerticalDragEnd: (d) {
+          final velocity = d.primaryVelocity ?? 0;
+          if (velocity > 600 || _dragDy > 100) {
+            _dragDy = 0;
             _close();
+          } else {
             _dragDy = 0;
           }
         },
-        onVerticalDragEnd: (_) => _dragDy = 0,
+        onVerticalDragUpdate: (d) {
+          if (d.delta.dy > 0) _dragDy += d.delta.dy;
+        },
+        onVerticalDragCancel: () => _dragDy = 0,
         child: Scaffold(
           backgroundColor: AppColors.background,
           body: Stack(
@@ -155,6 +160,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     );
   }
   Widget _buildTopBar() {
+    final status = ref.watch(playerProvider.select((s) => s.status));
+    final label = switch (status) {
+      PlayerStatus.loading || PlayerStatus.buffering => 'LOADING',
+      PlayerStatus.paused => 'PAUSED',
+      PlayerStatus.error => 'ERROR',
+      _ => 'NOW PLAYING',
+    };
     return Row(
       children: [
         PlayerGlassButton(
@@ -162,12 +174,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           size: 24,
           onTap: _close,
         ),
-        const Expanded(
+        Expanded(
           child: Column(
             children: [
               Text(
-                'NOW PLAYING',
-                style: TextStyle(
+                label,
+                style: const TextStyle(
                   color: Color(0xA6FFFFFF),
                   fontSize: AppFontSize.xs,
                   fontWeight: FontWeight.w600,
@@ -442,15 +454,25 @@ void showDevicesSheet(BuildContext context) {
 void showSleepTimerSheet(BuildContext context) {
   showAppSheet(
     context,
-    maxHeight: 440,
+    maxHeight: 500,
     child: const _SleepTimerSheetContent(),
   );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
 
-class _SleepTimerSheetContent extends ConsumerWidget {
+class _SleepTimerSheetContent extends ConsumerStatefulWidget {
   const _SleepTimerSheetContent();
+
+  @override
+  ConsumerState<_SleepTimerSheetContent> createState() =>
+      _SleepTimerSheetContentState();
+}
+
+class _SleepTimerSheetContentState
+    extends ConsumerState<_SleepTimerSheetContent> {
+  bool _showCustomInput = false;
+  final _minutesController = TextEditingController();
 
   static String _formatSleepTimerDuration(Duration d) {
     final m = d.inMinutes;
@@ -464,7 +486,20 @@ class _SleepTimerSheetContent extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    _minutesController.dispose();
+    super.dispose();
+  }
+
+  void _setCustomTimer() {
+    final minutes = int.tryParse(_minutesController.text.trim());
+    if (minutes == null || minutes <= 0) return;
+    ref.read(sleepTimerProvider.notifier).setTimer(Duration(minutes: minutes));
+    Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final sleepState = ref.watch(sleepTimerProvider);
     final notifier = ref.read(sleepTimerProvider.notifier);
     final remaining = sleepState.remaining;
@@ -553,9 +588,57 @@ class _SleepTimerSheetContent extends ConsumerWidget {
                     Navigator.of(context).pop();
                   },
                 ),
+                _SleepTimerChip(
+                  label: 'Custom',
+                  onTap: () => setState(() => _showCustomInput = !_showCustomInput),
+                ),
               ],
             ),
           ),
+          if (_showCustomInput)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                  kSheetHorizontalPadding, 12, kSheetHorizontalPadding, 0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: _minutesController,
+                      keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _setCustomTimer(),
+                      autofocus: true,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: AppFontSize.base,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Minutes (e.g. 20)',
+                        hintStyle: TextStyle(
+                          color: AppColors.textMuted.withValues(alpha: 0.6),
+                          fontSize: AppFontSize.base,
+                        ),
+                        filled: true,
+                        fillColor: AppColors.surfaceHighlight,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.sm,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  _SleepTimerChip(
+                    label: 'Set',
+                    onTap: _setCustomTimer,
+                  ),
+                ],
+              ),
+            ),
         ],
         const SizedBox(height: AppSpacing.sm),
       ],
@@ -595,7 +678,7 @@ class _SleepTimerHero extends StatelessWidget {
             spreadRadius: 0,
           ),
           BoxShadow(
-            color: const Color(0xFF2a1f4e).withValues(alpha: 0.5),
+            color: AppColors.surface.withValues(alpha: 0.5),
             blurRadius: 40,
             spreadRadius: -8,
           ),
@@ -604,7 +687,7 @@ class _SleepTimerHero extends StatelessWidget {
           colors: [
             AppColors.surfaceHighlight,
             AppColors.surface,
-            const Color(0xFF1a1525),
+            AppColors.background,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

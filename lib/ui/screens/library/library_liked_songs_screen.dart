@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -29,15 +30,26 @@ class _LibraryLikedSongsScreenState
     extends ConsumerState<LibraryLikedSongsScreen> {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocus = FocusNode();
+  Timer? _searchDebounce;
+  String _debouncedQuery = '';
 
   @override
   void initState() {
     super.initState();
-    _searchController.addListener(() => setState(() {}));
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  void _onSearchChanged() {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
+      if (mounted) setState(() => _debouncedQuery = _searchController.text.trim().toLowerCase());
+    });
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _searchFocus.dispose();
     super.dispose();
@@ -46,7 +58,7 @@ class _LibraryLikedSongsScreenState
   @override
   Widget build(BuildContext context) {
     final likedSongs = ref.watch(libraryProvider.select((s) => s.likedSongs));
-    final query = _searchController.text.trim().toLowerCase();
+    final query = _debouncedQuery;
     final queryFiltered = query.isEmpty
         ? likedSongs
         : likedSongs
@@ -210,6 +222,16 @@ class _EditLikedSheetState extends ConsumerState<_EditLikedSheet> {
   }
 
   Future<void> _save() async {
+    final toRemove = _pendingRemoveIds.length;
+    if (toRemove > 0) {
+      final confirmed = await showConfirmDialog(
+        context,
+        title: 'Remove $toRemove ${toRemove == 1 ? 'song' : 'songs'}?',
+        message: 'These songs will be removed from your Liked Songs.',
+        confirmLabel: 'Remove',
+      );
+      if (!confirmed) return;
+    }
     final toKeep =
         _items.where((s) => !_pendingRemoveIds.contains(s.id)).toList();
     await ref.read(libraryProvider.notifier).setLikedSongsOrder(toKeep);
@@ -481,10 +503,17 @@ class _LikedCoverWithPalette extends StatelessWidget {
       width: s,
       height: s,
       child: url != null && url.isNotEmpty
-          ? CachedNetworkImage(
-              imageUrl: url,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _placeholder(s),
+          ? Builder(
+              builder: (context) {
+                final cachePx = (s * MediaQuery.devicePixelRatioOf(context)).round();
+                return CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  memCacheWidth: cachePx,
+                  memCacheHeight: cachePx,
+                  errorWidget: (_, __, ___) => _placeholder(s),
+                );
+              },
             )
           : _placeholder(s),
     );

@@ -31,6 +31,20 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
   double _dragValue = 0;
 
   @override
+  void initState() {
+    super.initState();
+    // Listen outside build so animation side-effects never run during a build pass.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.listenManual(
+        playerProvider.select((s) => s.progress),
+        (_, newProgress) => _onProgressUpdate(newProgress.clamp(0.0, 1.0)),
+        fireImmediately: true,
+      );
+    });
+  }
+
+  @override
   void dispose() {
     _anim.dispose();
     super.dispose();
@@ -57,13 +71,9 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
 
   @override
   Widget build(BuildContext context) {
-    final progress = ref.watch(playerProvider.select((s) => s.progress));
     final position = ref.watch(playerProvider.select((s) => s.position));
     final duration = ref.watch(playerProvider.select((s) => s.duration));
     final dominantColor = ref.watch(dominantColorProvider);
-
-    // Drive the animation whenever progress changes.
-    _onProgressUpdate(progress.clamp(0.0, 1.0));
 
     final safeDuration = duration ?? Duration.zero;
     final durationKnown = duration != null && duration.inMilliseconds > 0;

@@ -60,8 +60,6 @@ class RecentlyPlayedRow extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const ClampingScrollPhysics(),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-        addRepaintBoundaries: false,
-        addAutomaticKeepAlives: false,
         itemCount: songs.take(8).length,
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (ctx, i) => SquareSongCard(
@@ -588,7 +586,13 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to load playlist: $e')),
+          SnackBar(
+            content: const Text('Failed to load playlist'),
+            action: SnackBarAction(
+              label: 'Retry',
+              onPressed: _onTap,
+            ),
+          ),
         );
       }
     }

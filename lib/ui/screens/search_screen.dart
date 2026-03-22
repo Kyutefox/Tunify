@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
+import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/song.dart';
+import '../../shared/providers/connectivity_provider.dart';
 import '../../shared/providers/content_settings_provider.dart';
 import '../../shared/providers/home_state_provider.dart';
 import '../../shared/providers/player_state_provider.dart';
@@ -166,12 +167,15 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
     }
   }
 
+  bool _isOffline = false;
+
   Future<void> _fetchSuggestions(String query) async {
     if (query.isEmpty) {
       if (mounted) {
         setState(() {
           _suggestions = [];
           _suggestionsForQuery = '';
+          _isOffline = false;
         });
       }
       return;
@@ -180,6 +184,7 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
     if (mounted) {
       setState(() {
         _suggestionsForQuery = forQuery;
+        _isOffline = false;
       });
     }
     try {
@@ -187,12 +192,15 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
       if (mounted && _suggestionsForQuery == forQuery) {
         setState(() {
           _suggestions = list;
+          _isOffline = false;
         });
       }
     } catch (_) {
       if (mounted && _suggestionsForQuery == forQuery) {
+        final isOnline = ref.read(connectivityProvider).value ?? true;
         setState(() {
           _suggestions = [];
+          _isOffline = !isOnline;
         });
       }
     }
@@ -248,6 +256,7 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
         setState(() {
           _suggestions = [];
           _suggestionsForQuery = '';
+          _isOffline = false;
         });
       },
       hintText: 'Search songs, artists, and more',
@@ -257,12 +266,14 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
         inlineSuggestions: _suggestions.take(4).toList(),
         inlineSuggestionsForQuery: _suggestionsForQuery,
         onSuggestionTap: _onSuggestionTap,
+        isOffline: _isOffline,
         onRecentQueryTap: (q) {
           _controller.text = q;
           ref.read(searchProvider.notifier).search(q);
           setState(() {
             _suggestions = [];
             _suggestionsForQuery = '';
+            _isOffline = false;
           });
         },
         emptyStateIcon: AppIcon(
@@ -301,6 +312,7 @@ class SearchResultsBody extends ConsumerWidget {
     this.inlineSuggestions = const [],
     this.inlineSuggestionsForQuery = '',
     this.onSuggestionTap,
+    this.isOffline = false,
     required this.emptyStateIcon,
     required this.emptyStateHeading,
     required this.emptyStateSubheading,
@@ -311,6 +323,7 @@ class SearchResultsBody extends ConsumerWidget {
   final List<String> inlineSuggestions;
   final String inlineSuggestionsForQuery;
   final void Function(String)? onSuggestionTap;
+  final bool isOffline;
   final Widget emptyStateIcon;
   final String emptyStateHeading;
   final String emptyStateSubheading;
@@ -366,15 +379,37 @@ class SearchResultsBody extends ConsumerWidget {
     final hasContent = state.isLoading || hasResults;
 
     if (!hasContent) {
-      return const Center(
-        child: Text(
-          'No results found',
-          style: TextStyle(
-            color: AppColors.textSecondary,
-            fontSize: AppFontSize.lg,
-            fontWeight: FontWeight.w600,
+      return Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (isOffline)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AppIcon(icon: AppIcons.wifiOff, color: AppColors.textMuted, size: 16),
+                  const SizedBox(width: AppSpacing.xs),
+                  const Text(
+                    "You're offline — suggestions unavailable",
+                    style: TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                  ),
+                ],
+              ),
+            ),
+          const Expanded(
+            child: Center(
+              child: Text(
+                'No results found',
+                style: TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppFontSize.lg,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       );
     }
 
@@ -626,40 +661,41 @@ class _SkeletonResultTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.base,
-        vertical: AppSpacing.xs,
-      ),
-      leading: Container(
-        width: 54,
-        height: 54,
-        decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
+    return Shimmer.fromColors(
+      baseColor: AppColors.surfaceLight,
+      highlightColor: AppColors.surfaceHighlight,
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.base,
+          vertical: AppSpacing.xs,
+        ),
+        leading: Container(
+          width: 54,
+          height: 54,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
+        ),
+        title: Container(
+          height: 13,
+          margin: const EdgeInsets.only(right: 60),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+          ),
+        ),
+        subtitle: Container(
+          height: 11,
+          width: 80,
+          margin: const EdgeInsets.only(top: 6),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.xs),
+          ),
         ),
       ),
-      title: Container(
-        height: 13,
-        margin: const EdgeInsets.only(right: 60),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(AppRadius.xs),
-        ),
-      ),
-      subtitle: Container(
-        height: 11,
-        width: 80,
-        margin: const EdgeInsets.only(top: 6),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(AppRadius.xs),
-        ),
-      ),
-    ).animate(onPlay: (c) => c.repeat()).shimmer(
-          duration: const Duration(milliseconds: 1400),
-          color: AppColors.surfaceHighlight,
-        );
+    );
   }
 }
 

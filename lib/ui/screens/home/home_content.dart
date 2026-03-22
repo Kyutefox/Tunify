@@ -30,12 +30,12 @@ class HomeContent extends ConsumerWidget {
       return const SliverToBoxAdapter(child: HomePageSkeleton());
     }
 
-    return SliverList.list(
-      children: [
+    return SliverList(
+      delegate: SliverChildListDelegate.fixed([
         RepaintBoundary(child: RecentlyPlayedSection(onPlay: onPlay)),
         RepaintBoundary(child: _AnimatedFeedBlock(onPlay: onPlay)),
         const RepaintBoundary(child: MoodSection()),
-      ],
+      ]),
     );
   }
 }

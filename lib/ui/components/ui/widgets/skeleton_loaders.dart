@@ -3,6 +3,22 @@ import 'package:shimmer/shimmer.dart';
 import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
 
+/// Shared shimmer wrapper. Wrap a group of skeleton widgets in this to
+/// synchronize their shimmer animation (one Shimmer.fromColors for all children).
+class SkeletonShimmer extends StatelessWidget {
+  const SkeletonShimmer({super.key, required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.surfaceHighlight,
+      highlightColor: AppColors.surfaceElevated,
+      child: child,
+    );
+  }
+}
+
 class SkeletonLoader extends StatelessWidget {
   final double width;
   final double height;
@@ -17,9 +33,7 @@ class SkeletonLoader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: AppColors.surfaceHighlight,
-      highlightColor: AppColors.surfaceElevated,
+    return SkeletonShimmer(
       child: Container(
         width: width,
         height: height,
@@ -34,7 +48,7 @@ class SkeletonLoader extends StatelessWidget {
 
 class SongCardSkeleton extends StatelessWidget {
   final bool isHorizontal;
-  
+
   const SongCardSkeleton({
     super.key,
     this.isHorizontal = true,
@@ -43,9 +57,7 @@ class SongCardSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (isHorizontal) {
-      return Shimmer.fromColors(
-        baseColor: AppColors.surfaceHighlight,
-        highlightColor: AppColors.surfaceElevated,
+      return SkeletonShimmer(
         child: Container(
           width: 150,
           margin: const EdgeInsets.only(right: 12),
@@ -84,9 +96,7 @@ class SongCardSkeleton extends StatelessWidget {
       );
     }
 
-    return Shimmer.fromColors(
-      baseColor: AppColors.surfaceHighlight,
-      highlightColor: AppColors.surfaceElevated,
+    return SkeletonShimmer(
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: Container(
@@ -124,9 +134,7 @@ class PlaylistCardSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: AppColors.surfaceHighlight,
-      highlightColor: AppColors.surfaceElevated,
+    return SkeletonShimmer(
       child: Container(
         width: 180,
         margin: const EdgeInsets.only(right: 16),
@@ -171,9 +179,7 @@ class ArtistAvatarSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Shimmer.fromColors(
-      baseColor: AppColors.surfaceHighlight,
-      highlightColor: AppColors.surfaceElevated,
+    return SkeletonShimmer(
       child: Container(
         width: 100,
         margin: const EdgeInsets.only(right: 16),

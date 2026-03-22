@@ -32,7 +32,7 @@ class DesktopPlayerBar extends ConsumerWidget {
     final dominantColor = ref.watch(dominantColorProvider);
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 600),
+      duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
       height: 92,
       decoration: BoxDecoration(
@@ -93,6 +93,8 @@ class _SongInfo extends ConsumerWidget {
             imageUrl: song.thumbnailUrl,
             width: 56,
             height: 56,
+            memCacheWidth: (56 * MediaQuery.devicePixelRatioOf(context)).round(),
+            memCacheHeight: (56 * MediaQuery.devicePixelRatioOf(context)).round(),
             fit: BoxFit.cover,
             errorWidget: (_, __, ___) => Container(
               width: 56,

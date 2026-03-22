@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../config/app_icons.dart';
-import '../../components/shared/components_shared.dart';
-import '../../../models/artist.dart';
-import '../../../models/playlist.dart';
-import '../../../models/song.dart';
-import '../../../shared/providers/home_state_provider.dart';
-import '../../../shared/providers/player_state_provider.dart';
-import '../../layout/shell_context.dart';
-import '../../theme/app_colors.dart';
-import '../../components/ui/widgets/section_header.dart';
-import '../../theme/design_tokens.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/ui/widgets/sections/mood_section.dart';
+import 'package:tunify/ui/widgets/sections/recently_played_section.dart';
+import 'package:tunify/data/models/artist.dart';
+import 'package:tunify/data/models/playlist.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/home/home_state_provider.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/ui/shell/shell_context.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/widgets/items/section_header.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 import 'home_sections.dart';
 import 'home_shared.dart';
 import 'home_skeletons.dart';
@@ -233,7 +234,9 @@ class _DynamicSectionsSliceState extends ConsumerState<_DynamicSectionsSlice> {
 
   @override
   void dispose() {
-    for (final c in _controllers.values) c.dispose();
+    for (final c in _controllers.values) {
+      c.dispose();
+    }
     super.dispose();
   }
 

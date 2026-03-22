@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tunify/models/library_album.dart';
+import 'package:tunify/data/models/library_album.dart';
 
 LibraryAlbum _album({String id = 'al1', String title = 'Test Album'}) {
   return LibraryAlbum(

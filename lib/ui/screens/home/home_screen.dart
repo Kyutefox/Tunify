@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../models/song.dart';
-import '../../../shared/providers/home_state_provider.dart';
-import '../../../shared/providers/player_state_provider.dart';
-import '../../layout/shell_context.dart';
-import '../../theme/app_colors.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/home/home_state_provider.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/ui/shell/shell_context.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
 import 'home_app_bar.dart';
 import 'home_content.dart';
-import '../../../shared/providers/auth_provider.dart';
-import '../../../shared/providers/guest_profile_provider.dart';
-import '../../theme/design_tokens.dart';
+import 'package:tunify/features/auth/auth_provider.dart';
+import 'package:tunify/features/settings/guest_profile_provider.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});

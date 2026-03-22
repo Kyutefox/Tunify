@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../config/app_icons.dart';
-import '../../../shared/providers/download_provider.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
-import '../../theme/app_routes.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/features/downloads/download_provider.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_routes.dart';
 import '../download_queue_sheet.dart';
 import 'library_downloaded_screen.dart';
 

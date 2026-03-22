@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 import 'home_shared.dart';
 
 class HomePageSkeleton extends StatelessWidget {

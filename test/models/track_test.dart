@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tunify/models/track.dart';
+import 'package:tunify/data/models/track.dart';
 
 void main() {
   group('Track', () {

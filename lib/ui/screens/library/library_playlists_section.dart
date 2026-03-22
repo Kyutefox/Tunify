@@ -1,14 +1,14 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import '../../../config/app_icons.dart';
-import '../../../models/library_folder.dart';
-import '../../../models/library_playlist.dart';
-import '../../../shared/providers/library_provider.dart';
-import '../../components/ui/button.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
-import '../../../shared/utils/string_utils.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/data/models/library_folder.dart';
+import 'package:tunify/data/models/library_playlist.dart';
+import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/core/utils/string_utils.dart';
 
 /// A single item in the library playlists section: Liked Songs, a folder, or a playlist.
 sealed class LibrarySectionEntry {}

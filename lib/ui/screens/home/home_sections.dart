@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
-import '../../../models/artist.dart';
-import '../../../models/mood.dart';
-import '../../../models/playlist.dart';
-import '../../../models/song.dart';
-import '../../../shared/providers/content_settings_provider.dart';
-import '../../../shared/providers/player_state_provider.dart';
-import '../../components/ui/widgets/artist_avatar.dart';
-import '../../components/ui/widgets/mood_browse_sheet.dart';
-import '../../layout/shell_context.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
+import 'package:tunify/data/models/artist.dart';
+import 'package:tunify/data/models/mood.dart';
+import 'package:tunify/data/models/playlist.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/settings/content_settings_provider.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/ui/widgets/items/artist_avatar.dart';
+import 'package:tunify/ui/widgets/items/mood_browse_sheet.dart';
+import 'package:tunify/ui/shell/shell_context.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 import 'home_shared.dart';
 
 /// A stable [PageView] wrapper that lives outside [LayoutBuilder] to prevent

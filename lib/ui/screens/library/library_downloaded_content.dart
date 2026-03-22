@@ -5,19 +5,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:on_audio_query_pluse/on_audio_query.dart';
 
-import '../../components/ui/components_ui.dart';
-import '../../../config/app_icons.dart';
-import '../../../models/song.dart';
-import '../../../shared/providers/content_settings_provider.dart';
-import '../../../shared/providers/device_music_provider.dart';
-import '../../../shared/providers/download_provider.dart';
-import '../../../shared/providers/library_provider.dart';
-import '../../../shared/providers/player_state_provider.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/ui/widgets/confirm_dialog.dart';
+import 'package:tunify/ui/widgets/items/song_list_tile.dart';
+import 'package:tunify/ui/widgets/items/now_playing_indicator.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/settings/content_settings_provider.dart';
+import 'package:tunify/features/device/device_music_provider.dart';
+import 'package:tunify/features/downloads/download_provider.dart';
+import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 import '../player/song_options_sheet.dart';
 import '../home/home_shared.dart';
 import 'library_downloaded_screen.dart';
+import 'package:tunify/ui/widgets/empty_state_placeholder.dart';
 
 /// Inline content for Library > Downloaded filter. Shows either library
 /// downloads (Play all, Shuffle, Edit) or device music (Play all, Shuffle).

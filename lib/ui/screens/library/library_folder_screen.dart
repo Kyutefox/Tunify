@@ -2,14 +2,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../components/ui/components_ui.dart';
-import '../../../config/app_icons.dart';
-import '../../../models/library_playlist.dart';
-import '../../../shared/providers/library_provider.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
-import '../../theme/app_routes.dart';
-import '../../../shared/utils/string_utils.dart';
+import 'package:tunify/ui/widgets/back_title_app_bar.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/data/models/library_playlist.dart';
+import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_routes.dart';
+import 'package:tunify/core/utils/string_utils.dart';
 import 'library_playlist_screen.dart';
 
 /// Full-screen view of a folder: back button, folder name, and list of playlists inside.

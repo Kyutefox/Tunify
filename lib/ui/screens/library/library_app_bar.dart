@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import '../../components/shared/adaptive_menu.dart';
-import '../../components/shared/library_filter_chips.dart';
-import '../../components/ui/button.dart';
-import '../../components/ui/widgets/widgets.dart';
-import '../../../config/app_icons.dart';
-import '../../../shared/providers/library_provider.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/adaptive_menu.dart';
+import 'package:tunify/ui/widgets/library_filter_chips.dart';
+import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/items/download_queue_progress_icon.dart';
 
 enum LibraryFilter {
   all,

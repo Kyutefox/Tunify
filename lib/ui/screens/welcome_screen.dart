@@ -5,15 +5,15 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
-import '../../config/app_icons.dart';
-import '../../shared/providers/auth_provider.dart';
-import '../../shared/providers/guest_profile_provider.dart';
-import '../../system/bridges/database_repository.dart';
-import '../../config/app_strings.dart';
-import '../components/ui/sheet.dart';
-import '../theme/app_colors.dart';
-import '../theme/design_tokens.dart';
-import '../theme/app_routes.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/features/auth/auth_provider.dart';
+import 'package:tunify/features/settings/guest_profile_provider.dart';
+import 'package:tunify/data/repositories/database_repository.dart';
+import 'package:tunify/core/constants/app_strings.dart';
+import 'package:tunify/ui/widgets/sheet.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_routes.dart';
 import 'auth_screen.dart';
 import 'guest_profile_setup_screen.dart';
 

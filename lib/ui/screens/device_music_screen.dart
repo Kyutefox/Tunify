@@ -4,16 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:on_audio_query_pluse/on_audio_query.dart';
 
-import '../components/ui/components_ui.dart';
-import '../../config/app_icons.dart';
-import '../../config/app_strings.dart';
-import '../../models/song.dart';
-import '../../shared/providers/content_settings_provider.dart';
-import '../../shared/providers/device_music_provider.dart';
-import '../../shared/providers/player_state_provider.dart';
-import '../theme/app_colors.dart';
-import '../theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/ui/widgets/input_field.dart';
+import 'package:tunify/ui/widgets/empty_list_message.dart';
+import 'package:tunify/ui/widgets/items/song_list_tile.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/core/constants/app_strings.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/settings/content_settings_provider.dart';
+import 'package:tunify/features/device/device_music_provider.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 import 'player/song_options_sheet.dart';
+import 'package:tunify/ui/widgets/empty_state_placeholder.dart';
 
 class DeviceMusicScreen extends ConsumerStatefulWidget {
   const DeviceMusicScreen({super.key});

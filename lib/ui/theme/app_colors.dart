@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../config/primary_palette.dart';
+import 'package:tunify/core/constants/primary_palette.dart';
 
 /// Spotify-style color system: dark backgrounds, green accents for active/playback.
 abstract final class AppColors {

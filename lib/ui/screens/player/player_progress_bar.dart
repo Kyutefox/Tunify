@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../shared/providers/palette_provider.dart';
-import '../../../shared/providers/player_state_provider.dart';
-import '../../../shared/utils/duration_format.dart';
+import 'package:tunify/features/player/palette_provider.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/core/utils/duration_format.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 
 class PlayerProgressBar extends ConsumerStatefulWidget {

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../components/ui/input_field.dart';
-import '../../components/ui/sheet.dart' show showAppSheet, kSheetHorizontalPadding;
-import '../../../config/app_icons.dart';
-import '../../../models/song.dart';
-import '../../../shared/providers/library_provider.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
-import '../../../shared/utils/string_utils.dart';
+import 'package:tunify/ui/widgets/input_field.dart';
+import 'package:tunify/ui/widgets/sheet.dart' show showAppSheet, kSheetHorizontalPadding;
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/core/utils/string_utils.dart';
 
 void showAddToPlaylistSheet(
   BuildContext context, {

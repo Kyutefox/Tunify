@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tunify/models/library_folder.dart';
-import 'package:tunify/models/library_playlist.dart';
-import 'package:tunify/models/song.dart';
-import 'package:tunify/shared/providers/library_provider.dart';
+import 'package:tunify/data/models/library_folder.dart';
+import 'package:tunify/data/models/library_playlist.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/library/library_provider.dart';
 
 Song _song(String id) => Song(
       id: id,

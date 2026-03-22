@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../config/app_icons.dart';
-import '../../../shared/providers/player_state_provider.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
-import '../../components/ui/widgets/now_playing_indicator.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/items/now_playing_indicator.dart';
 
 /// Circular play button used in section headers and action rows.
 /// Provides consistent size, color, and press feedback everywhere.

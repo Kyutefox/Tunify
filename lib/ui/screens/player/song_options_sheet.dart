@@ -3,21 +3,21 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../components/shared/adaptive_menu.dart';
-import '../../components/ui/sheet.dart' show showAppSheet, kSheetHorizontalPadding, SheetOptionTile;
-import '../../layout/shell_context.dart';
-import '../../../config/app_icons.dart';
-import '../../../models/library_playlist.dart';
-import '../../../models/song.dart';
-import '../../../shared/providers/download_provider.dart';
-import '../../../shared/providers/library_provider.dart';
-import '../../../shared/providers/player_state_provider.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
-import '../../theme/app_routes.dart';
+import 'package:tunify/ui/widgets/adaptive_menu.dart';
+import 'package:tunify/ui/widgets/sheet.dart' show showAppSheet, kSheetHorizontalPadding, SheetOptionTile;
+import 'package:tunify/ui/shell/shell_context.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/data/models/library_playlist.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/downloads/download_provider.dart';
+import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_routes.dart';
 import '../library/add_to_playlist_sheet.dart';
-import 'artist_page.dart';
-import 'album_page.dart';
+import 'package:tunify/ui/screens/detail/artist_page.dart';
+import 'package:tunify/ui/screens/detail/album_page.dart';
 
 class SongOptionExtra {
   final List<List<dynamic>> icon;

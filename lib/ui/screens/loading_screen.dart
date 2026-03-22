@@ -1,8 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:tunify/config/app_strings.dart';
-import 'package:tunify/ui/components/ui/widgets/logo_loading_indicator.dart';
+import 'package:tunify/core/constants/app_strings.dart';
+import 'package:tunify/ui/widgets/items/logo_loading_indicator.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 

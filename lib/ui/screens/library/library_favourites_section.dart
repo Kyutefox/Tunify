@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-import '../../../config/app_icons.dart';
-import '../../../models/library_playlist.dart';
-import '../../theme/app_colors.dart';
-import '../../theme/design_tokens.dart';
-import '../../../shared/utils/string_utils.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/data/models/library_playlist.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/core/utils/string_utils.dart';
 
 /// Reusable playlist row for sheets (folder playlists, etc.). Same look everywhere.
 class SheetPlaylistTile extends StatelessWidget {

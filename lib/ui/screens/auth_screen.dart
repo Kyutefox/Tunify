@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../components/ui/button.dart';
-import '../components/ui/input_field.dart';
-import '../components/ui/sheet.dart';
-import '../../config/app_icons.dart';
-import '../../config/app_strings.dart';
-import '../../shared/providers/auth_provider.dart';
-import '../theme/app_colors.dart';
-import '../theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/ui/widgets/input_field.dart';
+import 'package:tunify/ui/widgets/sheet.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/core/constants/app_strings.dart';
+import 'package:tunify/features/auth/auth_provider.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 
 class AuthScreen extends ConsumerStatefulWidget {
   const AuthScreen({super.key, this.initialSignUp = false});

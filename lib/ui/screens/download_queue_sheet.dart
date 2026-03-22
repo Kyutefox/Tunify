@@ -2,12 +2,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../components/ui/sheet.dart' show showAppDraggableSheet, kSheetHorizontalPadding;
-import '../../config/app_icons.dart';
-import '../../shared/providers/download_provider.dart';
-import '../../shared/services/download_service.dart';
-import '../theme/app_colors.dart';
-import '../theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/sheet.dart' show showAppDraggableSheet, kSheetHorizontalPadding;
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/features/downloads/download_provider.dart';
+import 'package:tunify/features/downloads/download_service.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
 
 void showDownloadQueueSheet(BuildContext context) {
   showAppDraggableSheet(

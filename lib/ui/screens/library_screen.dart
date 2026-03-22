@@ -87,7 +87,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     if (includeLikedSongs) {
       return [
         LikedSongsEntry(
-          songCount: ref.read(libraryLikedCountProvider),
+          songCount: ref.watch(libraryLikedCountProvider),
           onTap: () {
             Navigator.of(context).push(
               appPageRoute<void>(
@@ -247,11 +247,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       case LibraryFilter.all:
       case null:
       case LibraryFilter.playlists:
-        final folders = ref.read(libraryFoldersProvider);
+        final folders = ref.watch(libraryFoldersProvider);
         final folder = _selectedFolder(folders);
         final List<LibrarySectionEntry> entries;
         if (folder != null) {
-          final allPlaylists = ref.read(libraryProvider).playlists;
+          final allPlaylists = ref.watch(libraryProvider).playlists;
           final idToPlaylist = {for (final p in allPlaylists) p.id: p};
           final folderPlaylists = folder.playlistIds
               .map((id) => idToPlaylist[id])
@@ -1379,11 +1379,14 @@ class _ContentSwitcherState extends State<_ContentSwitcher>
   void didUpdateWidget(_ContentSwitcher old) {
     super.didUpdateWidget(old);
     if (widget.contentKey != _currentKey) {
-      // Swap child immediately — no outgoing animation, no overlap.
+      // Key changed — swap child immediately and restart entrance animation.
       _current = widget.child;
       _currentKey = widget.contentKey;
-      // Restart entrance animation from zero.
       _ctrl.forward(from: 0.0);
+    } else {
+      // Same key but child widget may have changed (e.g. library data loaded).
+      // Update silently without re-animating.
+      _current = widget.child;
     }
   }
 

@@ -8,7 +8,6 @@ import '../../../models/playlist.dart';
 import '../../../models/song.dart';
 import '../../../shared/providers/home_state_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
-import '../../desktop/desktop_right_sidebar.dart';
 import '../../layout/shell_context.dart';
 import '../../theme/app_colors.dart';
 import '../../components/ui/widgets/section_header.dart';
@@ -41,8 +40,7 @@ class HomeContent extends ConsumerWidget {
 }
 
 /// Wraps Quick Picks + dynamic sections + Made For You + Artists in [AnimatedSwitcher]
-/// keyed by [homeFeedVersionProvider] so when background refetch updates the feed,
-/// new content fades in smoothly without a jarring swap.
+/// keyed by [homeFeedVersionProvider] so background refetches fade in smoothly.
 class _AnimatedFeedBlock extends ConsumerWidget {
   const _AnimatedFeedBlock({required this.onPlay});
   final void Function(Song song) onPlay;
@@ -54,9 +52,7 @@ class _AnimatedFeedBlock extends ConsumerWidget {
       duration: const Duration(milliseconds: 220),
       switchInCurve: Curves.easeOut,
       switchOutCurve: Curves.easeIn,
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        return FadeTransition(opacity: animation, child: child);
-      },
+      transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
       child: KeyedSubtree(
         key: ValueKey(feedVersion),
         child: Column(
@@ -66,8 +62,8 @@ class _AnimatedFeedBlock extends ConsumerWidget {
             _QuickPicksSection(onPlay: onPlay),
             const RepaintBoundary(child: _DynamicSectionsSkeletonGate()),
             _DynamicSectionsSlice(onPlay: onPlay),
-            _MadeForYouSection(),
-            _ArtistsSection(),
+            const _MadeForYouSection(),
+            const _ArtistsSection(),
           ],
         ),
       ),
@@ -75,6 +71,70 @@ class _AnimatedFeedBlock extends ConsumerWidget {
   }
 }
 
+// ─── Shared nav button pair ───────────────────────────────────────────────────
+
+/// Prev/next arrow buttons used in every section header.
+/// Extracted from the 3× duplicated inline Row in the original file.
+class _NavButtonPair extends StatelessWidget {
+  const _NavButtonPair({
+    required this.pageCtrl,
+    required this.currentPage,
+  });
+  final PageController pageCtrl;
+  final int currentPage;
+
+  void _go(int page) => pageCtrl.animateToPage(
+        page,
+        duration: AppDuration.normal,
+        curve: Curves.easeInOut,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _NavButton(icon: AppIcons.back, enabled: currentPage > 0, onTap: () => _go(0)),
+        const SizedBox(width: AppSpacing.xs),
+        _NavButton(icon: AppIcons.forward, enabled: currentPage == 0, onTap: () => _go(1)),
+      ],
+    );
+  }
+}
+
+/// Small circular prev/next arrow button.
+class _NavButton extends StatelessWidget {
+  const _NavButton({required this.icon, required this.onTap, this.enabled = true});
+  final List<List<dynamic>> icon;
+  final VoidCallback onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: AppSpacing.xxl,
+        height: AppSpacing.xxl,
+        decoration: BoxDecoration(
+          color: enabled
+              ? AppColors.surfaceLight
+              : AppColors.surfaceLight.withValues(alpha: 0.4),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: AppIcon(
+            icon: icon,
+            size: 14,
+            color: enabled ? AppColors.textPrimary : AppColors.textMuted,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Quick Picks Section ──────────────────────────────────────────────────────
 
 class _QuickPicksSection extends ConsumerStatefulWidget {
   const _QuickPicksSection({required this.onPlay});
@@ -84,38 +144,14 @@ class _QuickPicksSection extends ConsumerStatefulWidget {
   ConsumerState<_QuickPicksSection> createState() => _QuickPicksSectionState();
 }
 
-class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection> {
-  final _pageCtrl = PageController();
-  int _page = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageCtrl.addListener(() {
-      final p = _pageCtrl.page?.round() ?? 0;
-      if (p != _page) setState(() => _page = p);
-    });
-  }
-
-  @override
-  void dispose() {
-    _pageCtrl.dispose();
-    super.dispose();
-  }
-
+class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection>
+    with PagedSectionMixin {
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(homeIsLoadingProvider);
     final quickPicks = ref.watch(quickPicksProvider);
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
-    final rightOpen = isDesktop && ref.watch(rightSidebarTabProvider) != null;
-    final screenW = MediaQuery.sizeOf(context).width;
-    final maxWidth = isDesktop
-        ? ShellContext.desktopContentInnerWidth(screenWidth: screenW, rightSidebarOpen: rightOpen, hPad: hPad)
-        : screenW - hPad * 2;
-    final cols = isDesktop ? (maxWidth / 200).floor().clamp(2, 5) : 2;
-    final hasOverflow = quickPicks.length > cols * 4;
+    final layout = ContentLayout.of(context, ref, itemWidth: 200);
+    final hasOverflow = quickPicks.length > layout.cols * 4;
 
     return SectionAsyncSwap(
       isLoading: isLoading,
@@ -131,25 +167,7 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (hasOverflow) ...[
-                  _NavButton(
-                    icon: AppIcons.back,
-                    enabled: _page > 0,
-                    onTap: () => _pageCtrl.animateToPage(
-                      0,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.xs),
-                  _NavButton(
-                    icon: AppIcons.forward,
-                    enabled: _page == 0,
-                    onTap: () => _pageCtrl.animateToPage(
-                      1,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    ),
-                  ),
+                  _NavButtonPair(pageCtrl: pageCtrl, currentPage: currentPage),
                   const SizedBox(width: AppSpacing.sm),
                 ],
                 PlayCircleButton(
@@ -161,11 +179,7 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection> {
               ],
             ),
           ),
-          QuickPicksRow(
-            songs: quickPicks,
-            onPlay: widget.onPlay,
-            pageController: _pageCtrl,
-          ),
+          QuickPicksRow(songs: quickPicks, onPlay: widget.onPlay, pageController: pageCtrl),
           const SizedBox(height: AppSpacing.xxl),
         ],
       ),
@@ -184,35 +198,7 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection> {
   }
 }
 
-/// Small prev/next arrow button used in section headers.
-class _NavButton extends StatelessWidget {
-  const _NavButton({required this.icon, required this.onTap, this.enabled = true});
-  final List<List<dynamic>> icon;
-  final VoidCallback onTap;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        width: AppSpacing.xxl,
-        height: AppSpacing.xxl,
-        decoration: BoxDecoration(
-          color: enabled ? AppColors.surfaceLight : AppColors.surfaceLight.withValues(alpha: 0.4),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: AppIcon(
-            icon: icon,
-            size: 14,
-            color: enabled ? AppColors.textPrimary : AppColors.textMuted,
-          ),
-        ),
-      ),
-    );
-  }
-}
+// ─── Dynamic Sections ─────────────────────────────────────────────────────────
 
 class _DynamicSectionsSkeletonGate extends ConsumerWidget {
   const _DynamicSectionsSkeletonGate();
@@ -221,11 +207,7 @@ class _DynamicSectionsSkeletonGate extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLoading = ref.watch(homeIsLoadingProvider);
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
-
-    if (!isLoading || dynamicSections.isNotEmpty) {
-      return const SizedBox.shrink();
-    }
-
+    if (!isLoading || dynamicSections.isNotEmpty) return const SizedBox.shrink();
     return const Column(
       children: [
         DynamicSectionsSkeleton(),
@@ -251,9 +233,7 @@ class _DynamicSectionsSliceState extends ConsumerState<_DynamicSectionsSlice> {
 
   @override
   void dispose() {
-    for (final c in _controllers.values) {
-      c.dispose();
-    }
+    for (final c in _controllers.values) c.dispose();
     super.dispose();
   }
 
@@ -319,46 +299,37 @@ class _SectionWithNav extends ConsumerStatefulWidget {
   ConsumerState<_SectionWithNav> createState() => _SectionWithNavState();
 }
 
-class _SectionWithNavState extends ConsumerState<_SectionWithNav> {
-  int _page = 0;
+class _SectionWithNavState extends ConsumerState<_SectionWithNav>
+    with PagedSectionMixin {
+  PageController get _ctrl => widget.pageController ?? pageCtrl;
+
+  void _onExternalScroll() {
+    final p = _ctrl.page?.round() ?? 0;
+    if (p != currentPage) setState(() => currentPage = p);
+  }
 
   @override
   void initState() {
     super.initState();
-    widget.pageController?.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final p = widget.pageController?.page?.round() ?? 0;
-    if (p != _page) setState(() => _page = p);
+    widget.pageController?.addListener(_onExternalScroll);
   }
 
   @override
   void dispose() {
-    widget.pageController?.removeListener(_onScroll);
+    widget.pageController?.removeListener(_onExternalScroll);
     super.dispose();
   }
 
   bool _hasOverflow(int cols) {
-    const rows = 1;
-    final pageSize = cols * rows;
-    if (widget.type == HomeSectionType.playlists) return widget.playlists.length > pageSize;
-    if (widget.type == HomeSectionType.artists) return widget.artists.length > pageSize;
+    if (widget.type == HomeSectionType.playlists) return widget.playlists.length > cols;
+    if (widget.type == HomeSectionType.artists) return widget.artists.length > cols;
     return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    final ctrl = widget.pageController;
-    final isDesktop = widget.isDesktop;
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
-    final rightOpen = isDesktop && ref.watch(rightSidebarTabProvider) != null;
-    final screenW = MediaQuery.sizeOf(context).width;
-    final maxWidth = isDesktop
-        ? ShellContext.desktopContentInnerWidth(screenWidth: screenW, rightSidebarOpen: rightOpen, hPad: hPad)
-        : screenW - hPad * 2;
-    final cols = isDesktop ? (maxWidth / 160).floor().clamp(2, 5) : 2;
-    final showNav = ctrl != null && _hasOverflow(cols);
+    final layout = ContentLayout.of(context, ref);
+    final showNav = widget.pageController != null && _hasOverflow(layout.cols);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -371,21 +342,7 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (showNav) ...[
-                _NavButton(
-                  icon: AppIcons.back,
-                  enabled: _page > 0,
-                  onTap: () => ctrl.animateToPage(0,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut),
-                ),
-                const SizedBox(width: AppSpacing.xs),
-                _NavButton(
-                  icon: AppIcons.forward,
-                  enabled: _page == 0,
-                  onTap: () => ctrl.animateToPage(1,
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut),
-                ),
+                _NavButtonPair(pageCtrl: _ctrl, currentPage: currentPage),
               ],
               if (widget.type == HomeSectionType.songs && widget.songs.isNotEmpty) ...[
                 if (showNav) const SizedBox(width: AppSpacing.sm),
@@ -402,14 +359,16 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav> {
         if (widget.type == HomeSectionType.songs)
           QuickPicksRow(songs: widget.songs, onPlay: widget.onPlay),
         if (widget.type == HomeSectionType.playlists)
-          PlaylistsRow(playlists: widget.playlists, pageController: ctrl),
+          PlaylistsRow(playlists: widget.playlists, pageController: _ctrl),
         if (widget.type == HomeSectionType.artists)
-          ArtistsRow(artists: widget.artists, pageController: ctrl),
+          ArtistsRow(artists: widget.artists, pageController: _ctrl),
         const SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
 }
+
+// ─── Made For You Section ─────────────────────────────────────────────────────
 
 class _MadeForYouSection extends ConsumerStatefulWidget {
   const _MadeForYouSection();
@@ -418,40 +377,16 @@ class _MadeForYouSection extends ConsumerStatefulWidget {
   ConsumerState<_MadeForYouSection> createState() => _MadeForYouSectionState();
 }
 
-class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection> {
-  final _pageCtrl = PageController();
-  int _page = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageCtrl.addListener(() {
-      final p = _pageCtrl.page?.round() ?? 0;
-      if (p != _page) setState(() => _page = p);
-    });
-  }
-
-  @override
-  void dispose() {
-    _pageCtrl.dispose();
-    super.dispose();
-  }
-
+class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection>
+    with PagedSectionMixin {
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(homeIsLoadingProvider);
     final playlists = ref.watch(homePlaylistsProvider);
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
-    final isDesktop = ShellContext.isDesktopOf(context);
+    final layout = ContentLayout.of(context, ref);
     final hasDynamicPlaylists = dynamicSections.any((s) => s.type == HomeSectionType.playlists);
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
-    final rightOpen = isDesktop && ref.watch(rightSidebarTabProvider) != null;
-    final screenW = MediaQuery.sizeOf(context).width;
-    final maxWidth = isDesktop
-        ? ShellContext.desktopContentInnerWidth(screenWidth: screenW, rightSidebarOpen: rightOpen, hPad: hPad)
-        : screenW - hPad * 2;
-    final cols = isDesktop ? (maxWidth / 160).floor().clamp(2, 5) : 2;
-    final hasOverflow = playlists.length > cols;
+    final hasOverflow = playlists.length > layout.cols;
 
     return SectionAsyncSwap(
       isLoading: isLoading,
@@ -464,29 +399,10 @@ class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection> {
                   title: 'Made For You',
                   useCompactStyle: true,
                   trailing: hasOverflow
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _NavButton(
-                              icon: AppIcons.back,
-                              enabled: _page > 0,
-                              onTap: () => _pageCtrl.animateToPage(0,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut),
-                            ),
-                            const SizedBox(width: AppSpacing.xs),
-                            _NavButton(
-                              icon: AppIcons.forward,
-                              enabled: _page == 0,
-                              onTap: () => _pageCtrl.animateToPage(1,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut),
-                            ),
-                          ],
-                        )
+                      ? _NavButtonPair(pageCtrl: pageCtrl, currentPage: currentPage)
                       : null,
                 ),
-                PlaylistsRow(playlists: playlists, pageController: _pageCtrl),
+                PlaylistsRow(playlists: playlists, pageController: pageCtrl),
                 const SizedBox(height: AppSpacing.xxl),
               ],
             )
@@ -502,6 +418,8 @@ class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection> {
   }
 }
 
+// ─── Artists Section ──────────────────────────────────────────────────────────
+
 class _ArtistsSection extends ConsumerStatefulWidget {
   const _ArtistsSection();
 
@@ -509,40 +427,16 @@ class _ArtistsSection extends ConsumerStatefulWidget {
   ConsumerState<_ArtistsSection> createState() => _ArtistsSectionState();
 }
 
-class _ArtistsSectionState extends ConsumerState<_ArtistsSection> {
-  final _pageCtrl = PageController();
-  int _page = 0;
-
-  @override
-  void initState() {
-    super.initState();
-    _pageCtrl.addListener(() {
-      final p = _pageCtrl.page?.round() ?? 0;
-      if (p != _page) setState(() => _page = p);
-    });
-  }
-
-  @override
-  void dispose() {
-    _pageCtrl.dispose();
-    super.dispose();
-  }
-
+class _ArtistsSectionState extends ConsumerState<_ArtistsSection>
+    with PagedSectionMixin {
   @override
   Widget build(BuildContext context) {
     final isLoading = ref.watch(homeIsLoadingProvider);
     final artists = ref.watch(homeArtistsProvider);
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
-    final isDesktop = ShellContext.isDesktopOf(context);
+    final layout = ContentLayout.of(context, ref);
     final hasDynamicArtists = dynamicSections.any((s) => s.type == HomeSectionType.artists);
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
-    final rightOpen = isDesktop && ref.watch(rightSidebarTabProvider) != null;
-    final screenW = MediaQuery.sizeOf(context).width;
-    final maxWidth = isDesktop
-        ? ShellContext.desktopContentInnerWidth(screenWidth: screenW, rightSidebarOpen: rightOpen, hPad: hPad)
-        : screenW - hPad * 2;
-    final cols = isDesktop ? (maxWidth / 160).floor().clamp(2, 5) : 2;
-    final hasOverflow = artists.length > cols;
+    final hasOverflow = artists.length > layout.cols;
 
     return SectionAsyncSwap(
       isLoading: isLoading,
@@ -555,29 +449,10 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection> {
                   title: 'Popular Artists',
                   useCompactStyle: true,
                   trailing: hasOverflow
-                      ? Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _NavButton(
-                              icon: AppIcons.back,
-                              enabled: _page > 0,
-                              onTap: () => _pageCtrl.animateToPage(0,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut),
-                            ),
-                            const SizedBox(width: AppSpacing.xs),
-                            _NavButton(
-                              icon: AppIcons.forward,
-                              enabled: _page == 0,
-                              onTap: () => _pageCtrl.animateToPage(1,
-                                  duration: const Duration(milliseconds: 300),
-                                  curve: Curves.easeInOut),
-                            ),
-                          ],
-                        )
+                      ? _NavButtonPair(pageCtrl: pageCtrl, currentPage: currentPage)
                       : null,
                 ),
-                ArtistsRow(artists: artists, pageController: _pageCtrl),
+                ArtistsRow(artists: artists, pageController: pageCtrl),
                 const SizedBox(height: AppSpacing.xxl),
               ],
             )
@@ -592,4 +467,3 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection> {
     );
   }
 }
-

@@ -142,6 +142,14 @@ abstract final class AppColors {
     return loveThemeGradients[index];
   }
 
+  /// Bottom-fade overlay used on artwork cards (song, playlist).
+  static const LinearGradient cardOverlayGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [Colors.transparent, Color(0x99000000)],
+    stops: [0.5, 1.0],
+  );
+
   static LinearGradient dynamicGradient(Color dominantColor) {
     final hsl = HSLColor.fromColor(dominantColor);
     final darker =

@@ -3,9 +3,11 @@ import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../components/shared/collection_detail_scaffold.dart';
+import '../../components/shared/pages/search_page.dart';
 import '../../components/ui/components_ui.dart';
 import '../home/home_shared.dart';
 import '../../../config/app_icons.dart';
@@ -32,33 +34,6 @@ class LibraryPlaylistScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  final FocusNode _searchFocus = FocusNode();
-  Timer? _searchDebounce;
-  String _debouncedQuery = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchController.addListener(_onSearchChanged);
-  }
-
-  void _onSearchChanged() {
-    _searchDebounce?.cancel();
-    _searchDebounce = Timer(const Duration(milliseconds: 300), () {
-      if (mounted) setState(() => _debouncedQuery = _searchController.text.trim().toLowerCase());
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchDebounce?.cancel();
-    _searchController.removeListener(_onSearchChanged);
-    _searchController.dispose();
-    _searchFocus.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     final playlist = ref.watch(libraryPlaylistByIdProvider(widget.playlistId));
@@ -82,16 +57,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final songs = playlist.sortedSongs;
     final isEmpty = songs.isEmpty;
     final hasSong = ref.watch(currentSongProvider) != null;
-    final query = _debouncedQuery;
-    final queryFiltered = query.isEmpty
-        ? songs
-        : songs
-            .where((s) =>
-                s.title.toLowerCase().contains(query) ||
-                s.artist.toLowerCase().contains(query))
-            .toList();
     final showExplicit = ref.watch(showExplicitContentProvider);
-    final filteredSongs = filterByExplicitSetting(queryFiltered, showExplicit);
+    final filteredSongs = filterByExplicitSetting(songs, showExplicit);
 
     final subtitle = Row(
       children: [
@@ -155,10 +122,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         playlist: playlist,
         onPlaylistUpdated: () => setState(() {}),
       ),
-      searchField: _SearchInPlaylist(
-        controller: _searchController,
-        focusNode: _searchFocus,
-        onChanged: () => setState(() {}),
+      searchField: _SearchInPlaylistTap(
+        songs: songs,
+        playlistId: widget.playlistId,
       ),
       bodySlivers: [
         const SliverToBoxAdapter(
@@ -170,9 +136,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               padding: const EdgeInsets.all(AppSpacing.xxl),
               child: Center(
                 child: Text(
-                  query.isEmpty
-                      ? 'No songs'
-                      : 'No matches for "$query" in this playlist',
+                  'No songs',
                   style: TextStyle(
                     color: AppColors.textMuted.withValues(alpha: 0.9),
                     fontSize: AppFontSize.base,
@@ -381,10 +345,9 @@ class _PlaylistActionRow extends ConsumerWidget {
           false),
     );
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      padding: const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
       child: Row(
         children: [
-          MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
           AppIconButton(
             icon: AppIcon(
               icon: AppIcons.shuffle,
@@ -400,8 +363,11 @@ class _PlaylistActionRow extends ConsumerWidget {
                         .togglePlaylistShuffle(playlistId);
                   }
                 : null,
+            size: 40,
+            iconSize: 24,
             color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
           ),
+          MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
           const Spacer(),
           PlayCircleButton(
             onTap: canPlay
@@ -828,33 +794,165 @@ class _AddToPlaylistSheetContentState
   }
 }
 
-class _SearchInPlaylist extends StatelessWidget {
-  const _SearchInPlaylist({
-    required this.controller,
-    required this.focusNode,
-    required this.onChanged,
-  });
+class _SearchInPlaylistTap extends StatelessWidget {
+  const _SearchInPlaylistTap({required this.songs, required this.playlistId});
 
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final VoidCallback onChanged;
+  final List<Song> songs;
+  final String playlistId;
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-      child: AppInputField(
-        controller: controller,
-        focusNode: focusNode,
-        hintText: 'Find in playlist',
-        style: InputFieldStyle.filled,
-        fillColor: AppColors.surfaceLight.withValues(alpha: 0.8),
-        prefixIcon: AppIcon(
-          icon: AppIcons.search,
-          color: AppColors.textMuted.withValues(alpha: 0.9),
-          size: 20,
+      child: GestureDetector(
+        onTap: () {
+          Navigator.of(context).push(
+            appPageRoute<void>(
+              builder: (_) => _PlaylistSearchPage(
+                songs: songs,
+                playlistId: playlistId,
+              ),
+            ),
+          );
+        },
+        child: Container(
+          height: 44,
+          decoration: BoxDecoration(
+            color: AppColors.surfaceLight.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(AppRadius.input),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Row(
+            children: [
+              AppIcon(
+                icon: AppIcons.search,
+                color: AppColors.textMuted.withValues(alpha: 0.9),
+                size: 20,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                'Find in playlist',
+                style: TextStyle(
+                  color: AppColors.textMuted.withValues(alpha: 0.9),
+                  fontSize: AppFontSize.base,
+                ),
+              ),
+            ],
+          ),
         ),
-        onChanged: (_) => onChanged(),
+      ),
+    );
+  }
+}
+
+class _PlaylistSearchPage extends ConsumerStatefulWidget {
+  const _PlaylistSearchPage({required this.songs, required this.playlistId});
+
+  final List<Song> songs;
+  final String playlistId;
+
+  @override
+  ConsumerState<_PlaylistSearchPage> createState() =>
+      _PlaylistSearchPageState();
+}
+
+class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController();
+    _focusNode = FocusNode();
+    _controller.addListener(() => setState(() {}));
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _focusNode.canRequestFocus) _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final query = _controller.text.trim().toLowerCase();
+    final hasSong = ref.watch(currentSongProvider) != null;
+    final showExplicit = ref.watch(showExplicitContentProvider);
+    final filtered = filterByExplicitSetting(
+      query.isEmpty
+          ? widget.songs
+          : widget.songs
+              .where((s) =>
+                  s.title.toLowerCase().contains(query) ||
+                  s.artist.toLowerCase().contains(query))
+              .toList(),
+      showExplicit,
+    );
+
+    final body = query.isEmpty
+        ? SearchPageEmptyState(
+            icon: AppIcon(
+              icon: AppIcons.search,
+              size: 64,
+              color: AppColors.textMuted,
+            ),
+            heading: 'Find in playlist',
+            subheading: 'Search by song title or artist',
+          )
+        : filtered.isEmpty
+            ? EmptyListMessage(
+                emptyLabel: 'matches',
+                query: query,
+                style: const TextStyle(
+                  color: AppColors.textSecondary,
+                  fontSize: AppFontSize.lg,
+                  fontWeight: FontWeight.w600,
+                ),
+              )
+            : ListView.builder(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: AppSpacing.max),
+                itemCount: filtered.length,
+                itemBuilder: (context, index) {
+                  final song = filtered[index];
+                  return _TrackTile(
+                    song: song,
+                    index: widget.songs.indexOf(song) + 1,
+                    songs: widget.songs,
+                    playlistId: widget.playlistId,
+                  );
+                },
+              );
+
+    final searchPage = SharedSearchPage(
+      controller: _controller,
+      focusNode: _focusNode,
+      onBack: () => Navigator.of(context).pop(),
+      onClear: () => setState(() {}),
+      hintText: 'Find in playlist',
+      autofocus: false,
+      body: body,
+    );
+
+    if (!hasSong) return searchPage;
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      resizeToAvoidBottomInset: false,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(child: searchPage),
+            const MiniPlayer(key: ValueKey('playlist-search-mini-player')),
+            SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
+          ],
+        ),
       ),
     );
   }

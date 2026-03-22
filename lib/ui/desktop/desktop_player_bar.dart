@@ -56,9 +56,9 @@ class DesktopPlayerBar extends ConsumerWidget {
                 // Left: song info
                 Expanded(flex: 3, child: _SongInfo()),
                 // Center: controls + seek bar
-                Expanded(flex: 4, child: _CenterControls()),
+                Expanded(flex: 3, child: _CenterControls()),
                 // Right: extra controls + volume
-                Expanded(flex: 3, child: _RightControls()),
+                Expanded(flex: 4, child: _RightControls()),
               ],
             )
           : const Center(
@@ -307,7 +307,7 @@ class _RightControlsState extends ConsumerState<_RightControls> {
       notifier.state = activeTab == tab ? null : tab;
     }
 
-    // Layout: [sleep · lyrics] [vol-icon ── vol-slider ──] [queue · devices]
+    // Layout: [sleep · lyrics]  [vol-icon ── slider]  [queue · devices]
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
@@ -324,7 +324,6 @@ class _RightControlsState extends ConsumerState<_RightControls> {
           size: 30,
           iconSize: 18,
         ),
-        const SizedBox(width: 2),
         AppIconButton(
           icon: AppIcon(
             icon: AppIcons.lyrics,
@@ -336,21 +335,23 @@ class _RightControlsState extends ConsumerState<_RightControls> {
           iconSize: 18,
           tooltip: 'Lyrics',
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
 
         // ── Volume (icon + slider) ────────────────────────────────────────
         GestureDetector(
-          onTap: () =>
-              setState(() => _volume = _volume == 0 ? 1.0 : 0),
+          onTap: () => setState(() => _volume = _volume == 0 ? 1.0 : 0),
           behavior: HitTestBehavior.opaque,
           child: Padding(
             padding: const EdgeInsets.all(AppSpacing.xs),
-            child: AppIcon(icon: volIcon, color: Colors.white.withValues(alpha: 0.75), size: 18),
+            child: AppIcon(
+              icon: volIcon,
+              color: Colors.white.withValues(alpha: 0.75),
+              size: 18,
+            ),
           ),
         ),
-        const SizedBox(width: 4),
         SizedBox(
-          width: 96,
+          width: 80,
           child: SliderTheme(
             data: SliderTheme.of(context).copyWith(
               activeTrackColor: dominantColor,
@@ -358,10 +359,8 @@ class _RightControlsState extends ConsumerState<_RightControls> {
               thumbColor: dominantColor,
               overlayColor: dominantColor.withValues(alpha: 0.15),
               trackHeight: 3,
-              thumbShape:
-                  const RoundSliderThumbShape(enabledThumbRadius: 5),
-              overlayShape:
-                  const RoundSliderOverlayShape(overlayRadius: 10),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
             ),
             child: Slider(
               value: _volume,
@@ -372,9 +371,9 @@ class _RightControlsState extends ConsumerState<_RightControls> {
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 4),
 
-        // ── Right pair ───────────────────────────────────────────────────
+        // ── Right pair ────────────────────────────────────────────────────
         AppIconButton(
           icon: AppIcon(
             icon: AppIcons.queueMusic,
@@ -386,7 +385,6 @@ class _RightControlsState extends ConsumerState<_RightControls> {
           iconSize: 18,
           tooltip: 'Queue',
         ),
-        const SizedBox(width: 2),
         AppIconButton(
           icon: AppIcon(
             icon: AppIcons.devices,

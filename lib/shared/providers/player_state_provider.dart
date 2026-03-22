@@ -367,6 +367,30 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _lastNotifiedDurationMs = ms;
   }
 
+  /// When a song's stored duration is unknown (zero), write the real duration
+  /// back to the library so it shows correctly in playlists and liked songs.
+  void _maybeUpdateLibrarySongDuration(Song song, Duration realDuration) {
+    if (song.duration.inMilliseconds > 0) return; // already has a real duration
+    if (realDuration.inMilliseconds <= 0) return;
+    final library = ref.read(libraryProvider);
+    // Update in liked songs
+    final likedIdx = library.likedSongs.indexWhere((s) => s.id == song.id);
+    if (likedIdx != -1) {
+      final updated = List<Song>.from(library.likedSongs);
+      updated[likedIdx] = song.copyWith(duration: realDuration);
+      ref.read(libraryProvider.notifier).setLikedSongsOrder(updated);
+    }
+    // Update in playlists
+    for (final playlist in library.playlists) {
+      final songIdx = playlist.songs.indexWhere((s) => s.id == song.id);
+      if (songIdx != -1) {
+        final updatedSongs = List<Song>.from(playlist.songs);
+        updatedSongs[songIdx] = song.copyWith(duration: realDuration);
+        ref.read(libraryProvider.notifier).setPlaylistSongs(playlist.id, updatedSongs);
+      }
+    }
+  }
+
   void _maybeFetchAndApplyNormalizationGain(Song song) {
     if (!state.isNormalizationEnabled) return;
     if (_lastNormalizationGainFetchedForSongId == song.id) return;
@@ -782,6 +806,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
           final song = state.currentSong;
           if (song != null) {
             _maybeUpdateNotificationDuration(song, duration);
+            // Persist real duration back to library if the stored value is unknown.
+            _maybeUpdateLibrarySongDuration(song, duration);
           }
           _persistPlaybackState();
         });

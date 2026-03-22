@@ -122,7 +122,11 @@ class DatabaseRepository {
         description: m['description'] as String? ?? '',
         createdAt: _parseDateTime(m['created_at']),
         updatedAt: _parseDateTime(m['updated_at']),
-        songs: songsList.map((s) => Song.fromJson(Map<String, dynamic>.from(s as Map))).toList(),
+        songs: songsList.map((s) {
+          final sm = Map<String, dynamic>.from(s as Map);
+          _migrateFallbackDuration(sm);
+          return Song.fromJson(sm);
+        }).toList(),
         sortOrder: PlaylistTrackSortOrderX.fromString(m['sort_order'] as String?),
         shuffleEnabled: m['shuffleEnabled'] as bool? ?? false,
         isPinned: m['is_pinned'] as bool? ?? false,
@@ -144,6 +148,7 @@ class DatabaseRepository {
 
     final likedSongs = likedRaw.map((s) {
       final m = Map<String, dynamic>.from(s as Map);
+      _migrateFallbackDuration(m);
       return Song.fromJson(m);
     }).toList();
 
@@ -216,6 +221,16 @@ class DatabaseRepository {
     if (v == null) return DateTime.now();
     if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
     return DateTime.now();
+  }
+
+  /// Migrates songs that were stored with the old 3-minute fallback duration
+  /// (180000ms) to Duration.zero so they display as "--:--" instead of "03:00".
+  static void _migrateFallbackDuration(Map<String, dynamic> songMap) {
+    const fallbackMs = 180000; // Duration(minutes: 3).inMilliseconds
+    final durMs = songMap['durationMs'];
+    if (durMs == fallbackMs) {
+      songMap['durationMs'] = 0;
+    }
   }
 }
 

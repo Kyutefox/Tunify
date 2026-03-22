@@ -5,6 +5,7 @@ import '../../../../config/app_icons.dart';
 import '../../../../models/song.dart';
 import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
+import '../../../../ui/screens/home/home_shared.dart';
 import '../components_ui.dart';
 
 class SongCard extends StatefulWidget {
@@ -35,26 +36,17 @@ class SongCard extends StatefulWidget {
 
 class _SongCardState extends State<SongCard> {
   bool _isHovered = false;
-  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOutCubic,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: PressScale(
+        onTap: widget.onTap ?? () {},
+        scale: 0.95,
+        child: SizedBox(
           width: 150,
-          margin: const EdgeInsets.only(right: 12),
-          transform: Matrix4.identity()
-            ..scaleByDouble(_isPressed ? 0.95 : (_isHovered ? 1.02 : 1.0),
-                _isPressed ? 0.95 : (_isHovered ? 1.02 : 1.0), 1.0, 1.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -65,9 +57,7 @@ class _SongCardState extends State<SongCard> {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
-                  color: widget.isPlaying
-                      ? AppColors.primary
-                      : AppColors.textPrimary,
+                  color: widget.isPlaying ? AppColors.primary : AppColors.textPrimary,
                   fontSize: AppFontSize.base,
                   fontWeight: FontWeight.w600,
                   letterSpacing: AppLetterSpacing.heading,
@@ -121,27 +111,12 @@ class _SongCardState extends State<SongCard> {
             CachedNetworkImage(
               imageUrl: widget.song.thumbnailUrl,
               fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: AppColors.surfaceHighlight,
-                child: Center(
-                  child: AppIcon(
-                    icon: AppIcons.musicNote,
-                    color: AppColors.textMuted,
-                    size: 32,
-                  ),
-                ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: AppColors.surfaceHighlight,
-                child: Center(
-                  child: AppIcon(
-                    icon: AppIcons.brokenImage,
-                    color: AppColors.textMuted,
-                    size: 32,
-                  ),
-                ),
-              ),
+              placeholder: (context, url) => PlaceholderArt(size: 150),
+              errorWidget: (context, url, error) => PlaceholderArt(size: 150),
             ),
+            // Bottom-fade overlay
+            Container(decoration: const BoxDecoration(gradient: AppColors.cardOverlayGradient)),
+            // Now-playing tint + indicator
             if (widget.isPlaying)
               Positioned.fill(
                 child: Container(
@@ -149,59 +124,25 @@ class _SongCardState extends State<SongCard> {
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [
-                        Colors.transparent,
-                        AppColors.primary.withValues(alpha: 0.6),
-                      ],
+                      colors: [Colors.transparent, AppColors.primary.withValues(alpha: 0.6)],
                     ),
                   ),
                   child: Center(
-                    child: NowPlayingIndicator(
-                      size: 32,
-                      barCount: 4,
-                      animate: true,
-                    ),
+                    child: NowPlayingIndicator(size: 32, barCount: 4, animate: true),
                   ),
                 ),
               ),
-            AnimatedOpacity(
-              opacity: _isHovered && !widget.isPlaying ? 0.6 : 0,
-              duration: const Duration(milliseconds: 200),
-              child: Container(
-                color: Colors.black,
-                child: Center(
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: AppColors.primaryGradient,
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.primary.withValues(alpha: 0.6),
-                          blurRadius: 16,
-                          spreadRadius: 2,
-                        ),
-                      ],
-                    ),
-                    child: AppIcon(
-                      icon: AppIcons.play,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                ),
-              ),
-            ),
+            // Hover play overlay
+            if (!widget.isPlaying) HoverPlayOverlay(visible: _isHovered),
+            // Duration badge
             Positioned(
               bottom: 8,
               right: 8,
               child: AnimatedOpacity(
-                opacity: !widget.isPlaying ? 1 : 0,
-                duration: const Duration(milliseconds: 200),
+                opacity: widget.isPlaying ? 0 : 1,
+                duration: AppDuration.fast,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                   decoration: BoxDecoration(
                     color: Colors.black.withValues(alpha: 0.7),
                     borderRadius: BorderRadius.circular(AppRadius.xs),
@@ -223,10 +164,7 @@ class _SongCardState extends State<SongCard> {
     );
 
     if (widget.enableHero) {
-      return Hero(
-        tag: 'song_artwork_${widget.song.id}',
-        child: artwork,
-      );
+      return Hero(tag: widget.heroTag ?? 'song_artwork_${widget.song.id}', child: artwork);
     }
     return artwork;
   }
@@ -252,7 +190,7 @@ class _SongCardState extends State<SongCard> {
   }
 }
 
-class LargeSongCard extends StatefulWidget {
+class LargeSongCard extends StatelessWidget {
   final Song song;
   final VoidCallback? onTap;
   final bool isPlaying;
@@ -267,39 +205,25 @@ class LargeSongCard extends StatefulWidget {
   });
 
   @override
-  State<LargeSongCard> createState() => _LargeSongCardState();
-}
-
-class _LargeSongCardState extends State<LargeSongCard> {
-  bool _isPressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        transform: Matrix4.identity()
-          ..scaleByDouble(
-              _isPressed ? 0.97 : 1.0, _isPressed ? 0.97 : 1.0, 1.0, 1.0),
+    return PressScale(
+      onTap: onTap ?? () {},
+      scale: 0.97,
+      child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           gradient: AppColors.cardGradient,
           borderRadius: BorderRadius.circular(AppRadius.lg),
           border: Border.all(
-            color: widget.isPlaying
+            color: isPlaying
                 ? AppColors.primary.withValues(alpha: 0.5)
                 : AppColors.surfaceHighlight,
             width: 1,
           ),
           boxShadow: [
             BoxShadow(
-              color: widget.isPlaying
+              color: isPlaying
                   ? AppColors.primary.withValues(alpha: 0.2)
                   : Colors.black.withValues(alpha: 0.2),
               blurRadius: 16,
@@ -310,11 +234,11 @@ class _LargeSongCardState extends State<LargeSongCard> {
         child: Row(
           children: [
             Hero(
-              tag: 'large_song_${widget.song.id}',
+              tag: 'large_song_${song.id}',
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 child: CachedNetworkImage(
-                  imageUrl: widget.song.thumbnailUrl,
+                  imageUrl: song.thumbnailUrl,
                   width: 64,
                   height: 64,
                   fit: BoxFit.cover,
@@ -328,55 +252,42 @@ class _LargeSongCardState extends State<LargeSongCard> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    widget.song.title,
+                    song.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      color: widget.isPlaying
-                          ? AppColors.primary
-                          : AppColors.textPrimary,
+                      color: isPlaying ? AppColors.primary : AppColors.textPrimary,
                       fontSize: AppFontSize.lg,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    widget.song.artist,
+                    song.artist,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: AppFontSize.md,
-                    ),
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.md),
                   ),
                 ],
               ),
             ),
-            if (widget.isPlaying)
-              NowPlayingIndicator(
-                size: 24,
-                barCount: 4,
-                animate: true,
-              )
+            if (isPlaying)
+              NowPlayingIndicator(size: 24, barCount: 4, animate: true)
             else
               Container(
                 width: 40,
                 height: 40,
-                decoration: BoxDecoration(
+                decoration: const BoxDecoration(
                   shape: BoxShape.circle,
                   color: AppColors.surfaceHighlight,
                 ),
-                child: AppIcon(
-                  icon: AppIcons.play,
-                  color: AppColors.textPrimary,
-                  size: 24,
-                ),
+                child: AppIcon(icon: AppIcons.play, color: AppColors.textPrimary, size: 24),
               ),
           ],
         ),
       ),
     )
-        .animate(delay: Duration(milliseconds: widget.index * 80))
+        .animate(delay: Duration(milliseconds: index * 80))
         .fadeIn(duration: 400.ms)
         .slideY(begin: 0.1, curve: Curves.easeOutCubic);
   }

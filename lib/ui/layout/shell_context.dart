@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../desktop/desktop_right_sidebar.dart';
 import '../desktop/desktop_sidebar.dart';
@@ -51,4 +52,49 @@ class ShellContext extends InheritedWidget {
   @override
   bool updateShouldNotify(ShellContext old) =>
       isDesktop != old.isDesktop || onPushDetail != old.onPushDetail;
+}
+
+/// Computes the responsive column count and max content width used by all
+/// home/library section rows. Call once per build, pass results down.
+class ContentLayout {
+  const ContentLayout({
+    required this.cols,
+    required this.maxWidth,
+    required this.hPad,
+  });
+
+  final int cols;
+  final double maxWidth;
+  final double hPad;
+
+  /// Resolves layout for the current context + ref.
+  /// [itemWidth] is the approximate width of one column item (default 160).
+  static ContentLayout of(
+    BuildContext context,
+    WidgetRef ref, {
+    double itemWidth = 160,
+    int minCols = 2,
+    int maxCols = 5,
+  }) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final hPad = isDesktop ? 24.0 : 16.0; // AppSpacing.xl : AppSpacing.base
+    final screenW = MediaQuery.sizeOf(context).width;
+
+    final double maxWidth;
+    final int cols;
+    if (isDesktop) {
+      final rightOpen = ref.watch(rightSidebarTabProvider) != null;
+      maxWidth = ShellContext.desktopContentInnerWidth(
+        screenWidth: screenW,
+        rightSidebarOpen: rightOpen,
+        hPad: hPad,
+      );
+      cols = (maxWidth / itemWidth).floor().clamp(minCols, maxCols);
+    } else {
+      maxWidth = screenW - hPad * 2;
+      cols = minCols;
+    }
+
+    return ContentLayout(cols: cols, maxWidth: maxWidth, hPad: hPad);
+  }
 }

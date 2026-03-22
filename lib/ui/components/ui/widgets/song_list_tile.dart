@@ -1,13 +1,12 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../config/app_icons.dart';
 import '../../../../models/song.dart';
 import '../../../../shared/providers/content_settings_provider.dart';
-import '../../../../shared/providers/player_state_provider.dart';
 import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
+import '../../../../ui/screens/home/home_shared.dart';
 import 'now_playing_indicator.dart';
 
 class SongListTile extends ConsumerWidget {
@@ -30,33 +29,18 @@ class SongListTile extends ConsumerWidget {
 
   final Song song;
   final VoidCallback onTap;
-
   final int? index;
-
   final double thumbnailSize;
-
   final Widget? thumbnail;
-
   final Widget? subtitle;
-
   final Widget? trailing;
-
   final EdgeInsets contentPadding;
-
   final bool highlightBackground;
-
   final bool showIndexIndicator;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Use .select() to scope each tile's rebuild to only its own now-playing status,
-    // avoiding O(n) mass rebuilds across all tiles when the current song changes.
-    final isNowPlaying = ref.watch(
-      playerProvider.select((s) => s.currentSong?.id == song.id),
-    );
-    final isActuallyPlaying = ref.watch(
-      playerProvider.select((s) => s.isPlaying),
-    );
+    final status = NowPlayingStatus.of(ref, song.id);
     final showExplicitContent = ref.watch(showExplicitContentProvider);
     final showEBadge = showExplicitContent && song.isExplicit;
 
@@ -64,7 +48,7 @@ class SongListTile extends ConsumerWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: Container(
-        color: highlightBackground && isNowPlaying
+        color: highlightBackground && status.isNowPlaying
             ? AppColors.primary.withValues(alpha: 0.08)
             : null,
         padding: contentPadding,
@@ -73,9 +57,8 @@ class SongListTile extends ConsumerWidget {
             if (index != null) ...[
               SizedBox(
                 width: 24,
-                child: isNowPlaying && showIndexIndicator
-                    ? NowPlayingIndicator(
-                        size: 16, barCount: 3, animate: isActuallyPlaying)
+                child: status.isNowPlaying && showIndexIndicator
+                    ? NowPlayingIndicator(size: 16, barCount: 3, animate: status.isPlaying)
                     : Text(
                         '$index',
                         style: const TextStyle(
@@ -86,16 +69,17 @@ class SongListTile extends ConsumerWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
             ],
-
-            // Keep the cover art static; move the animated visualiser to the title.
             SizedBox(
               width: thumbnailSize,
               height: thumbnailSize,
-              child: thumbnail ?? _defaultThumbnail(),
+              child: thumbnail ??
+                  DpiAwareThumbnail(
+                    url: song.thumbnailUrl,
+                    size: thumbnailSize,
+                    placeholder: _thumbPlaceholder(),
+                  ),
             ),
-
             const SizedBox(width: AppSpacing.md),
-
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,30 +88,13 @@ class SongListTile extends ConsumerWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Only show the inline indicator when there is no index
-                      // column already displaying it (avoids duplication).
-                      if (isNowPlaying && (index == null || !showIndexIndicator))
-                        Padding(
-                          padding:
-                              const EdgeInsets.only(right: AppSpacing.xs),
-                          child: SizedBox(
-                            width: 10,
-                            height: 10,
-                            child: FittedBox(
-                              fit: BoxFit.contain,
-                              child: NowPlayingIndicator(
-                                size: 8,
-                                barCount: 3,
-                                animate: isActuallyPlaying,
-                              ),
-                            ),
-                          ),
-                        ),
+                      if (status.isNowPlaying && (index == null || !showIndexIndicator))
+                        InlineNowPlayingDot(animate: status.isPlaying),
                       Expanded(
                         child: Text(
                           song.title,
                           style: TextStyle(
-                            color: isNowPlaying
+                            color: status.isNowPlaying
                                 ? AppColors.primary
                                 : AppColors.textPrimary,
                             fontSize: AppFontSize.base,
@@ -144,7 +111,7 @@ class SongListTile extends ConsumerWidget {
                       Row(
                         children: [
                           if (showEBadge) ...[
-                            _ExplicitBadge(),
+                            const ExplicitBadge(),
                             const SizedBox(width: 4),
                           ],
                           Expanded(
@@ -163,19 +130,10 @@ class SongListTile extends ConsumerWidget {
                 ],
               ),
             ),
-
             if (trailing != null) trailing!,
           ],
         ),
       ),
-    );
-  }
-
-  Widget _defaultThumbnail() {
-    return _DpiAwareThumbnail(
-      url: song.thumbnailUrl,
-      size: thumbnailSize,
-      placeholder: _thumbPlaceholder(),
     );
   }
 
@@ -191,61 +149,6 @@ class SongListTile extends ConsumerWidget {
           size: thumbnailSize > 50 ? 24 : 22,
         ),
       ),
-    );
-  }
-}
-
-class _ExplicitBadge extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.textMuted.withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(AppRadius.xs),
-      ),
-      child: const Text(
-        'E',
-        style: TextStyle(
-          color: AppColors.textMuted,
-          fontSize: AppFontSize.micro,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
-/// DPI-aware thumbnail that uses [MediaQuery.devicePixelRatio] for correct
-/// [memCacheWidth]/[memCacheHeight] values, preventing blurry upscaling on
-/// high-density screens.
-class _DpiAwareThumbnail extends StatelessWidget {
-  const _DpiAwareThumbnail({
-    required this.url,
-    required this.size,
-    required this.placeholder,
-  });
-
-  final String url;
-  final double size;
-  final Widget placeholder;
-
-  @override
-  Widget build(BuildContext context) {
-    final cachePx = (size * MediaQuery.devicePixelRatioOf(context)).round();
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
-      child: url.isNotEmpty
-          ? CachedNetworkImage(
-              imageUrl: url,
-              width: size,
-              height: size,
-              memCacheWidth: cachePx,
-              memCacheHeight: cachePx,
-              fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => placeholder,
-            )
-          : placeholder,
     );
   }
 }

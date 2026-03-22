@@ -28,12 +28,15 @@ class _DominantColorNotifier extends Notifier<Color> {
     // Kick off extraction for the song that's already playing on first build.
     final url = ref.read(currentSongProvider)?.thumbnailUrl;
     if (url != null) _extract(url);
-    return AppColors.primary;
+    // Return cached color immediately if available — avoids the primary-color
+    // flash on first open when the palette has already been extracted.
+    if (url != null && _cache.containsKey(url)) return _cache[url]!;
+    return AppColors.surfaceLight;
   }
 
   Future<void> _extract(String? url) async {
     if (url == null) {
-      state = AppColors.primary;
+      // No song playing — keep current state, don't flash to primary.
       return;
     }
     if (_cache.containsKey(url)) {
@@ -58,7 +61,7 @@ class _DominantColorNotifier extends Notifier<Color> {
       _cache[url] = boosted;
       state = boosted;
     } catch (_) {
-      state = AppColors.primary;
+      // Keep current state on failure — don't flash to primary.
     } finally {
       _inflight = null;
     }

@@ -5,6 +5,7 @@ import '../../../../config/app_icons.dart';
 import '../../../../models/playlist.dart';
 import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
+import '../../../../ui/screens/home/home_shared.dart';
 
 class PlaylistCard extends StatefulWidget {
   final Playlist playlist;
@@ -28,26 +29,17 @@ class PlaylistCard extends StatefulWidget {
 
 class _PlaylistCardState extends State<PlaylistCard> {
   bool _isHovered = false;
-  bool _isPressed = false;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutCubic,
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: PressScale(
+        onTap: widget.onTap ?? () {},
+        scale: 0.95,
+        child: SizedBox(
           width: widget.width,
-          margin: const EdgeInsets.only(right: 16),
-          transform: Matrix4.identity()
-            ..scaleByDouble(_isPressed ? 0.95 : (_isHovered ? 1.03 : 1.0),
-                _isPressed ? 0.95 : (_isHovered ? 1.03 : 1.0), 1.0, 1.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -78,16 +70,12 @@ class _PlaylistCardState extends State<PlaylistCard> {
                     ),
                     const Text(
                       ' • ',
-                      style:
-                          TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                      style: TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
                     ),
                   ],
                   Text(
                     widget.playlist.trackCountFormatted,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: AppFontSize.sm,
-                    ),
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
                   ),
                 ],
               ),
@@ -125,96 +113,24 @@ class _PlaylistCardState extends State<PlaylistCard> {
             CachedNetworkImage(
               imageUrl: widget.playlist.coverUrl,
               fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.cardGradient,
-                ),
-                child: Center(
-                  child: AppIcon(
-                    icon: AppIcons.queueMusic,
-                    color: AppColors.textMuted,
-                    size: 40,
-                  ),
-                ),
-              ),
-              errorWidget: (context, url, error) => Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.cardGradient,
-                ),
-                child: Center(
-                  child: AppIcon(
-                    icon: AppIcons.queueMusic,
-                    color: AppColors.textMuted,
-                    size: 40,
-                  ),
-                ),
-              ),
+              placeholder: (context, url) => PlaceholderArt(size: widget.width),
+              errorWidget: (context, url, error) => PlaceholderArt(size: widget.width),
             ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black.withValues(alpha: 0.6),
-                  ],
-                  stops: const [0.5, 1.0],
-                ),
-              ),
-            ),
-            AnimatedOpacity(
-              opacity: _isHovered ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 200),
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.3),
-                child: Center(
-                  child: TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.8, end: _isHovered ? 1.0 : 0.8),
-                    duration: const Duration(milliseconds: 200),
-                    builder: (context, scale, child) {
-                      return Transform.scale(
-                        scale: scale,
-                        child: Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            gradient: AppColors.primaryGradient,
-                            boxShadow: [
-                              BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.6),
-                                blurRadius: 20,
-                                spreadRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: AppIcon(
-                            icon: AppIcons.play,
-                            color: Colors.white,
-                            size: 32,
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-            ),
+            // Shared bottom-fade overlay
+            Container(decoration: const BoxDecoration(gradient: AppColors.cardOverlayGradient)),
+            // Shared hover play overlay
+            HoverPlayOverlay(visible: _isHovered),
+            // Duration badge (hidden on hover)
             Positioned(
               left: 12,
               right: 12,
               bottom: 12,
               child: AnimatedOpacity(
                 opacity: _isHovered ? 0.0 : 1.0,
-                duration: const Duration(milliseconds: 200),
+                duration: AppDuration.fast,
                 child: Row(
                   children: [
-                    AppIcon(
-                      icon: AppIcons.playCircleFilled,
-                      color: Colors.white70,
-                      size: 18,
-                    ),
+                    AppIcon(icon: AppIcons.playCircleFilled, color: Colors.white70, size: 18),
                     const SizedBox(width: 6),
                     Text(
                       widget.playlist.durationFormatted,
@@ -235,7 +151,7 @@ class _PlaylistCardState extends State<PlaylistCard> {
   }
 }
 
-class LargePlaylistCard extends StatefulWidget {
+class LargePlaylistCard extends StatelessWidget {
   final Playlist playlist;
   final VoidCallback? onTap;
   final int index;
@@ -248,40 +164,22 @@ class LargePlaylistCard extends StatefulWidget {
   });
 
   @override
-  State<LargePlaylistCard> createState() => _LargePlaylistCardState();
-}
-
-class _LargePlaylistCardState extends State<LargePlaylistCard> {
-  bool _isPressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final cardWidth = screenWidth - 40;
+    final cardWidth = MediaQuery.of(context).size.width - 40;
 
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
+    return PressScale(
+      onTap: onTap ?? () {},
+      scale: 0.98,
+      child: Container(
         width: cardWidth,
         height: 200,
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        transform: Matrix4.identity()
-          ..scaleByDouble(
-              _isPressed ? 0.98 : 1.0, _isPressed ? 0.98 : 1.0, 1.0, 1.0),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.xl),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              CachedNetworkImage(
-                imageUrl: widget.playlist.coverUrl,
-                fit: BoxFit.cover,
-              ),
+              CachedNetworkImage(imageUrl: playlist.coverUrl, fit: BoxFit.cover),
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -302,16 +200,15 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (widget.playlist.curatorName != null)
+                    if (playlist.curatorName != null)
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.8),
                           borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Text(
-                          widget.playlist.curatorName!,
+                          playlist.curatorName!,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: AppFontSize.xs,
@@ -321,7 +218,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                       ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
-                      widget.playlist.title,
+                      playlist.title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -333,7 +230,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
-                      widget.playlist.description,
+                      playlist.description,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -345,8 +242,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                     Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 16, vertical: 8),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           decoration: BoxDecoration(
                             gradient: AppColors.primaryGradient,
                             borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -354,10 +250,9 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              AppIcon(icon: AppIcons.play,
-                                  color: Colors.white, size: 20),
+                              AppIcon(icon: AppIcons.play, color: Colors.white, size: 20),
                               const SizedBox(width: AppSpacing.xs),
-                              Text(
+                              const Text(
                                 'Play',
                                 style: TextStyle(
                                   color: Colors.white,
@@ -370,7 +265,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
                         ),
                         const SizedBox(width: AppSpacing.md),
                         Text(
-                          '${widget.playlist.trackCountFormatted} • ${widget.playlist.durationFormatted}',
+                          '${playlist.trackCountFormatted} • ${playlist.durationFormatted}',
                           style: TextStyle(
                             color: Colors.white.withValues(alpha: 0.6),
                             fontSize: AppFontSize.sm,
@@ -386,7 +281,7 @@ class _LargePlaylistCardState extends State<LargePlaylistCard> {
         ),
       ),
     )
-        .animate(delay: Duration(milliseconds: widget.index * 100))
+        .animate(delay: Duration(milliseconds: index * 100))
         .fadeIn(duration: 500.ms)
         .slideY(begin: 0.1, curve: Curves.easeOutCubic);
   }

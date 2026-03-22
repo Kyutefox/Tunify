@@ -1,26 +1,22 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
-import '../../../config/app_icons.dart';
 import '../../../models/artist.dart';
 import '../../../models/mood.dart';
 import '../../../models/playlist.dart';
 import '../../../models/song.dart';
 import '../../../shared/providers/content_settings_provider.dart';
 import '../../../shared/providers/player_state_provider.dart';
-import '../../desktop/desktop_right_sidebar.dart';
+import '../../components/ui/widgets/artist_avatar.dart';
+import '../../components/ui/widgets/mood_browse_sheet.dart';
+import '../../layout/shell_context.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/design_tokens.dart';
-
-import '../../components/ui/widgets/mood_browse_sheet.dart';
-import '../../components/ui/widgets/now_playing_indicator.dart';
-import '../../layout/shell_context.dart';
 import 'home_shared.dart';
 
 /// A stable [PageView] wrapper that lives outside [LayoutBuilder] to prevent
-/// the [PageController] from being detached/reattached on every layout pass,
-/// which causes `_elements.contains(element)` assertion failures.
+/// the [PageController] from being detached/reattached on every layout pass.
 class _StablePager extends StatelessWidget {
   const _StablePager({
     required this.height,
@@ -35,20 +31,15 @@ class _StablePager extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       height: height,
-      child: PageView(
-        controller: controller,
-        children: pages,
-      ),
+      child: PageView(controller: controller, children: pages),
     );
   }
 }
 
+// ─── Recently Played ──────────────────────────────────────────────────────────
+
 class RecentlyPlayedRow extends StatelessWidget {
-  const RecentlyPlayedRow({
-    super.key,
-    required this.songs,
-    required this.onPlay,
-  });
+  const RecentlyPlayedRow({super.key, required this.songs, required this.onPlay});
   final List<Song> songs;
   final void Function(Song song) onPlay;
 
@@ -62,10 +53,7 @@ class RecentlyPlayedRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
         itemCount: songs.take(8).length,
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (ctx, i) => SquareSongCard(
-          song: songs[i],
-          onTap: () => onPlay(songs[i]),
-        ),
+        itemBuilder: (ctx, i) => SquareSongCard(song: songs[i], onTap: () => onPlay(songs[i])),
       ),
     );
   }
@@ -78,9 +66,7 @@ class SquareSongCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentSong = ref.watch(currentSongProvider);
-    final isActuallyPlaying = ref.watch(isPlayingProvider);
-    final isNowPlaying = currentSong?.id == song.id;
+    final status = NowPlayingStatus.of(ref, song.id);
 
     return PressScale(
       onTap: onTap,
@@ -90,48 +76,21 @@ class SquareSongCard extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              clipBehavior: Clip.hardEdge,
-              child: CachedNetworkImage(
-                imageUrl: song.thumbnailUrl,
-                width: 148,
-                height: 148,
-                fit: BoxFit.cover,
-                fadeInDuration: Duration.zero,
-                fadeOutDuration: Duration.zero,
-                memCacheWidth: cachePx(context, 148),
-                memCacheHeight: cachePx(context, 148),
-                errorWidget: (_, __, ___) => PlaceholderArt(size: 148),
-              ),
+            DpiAwareThumbnail(
+              url: song.thumbnailUrl,
+              size: 148,
+              radius: AppRadius.md,
             ),
             const SizedBox(height: AppSpacing.sm),
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (isNowPlaying)
-                  Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.xs),
-                    child: SizedBox(
-                      width: 10,
-                      height: 10,
-                      child: FittedBox(
-                        fit: BoxFit.contain,
-                        child: NowPlayingIndicator(
-                          size: 8,
-                          barCount: 3,
-                          animate: isActuallyPlaying,
-                        ),
-                      ),
-                    ),
-                  ),
+                if (status.isNowPlaying) InlineNowPlayingDot(animate: status.isPlaying),
                 Expanded(
                   child: Text(
                     song.title,
                     style: TextStyle(
-                      color: isNowPlaying
-                          ? AppColors.accent
-                          : AppColors.textPrimary,
+                      color: status.isNowPlaying ? AppColors.accent : AppColors.textPrimary,
                       fontSize: AppFontSize.md,
                       fontWeight: FontWeight.w600,
                     ),
@@ -143,10 +102,7 @@ class SquareSongCard extends ConsumerWidget {
             ),
             Text(
               song.artist,
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: AppFontSize.xs,
-              ),
+              style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.xs),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -157,6 +113,8 @@ class SquareSongCard extends ConsumerWidget {
   }
 }
 
+// ─── Quick Picks ──────────────────────────────────────────────────────────────
+
 class QuickPicksRow extends ConsumerStatefulWidget {
   const QuickPicksRow({
     super.key,
@@ -166,100 +124,75 @@ class QuickPicksRow extends ConsumerStatefulWidget {
   });
   final List<Song> songs;
   final void Function(Song song) onPlay;
-  /// Optional external controller so the section header can drive page changes.
   final PageController? pageController;
 
   @override
   ConsumerState<QuickPicksRow> createState() => _QuickPicksRowState();
 }
 
-class _QuickPicksRowState extends ConsumerState<QuickPicksRow> {
-  late final PageController _ctrl;
-  bool _ownsController = false;
-  int _page = 0;
+class _QuickPicksRowState extends ConsumerState<QuickPicksRow> with PagedSectionMixin {
+  // Use external controller when provided, otherwise fall back to mixin's.
+  PageController get _ctrl => widget.pageController ?? pageCtrl;
+
+  void _onExternalScroll() {
+    final p = _ctrl.page?.round() ?? 0;
+    if (p != currentPage) setState(() => currentPage = p);
+  }
 
   @override
   void initState() {
     super.initState();
-    if (widget.pageController != null) {
-      _ctrl = widget.pageController!;
-    } else {
-      _ctrl = PageController();
-      _ownsController = true;
-    }
-    _ctrl.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final p = _ctrl.page?.round() ?? 0;
-    if (p != _page) setState(() => _page = p);
+    widget.pageController?.addListener(_onExternalScroll);
   }
 
   @override
   void dispose() {
-    _ctrl.removeListener(_onScroll);
-    if (_ownsController) _ctrl.dispose();
+    widget.pageController?.removeListener(_onExternalScroll);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final maxRows = 4;
-    final tileH = isDesktop ? 76.0 : 64.0;
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final layout = ContentLayout.of(context, ref, itemWidth: 200);
+    const maxRows = 4;
+    final tileH = layout.cols > 2 ? 76.0 : 64.0;
     const gap = AppSpacing.sm;
 
     final capped = widget.songs.take(40).toList();
-
-    // Use exact content-panel width so cols update immediately when sidebar opens.
-    final double maxWidth;
-    final int cols;
-    if (isDesktop) {
-      final rightOpen = ref.watch(rightSidebarTabProvider) != null;
-      final screenW = MediaQuery.sizeOf(context).width;
-      maxWidth = ShellContext.desktopContentInnerWidth(
-        screenWidth: screenW,
-        rightSidebarOpen: rightOpen,
-        hPad: hPad,
-      );
-      cols = (maxWidth / 200).floor().clamp(2, 5);
-    } else {
-      maxWidth = MediaQuery.sizeOf(context).width - hPad * 2;
-      cols = 2;
-    }
-
-    final pageSize = cols * maxRows;
+    final pageSize = layout.cols * maxRows;
     final gridItems = capped.take(pageSize).toList();
     final overflowItems = capped.length > pageSize ? capped.sublist(pageSize) : <Song>[];
     final hasOverflow = overflowItems.isNotEmpty;
 
-    final totalGap = gap * (cols - 1);
-    final tileW = ((maxWidth - totalGap) / cols).floorToDouble();
+    final totalGap = gap * (layout.cols - 1);
+    final tileW = ((layout.maxWidth - totalGap) / layout.cols).floorToDouble();
     final gridH = tileH * maxRows + gap * (maxRows - 1);
 
-    final gridRows = <List<Song>>[];
-    for (var i = 0; i < gridItems.length; i += cols) {
-      gridRows.add(gridItems.sublist(i, (i + cols).clamp(0, gridItems.length)));
+    List<List<Song>> toRows(List<Song> items) {
+      final rows = <List<Song>>[];
+      for (var i = 0; i < items.length; i += layout.cols) {
+        rows.add(items.sublist(i, (i + layout.cols).clamp(0, items.length)));
+      }
+      return rows;
     }
 
-    Widget buildGrid() => Column(
+    Widget buildGrid(List<Song> items) => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            for (var r = 0; r < gridRows.length; r++) ...[
+            for (var r = 0; r < toRows(items).length; r++) ...[
               if (r > 0) const SizedBox(height: gap),
               Row(
                 children: [
-                  for (var c = 0; c < gridRows[r].length; c++) ...[
+                  for (var c = 0; c < toRows(items)[r].length; c++) ...[
                     if (c > 0) const SizedBox(width: gap),
                     SizedBox(
                       width: tileW,
                       height: tileH,
                       child: QuickPickTile(
-                        song: gridRows[r][c],
+                        song: toRows(items)[r][c],
                         height: tileH,
                         width: tileW,
-                        onTap: () => widget.onPlay(gridRows[r][c]),
+                        onTap: () => widget.onPlay(toRows(items)[r][c]),
                       ),
                     ),
                   ],
@@ -269,51 +202,15 @@ class _QuickPicksRowState extends ConsumerState<QuickPicksRow> {
           ],
         );
 
-    Widget buildOverflowGrid() {
-      final cappedOverflow = overflowItems.take(pageSize).toList();
-      final overflowRows = <List<Song>>[];
-      for (var i = 0; i < cappedOverflow.length; i += cols) {
-        overflowRows.add(cappedOverflow.sublist(i, (i + cols).clamp(0, cappedOverflow.length)));
-      }
-      return SizedBox(
-        height: gridH,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var r = 0; r < overflowRows.length; r++) ...[
-              if (r > 0) const SizedBox(height: gap),
-              Row(
-                children: [
-                  for (var c = 0; c < overflowRows[r].length; c++) ...[
-                    if (c > 0) const SizedBox(width: gap),
-                    SizedBox(
-                      width: tileW,
-                      height: tileH,
-                      child: QuickPickTile(
-                        song: overflowRows[r][c],
-                        height: tileH,
-                        width: tileW,
-                        onTap: () => widget.onPlay(overflowRows[r][c]),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
-          ],
-        ),
-      );
-    }
-
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPad),
+      padding: EdgeInsets.symmetric(horizontal: layout.hPad),
       child: hasOverflow
           ? _StablePager(
               height: gridH,
               controller: _ctrl,
-              pages: [buildGrid(), buildOverflowGrid()],
+              pages: [buildGrid(gridItems), SizedBox(height: gridH, child: buildGrid(overflowItems))],
             )
-          : buildGrid(),
+          : buildGrid(gridItems),
     );
   }
 }
@@ -333,9 +230,7 @@ class QuickPickTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentSong = ref.watch(currentSongProvider);
-    final isActuallyPlaying = ref.watch(isPlayingProvider);
-    final isNowPlaying = currentSong?.id == song.id;
+    final status = NowPlayingStatus.of(ref, song.id);
 
     return PressScale(
       onTap: onTap,
@@ -350,9 +245,7 @@ class QuickPickTile extends ConsumerWidget {
         child: Row(
           children: [
             ClipRRect(
-              borderRadius: const BorderRadius.horizontal(
-                left: Radius.circular(AppRadius.md),
-              ),
+              borderRadius: const BorderRadius.horizontal(left: Radius.circular(AppRadius.md)),
               clipBehavior: Clip.hardEdge,
               child: CachedNetworkImage(
                 imageUrl: song.thumbnailUrl,
@@ -375,29 +268,12 @@ class QuickPickTile extends ConsumerWidget {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      if (isNowPlaying)
-                        Padding(
-                          padding: const EdgeInsets.only(right: AppSpacing.xs),
-                          child: SizedBox(
-                            width: 10,
-                            height: 10,
-                            child: FittedBox(
-                              fit: BoxFit.contain,
-                              child: NowPlayingIndicator(
-                                size: 8,
-                                barCount: 3,
-                                animate: isActuallyPlaying,
-                              ),
-                            ),
-                          ),
-                        ),
+                      if (status.isNowPlaying) InlineNowPlayingDot(animate: status.isPlaying),
                       Expanded(
                         child: Text(
                           song.title,
                           style: TextStyle(
-                            color: isNowPlaying
-                                ? AppColors.accent
-                                : AppColors.textPrimary,
+                            color: status.isNowPlaying ? AppColors.accent : AppColors.textPrimary,
                             fontSize: AppFontSize.md,
                             fontWeight: FontWeight.w600,
                           ),
@@ -410,10 +286,7 @@ class QuickPickTile extends ConsumerWidget {
                   const SizedBox(height: 2),
                   Text(
                     song.artist,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: AppFontSize.xs,
-                    ),
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.xs),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -428,6 +301,8 @@ class QuickPickTile extends ConsumerWidget {
   }
 }
 
+// ─── Playlists Row ────────────────────────────────────────────────────────────
+
 class PlaylistsRow extends ConsumerStatefulWidget {
   const PlaylistsRow({super.key, required this.playlists, this.pageController});
   final List<Playlist> playlists;
@@ -437,72 +312,51 @@ class PlaylistsRow extends ConsumerStatefulWidget {
   ConsumerState<PlaylistsRow> createState() => _PlaylistsRowState();
 }
 
-class _PlaylistsRowState extends ConsumerState<PlaylistsRow> {
-  late final PageController _ctrl;
-  bool _ownsController = false;
-  int _page = 0;
+class _PlaylistsRowState extends ConsumerState<PlaylistsRow> with PagedSectionMixin {
+  PageController get _ctrl => widget.pageController ?? pageCtrl;
+
+  void _onExternalScroll() {
+    final p = _ctrl.page?.round() ?? 0;
+    if (p != currentPage) setState(() => currentPage = p);
+  }
 
   @override
   void initState() {
     super.initState();
-    if (widget.pageController != null) {
-      _ctrl = widget.pageController!;
-    } else {
-      _ctrl = PageController();
-      _ownsController = true;
-    }
-    _ctrl.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final p = _ctrl.page?.round() ?? 0;
-    if (p != _page) setState(() => _page = p);
+    widget.pageController?.addListener(_onExternalScroll);
   }
 
   @override
   void dispose() {
-    _ctrl.removeListener(_onScroll);
-    if (_ownsController) _ctrl.dispose();
+    widget.pageController?.removeListener(_onExternalScroll);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final layout = ContentLayout.of(context, ref);
     const gap = AppSpacing.md;
     const rows = 1;
 
-    final double maxWidth;
-    final int cols;
-    if (isDesktop) {
-      final rightOpen = ref.watch(rightSidebarTabProvider) != null;
-      final screenW = MediaQuery.sizeOf(context).width;
-      maxWidth = ShellContext.desktopContentInnerWidth(
-        screenWidth: screenW,
-        rightSidebarOpen: rightOpen,
-        hPad: hPad,
-      );
-      cols = (maxWidth / 160).floor().clamp(2, 5);
-    } else {
-      maxWidth = MediaQuery.sizeOf(context).width - hPad * 2;
-      cols = 2;
-    }
-
-    final pageSize = cols * rows;
+    final pageSize = layout.cols * rows;
     final hasOverflow = widget.playlists.length > pageSize;
     final pageItems = widget.playlists.take(pageSize).toList();
     final overflowItems = hasOverflow ? widget.playlists.sublist(pageSize) : <Playlist>[];
 
-    final tileW = ((maxWidth - gap * (cols - 1)) / cols).floorToDouble();
+    final tileW = ((layout.maxWidth - gap * (layout.cols - 1)) / layout.cols).floorToDouble();
     final tileH = tileW + 48.0;
     final gridH = tileH * rows + gap * (rows - 1);
 
-    Widget buildGrid() {
-      final gridRows = <List<Playlist>>[];
-      for (var i = 0; i < pageItems.length; i += cols) {
-        gridRows.add(pageItems.sublist(i, (i + cols).clamp(0, pageItems.length)));
+    List<List<Playlist>> toRows(List<Playlist> items) {
+      final rows = <List<Playlist>>[];
+      for (var i = 0; i < items.length; i += layout.cols) {
+        rows.add(items.sublist(i, (i + layout.cols).clamp(0, items.length)));
       }
+      return rows;
+    }
+
+    Widget buildGrid() {
+      final gridRows = toRows(pageItems);
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -531,21 +385,15 @@ class _PlaylistsRowState extends ConsumerState<PlaylistsRow> {
             physics: const BouncingScrollPhysics(),
             itemCount: overflowItems.length,
             separatorBuilder: (_, __) => const SizedBox(width: gap),
-            itemBuilder: (_, i) => SizedBox(
-              width: tileW,
-              child: BrowsePlaylistCard(playlist: overflowItems[i], size: tileW),
-            ),
+            itemBuilder: (_, i) =>
+                SizedBox(width: tileW, child: BrowsePlaylistCard(playlist: overflowItems[i], size: tileW)),
           ),
         );
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPad),
+      padding: EdgeInsets.symmetric(horizontal: layout.hPad),
       child: hasOverflow
-          ? _StablePager(
-              height: gridH,
-              controller: _ctrl,
-              pages: [buildGrid(), buildOverflow()],
-            )
+          ? _StablePager(height: gridH, controller: _ctrl, pages: [buildGrid(), buildOverflow()])
           : buildGrid(),
     );
   }
@@ -557,8 +405,7 @@ class BrowsePlaylistCard extends ConsumerStatefulWidget {
   final double size;
 
   @override
-  ConsumerState<BrowsePlaylistCard> createState() =>
-      _BrowsePlaylistCardState();
+  ConsumerState<BrowsePlaylistCard> createState() => _BrowsePlaylistCardState();
 }
 
 class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
@@ -569,8 +416,7 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
     setState(() => _loading = true);
     try {
       final sm = ref.read(streamManagerProvider);
-      final playlistId = widget.playlist.id;
-      final result = await sm.getCollectionTracks(playlistId);
+      final result = await sm.getCollectionTracks(widget.playlist.id);
       final songs = result.tracks.map((t) => Song.fromTrack(t)).toList();
       if (!mounted) return;
       final showExplicit = ref.read(showExplicitContentProvider);
@@ -588,10 +434,7 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Failed to load playlist'),
-            action: SnackBarAction(
-              label: 'Retry',
-              onPressed: _onTap,
-            ),
+            action: SnackBarAction(label: 'Retry', onPressed: _onTap),
           ),
         );
       }
@@ -601,7 +444,6 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
 
   @override
   Widget build(BuildContext context) {
-    final playlist = widget.playlist;
     final size = widget.size;
     return PressScale(
       onTap: _onTap,
@@ -613,21 +455,7 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
           children: [
             Stack(
               children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(AppRadius.md),
-                  clipBehavior: Clip.hardEdge,
-                  child: CachedNetworkImage(
-                    imageUrl: playlist.coverUrl,
-                    width: size,
-                    height: size,
-                    fit: BoxFit.cover,
-                    fadeInDuration: Duration.zero,
-                    fadeOutDuration: Duration.zero,
-                    memCacheWidth: cachePx(context, size),
-                    memCacheHeight: cachePx(context, size),
-                    errorWidget: (_, __, ___) => PlaceholderArt(size: size),
-                  ),
-                ),
+                DpiAwareThumbnail(url: widget.playlist.coverUrl, size: size, radius: AppRadius.md),
                 if (_loading)
                   Positioned.fill(
                     child: Container(
@@ -639,10 +467,7 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
                         child: SizedBox(
                           width: 28,
                           height: 28,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
+                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
                         ),
                       ),
                     ),
@@ -651,7 +476,7 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              playlist.title,
+              widget.playlist.title,
               style: const TextStyle(
                 color: AppColors.textPrimary,
                 fontSize: AppFontSize.md,
@@ -661,11 +486,8 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
               overflow: TextOverflow.ellipsis,
             ),
             Text(
-              playlist.curatorName ?? '${playlist.trackCount} songs',
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: AppFontSize.xs,
-              ),
+              widget.playlist.curatorName ?? '${widget.playlist.trackCount} songs',
+              style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.xs),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
@@ -675,6 +497,8 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
     );
   }
 }
+
+// ─── Mood Grid ────────────────────────────────────────────────────────────────
 
 class MoodGrid extends StatelessWidget {
   const MoodGrid({super.key, required this.moods});
@@ -717,10 +541,7 @@ class HomeMoodTile extends StatelessWidget {
           gradient: mood.gradient,
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         child: Align(
           alignment: Alignment.centerLeft,
           child: Text(
@@ -740,6 +561,8 @@ class HomeMoodTile extends StatelessWidget {
   }
 }
 
+// ─── Artists Row ──────────────────────────────────────────────────────────────
+
 class ArtistsRow extends ConsumerStatefulWidget {
   const ArtistsRow({super.key, required this.artists, this.pageController});
   final List<Artist> artists;
@@ -749,73 +572,52 @@ class ArtistsRow extends ConsumerStatefulWidget {
   ConsumerState<ArtistsRow> createState() => _ArtistsRowState();
 }
 
-class _ArtistsRowState extends ConsumerState<ArtistsRow> {
-  late final PageController _ctrl;
-  bool _ownsController = false;
-  int _page = 0;
+class _ArtistsRowState extends ConsumerState<ArtistsRow> with PagedSectionMixin {
+  PageController get _ctrl => widget.pageController ?? pageCtrl;
+
+  void _onExternalScroll() {
+    final p = _ctrl.page?.round() ?? 0;
+    if (p != currentPage) setState(() => currentPage = p);
+  }
 
   @override
   void initState() {
     super.initState();
-    if (widget.pageController != null) {
-      _ctrl = widget.pageController!;
-    } else {
-      _ctrl = PageController();
-      _ownsController = true;
-    }
-    _ctrl.addListener(_onScroll);
-  }
-
-  void _onScroll() {
-    final p = _ctrl.page?.round() ?? 0;
-    if (p != _page) setState(() => _page = p);
+    widget.pageController?.addListener(_onExternalScroll);
   }
 
   @override
   void dispose() {
-    _ctrl.removeListener(_onScroll);
-    if (_ownsController) _ctrl.dispose();
+    widget.pageController?.removeListener(_onExternalScroll);
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final layout = ContentLayout.of(context, ref);
     const gap = AppSpacing.xl;
     const rows = 1;
-    final avatarSize = isDesktop ? 88.0 : 72.0;
+    final avatarSize = layout.cols > 2 ? 88.0 : 72.0;
     final rowH = avatarSize + 28.0;
     final gridH = rowH * rows + gap * (rows - 1);
 
-    final double maxWidth;
-    final int cols;
-    if (isDesktop) {
-      final rightOpen = ref.watch(rightSidebarTabProvider) != null;
-      final screenW = MediaQuery.sizeOf(context).width;
-      maxWidth = ShellContext.desktopContentInnerWidth(
-        screenWidth: screenW,
-        rightSidebarOpen: rightOpen,
-        hPad: hPad,
-      );
-      cols = (maxWidth / 160).floor().clamp(2, 5);
-    } else {
-      maxWidth = MediaQuery.sizeOf(context).width - hPad * 2;
-      cols = 2;
-    }
-
-    final pageSize = cols * rows;
+    final pageSize = layout.cols * rows;
     final hasOverflow = widget.artists.length > pageSize;
     final pageItems = widget.artists.take(pageSize).toList();
     final overflowItems = hasOverflow ? widget.artists.sublist(pageSize) : <Artist>[];
 
-    final itemW = ((maxWidth - gap * (cols - 1)) / cols).floorToDouble();
+    final itemW = ((layout.maxWidth - gap * (layout.cols - 1)) / layout.cols).floorToDouble();
+
+    List<List<Artist>> toRows(List<Artist> items) {
+      final rows = <List<Artist>>[];
+      for (var i = 0; i < items.length; i += layout.cols) {
+        rows.add(items.sublist(i, (i + layout.cols).clamp(0, items.length)));
+      }
+      return rows;
+    }
 
     Widget buildGrid() {
-      final gridRows = <List<Artist>>[];
-      for (var i = 0; i < pageItems.length; i += cols) {
-        gridRows.add(pageItems.sublist(i, (i + cols).clamp(0, pageItems.length)));
-      }
+      final gridRows = toRows(pageItems);
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -828,7 +630,12 @@ class _ArtistsRowState extends ConsumerState<ArtistsRow> {
                   SizedBox(
                     width: itemW,
                     height: rowH,
-                    child: HomeArtistAvatar(artist: gridRows[r][c], size: avatarSize),
+                    // Use ArtistAvatar with compact:true — replaces HomeArtistAvatar
+                    child: ArtistAvatar(
+                      artist: gridRows[r][c],
+                      size: avatarSize,
+                      compact: true,
+                    ),
                   ),
                 ],
               ],
@@ -848,79 +655,16 @@ class _ArtistsRowState extends ConsumerState<ArtistsRow> {
             itemBuilder: (_, i) => SizedBox(
               width: itemW,
               height: rowH,
-              child: HomeArtistAvatar(artist: overflowItems[i], size: avatarSize),
+              child: ArtistAvatar(artist: overflowItems[i], size: avatarSize, compact: true),
             ),
           ),
         );
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPad),
+      padding: EdgeInsets.symmetric(horizontal: layout.hPad),
       child: hasOverflow
-          ? _StablePager(
-              height: gridH,
-              controller: _ctrl,
-              pages: [buildGrid(), buildOverflow()],
-            )
+          ? _StablePager(height: gridH, controller: _ctrl, pages: [buildGrid(), buildOverflow()])
           : buildGrid(),
-    );
-  }
-}
-
-class HomeArtistAvatar extends StatelessWidget {
-  const HomeArtistAvatar({super.key, required this.artist, this.size = 72});
-  final Artist artist;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: size,
-      child: Column(
-        children: [
-          Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: AppColors.glassBorder,
-                width: 1.5,
-              ),
-            ),
-            child: ClipOval(
-              clipBehavior: Clip.hardEdge,
-              child: CachedNetworkImage(
-                imageUrl: artist.avatarUrl,
-                fit: BoxFit.cover,
-                fadeInDuration: Duration.zero,
-                fadeOutDuration: Duration.zero,
-                memCacheWidth: cachePx(context, size),
-                memCacheHeight: cachePx(context, size),
-                errorWidget: (_, __, ___) => Container(
-                  color: AppColors.surface,
-                  child: AppIcon(
-                    icon: AppIcons.person,
-                    color: AppColors.textMuted,
-                    size: size * 0.44,
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            artist.name,
-            style: const TextStyle(
-              color: AppColors.textSecondary,
-              fontSize: AppFontSize.xs,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
     );
   }
 }

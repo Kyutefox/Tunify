@@ -228,33 +228,8 @@ class AppIconButton extends StatelessWidget {
               ),
             ),
           );
-        } else if (style == AppIconButtonStyle.filled) {
-          button = Container(
-            width: size,
-            height: size,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.glassWhite,
-              border: Border.all(color: AppColors.glassBorder, width: 0.5),
-            ),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: (onPressedWithContext != null || onPressed != null)
-                    ? () => _handleTap(btnCtx)
-                    : null,
-                customBorder: const CircleBorder(),
-                child: Center(
-                  child: IconTheme(
-                    data: IconThemeData(size: iconSize, color: effectiveColor),
-                    child: icon,
-                  ),
-                ),
-              ),
-            ),
-          );
         } else {
-          // outlined
+          // filled and outlined share the same visual — glass circle with border
           button = Container(
             width: size,
             height: size,

@@ -5,6 +5,7 @@ import '../../../../config/app_icons.dart';
 import '../../../../models/artist.dart';
 import '../../../../ui/theme/app_colors.dart';
 import '../../../../ui/theme/design_tokens.dart';
+import '../../../../ui/screens/home/home_shared.dart';
 
 class ArtistAvatar extends StatefulWidget {
   final Artist artist;
@@ -12,6 +13,9 @@ class ArtistAvatar extends StatefulWidget {
   final int index;
   final double size;
   final bool showInfo;
+  /// When true, renders a compact version (no pulse animation, simpler info)
+  /// suitable for home section rows. Replaces the old HomeArtistAvatar widget.
+  final bool compact;
 
   const ArtistAvatar({
     super.key,
@@ -20,6 +24,7 @@ class ArtistAvatar extends StatefulWidget {
     this.index = 0,
     this.size = 80,
     this.showInfo = true,
+    this.compact = false,
   });
 
   @override
@@ -29,7 +34,6 @@ class ArtistAvatar extends StatefulWidget {
 class _ArtistAvatarState extends State<ArtistAvatar>
     with SingleTickerProviderStateMixin {
   late AnimationController _pulseController;
-  bool _isPressed = false;
 
   @override
   void initState() {
@@ -37,7 +41,8 @@ class _ArtistAvatarState extends State<ArtistAvatar>
     _pulseController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
-    )..repeat(reverse: true);
+    );
+    if (!widget.compact) _pulseController.repeat(reverse: true);
   }
 
   @override
@@ -48,19 +53,11 @@ class _ArtistAvatarState extends State<ArtistAvatar>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        width: widget.size + 20,
-        margin: const EdgeInsets.only(right: 12),
-        transform: Matrix4.identity()
-          ..scaleByDouble(
-              _isPressed ? 0.92 : 1.0, _isPressed ? 0.92 : 1.0, 1.0, 1.0),
+    final content = PressScale(
+      onTap: widget.onTap ?? () {},
+      scale: 0.92,
+      child: SizedBox(
+        width: widget.compact ? widget.size : widget.size + 20,
         child: Column(
           children: [
             _buildAvatar(),
@@ -71,49 +68,81 @@ class _ArtistAvatarState extends State<ArtistAvatar>
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: AppFontSize.md,
-                  fontWeight: FontWeight.w600,
+                style: TextStyle(
+                  color: widget.compact ? AppColors.textSecondary : AppColors.textPrimary,
+                  fontSize: widget.compact ? AppFontSize.xs : AppFontSize.md,
+                  fontWeight: FontWeight.w500,
                 ),
               ),
-              const SizedBox(height: 2),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (widget.artist.isVerified) ...[
-                    AppIcon(
-                      icon: AppIcons.verified,
-                      size: 12,
-                      color: AppColors.primary,
-                    ),
-                    const SizedBox(width: 4),
-                  ],
-                  Flexible(
-                    child: Text(
-                      widget.artist.genre ?? widget.artist.listenersFormatted,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: AppFontSize.xs,
+              if (!widget.compact) ...[
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (widget.artist.isVerified) ...[
+                      AppIcon(icon: AppIcons.verified, size: 12, color: AppColors.primary),
+                      const SizedBox(width: 4),
+                    ],
+                    Flexible(
+                      child: Text(
+                        widget.artist.genre ?? widget.artist.listenersFormatted,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: AppFontSize.xs,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+              ],
             ],
           ],
         ),
       ),
-    )
+    );
+
+    if (widget.compact) return content;
+
+    return content
         .animate(delay: Duration(milliseconds: widget.index * 70))
         .fadeIn(duration: 400.ms)
         .scale(begin: const Offset(0.8, 0.8), curve: Curves.easeOutBack);
   }
 
   Widget _buildAvatar() {
+    if (widget.compact) {
+      // Compact: simple circle with border, no pulse
+      return Container(
+        width: widget.size,
+        height: widget.size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: AppColors.glassBorder, width: 1.5),
+        ),
+        child: ClipOval(
+          clipBehavior: Clip.hardEdge,
+          child: CachedNetworkImage(
+            imageUrl: widget.artist.avatarUrl,
+            fit: BoxFit.cover,
+            fadeInDuration: Duration.zero,
+            fadeOutDuration: Duration.zero,
+            errorWidget: (_, __, ___) => Container(
+              color: AppColors.surface,
+              child: AppIcon(
+                icon: AppIcons.person,
+                color: AppColors.textMuted,
+                size: widget.size * 0.44,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    // Full: pulsing glow ring
     return AnimatedBuilder(
       animation: _pulseController,
       builder: (context, child) {
@@ -135,52 +164,40 @@ class _ArtistAvatarState extends State<ArtistAvatar>
           child: child,
         );
       },
-      child: Stack(
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient:
-                  widget.artist.isVerified ? AppColors.primaryGradient : null,
-              color:
-                  widget.artist.isVerified ? null : AppColors.surfaceHighlight,
-            ),
-            padding: const EdgeInsets.all(2),
-            child: Container(
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.background,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: widget.artist.isVerified ? AppColors.primaryGradient : null,
+          color: widget.artist.isVerified ? null : AppColors.surfaceHighlight,
+        ),
+        padding: const EdgeInsets.all(2),
+        child: Container(
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.background,
+          ),
+          padding: const EdgeInsets.all(2),
+          child: ClipOval(
+            child: CachedNetworkImage(
+              imageUrl: widget.artist.avatarUrl,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                color: AppColors.surfaceHighlight,
+                child: AppIcon(icon: AppIcons.person, color: AppColors.textMuted),
               ),
-              padding: const EdgeInsets.all(2),
-              child: ClipOval(
-                child: CachedNetworkImage(
-                  imageUrl: widget.artist.avatarUrl,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: AppColors.surfaceHighlight,
-                    child: AppIcon(
-                      icon: AppIcons.person,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    color: AppColors.surfaceHighlight,
-                    child: AppIcon(
-                      icon: AppIcons.person,
-                      color: AppColors.textMuted,
-                    ),
-                  ),
-                ),
+              errorWidget: (context, url, error) => Container(
+                color: AppColors.surfaceHighlight,
+                child: AppIcon(icon: AppIcons.person, color: AppColors.textMuted),
               ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class ArtistCard extends StatefulWidget {
+class ArtistCard extends StatelessWidget {
   final Artist artist;
   final VoidCallback? onTap;
   final int index;
@@ -193,57 +210,33 @@ class ArtistCard extends StatefulWidget {
   });
 
   @override
-  State<ArtistCard> createState() => _ArtistCardState();
-}
-
-class _ArtistCardState extends State<ArtistCard> {
-  bool _isPressed = false;
-
-  @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: widget.onTap,
-      onTapDown: (_) => setState(() => _isPressed = true),
-      onTapUp: (_) => setState(() => _isPressed = false),
-      onTapCancel: () => setState(() => _isPressed = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.easeOutCubic,
-        transform: Matrix4.identity()
-          ..scaleByDouble(
-              _isPressed ? 0.96 : 1.0, _isPressed ? 0.96 : 1.0, 1.0, 1.0),
+    return PressScale(
+      onTap: onTap ?? () {},
+      scale: 0.96,
+      child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
         padding: const EdgeInsets.all(AppSpacing.md),
         decoration: BoxDecoration(
           gradient: AppColors.cardGradient,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(
-            color: AppColors.surfaceHighlight,
-            width: 1,
-          ),
+          border: Border.all(color: AppColors.surfaceHighlight, width: 1),
         ),
         child: Row(
           children: [
             Hero(
-              tag: 'artist_${widget.artist.id}',
+              tag: 'artist_${artist.id}',
               child: Container(
                 width: 56,
                 height: 56,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: widget.artist.isVerified
-                      ? AppColors.primaryGradient
-                      : null,
-                  color: widget.artist.isVerified
-                      ? null
-                      : AppColors.surfaceHighlight,
+                  gradient: artist.isVerified ? AppColors.primaryGradient : null,
+                  color: artist.isVerified ? null : AppColors.surfaceHighlight,
                 ),
                 padding: const EdgeInsets.all(2),
                 child: ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: widget.artist.avatarUrl,
-                    fit: BoxFit.cover,
-                  ),
+                  child: CachedNetworkImage(imageUrl: artist.avatarUrl, fit: BoxFit.cover),
                 ),
               ),
             ),
@@ -257,7 +250,7 @@ class _ArtistCardState extends State<ArtistCard> {
                     children: [
                       Flexible(
                         child: Text(
-                          widget.artist.name,
+                          artist.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -267,32 +260,25 @@ class _ArtistCardState extends State<ArtistCard> {
                           ),
                         ),
                       ),
-                      if (widget.artist.isVerified) ...[
+                      if (artist.isVerified) ...[
                         const SizedBox(width: 6),
-                        AppIcon(
-                          icon: AppIcons.verified,
-                          size: 16,
-                          color: AppColors.primary,
-                        ),
+                        AppIcon(icon: AppIcons.verified, size: 16, color: AppColors.primary),
                       ],
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    widget.artist.listenersFormatted,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: AppFontSize.sm,
-                    ),
+                    artist.listenersFormatted,
+                    style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
                   ),
-                  if (widget.artist.latestRelease != null) ...[
+                  if (artist.latestRelease != null) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
                         Container(
                           width: 6,
                           height: 6,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: AppColors.accentGreen,
                             shape: BoxShape.circle,
                           ),
@@ -300,7 +286,7 @@ class _ArtistCardState extends State<ArtistCard> {
                         const SizedBox(width: 6),
                         Flexible(
                           child: Text(
-                            'Latest: ${widget.artist.latestRelease}',
+                            'Latest: ${artist.latestRelease}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -334,7 +320,7 @@ class _ArtistCardState extends State<ArtistCard> {
         ),
       ),
     )
-        .animate(delay: Duration(milliseconds: widget.index * 80))
+        .animate(delay: Duration(milliseconds: index * 80))
         .fadeIn(duration: 400.ms)
         .slideX(begin: 0.1, curve: Curves.easeOutCubic);
   }

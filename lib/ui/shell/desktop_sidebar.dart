@@ -200,7 +200,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
             // ── Header ────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.base, AppSpacing.base, AppSpacing.sm, AppSpacing.sm),
+                  AppSpacing.base, AppSpacing.lg, AppSpacing.sm, AppSpacing.md),
               child: Row(
                 children: [
                   const Expanded(
@@ -226,7 +226,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
             // ── Filter chips — passes folderName to show folder chip ───────
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.base, 0, AppSpacing.base, 2),
+                  AppSpacing.base, 0, AppSpacing.base, 0),
               child: LibraryFilterChips(
                 selectedFilter: _filter,
                 onFilterChanged: _onFilterChanged,
@@ -239,7 +239,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                 onExitFolder: _openFolder != null ? _closeFolderInline : null,
               ),
             ),
-            const SizedBox(height: AppSpacing.xs),
+            const SizedBox(height: AppSpacing.md),
 
             // ── Sort + search + view mode ───────────────────────────────
             AnimatedSwitcher(
@@ -248,7 +248,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                   ? Padding(
                       key: const ValueKey('search-field'),
                       padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.xs, 0, AppSpacing.xs, 2),
+                          AppSpacing.xs, 0, AppSpacing.xs, AppSpacing.xs),
                       child: Container(
                         height: 36,
                         decoration: BoxDecoration(
@@ -316,8 +316,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                     )
                   : Padding(
                       key: const ValueKey('controls-row'),
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.base, vertical: 2),
+                      padding: const EdgeInsets.fromLTRB(
+                          AppSpacing.base, 0, AppSpacing.sm, AppSpacing.xs),
                       child: Row(
                         children: [
                           // Sort order — desktop inline dropdown
@@ -402,6 +402,13 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                     ),
             ),
 
+            // ── Divider ────────────────────────────────────────────────────
+            Divider(
+              height: 1,
+              thickness: 0.5,
+              color: AppColors.glassBorder,
+            ),
+
             // ── Library list / search results ──────────────────────────────
             Expanded(
               child: AnimatedSwitcher(
@@ -454,7 +461,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                       : 'Your library is empty.\nTap + to get started.',
                         )
                       : ListView(
-                      padding: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: 8),
                       children: [
                         // Folder open: show only that folder's playlists
                         if (folderEntries != null) ...[

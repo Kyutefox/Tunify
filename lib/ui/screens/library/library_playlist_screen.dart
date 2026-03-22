@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/ui/widgets/collection_detail_scaffold.dart';
+import 'package:tunify/ui/widgets/loading_error_scaffold.dart';
 import 'package:tunify/ui/widgets/pages/search_page.dart';
 import 'package:tunify/ui/widgets/button.dart';
 import 'package:tunify/ui/widgets/sheet.dart';
@@ -20,6 +21,7 @@ import 'package:tunify/ui/widgets/items/multi_download_button.dart';
 import '../home/home_shared.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_playlist.dart';
+import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
@@ -33,9 +35,18 @@ import '../player/song_options_sheet.dart';
 import 'package:tunify/ui/widgets/items/mini_player.dart';
 
 class LibraryPlaylistScreen extends ConsumerStatefulWidget {
-  const LibraryPlaylistScreen({super.key, required this.playlistId});
+  /// Open a local DB playlist by [playlistId].
+  const LibraryPlaylistScreen({super.key, required this.playlistId})
+      : remotePlaylist = null;
+
+  /// Open a remote [Playlist] fetched from the API (e.g. from home page).
+  const LibraryPlaylistScreen.remote({super.key, required Playlist playlist})
+      : playlistId = '',
+        remotePlaylist = playlist;
 
   final String playlistId;
+  /// When non-null, the screen loads tracks from the remote API instead of the local DB.
+  final Playlist? remotePlaylist;
 
   @override
   ConsumerState<LibraryPlaylistScreen> createState() =>
@@ -43,9 +54,68 @@ class LibraryPlaylistScreen extends ConsumerStatefulWidget {
 }
 
 class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
+  // Only used in remote mode — holds the fetched-then-mapped playlist
+  LibraryPlaylist? _remoteAsLocal;
+  bool _remoteLoading = false;
+  String? _remoteError;
+  bool _addingToLibrary = false;
+
+  bool get _isRemote => widget.remotePlaylist != null;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_isRemote) _fetchRemoteTracks();
+  }
+
+  Future<void> _fetchRemoteTracks() async {
+    setState(() { _remoteLoading = true; _remoteError = null; });
+    try {
+      final pl = widget.remotePlaylist!;
+      final result = await ref.read(streamManagerProvider).getCollectionTracks(pl.id);
+      if (!mounted) return;
+      final songs = result.tracks.map((t) => Song.fromTrack(t)).toList();
+      // Map remote Playlist → LibraryPlaylist so the existing UI works unchanged
+      setState(() {
+        _remoteAsLocal = LibraryPlaylist(
+          id: pl.id,
+          name: pl.title,
+          description: pl.curatorName ?? pl.description,
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+          songs: songs,
+          customImageUrl: pl.coverUrl.isNotEmpty ? pl.coverUrl : null,
+          isImported: true,
+        );
+        _remoteLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() { _remoteError = e.toString(); _remoteLoading = false; });
+    }
+  }
+
+  Future<void> _addToLibrary() async {
+    final playlist = _remoteAsLocal;
+    if (playlist == null) return;
+    setState(() => _addingToLibrary = true);
+    await ref.read(libraryProvider.notifier).addPlaylistToLibrary(playlist);
+    if (mounted) setState(() => _addingToLibrary = false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final playlist = ref.watch(libraryPlaylistByIdProvider(widget.playlistId));
+    if (_isRemote) {
+      if (_remoteLoading) return const LoadingScaffold();
+      if (_remoteError != null) {
+        return ErrorScaffold(message: 'Failed to load playlist', onRetry: _fetchRemoteTracks);
+      }
+    }
+
+    // For remote mode use the mapped playlist; for local watch from provider
+    final playlist = _isRemote
+        ? _remoteAsLocal
+        : ref.watch(libraryPlaylistByIdProvider(widget.playlistId));
 
     if (playlist == null) {
       return Scaffold(
@@ -62,6 +132,16 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         ),
       );
     }
+
+    // For remote playlists, check if it's already been saved to the library.
+    // For local playlists opened directly, check isImported flag.
+    final isImported = _isRemote || playlist.isImported;
+    final isInLibrary = _isRemote
+        ? ref.watch(libraryProvider.select(
+            (s) => s.playlists.any((p) => p.id == playlist.id)))
+        : true; // local playlists are always "in library"
+    // Shuffle is only disabled when viewing a remote playlist not yet saved
+    final disableShuffle = _isRemote && !isInLibrary;
 
     final songs = playlist.sortedSongs;
     final isEmpty = songs.isEmpty;
@@ -99,41 +179,66 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
     return CollectionDetailScaffold(
       isEmpty: isEmpty,
-      emptyChild: SliverFillRemaining(
+      emptyChild: _isRemote
+          ? const SliverFillRemaining(
+              child: Center(
+                child: Text('No songs found',
+                    style: TextStyle(color: AppColors.textMuted)),
+              ),
+            )
+          : SliverFillRemaining(
         child: _EmptyState(
-          playlistId: widget.playlistId,
+          playlistId: playlist.id,
           playlistName: playlist.name.capitalized,
           onStartAdding: () {
             _openAddToPlaylistSheet(
               context,
-              widget.playlistId,
+              playlist.id,
               playlist.name,
               () => setState(() {}),
             );
           },
           onDeletePlaylist: () =>
-              _deletePlaylistFromEmpty(context, playlist.name.capitalized),
+              _deletePlaylistFromEmpty(context, playlist.name.capitalized, playlist.id),
         ),
       ),
       title: playlist.name.capitalized,
       headerExpandedChild: CollectionDetailExpandedContent(
-        cover: _PlaylistCoverWithPalette(songs: songs),
+        cover: _PlaylistCoverWithPalette(
+          songs: songs,
+          customImageUrl: _isRemote
+              ? (isInLibrary ? playlist.customImageUrl : widget.remotePlaylist!.coverUrl)
+              : playlist.customImageUrl,
+        ),
         title: playlist.name.capitalized,
         subtitle: subtitle,
       ),
       actionRow: _PlaylistActionRow(
-        playlistId: widget.playlistId,
+        playlistId: playlist.id,
         songs: songs,
         filteredSongs: filteredSongs,
+        disableShuffle: disableShuffle,
+        showLibraryStatus: isImported,
+        isInLibrary: isInLibrary,
+        onAddToLibrary: _addToLibrary,
+        addingToLibrary: _addingToLibrary,
       ),
-      pills: _PlaylistPillRow(
-        playlistId: widget.playlistId,
-        playlist: playlist,
-        onPlaylistUpdated: () => setState(() {}),
-      ),
+      pills: _isRemote
+          ? (isInLibrary
+              ? _PlaylistPillRow(
+                  playlistId: playlist.id,
+                  playlist: playlist,
+                  onPlaylistUpdated: () => setState(() {}),
+                )
+              : null)
+          : _PlaylistPillRow(
+              playlistId: widget.playlistId,
+              playlist: playlist,
+              onPlaylistUpdated: () => setState(() {}),
+            ),
       searchField: _SearchInPlaylistTap(
         songs: songs,
-        playlistId: widget.playlistId,
+        playlistId: playlist.id,
       ),
       bodySlivers: [
         const SliverToBoxAdapter(
@@ -164,7 +269,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   song: song,
                   index: originalIndex + 1,
                   songs: songs,
-                  playlistId: widget.playlistId,
+                  playlistId: playlist.id,
                 );
               },
               childCount: filteredSongs.length,
@@ -175,8 +280,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       hasSong: hasSong,
       miniPlayerKey: const ValueKey('playlist-mini-player'),
     );
-  }
-
+  } // end build
   static String _formatPlaylistDuration(List<Song> songs) {
     if (songs.isEmpty) return '';
     final totalMs = songs.fold<int>(
@@ -191,7 +295,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   }
 
   Future<void> _deletePlaylistFromEmpty(
-      BuildContext context, String playlistName) async {
+      BuildContext context, String playlistName, String playlistId) async {
     final confirmed = await showConfirmDialog(
       context,
       title: 'Delete playlist?',
@@ -203,19 +307,54 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       Navigator.of(context).pop();
       await ref
           .read(libraryProvider.notifier)
-          .deletePlaylist(widget.playlistId);
+          .deletePlaylist(playlistId);
     }
   }
 }
 
 class _PlaylistCoverWithPalette extends StatelessWidget {
-  const _PlaylistCoverWithPalette({required this.songs});
+  const _PlaylistCoverWithPalette({required this.songs, this.customImageUrl});
 
   final List<Song> songs;
+  final String? customImageUrl;
 
   @override
   Widget build(BuildContext context) {
     const size = 200.0;
+
+    // If a custom image is set (e.g. saved from remote), always show it
+    if (customImageUrl != null && customImageUrl!.isNotEmpty) {
+      return Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            color: AppColors.surfaceLight.withValues(alpha: 0.6),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(4),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              child: CachedNetworkImage(
+                imageUrl: customImageUrl!,
+                width: size - 8,
+                height: size - 8,
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => _buildSongMosaic(songs, size),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     if (songs.isEmpty) {
       return Center(
         child: Container(
@@ -257,6 +396,10 @@ class _PlaylistCoverWithPalette extends StatelessWidget {
   }
 
   Widget _buildCoverContent(List<Song> songs, double size) {
+    return _buildSongMosaic(songs, size);
+  }
+
+  static Widget _buildSongMosaic(List<Song> songs, double size) {
     if (songs.length == 1) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -297,7 +440,7 @@ class _PlaylistCoverWithPalette extends StatelessWidget {
     );
   }
 
-  Widget _coverImage(String? url, double s) {
+  static Widget _coverImage(String? url, double s) {
     return SizedBox(
       width: s,
       height: s,
@@ -318,7 +461,7 @@ class _PlaylistCoverWithPalette extends StatelessWidget {
     );
   }
 
-  Widget _placeholder(double s) {
+  static Widget _placeholder(double s) {
     return Container(
       width: s,
       height: s,
@@ -333,26 +476,34 @@ class _PlaylistActionRow extends ConsumerWidget {
     required this.playlistId,
     required this.songs,
     required this.filteredSongs,
+    this.disableShuffle = false,
+    this.showLibraryStatus = false,
+    this.isInLibrary = true,
+    this.onAddToLibrary,
+    this.addingToLibrary = false,
   });
 
   final String playlistId;
   final List<Song> songs;
   final List<Song> filteredSongs;
+  final bool disableShuffle;
+  final bool showLibraryStatus;
+  final bool isInLibrary;
+  final VoidCallback? onAddToLibrary;
+  final bool addingToLibrary;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final canPlay = filteredSongs.isNotEmpty;
-    // Use a select on libraryProvider so we watch the bool directly.
-    // libraryPlaylistByIdProvider uses LibraryPlaylist.== (id-only), which
-    // means Riverpod considers the object unchanged after a shuffle toggle and
-    // the widget never rebuilds. Selecting the primitive bool avoids this.
-    final shuffleEnabled = ref.watch(
-      libraryProvider.select((s) => s.playlists
-          .where((p) => p.id == playlistId)
-          .firstOrNull
-          ?.shuffleEnabled ??
-          false),
-    );
+    final shuffleEnabled = disableShuffle
+        ? false
+        : ref.watch(
+            libraryProvider.select((s) => s.playlists
+                .where((p) => p.id == playlistId)
+                .firstOrNull
+                ?.shuffleEnabled ??
+                false),
+          );
     return Padding(
       padding: const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
       child: Row(
@@ -361,22 +512,37 @@ class _PlaylistActionRow extends ConsumerWidget {
             icon: AppIcon(
               icon: AppIcons.shuffle,
               size: 24,
-              color: shuffleEnabled
-                  ? AppColors.primary
-                  : AppColors.textMuted,
+              color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
             ),
-            onPressed: canPlay
-                ? () {
-                    ref
-                        .read(libraryProvider.notifier)
-                        .togglePlaylistShuffle(playlistId);
-                  }
+            onPressed: canPlay && !disableShuffle
+                ? () => ref.read(libraryProvider.notifier).togglePlaylistShuffle(playlistId)
                 : null,
             size: 40,
             iconSize: 24,
             color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
           ),
           MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
+          // Add-to-library button — shown for imported/remote playlists
+          if (showLibraryStatus)
+            AppIconButton(
+              icon: addingToLibrary
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.textMuted,
+                      ),
+                    )
+                  : AppIcon(
+                      icon: isInLibrary ? AppIcons.checkCircle : AppIcons.addCircleOutline,
+                      size: 24,
+                      color: isInLibrary ? AppColors.primary : AppColors.textMuted,
+                    ),
+              onPressed: (!isInLibrary && !addingToLibrary) ? onAddToLibrary : null,
+              size: 40,
+              iconSize: 24,
+            ),
           const Spacer(),
           PlayCircleButton(
             onTap: canPlay
@@ -1639,3 +1805,4 @@ class _NameDetailsCover extends StatelessWidget {
     );
   }
 }
+

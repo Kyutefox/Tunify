@@ -106,98 +106,105 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
   static const double _sortGridIconSize = 18;
 
   Widget _buildHeaderContent() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.base,
-        vertical: AppSpacing.sm,
-      ),
-      child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Text(
-                  'Library',
-                  style: TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: AppFontSize.display3,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: AppLetterSpacing.display,
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.base, AppSpacing.sm, AppSpacing.base, 0),
+          child: Row(
+            children: [
+              const Text(
+                'Library',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: AppFontSize.display3,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: AppLetterSpacing.display,
                 ),
-                const Spacer(),
-                AppIconButton(
-                  icon: const DownloadQueueProgressIcon(
-                    iconSize: 22,
-                    baseColor: AppColors.textPrimary,
-                  ),
-                  onPressed: widget.onDownloadQueueTap,
-                  tooltip: 'Download queue',
-                  size: 40,
+              ),
+              const Spacer(),
+              AppIconButton(
+                icon: const DownloadQueueProgressIcon(
                   iconSize: 22,
+                  baseColor: AppColors.textPrimary,
                 ),
-                AppIconButton(
-                  icon: AppIcon(
-                    icon: AppIcons.add,
-                    size: 24,
-                    color: AppColors.textPrimary,
-                  ),
-                  onPressed: widget.onCreateTap,
-                  tooltip: 'Create playlist or folder',
+                onPressed: widget.onDownloadQueueTap,
+                tooltip: 'Download queue',
+                size: 40,
+                iconSize: 22,
+              ),
+              AppIconButton(
+                icon: AppIcon(
+                  icon: AppIcons.add,
+                  size: 24,
+                  color: AppColors.textPrimary,
                 ),
-                AppIconButton(
-                  icon: AppIcon(
-                    icon: AppIcons.search,
-                    size: 24,
-                    color: AppColors.textPrimary,
-                  ),
-                  onPressed: widget.onSearchTap,
-                  tooltip: 'Search library',
+                onPressed: widget.onCreateTap,
+                tooltip: 'Create playlist or folder',
+              ),
+              AppIconButton(
+                icon: AppIcon(
+                  icon: AppIcons.search,
+                  size: 24,
+                  color: AppColors.textPrimary,
                 ),
-              ],
-            ),
-            const SizedBox(height: AppSpacing.md),
-            LibraryFilterChips(
-              selectedFilter: widget.selectedFilter,
-              onFilterChanged: widget.onFilterChanged,
-              folderName: widget.folderName,
-              onExitFolder: widget.onExitFolder,
-            ),
-            const SizedBox(height: AppSpacing.md),
-            Row(
-              children: [
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => showLibrarySortSheet(context, widget.sortOrder, widget.onSortChanged),
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.sm,
-                        vertical: AppSpacing.xs,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AppIcon(
-                            icon: AppIcons.sort,
+                onPressed: widget.onSearchTap,
+                tooltip: 'Search library',
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+          child: LibraryFilterChips(
+            selectedFilter: widget.selectedFilter,
+            onFilterChanged: widget.onFilterChanged,
+            folderName: widget.folderName,
+            onExitFolder: widget.onExitFolder,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.base, 0, AppSpacing.base, AppSpacing.sm),
+          child: Row(
+            children: [
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => showLibrarySortSheet(
+                      context, widget.sortOrder, widget.onSortChanged),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      right: AppSpacing.sm,
+                      top: AppSpacing.xs,
+                      bottom: AppSpacing.xs,
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        AppIcon(
+                          icon: AppIcons.sort,
+                          color: AppColors.textSecondary,
+                          size: _sortGridIconSize,
+                        ),
+                        const SizedBox(width: AppSpacing.xs),
+                        Text(
+                          widget.sortOrder.label,
+                          style: const TextStyle(
                             color: AppColors.textSecondary,
-                            size: _sortGridIconSize,
+                            fontSize: AppFontSize.md,
+                            fontWeight: FontWeight.w500,
                           ),
-                          const SizedBox(width: AppSpacing.xs),
-                          Text(
-                            widget.sortOrder.label,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
-                              fontSize: AppFontSize.md,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+              ),
                 if (widget.selectedFilter == LibraryFilter.downloaded &&
                     widget.downloadedSource != null &&
                     widget.onDownloadedSourceChanged != null) ...[
@@ -230,8 +237,8 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                 ),
               ],
             ),
-          ],
-        ),
+          ),
+        ],
       );
   }
 

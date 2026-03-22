@@ -10,6 +10,122 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/core/utils/string_utils.dart';
 
+/// Shared playlist cover thumbnail used in both list and grid views.
+/// Respects [customImageUrl] first, then falls back to song art mosaic.
+class PlaylistCoverThumbnail extends StatelessWidget {
+  const PlaylistCoverThumbnail({
+    super.key,
+    required this.playlist,
+    required this.size,
+    this.borderRadius,
+  });
+
+  final LibraryPlaylist playlist;
+  final double size;
+  final BorderRadius? borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = borderRadius ?? BorderRadius.circular(AppRadius.sm);
+
+    // 1. Custom image (e.g. saved from a remote playlist)
+    if (playlist.customImageUrl != null && playlist.customImageUrl!.isNotEmpty) {
+      return ClipRRect(
+        borderRadius: radius,
+        child: CachedNetworkImage(
+          imageUrl: playlist.customImageUrl!,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorWidget: (_, __, ___) => _placeholder(size, radius),
+        ),
+      );
+    }
+
+    final songs = playlist.songs;
+
+    // 2. No songs — placeholder
+    if (songs.isEmpty) return _placeholder(size, radius);
+
+    // 3. Single song — single image
+    if (songs.length == 1) {
+      return ClipRRect(
+        borderRadius: radius,
+        child: CachedNetworkImage(
+          imageUrl: songs.first.thumbnailUrl,
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorWidget: (_, __, ___) => _placeholder(size, radius),
+        ),
+      );
+    }
+
+    // 4. 2–4+ songs — 2×2 mosaic
+    final urls = songs.take(4).map((s) => s.thumbnailUrl).toList();
+    const gap = 1.5;
+    final cell = (size - gap) / 2;
+
+    return ClipRRect(
+      borderRadius: radius,
+      child: ClipRect(
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(children: [
+                _cell(urls[0], cell),
+                SizedBox(width: gap),
+                _cell(urls.length > 1 ? urls[1] : null, cell),
+              ]),
+              SizedBox(height: gap),
+              Row(children: [
+                _cell(urls.length > 2 ? urls[2] : null, cell),
+                SizedBox(width: gap),
+                _cell(urls.length > 3 ? urls[3] : null, cell),
+              ]),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _cell(String? url, double s) {
+    if (url == null) return _placeholderCell(s);
+    return CachedNetworkImage(
+      imageUrl: url,
+      width: s,
+      height: s,
+      fit: BoxFit.cover,
+      errorWidget: (_, __, ___) => _placeholderCell(s),
+    );
+  }
+
+  Widget _placeholderCell(double s) => Container(
+        width: s,
+        height: s,
+        color: AppColors.surfaceLight,
+        child: Center(
+          child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted, size: s * 0.4),
+        ),
+      );
+
+  Widget _placeholder(double s, BorderRadius r) => ClipRRect(
+        borderRadius: r,
+        child: Container(
+          width: s,
+          height: s,
+          color: AppColors.surfaceLight,
+          child: Center(
+            child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted, size: s * 0.5),
+          ),
+        ),
+      );
+}
+
 /// A single item in the library playlists section: Liked Songs, a folder, or a playlist.
 sealed class LibrarySectionEntry {}
 
@@ -110,25 +226,15 @@ class LibraryPlaylistsSection extends StatelessWidget {
               duration: AppDuration.fast,
               switchInCurve: AppCurves.decelerate,
               switchOutCurve: AppCurves.standard,
-              transitionBuilder: (child, animation) {
-                final isIncoming = child.key == ValueKey(viewMode);
-                if (isIncoming) {
-                  return FadeTransition(
-                    opacity: animation,
-                    child: SlideTransition(
-                      position: Tween<Offset>(
-                        begin: const Offset(0, 0.04),
-                        end: Offset.zero,
-                      ).animate(CurvedAnimation(
-                        parent: animation,
-                        curve: AppCurves.decelerate,
-                      )),
-                      child: child,
-                    ),
-                  );
-                }
-                return FadeTransition(opacity: animation, child: child);
-              },
+              transitionBuilder: (child, animation) =>
+                  FadeTransition(opacity: animation, child: child),
+              layoutBuilder: (currentChild, previousChildren) => Stack(
+                alignment: Alignment.topCenter,
+                children: [
+                  ...previousChildren,
+                  if (currentChild != null) currentChild,
+                ],
+              ),
               child: KeyedSubtree(
                 key: ValueKey(viewMode),
                 child: viewMode == LibraryViewMode.grid
@@ -314,9 +420,6 @@ class _LibraryPlaylistGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final coverUrl =
-        playlist.songs.isNotEmpty ? playlist.songs.first.thumbnailUrl : null;
-
     return GestureDetector(
       onTap: onTap,
       onLongPress: () => onOptions(null),
@@ -324,30 +427,14 @@ class _LibraryPlaylistGridCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
+            child: LayoutBuilder(
+              builder: (context, constraints) => PlaylistCoverThumbnail(
+                playlist: playlist,
+                size: constraints.maxHeight.isFinite
+                    ? constraints.maxHeight
+                    : constraints.maxWidth,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
-              child: coverUrl != null
-                  ? ClipRRect(
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                      child: CachedNetworkImage(
-                        imageUrl: coverUrl,
-                        fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => AppIcon(
-                          icon: AppIcons.musicNote,
-                          color: AppColors.textMuted,
-                          size: 40,
-                        ),
-                      ),
-                    )
-                  : AppIcon(
-                      icon: AppIcons.musicNote,
-                      color: AppColors.textMuted,
-                      size: 40,
-                    ),
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -744,9 +831,6 @@ class _LibraryPlaylistListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final coverUrl =
-        playlist.songs.isNotEmpty ? playlist.songs.first.thumbnailUrl : null;
-
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -754,37 +838,10 @@ class _LibraryPlaylistListTile extends StatelessWidget {
         onLongPress: () => onOptions(null),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           child: Row(
             children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
-                ),
-                child: coverUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(AppRadius.sm),
-                        child: CachedNetworkImage(
-                          imageUrl: coverUrl,
-                          fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => AppIcon(
-                            icon: AppIcons.musicNote,
-                            color: AppColors.textMuted,
-                            size: 28,
-                          ),
-                        ),
-                      )
-                    : AppIcon(
-                        icon: AppIcons.musicNote,
-                        color: AppColors.textMuted,
-                        size: 28,
-                      ),
-              ),
+              PlaylistCoverThumbnail(playlist: playlist, size: 52),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(

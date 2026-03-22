@@ -131,6 +131,7 @@ class DatabaseRepository {
         shuffleEnabled: m['shuffleEnabled'] as bool? ?? false,
         isPinned: m['is_pinned'] as bool? ?? false,
         customImageUrl: m['custom_image_url'] as String?,
+        isImported: m['is_imported'] as bool? ?? false,
       );
     }).toList();
 
@@ -198,6 +199,7 @@ class DatabaseRepository {
         'custom_image_url': p.customImageUrl,
         'is_pinned': p.isPinned,
         'shuffleEnabled': p.shuffleEnabled,
+        'is_imported': p.isImported,
       }).toList(),
       'folders': data.folders.map((f) => {
         'id': f.id,

@@ -53,6 +53,9 @@ class LibraryPlaylist {
   final bool isPinned;
   /// Custom cover image URL (user-selected); null uses first track art.
   final String? customImageUrl;
+  /// True when this playlist was imported from a remote source (e.g. home page).
+  /// Used to show the "saved to library" indicator when opened from the library.
+  final bool isImported;
 
   const LibraryPlaylist({
     required this.id,
@@ -65,6 +68,7 @@ class LibraryPlaylist {
     this.shuffleEnabled = false,
     this.isPinned = false,
     this.customImageUrl,
+    this.isImported = false,
   });
 
   int get trackCount => songs.length;
@@ -83,6 +87,7 @@ class LibraryPlaylist {
     bool? shuffleEnabled,
     bool? isPinned,
     String? customImageUrl,
+    bool? isImported,
   }) {
     return LibraryPlaylist(
       id: id ?? this.id,
@@ -95,6 +100,7 @@ class LibraryPlaylist {
       shuffleEnabled: shuffleEnabled ?? this.shuffleEnabled,
       isPinned: isPinned ?? this.isPinned,
       customImageUrl: customImageUrl ?? this.customImageUrl,
+      isImported: isImported ?? this.isImported,
     );
   }
 
@@ -126,6 +132,7 @@ class LibraryPlaylist {
         'shuffleEnabled': shuffleEnabled,
         'isPinned': isPinned,
         if (customImageUrl != null) 'customImageUrl': customImageUrl,
+        'isImported': isImported,
       };
 
   factory LibraryPlaylist.fromJson(Map<String, dynamic> json) {
@@ -146,6 +153,7 @@ class LibraryPlaylist {
       shuffleEnabled: json['shuffleEnabled'] as bool? ?? false,
       isPinned: json['isPinned'] as bool? ?? false,
       customImageUrl: json['customImageUrl'] as String?,
+      isImported: json['isImported'] as bool? ?? false,
     );
   }
 

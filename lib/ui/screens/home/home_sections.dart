@@ -6,10 +6,10 @@ import 'package:tunify/data/models/artist.dart';
 import 'package:tunify/data/models/mood.dart';
 import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/song.dart';
-import 'package:tunify/features/settings/content_settings_provider.dart';
-import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/widgets/items/artist_avatar.dart';
 import 'package:tunify/ui/widgets/items/mood_browse_sheet.dart';
+import 'package:tunify/ui/screens/library/library_playlist_screen.dart';
+import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
@@ -409,37 +409,11 @@ class BrowsePlaylistCard extends ConsumerStatefulWidget {
 }
 
 class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
-  bool _loading = false;
-
-  Future<void> _onTap() async {
-    if (_loading) return;
-    setState(() => _loading = true);
-    try {
-      final sm = ref.read(streamManagerProvider);
-      final result = await sm.getCollectionTracks(widget.playlist.id);
-      final songs = result.tracks.map((t) => Song.fromTrack(t)).toList();
-      if (!mounted) return;
-      final showExplicit = ref.read(showExplicitContentProvider);
-      final toPlay = filterByExplicitSetting(songs, showExplicit);
-      if (toPlay.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No songs found in this playlist')),
-        );
-        setState(() => _loading = false);
-        return;
-      }
-      ref.read(playerProvider.notifier).playSong(toPlay.first, queue: toPlay);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Failed to load playlist'),
-            action: SnackBarAction(label: 'Retry', onPressed: _onTap),
-          ),
-        );
-      }
+  void _onTap() {
+    final page = LibraryPlaylistScreen.remote(playlist: widget.playlist);
+    if (!ShellContext.pushDetail(context, page)) {
+      Navigator.of(context).push(appPageRoute<void>(builder: (_) => page));
     }
-    if (mounted) setState(() => _loading = false);
   }
 
   @override
@@ -453,27 +427,7 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                DpiAwareThumbnail(url: widget.playlist.coverUrl, size: size, radius: AppRadius.md),
-                if (_loading)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black54,
-                        borderRadius: BorderRadius.circular(AppRadius.md),
-                      ),
-                      child: const Center(
-                        child: SizedBox(
-                          width: 28,
-                          height: 28,
-                          child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+            DpiAwareThumbnail(url: widget.playlist.coverUrl, size: size, radius: AppRadius.md),
             const SizedBox(height: AppSpacing.sm),
             Text(
               widget.playlist.title,

@@ -110,10 +110,37 @@ class HomeUserMenuSheet extends StatelessWidget {
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
+                          )
+                        else
+                          const Text(
+                            'Private Session',
+                            style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: AppFontSize.md,
+                            ),
                           ),
                       ],
                     ),
                   ),
+                  if (onEditProfile != null)
+                    GestureDetector(
+                      onTap: onEditProfile,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: AppColors.surfaceLight,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: AppIcon(
+                            icon: AppIcons.edit,
+                            color: AppColors.textSecondary,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
               const SizedBox(height: AppSpacing.xl),
@@ -123,12 +150,6 @@ class HomeUserMenuSheet extends StatelessWidget {
                 thickness: 0.5,
               ),
               const SizedBox(height: AppSpacing.md),
-              if (onEditProfile != null)
-                _MenuRow(
-                  icon: AppIcons.edit,
-                  label: 'Edit Profile',
-                  onTap: onEditProfile!,
-                ),
               if (onSettings != null)
                 _MenuRow(
                   icon: AppIcons.settings,

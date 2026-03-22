@@ -300,6 +300,14 @@ class LibraryNotifier extends Notifier<LibraryState> {
     await _persist();
   }
 
+  /// Saves a fully-formed [LibraryPlaylist] (e.g. imported from a remote playlist)
+  /// into the library. No-op if a playlist with the same [id] already exists.
+  Future<void> addPlaylistToLibrary(LibraryPlaylist playlist) async {
+    if (state.playlists.any((p) => p.id == playlist.id)) return;
+    state = state.copyWith(playlists: [playlist, ...state.playlists]);
+    await _persist();
+  }
+
   Future<void> deletePlaylist(String id) async {
     final updated = state.playlists.where((p) => p.id != id).toList();
     final foldersUpdated = state.folders.map((f) {

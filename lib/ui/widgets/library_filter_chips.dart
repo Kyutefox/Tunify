@@ -100,6 +100,7 @@ class _LibraryFilterChipsState extends State<LibraryFilterChips>
     if (widget.folderName != null && widget.onExitFolder != null) {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
+        padding: EdgeInsets.zero,
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -164,6 +165,7 @@ class _LibraryFilterChipsState extends State<LibraryFilterChips>
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
+      padding: EdgeInsets.zero,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [

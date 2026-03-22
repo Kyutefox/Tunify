@@ -31,7 +31,7 @@ class AppIcons {
   static List<List<dynamic>> get gridView => HugeIcons.strokeRoundedGridView;
   static List<List<dynamic>> get listView => HugeIcons.strokeRoundedListView;
 
-  static List<List<dynamic>> get folder => HugeIcons.strokeRoundedFolder01;
+  static List<List<dynamic>> get folder => HugeIcons.strokeRoundedFolder03;
   static List<List<dynamic>> get musicNote =>
       HugeIcons.strokeRoundedMusicNote01;
   static List<List<dynamic>> get playlist => HugeIcons.strokeRoundedPlaylist01;
@@ -41,7 +41,7 @@ class AppIcons {
   static List<List<dynamic>> get library => HugeIcons.strokeRoundedLibrary;
   static List<List<dynamic>> get home => HugeIcons.strokeRoundedHome01;
 
-  static List<List<dynamic>> get edit => HugeIcons.strokeRoundedEdit01;
+  static List<List<dynamic>> get edit => HugeIcons.strokeRoundedEdit04;
   static List<List<dynamic>> get editNote => HugeIcons.strokeRoundedEdit02;
   static List<List<dynamic>> get delete => HugeIcons.strokeRoundedDelete01;
   static List<List<dynamic>> get deleteOutline =>
@@ -58,7 +58,7 @@ class AppIcons {
       HugeIcons.strokeRoundedRemoveCircle;
   static List<List<dynamic>> get sort => HugeIcons.strokeRoundedSorting01;
   static List<List<dynamic>> get dragHandle => HugeIcons.strokeRoundedDrag01;
-  static List<List<dynamic>> get download => HugeIcons.strokeRoundedDownload01;
+  static List<List<dynamic>> get download => HugeIcons.strokeRoundedDownload03;
   static List<List<dynamic>> get pin => HugeIcons.strokeRoundedPin;
   static List<List<dynamic>> get pinOff => HugeIcons.strokeRoundedPin02;
 
@@ -112,7 +112,7 @@ class AppIcons {
   static List<List<dynamic>> get notifications =>
       HugeIcons.strokeRoundedNotification01;
 
-  static List<List<dynamic>> get devices => HugeIcons.strokeRoundedDeviceAccess;
+  static List<List<dynamic>> get devices => HugeIcons.strokeRoundedDownload03;
   static List<List<dynamic>> get smartphone =>
       HugeIcons.strokeRoundedSmartphoneWifi;
   static List<List<dynamic>> get bluetooth => HugeIcons.strokeRoundedBluetooth;

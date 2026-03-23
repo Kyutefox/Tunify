@@ -165,7 +165,7 @@ class SkeletonBox extends StatelessWidget {
 /// initState/dispose/listener boilerplate across all paged section widgets.
 ///
 /// Usage:
-///   class _MyState extends ConsumerState<MyWidget> with PagedSectionMixin {
+///   class _MyState extends ConsumerState[MyWidget] with PagedSectionMixin {
 ///     @override Widget build(...) { ... use pageCtrl, currentPage ... }
 ///   }
 mixin PagedSectionMixin<T extends StatefulWidget> on State<T> {

@@ -36,7 +36,6 @@ class LibraryLikedSongsScreen extends ConsumerStatefulWidget {
 
 class _LibraryLikedSongsScreenState
     extends ConsumerState<LibraryLikedSongsScreen> {
-
   @override
   Widget build(BuildContext context) {
     final likedSongs = ref.watch(libraryProvider.select((s) => s.likedSongs));
@@ -75,6 +74,14 @@ class _LibraryLikedSongsScreenState
 
     return CollectionDetailScaffold(
       isEmpty: isEmpty,
+      paletteColor: () {
+        final base = AppColors.loveThemeColorFor('liked_songs');
+        return PaletteTheme.toPaletteColor(
+          base,
+          lightnessBoost: PaletteTheme.likedLightnessBoost,
+          lightnessMax: PaletteTheme.likedLightnessMax,
+        );
+      }(),
       emptyChild: const SliverFillRemaining(
         child: _LikedEmptyState(),
       ),
@@ -88,6 +95,10 @@ class _LibraryLikedSongsScreenState
         songs: likedSongs,
         filteredSongs: filteredSongs,
         onEdit: () => _openEditLikedSheet(context, likedSongs),
+      ),
+      playButton: _LikedStickyPlayButton(
+        songs: likedSongs,
+        filteredSongs: filteredSongs,
       ),
       searchField: _SearchInLikedTap(songs: likedSongs),
       bodySlivers: [
@@ -512,6 +523,7 @@ class _LikedActionRow extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final canPlay = filteredSongs.isNotEmpty;
     final shuffleEnabled = ref.watch(likedShuffleProvider);
+
     return Padding(
       padding: const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
       child: Row(
@@ -520,13 +532,10 @@ class _LikedActionRow extends ConsumerWidget {
             icon: AppIcon(
               icon: AppIcons.shuffle,
               size: 24,
-              color:
-                  shuffleEnabled ? AppColors.primary : AppColors.textMuted,
+              color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
             ),
             onPressed: canPlay
-                ? () {
-                    ref.read(libraryProvider.notifier).toggleLikedShuffle();
-                  }
+                ? () => ref.read(libraryProvider.notifier).toggleLikedShuffle()
                 : null,
             size: 40,
             iconSize: 24,
@@ -543,24 +552,42 @@ class _LikedActionRow extends ConsumerWidget {
           ),
           MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
           const Spacer(),
-          PlayCircleButton(
-            onTap: canPlay
-                ? () {
-                    final queue = shuffleEnabled
-                        ? (List<Song>.from(songs)..shuffle(Random()))
-                        : songs;
-                    ref
-                        .read(playerProvider.notifier)
-                        .playSong(queue.first,
-                            queue: queue,
-                            queueSource: 'liked');
-                  }
-                : () {},
-            size: 56,
-            iconSize: 32,
-          ),
+          // Transparent placeholder — real play button is the floating overlay
+          const SizedBox(width: 56, height: 56),
         ],
       ),
+    );
+  }
+}
+
+class _LikedStickyPlayButton extends ConsumerWidget {
+  const _LikedStickyPlayButton({
+    required this.songs,
+    required this.filteredSongs,
+  });
+
+  final List<Song> songs;
+  final List<Song> filteredSongs;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final canPlay = filteredSongs.isNotEmpty;
+    final shuffleEnabled = ref.watch(likedShuffleProvider);
+    return PlayCircleButton(
+      onTap: canPlay
+          ? () {
+              final queue = shuffleEnabled
+                  ? (List<Song>.from(songs)..shuffle(Random()))
+                  : songs;
+              ref.read(playerProvider.notifier).playSong(
+                    queue.first,
+                    queue: queue,
+                    queueSource: 'liked',
+                  );
+            }
+          : () {},
+      size: 48,
+      iconSize: 28,
     );
   }
 }

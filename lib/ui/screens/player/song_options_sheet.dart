@@ -16,8 +16,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import '../library/add_to_playlist_sheet.dart';
-import 'package:tunify/ui/screens/detail/artist_page.dart';
-import 'package:tunify/ui/screens/detail/album_page.dart';
+import 'package:tunify/ui/screens/library/library_playlist_screen.dart';
 
 class SongOptionExtra {
   final List<List<dynamic>> icon;
@@ -188,10 +187,10 @@ void _showDesktopSongMenu(
       label: 'Go to Artist',
       showChevron: true,
       onTap: () {
-        final page = ArtistPage(
+        final page = LibraryPlaylistScreen.artist(
           artistName: song.artist,
           thumbnailUrl: song.thumbnailUrl,
-          artistBrowseId: song.artistBrowseId,
+          browseId: song.artistBrowseId,
         );
         if (pushDetail != null) {
           pushDetail(page);
@@ -205,12 +204,12 @@ void _showDesktopSongMenu(
       label: 'Go to Album',
       showChevron: true,
       onTap: () {
-        final page = AlbumPage(
+        final page = LibraryPlaylistScreen.album(
           songTitle: song.title,
           artistName: song.artist,
           thumbnailUrl: song.thumbnailUrl,
-          albumBrowseId: song.albumBrowseId,
-          albumName: song.albumName,
+          browseId: song.albumBrowseId,
+          name: song.albumName,
           songId: song.id,
         );
         if (pushDetail != null) {
@@ -378,10 +377,10 @@ class _SongOptionsContent extends ConsumerWidget {
               Navigator.of(context).pop();
               Navigator.of(context).push(
                 appPageRoute<void>(
-                  builder: (_) => ArtistPage(
+                  builder: (_) => LibraryPlaylistScreen.artist(
                     artistName: songForNav.artist,
                     thumbnailUrl: songForNav.thumbnailUrl,
-                    artistBrowseId: songForNav.artistBrowseId,
+                    browseId: songForNav.artistBrowseId,
                   ),
                 ),
               );
@@ -394,12 +393,12 @@ class _SongOptionsContent extends ConsumerWidget {
               Navigator.of(context).pop();
               Navigator.of(context).push(
                 appPageRoute<void>(
-                  builder: (_) => AlbumPage(
+                  builder: (_) => LibraryPlaylistScreen.album(
                     songTitle: songForNav.title,
                     artistName: songForNav.artist,
                     thumbnailUrl: songForNav.thumbnailUrl,
-                    albumBrowseId: songForNav.albumBrowseId,
-                    albumName: songForNav.albumName,
+                    browseId: songForNav.albumBrowseId,
+                    name: songForNav.albumName,
                     songId: songForNav.id,
                   ),
                 ),

@@ -165,3 +165,97 @@ abstract final class AppColors {
     );
   }
 }
+
+/// Central palette/gradient constants used across collection headers,
+/// the main player background, and anywhere a dominant/palette color is applied.
+abstract final class PaletteTheme {
+  // ── Palette extraction (HSL adjustments) ──────────────────────────────────
+  /// Lightness boost — small, just enough to avoid near-black colors.
+  static const double extractLightnessBoost = 0.05;
+  /// Minimum lightness — prevents very dark colors from being invisible.
+  static const double extractLightnessMin = 0.35;
+  /// Maximum lightness — prevents colors from washing out completely.
+  static const double extractLightnessMax = 0.75;
+  /// Saturation reduction — keep colors vivid, just slightly soften.
+  static const double extractSaturationReduce = 0.05;
+
+  /// Liked Songs gets a slightly stronger lightness boost for its fixed color.
+  static const double likedLightnessBoost = 0.10;
+  static const double likedLightnessMax = 0.78;
+
+  // ── Collection header gradient (scrolls with content) ────────────────────
+  /// Top alpha — strong enough to be clearly visible on dark background.
+  static const double headerGradientTopAlpha = 0.85;
+  /// Mid alpha — still visible as it fades out.
+  static const double headerGradientMidAlpha = 0.40;
+  /// Gradient stop positions [top, mid, transparent].
+  static const List<double> headerGradientStops = [0.0, 0.55, 1.0];
+  /// Total height of the gradient panel (appBarHeight + this).
+  static const double headerGradientContentHeight = 600.0;
+
+  // ── AppBar pinned background blend ───────────────────────────────────────
+  /// Alpha used when blending the palette color into the pinned AppBar bg.
+  static const double appBarBlendAlpha = 0.90;
+
+  // ── Player background gradient ────────────────────────────────────────────
+  /// Top alpha of the dominant-color overlay on the player blurred background.
+  static const double playerGradientTopAlpha = 0.60;
+  /// Mid alpha of the dominant-color overlay.
+  static const double playerGradientMidAlpha = 0.20;
+  /// Dark overlay alpha applied over the blurred artwork — reduced so color shows.
+  static const double playerDarkOverlayAlpha = 0.30;
+
+  // ── Player queue sheet gradient ───────────────────────────────────────────
+  static const double playerQueueGradientAlpha = 0.30;
+
+  // ── Player album art glow ─────────────────────────────────────────────────
+  static const double playerArtGlowAlpha = 0.55;
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  /// Converts a raw dominant/vibrant [color] into the palette color used for
+  /// gradients. Keeps the color vivid — only clamps lightness to a safe range.
+  static Color toPaletteColor(Color color, {
+    double lightnessBoost = extractLightnessBoost,
+    double lightnessMin = extractLightnessMin,
+    double lightnessMax = extractLightnessMax,
+    double saturationReduce = extractSaturationReduce,
+  }) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl
+        .withLightness((hsl.lightness + lightnessBoost).clamp(lightnessMin, lightnessMax))
+        .withSaturation((hsl.saturation - saturationReduce).clamp(0.0, 1.0))
+        .toColor();
+  }
+
+  /// Builds the [LinearGradient] used in the collection header sliver.
+  static LinearGradient headerGradient(Color paletteColor) => LinearGradient(
+        colors: [
+          paletteColor.withValues(alpha: headerGradientTopAlpha),
+          paletteColor.withValues(alpha: headerGradientMidAlpha),
+          Colors.transparent,
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        stops: headerGradientStops,
+      );
+
+  /// Builds the pinned AppBar background color by blending [paletteColor]
+  /// over [AppColors.background].
+  static Color appBarBackground(Color paletteColor) => Color.alphaBlend(
+        paletteColor.withValues(alpha: appBarBlendAlpha),
+        AppColors.background,
+      );
+
+  /// Builds the dominant-color overlay gradient used in [PlayerBlurredBackground].
+  static LinearGradient playerGradient(Color dominantColor) => LinearGradient(
+        colors: [
+          dominantColor.withValues(alpha: playerGradientTopAlpha),
+          dominantColor.withValues(alpha: playerGradientMidAlpha),
+          Colors.black.withValues(alpha: playerDarkOverlayAlpha),
+        ],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        stops: const [0, 0.5, 1],
+      );
+}

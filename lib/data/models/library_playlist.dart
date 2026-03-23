@@ -53,9 +53,11 @@ class LibraryPlaylist {
   final bool isPinned;
   /// Custom cover image URL (user-selected); null uses first track art.
   final String? customImageUrl;
-  /// True when this playlist was imported from a remote source (e.g. home page).
-  /// Used to show the "saved to library" indicator when opened from the library.
+  /// True when this playlist was saved from a remote source (e.g. home page).
+  /// Remote-saved playlists always re-fetch fresh data when opened and are not editable.
   final bool isImported;
+  /// Browse ID used to re-fetch remote playlist data. Only set for [isImported] playlists.
+  final String? browseId;
 
   const LibraryPlaylist({
     required this.id,
@@ -69,6 +71,7 @@ class LibraryPlaylist {
     this.isPinned = false,
     this.customImageUrl,
     this.isImported = false,
+    this.browseId,
   });
 
   int get trackCount => songs.length;
@@ -88,6 +91,7 @@ class LibraryPlaylist {
     bool? isPinned,
     String? customImageUrl,
     bool? isImported,
+    String? browseId,
   }) {
     return LibraryPlaylist(
       id: id ?? this.id,
@@ -101,6 +105,7 @@ class LibraryPlaylist {
       isPinned: isPinned ?? this.isPinned,
       customImageUrl: customImageUrl ?? this.customImageUrl,
       isImported: isImported ?? this.isImported,
+      browseId: browseId ?? this.browseId,
     );
   }
 
@@ -133,6 +138,7 @@ class LibraryPlaylist {
         'isPinned': isPinned,
         if (customImageUrl != null) 'customImageUrl': customImageUrl,
         'isImported': isImported,
+        if (browseId != null) 'browseId': browseId,
       };
 
   factory LibraryPlaylist.fromJson(Map<String, dynamic> json) {
@@ -154,6 +160,7 @@ class LibraryPlaylist {
       isPinned: json['isPinned'] as bool? ?? false,
       customImageUrl: json['customImageUrl'] as String?,
       isImported: json['isImported'] as bool? ?? false,
+      browseId: json['browseId'] as String?,
     );
   }
 

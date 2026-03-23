@@ -316,9 +316,10 @@ class _LibrarySectionGrid extends StatelessWidget {
               iconWidget: FavouriteIcon(
                 isLiked: true,
                 size: 40,
-                gradient: AppColors.loveThemeGradientFor('liked_songs'),
+                fillColor: Colors.white,
               ),
               backgroundColor: AppColors.surfaceLight,
+              backgroundGradient: AppColors.loveThemeGradientFor('liked_songs'),
               title: 'Liked Songs',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
@@ -345,6 +346,7 @@ class _StaticGridCard extends StatelessWidget {
     this.iconColor,
     this.iconWidget,
     required this.backgroundColor,
+    this.backgroundGradient,
     required this.title,
     required this.subtitle,
     required this.onTap,
@@ -354,6 +356,7 @@ class _StaticGridCard extends StatelessWidget {
   final Color? iconColor;
   final Widget? iconWidget;
   final Color backgroundColor;
+  final LinearGradient? backgroundGradient;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -369,7 +372,8 @@ class _StaticGridCard extends StatelessWidget {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: backgroundColor,
+                color: backgroundGradient == null ? backgroundColor : null,
+                gradient: backgroundGradient,
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Center(
@@ -477,13 +481,6 @@ class _LibraryPlaylistGridCard extends StatelessWidget {
                 ),
               ),
             ],
-          ),
-          Text(
-            playlist.trackCountLabel,
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: AppFontSize.xs,
-            ),
           ),
         ],
       ),
@@ -712,9 +709,10 @@ class _LibrarySectionList extends StatelessWidget {
               iconWidget: FavouriteIcon(
                 isLiked: true,
                 size: 28,
-                gradient: AppColors.loveThemeGradientFor('liked_songs'),
+                fillColor: Colors.white,
               ),
               backgroundColor: AppColors.surfaceLight,
+              backgroundGradient: AppColors.loveThemeGradientFor('liked_songs'),
               title: 'Liked Songs',
               subtitle:
                   songCount == 0 ? 'No songs yet' : '$songCount songs',
@@ -742,6 +740,7 @@ class _StaticListTile extends StatelessWidget {
     this.iconColor,
     this.iconWidget,
     required this.backgroundColor,
+    this.backgroundGradient,
     required this.title,
     required this.subtitle,
     required this.onTap,
@@ -751,6 +750,7 @@ class _StaticListTile extends StatelessWidget {
   final Color? iconColor;
   final Widget? iconWidget;
   final Color backgroundColor;
+  final LinearGradient? backgroundGradient;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
@@ -772,7 +772,8 @@ class _StaticListTile extends StatelessWidget {
                 width: 52,
                 height: 52,
                 decoration: BoxDecoration(
-                  color: backgroundColor,
+                  color: backgroundGradient == null ? backgroundColor : null,
+                  gradient: backgroundGradient,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Center(
@@ -856,13 +857,6 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                    ),
-                    Text(
-                      playlist.trackCountLabel,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: AppFontSize.md,
-                      ),
                     ),
                   ],
                 ),

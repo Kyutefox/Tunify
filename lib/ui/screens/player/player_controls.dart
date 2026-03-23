@@ -3,8 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
-import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors.dart';import 'package:tunify/ui/theme/design_tokens.dart';
 
 class PlayerControls extends ConsumerWidget {
   const PlayerControls({super.key, required this.dominantColor});
@@ -152,7 +151,7 @@ class _PlayerBigPlayButtonState extends State<PlayerBigPlayButton>
             color: Colors.white,
             boxShadow: [
               BoxShadow(
-                color: widget.dominantColor.withValues(alpha: 0.35),
+                color: widget.dominantColor.withValues(alpha: PaletteTheme.playerArtGlowAlpha),
                 blurRadius: 28,
                 spreadRadius: 2,
               ),

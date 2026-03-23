@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-
 class PlayerBlurredBackground extends StatelessWidget {
   const PlayerBlurredBackground({
     super.key,
@@ -24,7 +23,7 @@ class PlayerBlurredBackground extends StatelessWidget {
       children: [
         ColorFiltered(
           colorFilter: ColorFilter.mode(
-            Colors.black.withValues(alpha: 0.45),
+            Colors.black.withValues(alpha: PaletteTheme.playerDarkOverlayAlpha),
             BlendMode.darken,
           ),
           child: ImageFiltered(
@@ -43,16 +42,7 @@ class PlayerBlurredBackground extends StatelessWidget {
           duration: AppDuration.medium,
           curve: AppCurves.decelerate,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                dominantColor.withValues(alpha: 0.35),
-                dominantColor.withValues(alpha: 0.08),
-                Colors.black.withValues(alpha: 0.45),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              stops: const [0, 0.5, 1],
-            ),
+            gradient: PaletteTheme.playerGradient(dominantColor),
           ),
         ),
       ],

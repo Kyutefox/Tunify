@@ -31,8 +31,6 @@ import 'library/library_search_screen.dart';
 import 'package:tunify/ui/widgets/adaptive_menu.dart';
 import 'package:tunify/ui/widgets/create_library_options.dart';
 import 'download_queue_sheet.dart';
-import 'package:tunify/ui/screens/detail/album_page.dart';
-import 'package:tunify/ui/screens/detail/artist_page.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
@@ -438,10 +436,10 @@ class _FollowedArtistsList extends ConsumerWidget {
           child: InkWell(
             onTap: () => Navigator.of(context).push(
               appPageRoute<void>(
-                builder: (_) => ArtistPage(
+                builder: (_) => LibraryPlaylistScreen.artist(
                   artistName: artist.name,
                   thumbnailUrl: artist.thumbnailUrl,
-                  artistBrowseId: artist.browseId,
+                  browseId: artist.browseId,
                 ),
               ),
             ),
@@ -524,10 +522,10 @@ class _FollowedArtistsGrid extends ConsumerWidget {
         return GestureDetector(
           onTap: () => Navigator.of(context).push(
             appPageRoute<void>(
-              builder: (_) => ArtistPage(
+              builder: (_) => LibraryPlaylistScreen.artist(
                 artistName: artist.name,
                 thumbnailUrl: artist.thumbnailUrl,
-                artistBrowseId: artist.browseId,
+                browseId: artist.browseId,
               ),
             ),
           ),
@@ -602,12 +600,12 @@ class _FollowedAlbumsList extends ConsumerWidget {
           child: InkWell(
             onTap: () => Navigator.of(context).push(
               appPageRoute<void>(
-                builder: (_) => AlbumPage(
+                builder: (_) => LibraryPlaylistScreen.album(
                   songTitle: album.title,
                   artistName: album.artistName,
                   thumbnailUrl: album.thumbnailUrl,
-                  albumBrowseId: album.browseId,
-                  albumName: album.title,
+                  browseId: album.browseId,
+                  name: album.title,
                 ),
               ),
             ),
@@ -693,12 +691,12 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
         return GestureDetector(
           onTap: () => Navigator.of(context).push(
             appPageRoute<void>(
-              builder: (_) => AlbumPage(
+              builder: (_) => LibraryPlaylistScreen.album(
                 songTitle: album.title,
                 artistName: album.artistName,
                 thumbnailUrl: album.thumbnailUrl,
-                albumBrowseId: album.browseId,
-                albumName: album.title,
+                browseId: album.browseId,
+                name: album.title,
               ),
             ),
           ),

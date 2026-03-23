@@ -20,8 +20,6 @@ import '../screens/library/library_playlist_screen.dart';
 import '../screens/library/library_playlists_section.dart';
 import '../screens/library/library_search_screen.dart';
 import '../screens/library_screen.dart';
-import 'package:tunify/ui/screens/detail/album_page.dart';
-import 'package:tunify/ui/screens/detail/artist_page.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 
@@ -96,14 +94,16 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
   void _closeFolderInline() =>
       setState(() => _openFolder = null);
 
-  void _openAlbum(LibraryAlbum a) => widget.onNavigateTo(AlbumPage(
+  void _openAlbum(LibraryAlbum a) => widget.onNavigateTo(LibraryPlaylistScreen.album(
         songTitle: a.title,
         artistName: a.artistName,
         thumbnailUrl: a.thumbnailUrl,
+        browseId: a.browseId,
+        name: a.title,
       ));
 
   void _openArtist(LibraryArtist a) => widget.onNavigateTo(
-      ArtistPage(artistName: a.name, thumbnailUrl: a.thumbnailUrl));
+      LibraryPlaylistScreen.artist(artistName: a.name, thumbnailUrl: a.thumbnailUrl, browseId: a.browseId));
 
   // ── Build ────────────────────────────────────────────────────────────────
 

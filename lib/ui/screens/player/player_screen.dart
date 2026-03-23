@@ -17,8 +17,7 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/player/sleep_timer_provider.dart';
 import 'package:tunify/features/device/device_discovery_service.dart';
 import 'package:tunify/ui/screens/player/song_options_sheet.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
-import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors.dart';import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/items/download_progress_ring.dart';
 import 'package:tunify/ui/widgets/items/song_list_tile.dart';
 import 'package:tunify/ui/widgets/items/mini_player_play_button.dart';
@@ -252,7 +251,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               borderRadius: BorderRadius.circular(AppRadius.xl),
               boxShadow: [
                 BoxShadow(
-                  color: dominantColor.withValues(alpha: 0.35),
+                  color: dominantColor.withValues(alpha: PaletteTheme.playerArtGlowAlpha),
                   blurRadius: 50,
                   spreadRadius: 5,
                   offset: const Offset(0, 12),
@@ -418,7 +417,7 @@ void showLyricsSheet(
     decoration: BoxDecoration(
       gradient: LinearGradient(
         colors: [
-          dominantColor.withValues(alpha: 0.15),
+          dominantColor.withValues(alpha: PaletteTheme.playerQueueGradientAlpha),
           AppColors.surface,
           AppColors.surface,
         ],

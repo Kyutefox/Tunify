@@ -300,11 +300,23 @@ class LibraryNotifier extends Notifier<LibraryState> {
     await _persist();
   }
 
-  /// Saves a fully-formed [LibraryPlaylist] (e.g. imported from a remote playlist)
-  /// into the library. No-op if a playlist with the same [id] already exists.
+  /// Saves a remote playlist reference into the library.
+  /// Only stores id, name, description, browseId, and customImageUrl — no songs.
+  /// Songs are always re-fetched fresh when the playlist is opened.
   Future<void> addPlaylistToLibrary(LibraryPlaylist playlist) async {
     if (state.playlists.any((p) => p.id == playlist.id)) return;
-    state = state.copyWith(playlists: [playlist, ...state.playlists]);
+    final minimal = LibraryPlaylist(
+      id: playlist.id,
+      name: playlist.name,
+      description: playlist.description,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      songs: const [],
+      customImageUrl: playlist.customImageUrl,
+      isImported: true,
+      browseId: playlist.browseId ?? playlist.id,
+    );
+    state = state.copyWith(playlists: [minimal, ...state.playlists]);
     await _persist();
   }
 

@@ -4,6 +4,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/items/mini_player.dart';
 import 'package:tunify/ui/widgets/button.dart';
 
@@ -518,27 +519,28 @@ class CollectionDetailExpandedContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.base,
-        vertical: AppSpacing.xl,
+      padding: EdgeInsets.symmetric(
+        horizontal: t.spacing.base,
+        vertical: t.spacing.xl,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           cover,
-          const SizedBox(height: AppSpacing.xl),
+          SizedBox(height: t.spacing.xl),
           Text(
             key: titleKey,
             title,
-            style: const TextStyle(
+            style: TextStyle(
               color: AppColors.textPrimary,
-              fontSize: AppFontSize.h2,
+              fontSize: t.font.h2,
               fontWeight: FontWeight.w800,
             ),
           ),
           if (subtitle != null) ...[
-            const SizedBox(height: AppSpacing.xs),
+            SizedBox(height: t.spacing.xs),
             subtitle!,
           ],
         ],
@@ -558,31 +560,32 @@ class CollectionTrackListHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.base,
-        vertical: AppSpacing.sm,
+      padding: EdgeInsets.symmetric(
+        horizontal: t.spacing.base,
+        vertical: t.spacing.sm,
       ),
       child: Row(
         children: [
           const SizedBox(width: 40),
-          const Expanded(
+          Expanded(
             child: Text(
               'Title',
               style: TextStyle(
                 color: AppColors.textMuted,
-                fontSize: AppFontSize.sm,
+                fontSize: t.font.sm,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
               ),
             ),
           ),
           if (showDurationColumn)
-            const Text(
+            Text(
               'Duration',
               style: TextStyle(
                 color: AppColors.textMuted,
-                fontSize: AppFontSize.sm,
+                fontSize: t.font.sm,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
               ),

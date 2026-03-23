@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 
 /// A compact tappable list tile for library items that have a thumbnail
 /// (albums, artists) or an icon placeholder (downloads, etc.).
@@ -34,20 +35,20 @@ class LibraryThumbnailTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final t = AppTokens.of(context);
+    final tile = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-              vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
+          padding: EdgeInsets.symmetric(vertical: t.spacing.sm, horizontal: t.spacing.sm),
           child: Row(
             children: [
               icon != null
                   ? _IconThumb(icon: icon!)
                   : _Thumb(thumbnailUrl: thumbnailUrl, isCircle: isCircle),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: t.spacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -56,18 +57,20 @@ class LibraryThumbnailTile extends StatelessWidget {
                       title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: t.isDesktop ? FontWeight.w700 : FontWeight.w600,
                       ),
                     ),
                     Text(
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: AppFontSize.md),
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: AppFontSize.md,
+                      ),
                     ),
                   ],
                 ),
@@ -77,6 +80,11 @@ class LibraryThumbnailTile extends StatelessWidget {
         ),
       ),
     );
+
+    if (t.isDesktop) {
+      return _DesktopHoverWrapper(child: tile);
+    }
+    return tile;
   }
 }
 
@@ -86,15 +94,17 @@ class _IconThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    final size = t.isDesktop ? 44.0 : 52.0;
     return Container(
-      width: 52,
-      height: 52,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Center(
-        child: AppIcon(icon: icon, color: AppColors.textMuted, size: 26),
+        child: AppIcon(icon: icon, color: AppColors.textMuted, size: size * 0.5),
       ),
     );
   }
@@ -108,29 +118,58 @@ class _Thumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    final size = t.isDesktop ? 44.0 : 52.0;
     return ClipRRect(
-      borderRadius:
-          BorderRadius.circular(isCircle ? 26 : AppRadius.sm),
+      borderRadius: BorderRadius.circular(isCircle ? size / 2 : AppRadius.sm),
       child: Container(
-        width: 52,
-        height: 52,
+        width: size,
+        height: size,
         color: AppColors.surfaceLight,
         child: thumbnailUrl != null
             ? CachedNetworkImage(
                 imageUrl: thumbnailUrl!,
                 fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => _icon,
+                errorWidget: (_, __, ___) => _icon(size),
               )
-            : _icon,
+            : _icon(size),
       ),
     );
   }
 
-  Widget get _icon => Center(
+  Widget _icon(double size) => Center(
         child: AppIcon(
           icon: AppIcons.musicNote,
           color: AppColors.textMuted,
-          size: 26,
+          size: size * 0.5,
         ),
       );
+}
+
+class _DesktopHoverWrapper extends StatefulWidget {
+  const _DesktopHoverWrapper({required this.child});
+  final Widget child;
+
+  @override
+  State<_DesktopHoverWrapper> createState() => _DesktopHoverWrapperState();
+}
+
+class _DesktopHoverWrapperState extends State<_DesktopHoverWrapper> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        decoration: BoxDecoration(
+          color: _hovered ? AppColors.hoverOverlay : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: widget.child,
+      ),
+    );
+  }
 }

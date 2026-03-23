@@ -13,6 +13,7 @@ import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/widgets/items/section_header.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'home_sections.dart';
 import 'home_shared.dart';
 import 'home_skeletons.dart';
@@ -112,11 +113,12 @@ class _NavButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
     return GestureDetector(
       onTap: enabled ? onTap : null,
       child: Container(
-        width: AppSpacing.xxl,
-        height: AppSpacing.xxl,
+        width: t.spacing.xxl,
+        height: t.spacing.xxl,
         decoration: BoxDecoration(
           color: enabled
               ? AppColors.surfaceLight
@@ -126,7 +128,7 @@ class _NavButton extends StatelessWidget {
         child: Center(
           child: AppIcon(
             icon: icon,
-            size: 14,
+            size: t.icon.xs,
             color: enabled ? AppColors.textPrimary : AppColors.textMuted,
           ),
         ),

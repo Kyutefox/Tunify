@@ -43,6 +43,17 @@ abstract final class AppColors {
   static const Color textMuted = Color(0xFF9E9E9E);
   static const Color textDisabled = Color(0xFF727272);
 
+  // ——— Desktop-specific text colors (higher contrast for larger screens) ———
+  static const Color desktopTextSecondary = Color(0xFF888888);
+  static const Color desktopTextMuted = Color(0xFF666666);
+
+  // ——— Desktop surface layers ———
+  static const Color desktopSurface = Color(0xFF1E1E1E);
+  static const Color desktopCanvas = Color(0xFF0A0A0A);
+
+  // ——— Hover overlay ———
+  static const Color hoverOverlay = Color(0x0FFFFFFF);
+
   static const Color glassWhite = Color(0x18FFFFFF);
   static const Color glassBlack = Color(0x60000000);
   static const Color glassBorder = Color(0x25FFFFFF);

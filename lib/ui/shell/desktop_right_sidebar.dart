@@ -6,6 +6,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import '../screens/player/player_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -136,14 +137,11 @@ class _SidebarTabBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Container(
-      height: 52,
+      height: DesktopLayout.rightTabBarHeight,
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border(
-          bottom: BorderSide(
-            color: AppColors.glassBorder,
-            width: 0.5,
-          ),
+          bottom: BorderSide(color: AppColors.glassBorder, width: 0.5),
         ),
       ),
       child: Row(
@@ -158,16 +156,15 @@ class _SidebarTabBar extends ConsumerWidget {
               ),
             ),
           ),
-          // Close button
           GestureDetector(
             onTap: () =>
                 ref.read(rightSidebarTabProvider.notifier).state = null,
             behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.md),
               child: AppIcon(
                 icon: AppIcons.chevronRight,
-                size: 18,
+                size: DesktopIconSize.sm,
                 color: AppColors.textMuted,
               ),
             ),
@@ -209,13 +206,13 @@ class _TabButton extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            AppIcon(icon: tab.icon, size: 16, color: color),
-            const SizedBox(height: 3),
+            AppIcon(icon: tab.icon, size: DesktopIconSize.sm, color: color),
+            const SizedBox(height: 4),
             Text(
               tab.label,
               style: TextStyle(
                 color: color,
-                fontSize: AppFontSize.micro,
+                fontSize: DesktopFontSize.xs,
                 fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                 letterSpacing: AppLetterSpacing.normal,
               ),

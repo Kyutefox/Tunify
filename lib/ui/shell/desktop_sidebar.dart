@@ -21,6 +21,7 @@ import '../screens/library/library_search_screen.dart';
 import '../screens/library_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 
 const double kDesktopSidebarWidth = 340.0;
 
@@ -186,12 +187,6 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.background,
-          border: Border(
-            right: BorderSide(
-              color: AppColors.glassBorder,
-              width: 0.5,
-            ),
-          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -199,7 +194,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
             // ── Header ────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.base, AppSpacing.lg, AppSpacing.sm, AppSpacing.md),
+                  DesktopSpacing.base, DesktopSpacing.lg, DesktopSpacing.sm, DesktopSpacing.md),
               child: Row(
                 children: [
                   const Expanded(
@@ -207,13 +202,12 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                       'Library',
                       style: TextStyle(
                         color: AppColors.textPrimary,
-                        fontSize: AppFontSize.h2,
+                        fontSize: DesktopFontSize.h2,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: AppLetterSpacing.display,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
-                  // Create menu — same options as mobile + button
                   _CreateMenuButton(
                     onCreatePlaylist: widget.onCreatePlaylist,
                     onCreateFolder: widget.onCreateFolder,
@@ -222,10 +216,10 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
               ),
             ),
 
-            // ── Filter chips — passes folderName to show folder chip ───────
+            // ── Filter chips ───────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(
-                  AppSpacing.base, 0, AppSpacing.base, 0),
+                  DesktopSpacing.base, 0, DesktopSpacing.base, 0),
               child: LibraryFilterChips(
                 selectedFilter: _filter,
                 onFilterChanged: _onFilterChanged,
@@ -247,7 +241,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                   ? Padding(
                       key: const ValueKey('search-field'),
                       padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.xs, 0, AppSpacing.xs, AppSpacing.xs),
+                          DesktopSpacing.base, 0, DesktopSpacing.sm, DesktopSpacing.xs),
                       child: Container(
                         height: 36,
                         decoration: BoxDecoration(
@@ -316,10 +310,9 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                   : Padding(
                       key: const ValueKey('controls-row'),
                       padding: const EdgeInsets.fromLTRB(
-                          AppSpacing.base, 0, AppSpacing.sm, AppSpacing.xs),
+                          DesktopSpacing.base, 0, DesktopSpacing.sm, DesktopSpacing.xs),
                       child: Row(
                         children: [
-                          // Sort order — desktop inline dropdown
                           Builder(
                             builder: (btnCtx) => GestureDetector(
                               behavior: HitTestBehavior.opaque,
@@ -338,21 +331,21 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                               },
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
-                                    vertical: AppSpacing.xs),
+                                    vertical: DesktopSpacing.xs),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
                                     AppIcon(
                                       icon: AppIcons.sort,
                                       color: AppColors.textSecondary,
-                                      size: 16,
+                                      size: DesktopIconSize.xs,
                                     ),
-                                    const SizedBox(width: AppSpacing.xs),
+                                    const SizedBox(width: DesktopSpacing.xs),
                                     Text(
                                       sortOrder.label,
                                       style: const TextStyle(
-                                        color: AppColors.textSecondary,
-                                        fontSize: AppFontSize.sm,
+                                        color: AppColors.desktopTextSecondary,
+                                        fontSize: DesktopFontSize.sm,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -362,26 +355,24 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                             ),
                           ),
                           const Spacer(),
-                          // Search toggle
                           AppIconButton(
                             icon: AppIcon(
                               icon: AppIcons.search,
-                              size: 16,
+                              size: DesktopIconSize.xs,
                               color: AppColors.textSecondary,
                             ),
                             onPressed: _toggleSearch,
-                            size: 30,
-                            iconSize: 16,
+                            size: DesktopButtonSize.sm,
+                            iconSize: DesktopIconSize.xs,
                             tooltip: 'Search library',
                           ),
                           const SizedBox(width: 2),
-                          // View mode toggle
                           AppIconButton(
                             icon: AppIcon(
                               icon: viewMode == LibraryViewMode.list
                                   ? AppIcons.gridView
                                   : AppIcons.listView,
-                              size: 16,
+                              size: DesktopIconSize.xs,
                               color: AppColors.textSecondary,
                             ),
                             onPressed: () =>
@@ -390,8 +381,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                           ? LibraryViewMode.grid
                                           : LibraryViewMode.list,
                                     ),
-                            size: 30,
-                            iconSize: 16,
+                            size: DesktopButtonSize.sm,
+                            iconSize: DesktopIconSize.xs,
                             tooltip: viewMode == LibraryViewMode.list
                                 ? 'Grid view'
                                 : 'List view',
@@ -399,13 +390,6 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                         ],
                       ),
                     ),
-            ),
-
-            // ── Divider ────────────────────────────────────────────────────
-            Divider(
-              height: 1,
-              thickness: 0.5,
-              color: AppColors.glassBorder,
             ),
 
             // ── Library list / search results ──────────────────────────────
@@ -615,7 +599,7 @@ class _SectionLabel extends StatelessWidget {
         label,
         style: const TextStyle(
           color: AppColors.textMuted,
-          fontSize: AppFontSize.xs,
+          fontSize: DesktopFontSize.xs,
           fontWeight: FontWeight.w700,
           letterSpacing: AppLetterSpacing.label,
         ),

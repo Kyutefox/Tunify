@@ -8,6 +8,7 @@ import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/widgets/button.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/core/utils/string_utils.dart';
 
 /// Shared playlist cover thumbnail used in both list and grid views.
@@ -171,6 +172,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
     final contentEntries = entries;
     final showCreateFirstEmptyState = showCreateFirstPlaylistEmptyState &&
         contentEntries.isEmpty;
@@ -178,7 +180,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
         isFolderView && contentEntries.isEmpty;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      padding: EdgeInsets.symmetric(horizontal: t.isDesktop ? AppSpacing.sm : AppSpacing.base),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -302,6 +304,7 @@ class _LibrarySectionGrid extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.85,
@@ -592,31 +595,27 @@ class _LibraryFolderListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final t = AppTokens.of(context);
+    final thumbSize = t.isDesktop ? 44.0 : 52.0;
+    final tile = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         onLongPress: () => onOptions(null),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
           child: Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: thumbSize,
+                height: thumbSize,
                 decoration: BoxDecoration(
                   color: AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Center(
-                  child: AppIcon(
-                    icon: AppIcons.folder,
-                    color: AppColors.primary,
-                    size: 28,
-                  ),
+                  child: AppIcon(icon: AppIcons.folder, color: AppColors.primary, size: 28),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -626,10 +625,10 @@ class _LibraryFolderListTile extends StatelessWidget {
                   children: [
                     Text(
                       folder.name.capitalized,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: t.isDesktop ? FontWeight.w700 : FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -638,7 +637,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                       folder.playlistCount == 0
                           ? 'No playlists'
                           : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textMuted,
                         fontSize: AppFontSize.md,
                       ),
@@ -649,19 +648,11 @@ class _LibraryFolderListTile extends StatelessWidget {
               if (folder.isPinned)
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: AppIcon(
-                    icon: AppIcons.pin,
-                    size: 14,
-                    color: AppColors.primary,
-                  ),
+                  child: AppIcon(icon: AppIcons.pin, size: 14, color: AppColors.primary),
                 ),
               Builder(
                 builder: (btnCtx) => AppIconButton(
-                  icon: AppIcon(
-                    icon: AppIcons.moreHoriz,
-                    size: 22,
-                    color: AppColors.textMuted,
-                  ),
+                  icon: AppIcon(icon: AppIcons.moreHoriz, size: 22, color: AppColors.textMuted),
                   onPressedWithContext: (btnCtx) {
                     final box = btnCtx.findRenderObject() as RenderBox?;
                     onOptions(box != null && box.hasSize
@@ -677,6 +668,9 @@ class _LibraryFolderListTile extends StatelessWidget {
         ),
       ),
     );
+
+    if (t.isDesktop) return _LibraryHoverTile(child: tile);
+    return tile;
   }
 }
 
@@ -701,7 +695,10 @@ class _LibrarySectionList extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: entries.length,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+      separatorBuilder: (context, __) {
+        final t = AppTokens.of(context);
+        return SizedBox(height: t.isDesktop ? AppSpacing.sm : AppSpacing.xs);
+      },
       itemBuilder: (context, index) {
         final entry = entries[index];
         return switch (entry) {
@@ -757,31 +754,27 @@ class _StaticListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final t = AppTokens.of(context);
+    final thumbSize = t.isDesktop ? 44.0 : 52.0;
+    final tile = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.sm,
-          ),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
           child: Row(
             children: [
               Container(
-                width: 52,
-                height: 52,
+                width: thumbSize,
+                height: thumbSize,
                 decoration: BoxDecoration(
                   color: backgroundGradient == null ? backgroundColor : null,
                   gradient: backgroundGradient,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Center(
-                  child: iconWidget ?? AppIcon(
-                    icon: icon!,
-                    color: iconColor!,
-                    size: 28,
-                  ),
+                  child: iconWidget ?? AppIcon(icon: icon!, color: iconColor!, size: 28),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -791,17 +784,17 @@ class _StaticListTile extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: t.isDesktop ? FontWeight.w700 : FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
                       subtitle,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textMuted,
                         fontSize: AppFontSize.md,
                       ),
@@ -816,6 +809,9 @@ class _StaticListTile extends StatelessWidget {
         ),
       ),
     );
+
+    if (t.isDesktop) return _LibraryHoverTile(child: tile);
+    return tile;
   }
 }
 
@@ -832,17 +828,19 @@ class _LibraryPlaylistListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    final t = AppTokens.of(context);
+    final thumbSize = t.isDesktop ? 44.0 : 52.0;
+    final tile = Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         onLongPress: () => onOptions(null),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
           child: Row(
             children: [
-              PlaylistCoverThumbnail(playlist: playlist, size: 52),
+              PlaylistCoverThumbnail(playlist: playlist, size: thumbSize),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -850,10 +848,10 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                   children: [
                     Text(
                       playlist.name.capitalized,
-                      style: const TextStyle(
+                      style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: t.isDesktop ? FontWeight.w700 : FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -864,19 +862,11 @@ class _LibraryPlaylistListTile extends StatelessWidget {
               if (playlist.isPinned)
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: AppIcon(
-                    icon: AppIcons.pin,
-                    size: 14,
-                    color: AppColors.primary,
-                  ),
+                  child: AppIcon(icon: AppIcons.pin, size: 14, color: AppColors.primary),
                 ),
               Builder(
                 builder: (btnCtx) => AppIconButton(
-                  icon: AppIcon(
-                    icon: AppIcons.moreHoriz,
-                    size: 22,
-                    color: AppColors.textMuted,
-                  ),
+                  icon: AppIcon(icon: AppIcons.moreHoriz, size: 22, color: AppColors.textMuted),
                   onPressedWithContext: (btnCtx) {
                     final box = btnCtx.findRenderObject() as RenderBox?;
                     onOptions(box != null && box.hasSize
@@ -890,6 +880,38 @@ class _LibraryPlaylistListTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+
+    if (t.isDesktop) return _LibraryHoverTile(child: tile);
+    return tile;
+  }
+}
+
+/// Hover highlight wrapper for desktop library list tiles.
+class _LibraryHoverTile extends StatefulWidget {
+  const _LibraryHoverTile({required this.child});
+  final Widget child;
+
+  @override
+  State<_LibraryHoverTile> createState() => _LibraryHoverTileState();
+}
+
+class _LibraryHoverTileState extends State<_LibraryHoverTile> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        decoration: BoxDecoration(
+          color: _hovered ? AppColors.hoverOverlay : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: widget.child,
       ),
     );
   }

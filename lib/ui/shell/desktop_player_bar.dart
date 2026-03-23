@@ -13,6 +13,7 @@ import '../screens/player/player_screen.dart';
 import '../screens/player/song_options_sheet.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'desktop_right_sidebar.dart';
 
 /// Full-width persistent player bar matching the Spotify desktop layout.
@@ -34,7 +35,7 @@ class DesktopPlayerBar extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
-      height: 92,
+      height: DesktopLayout.playerBarHeight,
       decoration: BoxDecoration(
         color: hasSong
             ? Color.lerp(AppColors.background, dominantColor, 0.10)!
@@ -48,23 +49,23 @@ class DesktopPlayerBar extends ConsumerWidget {
           ),
         ),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.base),
       child: hasSong
           ? const Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Left: song info
-                Expanded(flex: 3, child: _SongInfo()),
-                // Center: controls + seek bar
+                Expanded(flex: 4, child: _SongInfo()),
                 Expanded(flex: 3, child: _CenterControls()),
-                // Right: extra controls + volume
                 Expanded(flex: 4, child: _RightControls()),
               ],
             )
           : const Center(
               child: Text(
                 'Play a song to get started',
-                style: TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.md),
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: DesktopFontSize.base,
+                ),
               ),
             ),
     );
@@ -91,26 +92,26 @@ class _SongInfo extends ConsumerWidget {
           borderRadius: BorderRadius.circular(AppRadius.xs),
           child: CachedNetworkImage(
             imageUrl: song.thumbnailUrl,
-            width: 56,
-            height: 56,
-            memCacheWidth: (56 * MediaQuery.devicePixelRatioOf(context)).round(),
-            memCacheHeight: (56 * MediaQuery.devicePixelRatioOf(context)).round(),
+            width: DesktopLayout.playerArtSize,
+            height: DesktopLayout.playerArtSize,
+            memCacheWidth: (DesktopLayout.playerArtSize * MediaQuery.devicePixelRatioOf(context)).round(),
+            memCacheHeight: (DesktopLayout.playerArtSize * MediaQuery.devicePixelRatioOf(context)).round(),
             fit: BoxFit.cover,
             errorWidget: (_, __, ___) => Container(
-              width: 56,
-              height: 56,
+              width: DesktopLayout.playerArtSize,
+              height: DesktopLayout.playerArtSize,
               color: AppColors.surfaceLight,
               child: Center(
                 child: AppIcon(
                   icon: AppIcons.musicNote,
-                  size: 24,
+                  size: DesktopIconSize.md,
                   color: AppColors.textMuted,
                 ),
               ),
             ),
           ),
         ),
-        const SizedBox(width: AppSpacing.md),
+        const SizedBox(width: DesktopSpacing.md),
 
         // Title + artist
         Flexible(
@@ -124,47 +125,47 @@ class _SongInfo extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: AppFontSize.md,
+                  fontSize: DesktopFontSize.lg,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Text(
                 song.artist,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: AppColors.textSecondary,
-                  fontSize: AppFontSize.sm,
+                  color: AppColors.desktopTextSecondary,
+                  fontSize: DesktopFontSize.sm,
                 ),
               ),
             ],
           ),
         ),
-        const SizedBox(width: AppSpacing.md),
+        const SizedBox(width: DesktopSpacing.sm),
 
-        // Like button — same FavouriteIcon used in mobile mini player
+        // Like button
         AppIconButton(
           icon: FavouriteIcon(
             isLiked: isLiked,
             songId: song.id,
-            size: 20,
+            size: DesktopIconSize.sm,
             emptyColor: AppColors.textSecondary,
           ),
           onPressed: () =>
               ref.read(libraryProvider.notifier).toggleLiked(song),
-          size: 36,
-          iconSize: 20,
+          size: DesktopButtonSize.md,
+          iconSize: DesktopIconSize.sm,
         ),
 
         // More options
         _BarIconBtn(
           isActive: false,
           activeIcon: AppIcon(
-              icon: AppIcons.moreHoriz, size: 18, color: AppColors.primary),
+              icon: AppIcons.moreHoriz, size: DesktopIconSize.sm, color: AppColors.primary),
           inactiveIcon: AppIcon(
               icon: AppIcons.moreHoriz,
-              size: 18,
+              size: DesktopIconSize.sm,
               color: AppColors.textSecondary),
           onTap: (btnCtx) => showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
         ),
@@ -195,76 +196,73 @@ class _CenterControls extends ConsumerWidget {
         : AppIcons.repeat;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.sm),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Controls row
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AppIconButton(
                 icon: AppIcon(
                   icon: AppIcons.shuffle,
-                  size: 18,
+                  size: DesktopIconSize.sm,
                   color: isShuffleEnabled
                       ? AppColors.primary
                       : Colors.white.withValues(alpha: 0.75),
                 ),
                 onPressed: notifier.toggleShuffle,
-                size: 30,
-                iconSize: 18,
+                size: DesktopButtonSize.sm,
+                iconSize: DesktopIconSize.sm,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: DesktopSpacing.md),
               AppIconButton(
                 icon: AppIcon(
                   icon: AppIcons.skipPrevious,
-                  size: 20,
+                  size: DesktopIconSize.md,
                   color: canPrev
                       ? Colors.white.withValues(alpha: 0.75)
                       : Colors.white.withValues(alpha: 0.3),
                 ),
                 onPressed: canPrev ? notifier.playPrevious : null,
-                size: 32,
-                iconSize: 20,
+                size: DesktopButtonSize.md,
+                iconSize: DesktopIconSize.md,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: DesktopSpacing.sm),
               _PlayPauseBtn(
                 isPlaying: isPlaying,
                 isLoading: isLoading,
                 onTap: notifier.togglePlayPause,
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: DesktopSpacing.sm),
               AppIconButton(
                 icon: AppIcon(
                   icon: AppIcons.skipNext,
-                  size: 20,
+                  size: DesktopIconSize.md,
                   color: canNext
                       ? Colors.white.withValues(alpha: 0.75)
                       : Colors.white.withValues(alpha: 0.3),
                 ),
                 onPressed: canNext ? notifier.playNext : null,
-                size: 32,
-                iconSize: 20,
+                size: DesktopButtonSize.md,
+                iconSize: DesktopIconSize.md,
               ),
-              const SizedBox(width: 16),
+              const SizedBox(width: DesktopSpacing.md),
               AppIconButton(
                 icon: AppIcon(
                   icon: repeatIcon,
-                  size: 18,
+                  size: DesktopIconSize.sm,
                   color: isRepeat
                       ? AppColors.primary
                       : Colors.white.withValues(alpha: 0.75),
                 ),
                 onPressed: notifier.cycleRepeatMode,
-                size: 30,
-                iconSize: 18,
+                size: DesktopButtonSize.sm,
+                iconSize: DesktopIconSize.sm,
               ),
             ],
           ),
           const SizedBox(height: 4),
-
-          // Seek bar — reuses PlayerProgressBar with compact dimensions
           const PlayerProgressBar(compact: true),
         ],
       ),
@@ -307,51 +305,49 @@ class _RightControlsState extends ConsumerState<_RightControls> {
       notifier.state = activeTab == tab ? null : tab;
     }
 
-    // Layout: [sleep · lyrics]  [vol-icon ── slider]  [queue · devices]
     return Row(
       mainAxisAlignment: MainAxisAlignment.end,
       children: [
-        // ── Left pair ────────────────────────────────────────────────────
         AppIconButton(
           icon: AppIcon(
             icon: AppIcons.bedtime,
-            size: 18,
+            size: DesktopIconSize.sm,
             color: sleepActive
                 ? AppColors.primary
                 : Colors.white.withValues(alpha: 0.75),
           ),
           onPressed: () => showSleepTimerSheet(context),
-          size: 30,
-          iconSize: 18,
+          size: DesktopButtonSize.sm,
+          iconSize: DesktopIconSize.sm,
         ),
         AppIconButton(
           icon: AppIcon(
             icon: AppIcons.lyrics,
-            size: 18,
+            size: DesktopIconSize.sm,
             color: tabColor(RightSidebarTab.lyrics),
           ),
           onPressed: () => toggleTab(RightSidebarTab.lyrics),
-          size: 30,
-          iconSize: 18,
+          size: DesktopButtonSize.sm,
+          iconSize: DesktopIconSize.sm,
           tooltip: 'Lyrics',
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: DesktopSpacing.xs),
 
-        // ── Volume (icon + slider) ────────────────────────────────────────
+        // Volume icon + slider
         GestureDetector(
           onTap: () => setState(() => _volume = _volume == 0 ? 1.0 : 0),
           behavior: HitTestBehavior.opaque,
           child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.xs),
+            padding: const EdgeInsets.all(DesktopSpacing.xs),
             child: AppIcon(
               icon: volIcon,
               color: Colors.white.withValues(alpha: 0.75),
-              size: 18,
+              size: DesktopIconSize.sm,
             ),
           ),
         ),
         SizedBox(
-          width: 80,
+          width: DesktopLayout.volumeSliderWidth,
           child: SliderTheme(
             data: SliderTheme.of(context).copyWith(
               activeTrackColor: dominantColor,
@@ -371,29 +367,28 @@ class _RightControlsState extends ConsumerState<_RightControls> {
             ),
           ),
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: DesktopSpacing.xs),
 
-        // ── Right pair ────────────────────────────────────────────────────
         AppIconButton(
           icon: AppIcon(
             icon: AppIcons.queueMusic,
-            size: 18,
+            size: DesktopIconSize.sm,
             color: tabColor(RightSidebarTab.queue),
           ),
           onPressed: () => toggleTab(RightSidebarTab.queue),
-          size: 30,
-          iconSize: 18,
+          size: DesktopButtonSize.sm,
+          iconSize: DesktopIconSize.sm,
           tooltip: 'Queue',
         ),
         AppIconButton(
           icon: AppIcon(
             icon: AppIcons.devices,
-            size: 18,
+            size: DesktopIconSize.sm,
             color: tabColor(RightSidebarTab.devices),
           ),
           onPressed: () => toggleTab(RightSidebarTab.devices),
-          size: 30,
-          iconSize: 18,
+          size: DesktopButtonSize.sm,
+          iconSize: DesktopIconSize.sm,
           tooltip: 'Connect',
         ),
       ],
@@ -419,8 +414,8 @@ class _PlayPauseBtn extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 36,
-        height: 36,
+        width: DesktopButtonSize.lg,
+        height: DesktopButtonSize.lg,
         decoration: const BoxDecoration(
           shape: BoxShape.circle,
           color: Colors.white,
@@ -428,23 +423,22 @@ class _PlayPauseBtn extends StatelessWidget {
         child: Center(
           child: isLoading
               ? const SizedBox(
-                  width: 16,
-                  height: 16,
+                  width: 18,
+                  height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.background),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.background),
                   ),
                 )
               : SizedBox(
-                  width: 18,
-                  height: 18,
+                  width: DesktopIconSize.md,
+                  height: DesktopIconSize.md,
                   child: AnimatedSwitcher(
                     duration: AppDuration.fast,
                     child: AppIcon(
                       key: ValueKey(isPlaying),
                       icon: isPlaying ? AppIcons.pause : AppIcons.play,
-                      size: 18,
+                      size: DesktopIconSize.md,
                       color: AppColors.background,
                     ),
                   ),

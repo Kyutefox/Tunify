@@ -197,7 +197,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
 
   // ── Build ───────────────────────────────────────────────────────────────────
 
-  static const double _gap = 8;
+  static const double _gap = 4;
   static const double _radius = 12;
   static const double _topBarHeight = 64;
 
@@ -238,29 +238,26 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
         body: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.all(_gap),
+              padding: const EdgeInsets.fromLTRB(_gap, 0, _gap, _gap),
               child: Column(
                 children: [
-              // ── Nav bar — background-level panel (blends with canvas) ─────
-              ClipRRect(
-                borderRadius: BorderRadius.circular(_radius),
-                child: DesktopTopBar(
-                  selectedIndex: _selectedIndex,
-                  canGoBack: _canGoBack,
-                  canGoForward: _canGoForward,
-                  onBack: _goBack,
-                  onForward: _goForward,
-                  onHomePressed: () => _navigateTo(0),
-                  onSearchActivated: (_) => _openSearchOverlay(),
-                  searchController: _searchController,
-                  searchFocusNode: _searchFocusNode,
-                  sidebarWidth: kDesktopSidebarWidth,
-                  isSearchOverlayOpen: _searchOverlayOpen,
-                  onBrowsePressed: _openBrowse,
-                ),
+              // ── Nav bar — no card, content floats on canvas ─────────────
+              DesktopTopBar(
+                selectedIndex: _selectedIndex,
+                canGoBack: _canGoBack,
+                canGoForward: _canGoForward,
+                onBack: _goBack,
+                onForward: _goForward,
+                onHomePressed: () => _navigateTo(0),
+                onSearchActivated: (_) => _openSearchOverlay(),
+                searchController: _searchController,
+                searchFocusNode: _searchFocusNode,
+                sidebarWidth: kDesktopSidebarWidth,
+                isSearchOverlayOpen: _searchOverlayOpen,
+                onBrowsePressed: _openBrowse,
               ),
 
-              const SizedBox(height: _gap),
+              const SizedBox(height: 2),
 
               // ── Middle row: sidebar + main content ─────────────────────────
               Expanded(
@@ -285,7 +282,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(_radius),
                         child: ColoredBox(
-                          color: AppColors.surface,
+                          color: AppColors.desktopSurface,
                           child: Navigator(
                             key: _contentNavKey,
                             observers: [_contentNavObserver],
@@ -398,7 +395,7 @@ class _BrowsePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColors.desktopSurface,
       body: CustomScrollView(
         physics: const BouncingScrollPhysics(),
         slivers: [

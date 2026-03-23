@@ -4,6 +4,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 
 class SectionHeader extends StatelessWidget {
   final String title;
@@ -27,12 +28,11 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
-    final resolvedPadding = padding ??
-        EdgeInsets.fromLTRB(hPad, 0, hPad, AppSpacing.md);
-    final titleFontSize = useCompactStyle ? 20.0 : 22.0;
-    final subtitleFontSize = useCompactStyle ? 12.0 : 13.0;
+    final t = AppTokens.of(context);
+    final hPad = t.spacing.xl;
+    final resolvedPadding = padding ?? EdgeInsets.fromLTRB(hPad, 0, hPad, t.spacing.md);
+    final titleFontSize = useCompactStyle ? t.font.xxl : t.font.h3;
+    final subtitleFontSize = useCompactStyle ? t.font.xs : t.font.sm;
 
     return Padding(
       padding: resolvedPadding,
@@ -50,7 +50,9 @@ class SectionHeader extends StatelessWidget {
                     color: AppColors.textPrimary,
                     fontSize: titleFontSize,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: useCompactStyle ? -0.3 : -0.5,
+                    letterSpacing: t.isDesktop
+                        ? (useCompactStyle ? -0.6 : t.typography.headingLetterSpacing)
+                        : (useCompactStyle ? -0.3 : -0.5),
                   ),
                 ),
                 if (subtitle != null) ...[
@@ -69,13 +71,13 @@ class SectionHeader extends StatelessWidget {
           if (trailing != null)
             trailing!
           else if (onSeeAll != null)
-            _buildAction(context),
+            _buildAction(context, t),
         ],
       ),
     );
   }
 
-  Widget _buildAction(BuildContext context) {
+  Widget _buildAction(BuildContext context, AppTokens t) {
     final label = seeAllLabel;
     final text = (label != null && label.isNotEmpty) ? label : 'See All';
     return GestureDetector(
@@ -85,9 +87,9 @@ class SectionHeader extends StatelessWidget {
             AppColors.primaryGradient.createShader(bounds),
         child: Text(
           text,
-          style: const TextStyle(
+          style: TextStyle(
             color: Colors.white,
-            fontSize: AppFontSize.md,
+            fontSize: t.font.md,
             fontWeight: FontWeight.w600,
           ),
         ),
@@ -112,16 +114,17 @@ class GradientSectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
     return Padding(
-      padding: const EdgeInsets.fromLTRB(AppSpacing.base, AppSpacing.xl, AppSpacing.base, AppSpacing.base),
+      padding: EdgeInsets.fromLTRB(t.spacing.base, t.spacing.xl, t.spacing.base, t.spacing.base),
       child: Row(
         children: [
           if (icon != null) ...[
             ShaderMask(
               shaderCallback: (bounds) => gradient.createShader(bounds),
-              child: AppIcon(icon: icon!, size: 28, color: Colors.white),
+              child: AppIcon(icon: icon!, size: t.icon.lg, color: Colors.white),
             ),
-            const SizedBox(width: AppSpacing.md),
+            SizedBox(width: t.spacing.md),
           ],
           Expanded(
             child: Column(
@@ -131,9 +134,9 @@ class GradientSectionHeader extends StatelessWidget {
                   shaderCallback: (bounds) => gradient.createShader(bounds),
                   child: Text(
                     title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: Colors.white,
-                      fontSize: AppFontSize.h2,
+                      fontSize: t.font.h2,
                       fontWeight: FontWeight.w700,
                       letterSpacing: AppLetterSpacing.display,
                     ),
@@ -143,9 +146,9 @@ class GradientSectionHeader extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     subtitle!,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.textMuted,
-                      fontSize: AppFontSize.md,
+                      fontSize: t.font.md,
                     ),
                   ),
                 ],

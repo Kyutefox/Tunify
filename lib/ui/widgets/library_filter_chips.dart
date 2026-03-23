@@ -4,6 +4,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/screens/library/library_app_bar.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 
 class LibraryFilterChips extends StatefulWidget {
   const LibraryFilterChips({
@@ -93,6 +94,7 @@ class _LibraryFilterChipsState extends State<LibraryFilterChips>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
     final effectiveFilters = widget.filters ??
         LibraryFilter.values.where((f) => f != LibraryFilter.all).toList();
 
@@ -145,9 +147,9 @@ class _LibraryFilterChipsState extends State<LibraryFilterChips>
                       onTap: widget.onExitFolder!,
                       child: Text(
                         widget.folderName!,
-                        style: const TextStyle(
+                        style: TextStyle(
                           color: AppColors.primary,
-                          fontSize: AppFontSize.md,
+                          fontSize: AppTokens.of(context).font.md,
                           fontWeight: FontWeight.w600,
                         ),
                         maxLines: 1,
@@ -273,7 +275,7 @@ class _FilterChipState extends State<_FilterChip>
             widget.filter.label,
             style: TextStyle(
               color: Color.lerp(AppColors.textSecondary, AppColors.primary, t),
-              fontSize: AppFontSize.md,
+              fontSize: AppTokens.of(context).font.md,
               fontWeight: t > 0.5 ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
@@ -314,29 +316,33 @@ class _LibraryChip extends StatelessWidget {
   final Widget child;
   final double? animT;
 
-  static const double _height = 32;
+  static const double _mobileHeight = 32;
+  static const double _desktopHeight = 36;
 
   @override
   Widget build(BuildContext context) {
-    final t = animT ?? (selected ? 1.0 : 0.0);
+    final t = AppTokens.of(context);
+    final chipHeight = t.isDesktop ? _desktopHeight : _mobileHeight;
+    final hPad = t.isDesktop ? t.spacing.md : AppSpacing.md;
+    final tv = animT ?? (selected ? 1.0 : 0.0);
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Container(
-          height: _height,
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          height: chipHeight,
+          padding: EdgeInsets.symmetric(horizontal: hPad),
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: Color.lerp(
               AppColors.surfaceLight.withValues(alpha: 0.8),
               AppColors.primary.withValues(alpha: 0.2),
-              t,
+              tv,
             ),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             border: Border.all(
-              color: Color.lerp(Colors.transparent, AppColors.primary, t)!,
+              color: Color.lerp(Colors.transparent, AppColors.primary, tv)!,
               width: 1,
             ),
           ),

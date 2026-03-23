@@ -8,6 +8,7 @@ import 'package:tunify/features/search/search_provider.dart';
 import 'package:tunify/ui/widgets/user_avatar_button.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 
 /// Full-width top bar spanning both sidebar and content area.
 ///
@@ -114,52 +115,43 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 64,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.glassBorder,
-            width: 0.5,
-          ),
-        ),
-      ),
+      height: DesktopLayout.topBarHeight,
+      decoration: const BoxDecoration(color: Colors.transparent),
       child: Stack(
         children: [
-          // ── Left: back/forward above sidebar | Right: avatar ─────────────
           Positioned.fill(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-              SizedBox(
-                width: widget.sidebarWidth,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _NavArrowBtn(
-                      icon: AppIcons.back,
-                      enabled: widget.canGoBack,
-                      onTap: widget.onBack,
-                    ),
-                    const SizedBox(width: 10),
-                    _NavArrowBtn(
-                      icon: AppIcons.forward,
-                      enabled: widget.canGoForward,
-                      onTap: widget.onForward,
-                    ),
-                  ],
+                SizedBox(
+                  width: widget.sidebarWidth,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      _NavArrowBtn(
+                        icon: AppIcons.back,
+                        enabled: widget.canGoBack,
+                        onTap: widget.onBack,
+                      ),
+                      const SizedBox(width: DesktopSpacing.sm),
+                      _NavArrowBtn(
+                        icon: AppIcons.forward,
+                        enabled: widget.canGoForward,
+                        onTap: widget.onForward,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const Spacer(),
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: const UserAvatarButton(),
-              ),
-            ],
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.only(right: DesktopSpacing.base),
+                  child: const UserAvatarButton(),
+                ),
+              ],
             ),
           ),
 
-          // ── Center: home + search bar — true screen center ───────────────
+          // Center: home + search bar
           Center(
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -168,9 +160,9 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar> {
                   isActive: widget.selectedIndex == 0,
                   onTap: widget.onHomePressed,
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: DesktopSpacing.sm),
                 ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 380),
+                  constraints: const BoxConstraints(maxWidth: DesktopLayout.searchMaxWidth),
                   child: TapRegion(
                     groupId: 'desktop-search',
                     child: _DesktopSearchBar(
@@ -215,8 +207,8 @@ class _NavArrowBtn extends StatelessWidget {
       onTap: enabled ? onTap : null,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 40,
-        height: 40,
+        width: DesktopLayout.navBtnSize,
+        height: DesktopLayout.navBtnSize,
         decoration: BoxDecoration(
           color: AppColors.surfaceLight,
           shape: BoxShape.circle,
@@ -224,7 +216,7 @@ class _NavArrowBtn extends StatelessWidget {
         child: Center(
           child: AppIcon(
             icon: icon,
-            size: 20,
+            size: DesktopIconSize.md,
             color: enabled
                 ? Colors.white
                 : Colors.white.withValues(alpha: 0.3),
@@ -236,9 +228,6 @@ class _NavArrowBtn extends StatelessWidget {
 }
 
 /// Clean single-layer search bar for the desktop top bar.
-/// Matches the mobile _SearchBarPlaceholder style: filled container with a
-/// single border, search icon, and a fully transparent TextField inside —
-/// no double-border / double-background artefact.
 class _DesktopSearchBar extends StatelessWidget {
   const _DesktopSearchBar({
     required this.controller,
@@ -261,7 +250,7 @@ class _DesktopSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 40,
+      height: 48,
       decoration: BoxDecoration(
         color: AppColors.surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.xl),
@@ -274,9 +263,9 @@ class _DesktopSearchBar extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const SizedBox(width: 12),
-          AppIcon(icon: AppIcons.search, size: 16, color: AppColors.textMuted),
-          const SizedBox(width: 8),
+          const SizedBox(width: DesktopSpacing.md),
+          AppIcon(icon: AppIcons.search, size: DesktopIconSize.sm, color: AppColors.textMuted),
+          const SizedBox(width: DesktopSpacing.sm),
           Expanded(
             child: Theme(
               data: Theme.of(context).copyWith(
@@ -293,14 +282,14 @@ class _DesktopSearchBar extends StatelessWidget {
                 focusNode: focusNode,
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: AppFontSize.md,
+                  fontSize: DesktopFontSize.base,
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
                   hintText: 'What do you want to play?',
                   hintStyle: TextStyle(
                     color: AppColors.textMuted.withValues(alpha: 0.7),
-                    fontSize: AppFontSize.md,
+                    fontSize: DesktopFontSize.base,
                   ),
                   border: InputBorder.none,
                   enabledBorder: InputBorder.none,
@@ -318,38 +307,36 @@ class _DesktopSearchBar extends StatelessWidget {
             GestureDetector(
               onTap: onClear,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.sm),
                 child: AppIcon(
                     icon: AppIcons.close,
-                    size: 14,
+                    size: DesktopIconSize.xs,
                     color: AppColors.textSecondary),
               ),
             ),
-          // Divider
           Container(
             width: 1,
-            height: 18,
+            height: 20,
             color: AppColors.textMuted.withValues(alpha: 0.3),
           ),
-          // Browse button
           GestureDetector(
             onTap: onBrowse,
             behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.sm),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   AppIcon(
                       icon: AppIcons.gridView,
-                      size: 14,
+                      size: DesktopIconSize.xs,
                       color: AppColors.textSecondary),
-                  const SizedBox(width: 5),
+                  const SizedBox(width: DesktopSpacing.xs),
                   Text(
                     'Browse',
                     style: TextStyle(
                       color: AppColors.textSecondary,
-                      fontSize: AppFontSize.sm,
+                      fontSize: DesktopFontSize.sm,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -375,8 +362,8 @@ class _HomeBtn extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        width: 40,
-        height: 40,
+        width: DesktopLayout.homeBtnSize,
+        height: DesktopLayout.homeBtnSize,
         decoration: const BoxDecoration(
           color: Colors.white,
           shape: BoxShape.circle,
@@ -384,7 +371,7 @@ class _HomeBtn extends StatelessWidget {
         child: Center(
           child: AppIcon(
             icon: AppIcons.home,
-            size: 20,
+            size: DesktopIconSize.md,
             color: isActive
                 ? AppColors.background
                 : AppColors.background.withValues(alpha: 0.45),

@@ -15,7 +15,6 @@ import 'package:tunify/ui/widgets/button.dart';
 import 'package:tunify/ui/widgets/input_field.dart';
 import 'package:tunify/ui/screens/library/library_app_bar.dart';
 import '../screens/library/library_downloaded_screen.dart';
-import '../screens/library/library_liked_songs_screen.dart';
 import '../screens/library/library_playlist_screen.dart';
 import '../screens/library/library_playlists_section.dart';
 import '../screens/library/library_search_screen.dart';
@@ -151,7 +150,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
       if (showLiked)
         LikedSongsEntry(
           songCount: library.likedSongs.length,
-          onTap: () => widget.onNavigateTo(const LibraryLikedSongsScreen()),
+          onTap: () => widget.onNavigateTo(const LibraryPlaylistScreen.liked()),
         ),
       ...folders.map(FolderEntry.new),
       ...rootPlaylists.map(PlaylistEntry.new),

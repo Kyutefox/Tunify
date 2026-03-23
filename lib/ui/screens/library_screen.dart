@@ -26,7 +26,6 @@ import 'library/library_playlist_screen.dart';
 import 'library/library_playlists_section.dart';
 import 'library/library_app_bar.dart';
 import 'library/library_downloaded_content.dart';
-import 'library/library_liked_songs_screen.dart';
 import 'library/library_search_screen.dart';
 import 'package:tunify/ui/widgets/adaptive_menu.dart';
 import 'package:tunify/ui/widgets/create_library_options.dart';
@@ -92,7 +91,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
           onTap: () {
             Navigator.of(context).push(
               appPageRoute<void>(
-                builder: (_) => const LibraryLikedSongsScreen(),
+                builder: (_) => const LibraryPlaylistScreen.liked(),
               ),
             );
           },

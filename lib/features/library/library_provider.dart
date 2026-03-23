@@ -11,56 +11,31 @@ import 'package:tunify_logger/tunify_logger.dart';
 import 'package:tunify/core/utils/result.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 
-/// Sort order for the library playlist and folder lists.
-enum LibrarySortOrder {
-  /// Most recently played first (sorted by [LibraryPlaylist.updatedAt]).
-  recent,
-  /// Most recently created first (sorted by [LibraryPlaylist.createdAt]).
-  recentlyAdded,
-  alphabetical,
-}
+// ── Sort / view enums ─────────────────────────────────────────────────────────
 
-/// Serialization helpers for [LibrarySortOrder].
+enum LibrarySortOrder { recent, recentlyAdded, alphabetical }
+
 extension LibrarySortOrderX on LibrarySortOrder {
-  String get label {
-    switch (this) {
-      case LibrarySortOrder.recent:
-        return 'Recently played';
-      case LibrarySortOrder.recentlyAdded:
-        return 'Recently added';
-      case LibrarySortOrder.alphabetical:
-        return 'Alphabetical';
-    }
-  }
+  String get label => switch (this) {
+    LibrarySortOrder.recent => 'Recently played',
+    LibrarySortOrder.recentlyAdded => 'Recently added',
+    LibrarySortOrder.alphabetical => 'Alphabetical',
+  };
 
-  static LibrarySortOrder fromString(String s) {
-    switch (s) {
-      case 'recentlyAdded':
-        return LibrarySortOrder.recentlyAdded;
-      case 'alphabetical':
-        return LibrarySortOrder.alphabetical;
-      default:
-        return LibrarySortOrder.recent;
-    }
-  }
+  String get value => switch (this) {
+    LibrarySortOrder.recent => 'recent',
+    LibrarySortOrder.recentlyAdded => 'recentlyAdded',
+    LibrarySortOrder.alphabetical => 'alphabetical',
+  };
 
-  String get value {
-    switch (this) {
-      case LibrarySortOrder.recent:
-        return 'recent';
-      case LibrarySortOrder.recentlyAdded:
-        return 'recentlyAdded';
-      case LibrarySortOrder.alphabetical:
-        return 'alphabetical';
-    }
-  }
+  static LibrarySortOrder fromString(String s) => switch (s) {
+    'recentlyAdded' => LibrarySortOrder.recentlyAdded,
+    'alphabetical' => LibrarySortOrder.alphabetical,
+    _ => LibrarySortOrder.recent,
+  };
 }
 
-/// Layout mode for the library screen's playlist/folder list.
-enum LibraryViewMode {
-  list,
-  grid,
-}
+enum LibraryViewMode { list, grid }
 
 extension LibraryViewModeX on LibraryViewMode {
   String get value => this == LibraryViewMode.grid ? 'grid' : 'list';
@@ -68,38 +43,49 @@ extension LibraryViewModeX on LibraryViewMode {
       s == 'grid' ? LibraryViewMode.grid : LibraryViewMode.list;
 }
 
-/// Immutable snapshot of the user's library: playlists, folders, liked songs,
-/// followed artists/albums, and display preferences (sort, view mode, search query).
-class LibraryState {
-  final List<LibraryPlaylist> playlists;
-  final List<LibraryFolder> folders;
-  final List<Song> likedSongs;
-  final LibrarySortOrder sortOrder;
-  final LibraryViewMode viewMode;
-  final String searchQuery;
-  final bool likedShuffleEnabled;
-  final bool downloadedShuffleEnabled;
-  final List<LibraryArtist> followedArtists;
-  final List<LibraryAlbum> followedAlbums;
+// ── State ─────────────────────────────────────────────────────────────────────
 
-  LibraryState({
+/// Immutable snapshot of the user's library.
+///
+/// Liked songs live in [playlists] as the reserved playlist with id `'liked'`.
+class LibraryState {
+  const LibraryState({
     this.playlists = const [],
     this.folders = const [],
-    this.likedSongs = const [],
     this.sortOrder = LibrarySortOrder.recent,
     this.viewMode = LibraryViewMode.list,
     this.searchQuery = '',
-    this.likedShuffleEnabled = false,
     this.downloadedShuffleEnabled = false,
     this.followedArtists = const [],
     this.followedAlbums = const [],
   });
 
-  /// O(1) membership test for like-button selectors in the player and mini-player.
-  late final Set<String> likedSongIds = likedSongs.map((s) => s.id).toSet();
+  final List<LibraryPlaylist> playlists;
+  final List<LibraryFolder> folders;
+  final LibrarySortOrder sortOrder;
+  final LibraryViewMode viewMode;
+  final String searchQuery;
+  final bool downloadedShuffleEnabled;
+  final List<LibraryArtist> followedArtists;
+  final List<LibraryAlbum> followedAlbums;
+
+  // ── Liked helpers ───────────────────────────────────────────────────────────
+
+  LibraryPlaylist get likedPlaylist => playlists.firstWhere(
+      (p) => p.id == 'liked',
+      orElse: () => LibraryPlaylist(
+          id: 'liked', name: 'Liked Songs',
+          createdAt: DateTime(2000), updatedAt: DateTime.now(), songs: []));
+
+  List<Song> get likedSongs => likedPlaylist.songs;
+
+  /// O(1) membership test used by like-buttons throughout the app.
+  Set<String> get likedSongIds => likedSongs.map((s) => s.id).toSet();
+
+  // ── Sorted views ────────────────────────────────────────────────────────────
 
   List<LibraryPlaylist> get sortedPlaylists {
-    var list = List<LibraryPlaylist>.from(playlists);
+    var list = playlists.where((p) => p.id != 'liked').toList();
     if (searchQuery.trim().isNotEmpty) {
       final q = searchQuery.trim().toLowerCase();
       list = list.where((p) => p.name.toLowerCase().contains(q)).toList();
@@ -107,18 +93,12 @@ class LibraryState {
     switch (sortOrder) {
       case LibrarySortOrder.recent:
         list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-        break;
       case LibrarySortOrder.recentlyAdded:
         list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        break;
       case LibrarySortOrder.alphabetical:
-        list.sort(
-            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-        break;
+        list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     }
-    final pinned = list.where((p) => p.isPinned).toList();
-    final unpinned = list.where((p) => !p.isPinned).toList();
-    return [...pinned, ...unpinned];
+    return [...list.where((p) => p.isPinned), ...list.where((p) => !p.isPinned)];
   }
 
   List<LibraryFolder> get sortedFolders {
@@ -128,113 +108,84 @@ class LibraryState {
       list = list.where((f) => f.name.toLowerCase().contains(q)).toList();
     }
     list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    final pinned = list.where((f) => f.isPinned).toList();
-    final unpinned = list.where((f) => !f.isPinned).toList();
-    return [...pinned, ...unpinned];
+    return [...list.where((f) => f.isPinned), ...list.where((f) => !f.isPinned)];
   }
 
   LibraryState copyWith({
     List<LibraryPlaylist>? playlists,
     List<LibraryFolder>? folders,
-    List<Song>? likedSongs,
     LibrarySortOrder? sortOrder,
     LibraryViewMode? viewMode,
     String? searchQuery,
-    bool? likedShuffleEnabled,
     bool? downloadedShuffleEnabled,
     List<LibraryArtist>? followedArtists,
     List<LibraryAlbum>? followedAlbums,
-  }) {
-    return LibraryState(
-      playlists: playlists ?? this.playlists,
-      folders: folders ?? this.folders,
-      likedSongs: likedSongs ?? this.likedSongs,
-      sortOrder: sortOrder ?? this.sortOrder,
-      viewMode: viewMode ?? this.viewMode,
-      searchQuery: searchQuery ?? this.searchQuery,
-      likedShuffleEnabled: likedShuffleEnabled ?? this.likedShuffleEnabled,
-      downloadedShuffleEnabled:
-          downloadedShuffleEnabled ?? this.downloadedShuffleEnabled,
-      followedArtists: followedArtists ?? this.followedArtists,
-      followedAlbums: followedAlbums ?? this.followedAlbums,
-    );
-  }
+  }) => LibraryState(
+    playlists: playlists ?? this.playlists,
+    folders: folders ?? this.folders,
+    sortOrder: sortOrder ?? this.sortOrder,
+    viewMode: viewMode ?? this.viewMode,
+    searchQuery: searchQuery ?? this.searchQuery,
+    downloadedShuffleEnabled: downloadedShuffleEnabled ?? this.downloadedShuffleEnabled,
+    followedArtists: followedArtists ?? this.followedArtists,
+    followedAlbums: followedAlbums ?? this.followedAlbums,
+  );
 }
 
-/// Manages all library mutations: create/delete/rename playlists and folders,
-/// like/unlike songs, follow/unfollow artists and albums, and update display preferences.
-///
-/// All write methods optimistically update in-memory state before persisting
-/// to SQLite via [DatabaseRepository]. A background [SyncManager] handles Supabase sync.
-class LibraryNotifier extends Notifier<LibraryState> {
-  DatabaseRepository get _repository => ref.read(databaseRepositoryProvider);
+// ── Notifier ──────────────────────────────────────────────────────────────────
 
+/// Manages all library mutations. All writes optimistically update in-memory
+/// state then persist to SQLite. A background [SyncManager] handles Supabase sync.
+class LibraryNotifier extends Notifier<LibraryState> {
+  DatabaseRepository get _repo => ref.read(databaseRepositoryProvider);
   User? get _user => ref.read(currentUserProvider);
 
   @override
   LibraryState build() {
     load();
-    return LibraryState();
+    return const LibraryState();
   }
 
-  Future<void> onAuthChanged(User? user) async {
-    await load();
-  }
+  Future<void> onAuthChanged(User? user) => load();
 
   Future<void> load() async {
-    final userId = _user?.id;
-    final result = await Result.guard(() => _repository.loadAll(userId: userId));
+    final result = await Result.guard(() => _repo.loadAll(userId: _user?.id));
     result.when(
-      ok: (data) {
-        state = state.copyWith(
-          playlists: data.playlists,
-          folders: data.folders,
-          likedSongs: data.likedSongs,
-          sortOrder: LibrarySortOrderX.fromString(data.sortOrder),
-          viewMode: LibraryViewModeX.fromString(data.viewMode),
-          likedShuffleEnabled: data.likedShuffleEnabled,
-          downloadedShuffleEnabled: data.downloadedShuffleEnabled,
-          followedArtists: data.followedArtists,
-          followedAlbums: data.followedAlbums,
-        );
-      },
-      err: (e) {
-        logWarning('Library: load failed: $e', tag: 'Library');
-      },
+      ok: (data) => state = state.copyWith(
+        playlists: data.playlists,
+        folders: data.folders,
+        sortOrder: LibrarySortOrderX.fromString(data.sortOrder),
+        viewMode: LibraryViewModeX.fromString(data.viewMode),
+        downloadedShuffleEnabled: data.downloadedShuffleEnabled,
+        followedArtists: data.followedArtists,
+        followedAlbums: data.followedAlbums,
+      ),
+      err: (e) => logWarning('Library: load failed: $e', tag: 'Library'),
     );
   }
 
   Future<void> _persist() async {
-    final userId = _user?.id;
     try {
-      await _repository.saveAll(
+      await _repo.saveAll(
+        userId: _user?.id,
         data: (
           playlists: state.playlists,
           folders: state.folders,
-          likedSongs: state.likedSongs,
           sortOrder: state.sortOrder.value,
           viewMode: state.viewMode.value,
-          likedShuffleEnabled: state.likedShuffleEnabled,
           downloadedShuffleEnabled: state.downloadedShuffleEnabled,
-          playlistShuffles: {
-            for (final p in state.playlists)
-              if (p.shuffleEnabled) p.id: true
-          },
           followedArtists: state.followedArtists,
           followedAlbums: state.followedAlbums,
         ),
-        userId: userId,
       );
     } catch (e) {
-      // Non-fatal: in-memory state is already updated so the UI reflects the
-      // change immediately. Logged for diagnostics; sync will retry on next write.
       logWarning('Library: _persist failed: $e', tag: 'Library');
     }
   }
 
-  void setSearchQuery(String query) {
-    state = state.copyWith(searchQuery: query);
-  }
+  // ── Preferences ─────────────────────────────────────────────────────────────
+
+  void setSearchQuery(String query) => state = state.copyWith(searchQuery: query);
 
   void setSortOrder(LibrarySortOrder order) {
     state = state.copyWith(sortOrder: order);
@@ -246,309 +197,192 @@ class LibraryNotifier extends Notifier<LibraryState> {
     _persist();
   }
 
-  void toggleLikedShuffle() {
-    state = state.copyWith(likedShuffleEnabled: !state.likedShuffleEnabled);
-    _persist();
+  // ── Liked songs ──────────────────────────────────────────────────────────────
+
+  void toggleLikedShuffle() => togglePlaylistShuffle('liked');
+
+  Future<void> toggleLiked(Song song) async {
+    // Ensure the 'liked' playlist exists in state before mutating.
+    // On a fresh install state.playlists is empty, so we insert it first.
+    final hasLiked = state.playlists.any((p) => p.id == 'liked');
+    if (!hasLiked) {
+      final now = DateTime.now();
+      state = state.copyWith(playlists: [
+        LibraryPlaylist(id: 'liked', name: 'Liked Songs',
+            createdAt: DateTime(2000), updatedAt: now, songs: const []),
+        ...state.playlists,
+      ]);
+    }
+    final songs = List<Song>.from(state.likedPlaylist.songs);
+    final idx = songs.indexWhere((s) => s.id == song.id);
+    if (idx >= 0) { songs.removeAt(idx); } else { songs.add(song); }
+    await setPlaylistSongs('liked', songs);
   }
 
+  // ── Shuffle ──────────────────────────────────────────────────────────────────
+
   void toggleDownloadedShuffle() {
-    state = state.copyWith(
-        downloadedShuffleEnabled: !state.downloadedShuffleEnabled);
+    state = state.copyWith(downloadedShuffleEnabled: !state.downloadedShuffleEnabled);
     _persist();
   }
 
   void togglePlaylistShuffle(String playlistId) {
-    final updated = state.playlists.map((p) {
-      if (p.id != playlistId) return p;
-      return p.copyWith(shuffleEnabled: !p.shuffleEnabled);
-    }).toList();
-    state = state.copyWith(playlists: updated);
+    state = state.copyWith(playlists: state.playlists.map((p) =>
+        p.id == playlistId ? p.copyWith(shuffleEnabled: !p.shuffleEnabled) : p).toList());
     _persist();
   }
 
-  Future<void> togglePlaylistPin(String playlistId) async {
-    final updated = state.playlists.map((p) {
-      if (p.id != playlistId) return p;
-      return p.copyWith(isPinned: !p.isPinned);
-    }).toList();
-    state = state.copyWith(playlists: updated);
-    await _persist();
-  }
+  // ── Playlists ────────────────────────────────────────────────────────────────
 
-  Future<void> toggleFolderPin(String folderId) async {
-    final updated = state.folders.map((f) {
-      if (f.id != folderId) return f;
-      return f.copyWith(isPinned: !f.isPinned);
-    }).toList();
-    state = state.copyWith(folders: updated);
+  Future<void> togglePlaylistPin(String playlistId) async {
+    state = state.copyWith(playlists: state.playlists.map((p) =>
+        p.id == playlistId ? p.copyWith(isPinned: !p.isPinned) : p).toList());
     await _persist();
   }
 
   Future<void> createPlaylist(String name) async {
     if (name.trim().isEmpty) return;
-    final id = 'lib_${DateTime.now().millisecondsSinceEpoch}';
     final now = DateTime.now();
     final p = LibraryPlaylist(
-      id: id,
+      id: 'lib_${now.millisecondsSinceEpoch}',
       name: name.trim(),
-      createdAt: now,
-      updatedAt: now,
-      songs: [],
+      createdAt: now, updatedAt: now, songs: [],
     );
-    final updated = [p, ...state.playlists];
-    state = state.copyWith(playlists: updated);
+    state = state.copyWith(playlists: [p, ...state.playlists]);
     await _persist();
   }
 
-  /// Saves a remote playlist reference into the library.
-  /// Only stores id, name, description, browseId, and customImageUrl — no songs.
-  /// Songs are always re-fetched fresh when the playlist is opened.
   Future<void> addPlaylistToLibrary(LibraryPlaylist playlist) async {
     if (state.playlists.any((p) => p.id == playlist.id)) return;
     final minimal = LibraryPlaylist(
-      id: playlist.id,
-      name: playlist.name,
-      description: playlist.description,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-      songs: const [],
+      id: playlist.id, name: playlist.name, description: playlist.description,
+      createdAt: DateTime.now(), updatedAt: DateTime.now(), songs: const [],
       customImageUrl: playlist.customImageUrl,
-      isImported: true,
-      browseId: playlist.browseId ?? playlist.id,
+      isImported: true, browseId: playlist.browseId ?? playlist.id,
     );
     state = state.copyWith(playlists: [minimal, ...state.playlists]);
     await _persist();
   }
 
   Future<void> deletePlaylist(String id) async {
-    final updated = state.playlists.where((p) => p.id != id).toList();
-    final foldersUpdated = state.folders.map((f) {
-      return f.copyWith(
-          playlistIds: f.playlistIds.where((pid) => pid != id).toList());
-    }).toList();
-    state = state.copyWith(playlists: updated, folders: foldersUpdated);
+    state = state.copyWith(
+      playlists: state.playlists.where((p) => p.id != id).toList(),
+      folders: state.folders.map((f) => f.copyWith(
+          playlistIds: f.playlistIds.where((pid) => pid != id).toList())).toList(),
+    );
     await _persist();
   }
 
-  Future<void> renamePlaylist(String id, String newName) async {
-    if (newName.trim().isEmpty) return;
-    final updated = state.playlists.map((p) {
-      if (p.id != id) return p;
-      return p.copyWith(name: newName.trim(), updatedAt: DateTime.now());
-    }).toList();
-    state = state.copyWith(playlists: updated);
-    await _persist();
-  }
-
-  Future<void> updatePlaylist(String id,
-      {String? name, String? description}) async {
-    final updated = state.playlists.map((p) {
-      if (p.id != id) return p;
-      return p.copyWith(
-        name: name?.trim() ?? p.name,
-        description: description ?? p.description,
-        updatedAt: DateTime.now(),
-      );
-    }).toList();
-    state = state.copyWith(playlists: updated);
+  Future<void> updatePlaylist(String id, {String? name, String? description}) async {
+    state = state.copyWith(playlists: state.playlists.map((p) => p.id != id ? p :
+        p.copyWith(
+          name: name?.trim() ?? p.name,
+          description: description ?? p.description,
+          updatedAt: DateTime.now())).toList());
     await _persist();
   }
 
   Future<void> setPlaylistSongs(String playlistId, List<Song> songs) async {
-    final updated = state.playlists.map((p) {
-      if (p.id != playlistId) return p;
-      return p.copyWith(songs: songs, updatedAt: DateTime.now());
-    }).toList();
-    state = state.copyWith(playlists: updated);
+    state = state.copyWith(playlists: state.playlists.map((p) => p.id != playlistId ? p :
+        p.copyWith(songs: songs, updatedAt: DateTime.now())).toList());
     await _persist();
   }
 
-  Future<void> setPlaylistSortOrder(
-      String playlistId, PlaylistTrackSortOrder order) async {
-    final updated = state.playlists.map((p) {
-      if (p.id != playlistId) return p;
-      return p.copyWith(sortOrder: order);
-    }).toList();
-    state = state.copyWith(playlists: updated);
+  Future<void> setPlaylistSortOrder(String playlistId, PlaylistTrackSortOrder order) async {
+    state = state.copyWith(playlists: state.playlists.map((p) =>
+        p.id == playlistId ? p.copyWith(sortOrder: order) : p).toList());
     await _persist();
   }
 
   Future<void> addSongsToPlaylist(String playlistId, List<Song> songs) async {
-    final updated = state.playlists.map((p) {
+    state = state.copyWith(playlists: state.playlists.map((p) {
       if (p.id != playlistId) return p;
-      final existingIds = p.songs.map((s) => s.id).toSet();
-      final toAdd = songs.where((s) => !existingIds.contains(s.id)).toList();
-      return p.copyWith(
-        songs: [...p.songs, ...toAdd],
-        updatedAt: DateTime.now(),
-      );
-    }).toList();
-    state = state.copyWith(playlists: updated);
+      final existing = p.songs.map((s) => s.id).toSet();
+      final toAdd = songs.where((s) => !existing.contains(s.id)).toList();
+      return p.copyWith(songs: [...p.songs, ...toAdd], updatedAt: DateTime.now());
+    }).toList());
     await _persist();
   }
 
   Future<void> removeSongFromPlaylist(String playlistId, String songId) async {
-    final updated = state.playlists.map((p) {
-      if (p.id != playlistId) return p;
-      return p.copyWith(
-        songs: p.songs.where((s) => s.id != songId).toList(),
-        updatedAt: DateTime.now(),
+    state = state.copyWith(playlists: state.playlists.map((p) => p.id != playlistId ? p :
+        p.copyWith(
+          songs: p.songs.where((s) => s.id != songId).toList(),
+          updatedAt: DateTime.now())).toList());
+    await _persist();
+  }
+
+  Future<void> savePlaylistPaletteColor(String playlistId, int colorValue) async {
+    state = state.copyWith(playlists: state.playlists.map((p) =>
+        p.id == playlistId ? p.copyWith(cachedPaletteColor: colorValue) : p).toList());
+    await _persist();
+  }
+
+  Future<void> refreshPlaylistMeta(String playlistId,
+      {String? name, String? description, String? imageUrl}) async {
+    final idx = state.playlists.indexWhere((p) => p.id == playlistId);
+    if (idx < 0) return;
+    final p = state.playlists[idx];
+    final updated = List<LibraryPlaylist>.from(state.playlists)
+      ..[idx] = p.copyWith(
+        name: name ?? p.name,
+        description: description ?? p.description,
+        customImageUrl: imageUrl ?? p.customImageUrl,
       );
-    }).toList();
     state = state.copyWith(playlists: updated);
+    await _persist();
+  }
+
+  // ── Folders ──────────────────────────────────────────────────────────────────
+
+  Future<void> toggleFolderPin(String folderId) async {
+    state = state.copyWith(folders: state.folders.map((f) =>
+        f.id == folderId ? f.copyWith(isPinned: !f.isPinned) : f).toList());
     await _persist();
   }
 
   Future<void> createFolder(String name) async {
     if (name.trim().isEmpty) return;
-    final id = 'folder_${DateTime.now().millisecondsSinceEpoch}';
     final f = LibraryFolder(
-      id: id,
-      name: name.trim(),
-      playlistIds: [],
-      createdAt: DateTime.now(),
+      id: 'folder_${DateTime.now().millisecondsSinceEpoch}',
+      name: name.trim(), playlistIds: [], createdAt: DateTime.now(),
     );
-    final updated = [f, ...state.folders];
-    state = state.copyWith(folders: updated);
+    state = state.copyWith(folders: [f, ...state.folders]);
     await _persist();
   }
 
   Future<void> deleteFolder(String id) async {
-    final updated = state.folders.where((f) => f.id != id).toList();
-    state = state.copyWith(folders: updated);
+    state = state.copyWith(folders: state.folders.where((f) => f.id != id).toList());
     await _persist();
   }
 
   Future<void> renameFolder(String id, String newName) async {
     if (newName.trim().isEmpty) return;
-    final updated = state.folders.map((f) {
-      if (f.id != id) return f;
-      return f.copyWith(name: newName.trim());
-    }).toList();
-    state = state.copyWith(folders: updated);
+    state = state.copyWith(folders: state.folders.map((f) =>
+        f.id == id ? f.copyWith(name: newName.trim()) : f).toList());
     await _persist();
   }
 
   Future<void> addPlaylistToFolder(String folderId, String playlistId) async {
-    final updated = state.folders.map((f) {
-      if (f.id != folderId) return f;
-      if (f.playlistIds.contains(playlistId)) return f;
+    state = state.copyWith(folders: state.folders.map((f) {
+      if (f.id != folderId || f.playlistIds.contains(playlistId)) return f;
       return f.copyWith(playlistIds: [...f.playlistIds, playlistId]);
-    }).toList();
-    state = state.copyWith(folders: updated);
+    }).toList());
     await _persist();
   }
 
-  Future<void> removePlaylistFromFolder(
-      String folderId, String playlistId) async {
-    final updated = state.folders.map((f) {
-      if (f.id != folderId) return f;
-      return f.copyWith(
-          playlistIds: f.playlistIds.where((id) => id != playlistId).toList());
-    }).toList();
-    state = state.copyWith(folders: updated);
+  Future<void> removePlaylistFromFolder(String folderId, String playlistId) async {
+    state = state.copyWith(folders: state.folders.map((f) => f.id != folderId ? f :
+        f.copyWith(playlistIds: f.playlistIds.where((id) => id != playlistId).toList())).toList());
     await _persist();
   }
 
-  /// Persists a palette color for a saved playlist (imported).
-  Future<void> savePlaylistPaletteColor(String playlistId, int colorValue) async {
-    final updated = state.playlists.map((p) {
-      if (p.id != playlistId) return p;
-      return p.copyWith(cachedPaletteColor: colorValue);
-    }).toList();
-    state = state.copyWith(playlists: updated);
-    await _persist();
-  }
-
-  /// Persists a palette color for a followed album.
-  Future<void> saveAlbumPaletteColor(String albumId, int colorValue) async {
-    final updated = state.followedAlbums.map((a) {
-      if (a.id != albumId) return a;
-      return a.copyWith(cachedPaletteColor: colorValue);
-    }).toList();
-    state = state.copyWith(followedAlbums: updated);
-    await _persist();
-  }
-
-  /// Persists a palette color for a followed artist.
-  Future<void> saveArtistPaletteColor(String artistId, int colorValue) async {
-    final updated = state.followedArtists.map((a) {
-      if (a.id != artistId) return a;
-      return a.copyWith(cachedPaletteColor: colorValue);
-    }).toList();
-    state = state.copyWith(followedArtists: updated);
-    await _persist();
-  }
-
-  /// Silently refreshes metadata for a saved imported playlist from fresh remote data.
-  Future<void> refreshPlaylistMeta(String playlistId, {String? name, String? description, String? imageUrl}) async {
-    final idx = state.playlists.indexWhere((p) => p.id == playlistId);
-    if (idx < 0) return;
-    final p = state.playlists[idx];
-    final updated = List<LibraryPlaylist>.from(state.playlists);
-    updated[idx] = p.copyWith(
-      name: name ?? p.name,
-      description: description ?? p.description,
-      customImageUrl: imageUrl ?? p.customImageUrl,
-    );
-    state = state.copyWith(playlists: updated);
-    await _persist();
-  }
-
-  /// Silently refreshes metadata for a followed album from fresh remote data.
-  Future<void> refreshAlbumMeta(String albumId, {String? title, String? artistName, String? thumbnailUrl}) async {
-    final idx = state.followedAlbums.indexWhere((a) => a.id == albumId || a.browseId == albumId);
-    if (idx < 0) return;
-    final a = state.followedAlbums[idx];
-    final updated = List<LibraryAlbum>.from(state.followedAlbums);
-    updated[idx] = a.copyWith(
-      title: title ?? a.title,
-      artistName: artistName ?? a.artistName,
-      thumbnailUrl: thumbnailUrl ?? a.thumbnailUrl,
-    );
-    state = state.copyWith(followedAlbums: updated);
-    await _persist();
-  }
-
-  /// Silently refreshes metadata for a followed artist from fresh remote data.
-  Future<void> refreshArtistMeta(String artistId, {String? name, String? thumbnailUrl}) async {
-    final idx = state.followedArtists.indexWhere((a) => a.id == artistId || a.browseId == artistId);
-    if (idx < 0) return;
-    final a = state.followedArtists[idx];
-    final updated = List<LibraryArtist>.from(state.followedArtists);
-    updated[idx] = a.copyWith(
-      name: name ?? a.name,
-      thumbnailUrl: thumbnailUrl ?? a.thumbnailUrl,
-    );
-    state = state.copyWith(followedArtists: updated);
-    await _persist();
-  }
-
-  Future<void> toggleLiked(Song song) async {
-    final list = List<Song>.from(state.likedSongs);
-    final idx = list.indexWhere((s) => s.id == song.id);
-    if (idx >= 0) {
-      list.removeAt(idx);
-    } else {
-      list.add(song);
-    }
-    state = state.copyWith(likedSongs: list);
-    await _persist();
-  }
-
-  Future<void> setLikedSongsOrder(List<Song> ordered) async {
-    state = state.copyWith(likedSongs: ordered);
-    await _persist();
-  }
+  // ── Artists & Albums ─────────────────────────────────────────────────────────
 
   Future<void> toggleFollowArtist(LibraryArtist artist) async {
     final list = List<LibraryArtist>.from(state.followedArtists);
     final idx = list.indexWhere((a) => a.id == artist.id);
-    if (idx >= 0) {
-      list.removeAt(idx);
-    } else {
-      list.add(artist);
-    }
+    if (idx >= 0) { list.removeAt(idx); } else { list.add(artist); }
     state = state.copyWith(followedArtists: list);
     await _persist();
   }
@@ -556,49 +390,78 @@ class LibraryNotifier extends Notifier<LibraryState> {
   Future<void> toggleFollowAlbum(LibraryAlbum album) async {
     final list = List<LibraryAlbum>.from(state.followedAlbums);
     final idx = list.indexWhere((a) => a.id == album.id);
-    if (idx >= 0) {
-      list.removeAt(idx);
-    } else {
-      list.add(album);
-    }
+    if (idx >= 0) { list.removeAt(idx); } else { list.add(album); }
     state = state.copyWith(followedAlbums: list);
+    await _persist();
+  }
+
+  Future<void> saveAlbumPaletteColor(String albumId, int colorValue) async {
+    state = state.copyWith(followedAlbums: state.followedAlbums.map((a) =>
+        a.id == albumId ? a.copyWith(cachedPaletteColor: colorValue) : a).toList());
+    await _persist();
+  }
+
+  Future<void> saveArtistPaletteColor(String artistId, int colorValue) async {
+    state = state.copyWith(followedArtists: state.followedArtists.map((a) =>
+        a.id == artistId ? a.copyWith(cachedPaletteColor: colorValue) : a).toList());
+    await _persist();
+  }
+
+  Future<void> refreshAlbumMeta(String albumId,
+      {String? title, String? artistName, String? thumbnailUrl}) async {
+    final idx = state.followedAlbums.indexWhere((a) => a.id == albumId || a.browseId == albumId);
+    if (idx < 0) return;
+    final a = state.followedAlbums[idx];
+    final updated = List<LibraryAlbum>.from(state.followedAlbums)
+      ..[idx] = a.copyWith(
+        title: title ?? a.title,
+        artistName: artistName ?? a.artistName,
+        thumbnailUrl: thumbnailUrl ?? a.thumbnailUrl,
+      );
+    state = state.copyWith(followedAlbums: updated);
+    await _persist();
+  }
+
+  Future<void> refreshArtistMeta(String artistId,
+      {String? name, String? thumbnailUrl}) async {
+    final idx = state.followedArtists.indexWhere((a) => a.id == artistId || a.browseId == artistId);
+    if (idx < 0) return;
+    final a = state.followedArtists[idx];
+    final updated = List<LibraryArtist>.from(state.followedArtists)
+      ..[idx] = a.copyWith(name: name ?? a.name, thumbnailUrl: thumbnailUrl ?? a.thumbnailUrl);
+    state = state.copyWith(followedArtists: updated);
     await _persist();
   }
 }
 
+// ── Providers ─────────────────────────────────────────────────────────────────
+
 final libraryProvider =
     NotifierProvider<LibraryNotifier, LibraryState>(LibraryNotifier.new);
 
-final libraryPlaylistsProvider = Provider<List<LibraryPlaylist>>((ref) {
-  return ref.watch(libraryProvider).sortedPlaylists;
-});
+final libraryPlaylistsProvider = Provider<List<LibraryPlaylist>>((ref) =>
+    ref.watch(libraryProvider).sortedPlaylists);
 
-final libraryFoldersProvider = Provider<List<LibraryFolder>>((ref) {
-  return ref.watch(libraryProvider).sortedFolders;
-});
+final libraryFoldersProvider = Provider<List<LibraryFolder>>((ref) =>
+    ref.watch(libraryProvider).sortedFolders);
 
-final libraryLikedCountProvider = Provider<int>((ref) {
-  return ref.watch(libraryProvider).likedSongs.length;
-});
+final libraryLikedCountProvider = Provider<int>((ref) =>
+    ref.watch(libraryProvider).likedSongs.length);
 
 final libraryPlaylistByIdProvider =
     Provider.family<LibraryPlaylist?, String>((ref, id) {
-  final list = ref.watch(libraryProvider).playlists;
-  final match = list.where((p) => p.id == id).toList();
-  return match.isNotEmpty ? match.first : null;
+  return ref.watch(libraryProvider).playlists
+      .where((p) => p.id == id).firstOrNull;
 });
 
 final libraryFolderByIdProvider =
     Provider.family<LibraryFolder?, String>((ref, id) {
-  final list = ref.watch(libraryProvider).folders;
-  final match = list.where((f) => f.id == id).toList();
-  return match.isNotEmpty ? match.first : null;
+  return ref.watch(libraryProvider).folders
+      .where((f) => f.id == id).firstOrNull;
 });
 
-final likedShuffleProvider = Provider<bool>((ref) {
-  return ref.watch(libraryProvider).likedShuffleEnabled;
-});
+final likedShuffleProvider = Provider<bool>((ref) =>
+    ref.watch(libraryProvider).likedPlaylist.shuffleEnabled);
 
-final downloadedShuffleProvider = Provider<bool>((ref) {
-  return ref.watch(libraryProvider).downloadedShuffleEnabled;
-});
+final downloadedShuffleProvider = Provider<bool>((ref) =>
+    ref.watch(libraryProvider).downloadedShuffleEnabled);

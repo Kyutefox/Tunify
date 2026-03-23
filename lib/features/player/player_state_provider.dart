@@ -306,7 +306,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       case 'device':
         return lib.downloadedShuffleEnabled;
       case 'liked':
-        return lib.likedShuffleEnabled;
+        return lib.likedPlaylist.shuffleEnabled;
       default:
         return false;
     }
@@ -373,14 +373,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     if (song.duration.inMilliseconds > 0) return; // already has a real duration
     if (realDuration.inMilliseconds <= 0) return;
     final library = ref.read(libraryProvider);
-    // Update in liked songs
-    final likedIdx = library.likedSongs.indexWhere((s) => s.id == song.id);
-    if (likedIdx != -1) {
-      final updated = List<Song>.from(library.likedSongs);
-      updated[likedIdx] = song.copyWith(duration: realDuration);
-      ref.read(libraryProvider.notifier).setLikedSongsOrder(updated);
-    }
-    // Update in playlists
+    // Update duration in all playlists (including 'liked')
     for (final playlist in library.playlists) {
       final songIdx = playlist.songs.indexWhere((s) => s.id == song.id);
       if (songIdx != -1) {

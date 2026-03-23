@@ -450,6 +450,80 @@ class LibraryNotifier extends Notifier<LibraryState> {
     await _persist();
   }
 
+  /// Persists a palette color for a saved playlist (imported).
+  Future<void> savePlaylistPaletteColor(String playlistId, int colorValue) async {
+    final updated = state.playlists.map((p) {
+      if (p.id != playlistId) return p;
+      return p.copyWith(cachedPaletteColor: colorValue);
+    }).toList();
+    state = state.copyWith(playlists: updated);
+    await _persist();
+  }
+
+  /// Persists a palette color for a followed album.
+  Future<void> saveAlbumPaletteColor(String albumId, int colorValue) async {
+    final updated = state.followedAlbums.map((a) {
+      if (a.id != albumId) return a;
+      return a.copyWith(cachedPaletteColor: colorValue);
+    }).toList();
+    state = state.copyWith(followedAlbums: updated);
+    await _persist();
+  }
+
+  /// Persists a palette color for a followed artist.
+  Future<void> saveArtistPaletteColor(String artistId, int colorValue) async {
+    final updated = state.followedArtists.map((a) {
+      if (a.id != artistId) return a;
+      return a.copyWith(cachedPaletteColor: colorValue);
+    }).toList();
+    state = state.copyWith(followedArtists: updated);
+    await _persist();
+  }
+
+  /// Silently refreshes metadata for a saved imported playlist from fresh remote data.
+  Future<void> refreshPlaylistMeta(String playlistId, {String? name, String? description, String? imageUrl}) async {
+    final idx = state.playlists.indexWhere((p) => p.id == playlistId);
+    if (idx < 0) return;
+    final p = state.playlists[idx];
+    final updated = List<LibraryPlaylist>.from(state.playlists);
+    updated[idx] = p.copyWith(
+      name: name ?? p.name,
+      description: description ?? p.description,
+      customImageUrl: imageUrl ?? p.customImageUrl,
+    );
+    state = state.copyWith(playlists: updated);
+    await _persist();
+  }
+
+  /// Silently refreshes metadata for a followed album from fresh remote data.
+  Future<void> refreshAlbumMeta(String albumId, {String? title, String? artistName, String? thumbnailUrl}) async {
+    final idx = state.followedAlbums.indexWhere((a) => a.id == albumId || a.browseId == albumId);
+    if (idx < 0) return;
+    final a = state.followedAlbums[idx];
+    final updated = List<LibraryAlbum>.from(state.followedAlbums);
+    updated[idx] = a.copyWith(
+      title: title ?? a.title,
+      artistName: artistName ?? a.artistName,
+      thumbnailUrl: thumbnailUrl ?? a.thumbnailUrl,
+    );
+    state = state.copyWith(followedAlbums: updated);
+    await _persist();
+  }
+
+  /// Silently refreshes metadata for a followed artist from fresh remote data.
+  Future<void> refreshArtistMeta(String artistId, {String? name, String? thumbnailUrl}) async {
+    final idx = state.followedArtists.indexWhere((a) => a.id == artistId || a.browseId == artistId);
+    if (idx < 0) return;
+    final a = state.followedArtists[idx];
+    final updated = List<LibraryArtist>.from(state.followedArtists);
+    updated[idx] = a.copyWith(
+      name: name ?? a.name,
+      thumbnailUrl: thumbnailUrl ?? a.thumbnailUrl,
+    );
+    state = state.copyWith(followedArtists: updated);
+    await _persist();
+  }
+
   Future<void> toggleLiked(Song song) async {
     final list = List<Song>.from(state.likedSongs);
     final idx = list.indexWhere((s) => s.id == song.id);

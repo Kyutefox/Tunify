@@ -133,6 +133,7 @@ class DatabaseRepository {
         customImageUrl: m['custom_image_url'] as String?,
         isImported: m['is_imported'] as bool? ?? false,
         browseId: m['browse_id'] as String?,
+        cachedPaletteColor: m['cached_palette_color'] as int?,
       );
     }).toList();
 
@@ -203,6 +204,7 @@ class DatabaseRepository {
         'shuffleEnabled': p.shuffleEnabled,
         'is_imported': p.isImported,
         'browse_id': p.browseId,
+        'cached_palette_color': p.cachedPaletteColor,
       }).toList(),
       'folders': data.folders.map((f) => {
         'id': f.id,

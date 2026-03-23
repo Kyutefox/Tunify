@@ -16,6 +16,7 @@ import 'package:tunify/ui/widgets/input_field.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/databases/supabase/supabase_prefs.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
+import 'package:tunify/features/library/collection_track_cache.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
@@ -451,6 +452,7 @@ Future<void> _dataCacheStats(BuildContext context, WidgetRef ref) async {
 Future<void> _dataClearCache(BuildContext context, WidgetRef ref) async {
   try {
     ref.read(streamManagerProvider).clearCache();
+    CollectionTrackCache.instance.clear();
     await ref.read(playerProvider.notifier).clearPersistentStreamCache();
     if (context.mounted) {
       _showDataResultSnackBar(context, success: 'Cache cleared');

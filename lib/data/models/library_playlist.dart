@@ -58,6 +58,9 @@ class LibraryPlaylist {
   final bool isImported;
   /// Browse ID used to re-fetch remote playlist data. Only set for [isImported] playlists.
   final String? browseId;
+  /// Cached palette color (ARGB int) extracted from the cover image.
+  /// Stored so the gradient shows instantly on re-open without re-extraction.
+  final int? cachedPaletteColor;
 
   const LibraryPlaylist({
     required this.id,
@@ -72,6 +75,7 @@ class LibraryPlaylist {
     this.customImageUrl,
     this.isImported = false,
     this.browseId,
+    this.cachedPaletteColor,
   });
 
   int get trackCount => songs.length;
@@ -92,6 +96,7 @@ class LibraryPlaylist {
     String? customImageUrl,
     bool? isImported,
     String? browseId,
+    int? cachedPaletteColor,
   }) {
     return LibraryPlaylist(
       id: id ?? this.id,
@@ -106,6 +111,7 @@ class LibraryPlaylist {
       customImageUrl: customImageUrl ?? this.customImageUrl,
       isImported: isImported ?? this.isImported,
       browseId: browseId ?? this.browseId,
+      cachedPaletteColor: cachedPaletteColor ?? this.cachedPaletteColor,
     );
   }
 
@@ -139,6 +145,7 @@ class LibraryPlaylist {
         if (customImageUrl != null) 'customImageUrl': customImageUrl,
         'isImported': isImported,
         if (browseId != null) 'browseId': browseId,
+        if (cachedPaletteColor != null) 'cachedPaletteColor': cachedPaletteColor,
       };
 
   factory LibraryPlaylist.fromJson(Map<String, dynamic> json) {
@@ -161,6 +168,7 @@ class LibraryPlaylist {
       customImageUrl: json['customImageUrl'] as String?,
       isImported: json['isImported'] as bool? ?? false,
       browseId: json['browseId'] as String?,
+      cachedPaletteColor: json['cachedPaletteColor'] as int?,
     );
   }
 

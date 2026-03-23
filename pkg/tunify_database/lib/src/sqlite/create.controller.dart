@@ -40,6 +40,7 @@ class SqliteCreateController {
         'custom_image_url': map['custom_image_url'],
         'is_imported': (map['is_imported'] == true) ? 1 : 0,
         'browse_id': map['browse_id'],
+        'cached_palette_color': map['cached_palette_color'],
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }

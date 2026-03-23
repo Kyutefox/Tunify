@@ -13,6 +13,7 @@ import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/features/library/collection_track_cache.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
 import 'package:tunify/data/repositories/database_repository.dart';
@@ -235,6 +236,7 @@ class _TunifyAppContent extends ConsumerWidget {
             // Flush cached stream URLs on logout — they are tied to session
             // cookies and would fail or serve wrong content for the next user.
             ref.read(streamManagerProvider).clearCache();
+            CollectionTrackCache.instance.clear();
             ref.read(homeProvider.notifier).onAuthChanged(next);
             ref.read(libraryProvider.notifier).onAuthChanged(next);
             ref.read(recentSearchProvider.notifier).onAuthChanged();

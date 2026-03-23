@@ -6,6 +6,7 @@ class LibraryAlbum {
   final String thumbnailUrl;
   final String? browseId;
   final DateTime followedAt;
+  final int? cachedPaletteColor;
 
   const LibraryAlbum({
     required this.id,
@@ -14,6 +15,7 @@ class LibraryAlbum {
     required this.thumbnailUrl,
     this.browseId,
     required this.followedAt,
+    this.cachedPaletteColor,
   });
 
   factory LibraryAlbum.fromJson(Map<String, dynamic> json) {
@@ -26,6 +28,7 @@ class LibraryAlbum {
       followedAt: json['followedAt'] != null
           ? DateTime.tryParse(json['followedAt'] as String) ?? DateTime.now()
           : DateTime.now(),
+      cachedPaletteColor: json['cachedPaletteColor'] as int?,
     );
   }
 
@@ -36,7 +39,23 @@ class LibraryAlbum {
         'thumbnailUrl': thumbnailUrl,
         'browseId': browseId,
         'followedAt': followedAt.toUtc().toIso8601String(),
+        if (cachedPaletteColor != null) 'cachedPaletteColor': cachedPaletteColor,
       };
+
+  LibraryAlbum copyWith({
+    String? title,
+    String? artistName,
+    String? thumbnailUrl,
+    int? cachedPaletteColor,
+  }) => LibraryAlbum(
+        id: id,
+        title: title ?? this.title,
+        artistName: artistName ?? this.artistName,
+        thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,
+        browseId: browseId,
+        followedAt: followedAt,
+        cachedPaletteColor: cachedPaletteColor ?? this.cachedPaletteColor,
+      );
 
   @override
   bool operator ==(Object other) =>

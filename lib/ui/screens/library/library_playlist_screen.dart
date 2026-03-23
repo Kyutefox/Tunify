@@ -7,6 +7,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:palette_generator/palette_generator.dart';
 
+import 'package:tunify/features/library/collection_track_cache.dart';
 import 'package:tunify/ui/widgets/collection_detail_scaffold.dart';
 import 'package:tunify/ui/widgets/loading_error_scaffold.dart';
 import 'package:tunify/ui/widgets/pages/search_page.dart';
@@ -56,6 +57,8 @@ Widget _thumbPlaceholder({double size = 48}) => Container(
       color: AppColors.surfaceLight,
       child: Center(child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted, size: 24)),
     );
+
+enum _PersistKind { playlist, album, artist }
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -110,7 +113,9 @@ class LibraryPlaylistScreen extends ConsumerStatefulWidget {
 
 class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   LibraryPlaylist? _remoteAsLocal;
-  bool _remoteLoading = false;
+  // Default true for all remote-capable types; _initSync sets to false on cache hit.
+  // This prevents the "Playlist not found" flash when cache is empty.
+  bool _remoteLoading = true;
   String? _remoteError;
   bool _addingToLibrary = false;
   String? _resolvedBrowseId;
@@ -130,12 +135,184 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget._isRemotePlaylist) _fetchRemoteTracks();
-    if (widget._isAlbum) _fetchAlbumTracks();
-    if (widget._isArtist) _fetchArtistTracks();
+    // Synchronously pre-populate data from cache/DB so the first build
+    // never shows a loading screen for already-available data.
+    _initSync();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startAfterTransition();
+    });
   }
 
-  // ── Fetch helpers ────────────────────────────────────────────────────────
+  /// Runs synchronously in initState (before first build).
+  /// Reads cache + DB to pre-populate _remoteAsLocal and _paletteColor
+  /// so the first frame renders the full UI with no loading flash.
+  void _initSync() {
+    // Remote playlist — check in-memory cache
+    if (widget._isRemotePlaylist) {
+      final pl = widget.remotePlaylist!;
+      final entry = CollectionTrackCache.instance.getEntry(pl.id);
+      if (entry != null) {
+        _paletteColor = entry.paletteColor;
+        _remoteAsLocal = _makePlaylist(
+          id: pl.id, name: pl.title,
+          description: pl.curatorName ?? pl.description,
+          songs: entry.songs,
+          imageUrl: pl.coverUrl.isEmpty ? null : pl.coverUrl,
+        );
+        _remoteLoading = false;
+      } else {
+        _remoteLoading = true;
+      }
+      return;
+    }
+
+    // Album — check in-memory cache (browseId known upfront)
+    if (widget._isAlbum) {
+      final browseId = widget.albumBrowseId;
+      if (browseId != null) {
+        final entry = CollectionTrackCache.instance.getEntry(browseId);
+        if (entry != null) {
+          _resolvedBrowseId = browseId;
+          _paletteColor = entry.paletteColor;
+          _remoteAsLocal = _makePlaylist(
+            id: browseId,
+            name: widget.albumName ?? widget.albumSongTitle ?? '',
+            description: widget.albumArtistName ?? '',
+            songs: entry.songs,
+            imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
+          );
+          _remoteLoading = false;
+          return;
+        }
+        // Check DB palette even if no cache
+        final album = _readLibraryState()?.followedAlbums
+            .where((a) => a.id == browseId || a.browseId == browseId).firstOrNull;
+        if (album?.cachedPaletteColor != null) _paletteColor = Color(album!.cachedPaletteColor!);
+      }
+      _remoteLoading = true;
+      return;
+    }
+
+    // Artist — check in-memory cache (browseId known upfront)
+    if (widget._isArtist) {
+      final browseId = widget.albumBrowseId;
+      if (browseId != null) {
+        final songs = CollectionTrackCache.instance.getSongs(browseId);
+        if (songs != null) {
+          _resolvedBrowseId = browseId;
+          _paletteColor = CollectionTrackCache.instance.getPaletteColor(browseId);
+          _remoteAsLocal = _makePlaylist(
+            id: browseId,
+            name: widget.albumName ?? '',
+            songs: songs,
+            imageUrl: CollectionTrackCache.instance.getEntry(browseId)?.imageUrl ?? widget.albumThumbnailUrl,
+          );
+          _remoteLoading = false;
+          return;
+        }
+        // Check DB palette even if no cache
+        final artist = _readLibraryState()?.followedArtists
+            .where((a) => a.id == browseId || a.browseId == browseId).firstOrNull;
+        if (artist?.cachedPaletteColor != null) _paletteColor = Color(artist!.cachedPaletteColor!);
+      }
+      _remoteLoading = true;
+      return;
+    }
+
+    // Local playlist (user-created or imported) — never show loading screen.
+    // ref is not available in initState so we defer data loading to postFrameCallback,
+    // but we must set _remoteLoading=false now so the first build doesn't show LoadingScaffold.
+    _remoteLoading = false;
+  }
+
+  /// Safe read of library state — only callable after ref is available (post-initState).
+  LibraryState? _readLibraryState() {
+    try { return ref.read(libraryProvider); } catch (_) { return null; }
+  }
+
+  void _startAfterTransition() {
+    if (!mounted) return;
+
+    // For imported local playlists: read from provider now that ref is available,
+    // pre-populate palette and kick off the track fetch.
+    if (!widget._isRemotePlaylist && !widget._isAlbum && !widget._isArtist) {
+      final local = ref.read(libraryPlaylistByIdProvider(widget.playlistId));
+      if (local != null) {
+        _localPlaylistCache = local;
+        if (local.isImported) {
+          // Pre-populate palette from DB immediately
+          if (_paletteColor == null && local.cachedPaletteColor != null) {
+            setState(() => _paletteColor = Color(local.cachedPaletteColor!));
+          }
+          // Check cache — if hit, populate _remoteAsLocal right now (no loading)
+          final browseId = local.browseId ?? local.id;
+          final cached = CollectionTrackCache.instance.getSongs(browseId);
+          if (cached != null && _remoteAsLocal == null) {
+            final cachedPalette = CollectionTrackCache.instance.getPaletteColor(browseId);
+            if (cachedPalette != null) setState(() => _paletteColor = cachedPalette);
+            setState(() {
+              _remoteAsLocal = _makePlaylist(
+                id: local.id, name: local.name, description: local.description,
+                songs: cached,
+                imageUrl: CollectionTrackCache.instance.getEntry(browseId)?.imageUrl ?? local.customImageUrl,
+                browseId: browseId, createdAt: local.createdAt,
+              );
+              _remoteLoading = false;
+            });
+            _importedFetchTriggered = true;
+            // Silent background refresh after transition — don't show loading
+            _scheduleAfterTransition(() => _fetchImportedPlaylistTracks(silent: true));
+            return;
+          }
+          // No cache — need to fetch (will show loading)
+          if (!_importedFetchTriggered) {
+            _importedFetchTriggered = true;
+            _scheduleAfterTransition(_fetchImportedPlaylistTracks);
+          }
+          return;
+        }
+        // User-created playlist — just extract palette after transition
+        if (_paletteColor == null) {
+          _scheduleAfterTransition(() => _extractPalette(
+              local.customImageUrl ?? local.songs.firstOrNull?.thumbnailUrl));
+        }
+      }
+      return;
+    }
+
+    // Remote / album / artist — if we already have data from cache (_remoteLoading=false),
+    // schedule a silent background refresh after transition completes.
+    if (!_remoteLoading && _remoteAsLocal != null) {
+      // Already have data from cache — schedule silent refresh after transition
+      _scheduleAfterTransition(() => _startFetches(silent: true));
+    } else {
+      // No cache — fetch after transition (loading screen is already showing).
+      _scheduleAfterTransition(() => _startFetches(silent: false));
+    }
+  }
+
+  void _scheduleAfterTransition(VoidCallback fn) {
+    if (!mounted) return;
+    final route = ModalRoute.of(context);
+    if (route == null || route.animation == null ||
+        route.animation!.status == AnimationStatus.completed) {
+      fn();
+      return;
+    }
+    void listener(AnimationStatus status) {
+      if (status == AnimationStatus.completed) {
+        route.animation!.removeStatusListener(listener);
+        if (mounted) fn();
+      }
+    }
+    route.animation!.addStatusListener(listener);
+  }
+
+  void _startFetches({bool silent = false}) {
+    if (widget._isRemotePlaylist) _fetchRemoteTracks(silent: silent);
+    if (widget._isAlbum) _fetchAlbumTracks(silent: silent);
+    if (widget._isArtist) _fetchArtistTracks(silent: silent);
+  }
 
   void _setLoading() => setState(() { _remoteLoading = true; _remoteError = null; });
   void _setError(Object e) { if (mounted) setState(() { _remoteError = e.toString(); _remoteLoading = false; }); }
@@ -150,28 +327,56 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     songs: songs, customImageUrl: imageUrl, isImported: true, browseId: browseId,
   );
 
-  Future<void> _fetchRemoteTracks() async {
-    _setLoading();
+  Future<void> _fetchRemoteTracks({bool silent = false}) async {
+    final pl = widget.remotePlaylist!;
+    final entry = CollectionTrackCache.instance.getEntry(pl.id);
+    if (entry != null) {
+      if (!silent || _remoteAsLocal == null) {
+        if (entry.paletteColor != null && mounted && _paletteColor == null) {
+          setState(() => _paletteColor = entry.paletteColor);
+        }
+        if (_remoteAsLocal == null) {
+          setState(() {
+            _remoteAsLocal = _makePlaylist(
+              id: pl.id, name: pl.title,
+              description: pl.curatorName ?? pl.description,
+              songs: entry.songs,
+              imageUrl: pl.coverUrl.isEmpty ? null : pl.coverUrl,
+            );
+            _remoteLoading = false;
+          });
+        }
+      }
+      if (entry.paletteColor == null && _paletteColor == null) {
+        _extractPalette(pl.coverUrl.isEmpty ? entry.songs.firstOrNull?.thumbnailUrl : pl.coverUrl);
+      }
+      return;
+    }
+    if (!silent) _setLoading();
     try {
-      final pl = widget.remotePlaylist!;
       final result = await ref.read(streamManagerProvider).getCollectionTracks(pl.id);
       if (!mounted) return;
       final songs = result.tracks.map(Song.fromTrack).toList();
+      final imageUrl = pl.coverUrl.isEmpty ? null : pl.coverUrl;
+      CollectionTrackCache.instance.put(pl.id, songs, imageUrl: imageUrl);
+      // Extract palette before revealing content so gradient is ready on first frame.
+      final color = await _extractPaletteColor(imageUrl ?? songs.firstOrNull?.thumbnailUrl);
+      if (!mounted) return;
       setState(() {
+        if (color != null) _paletteColor = color;
         _remoteAsLocal = _makePlaylist(
           id: pl.id, name: pl.title,
           description: pl.curatorName ?? pl.description,
-          songs: songs,
-          imageUrl: pl.coverUrl.isEmpty ? null : pl.coverUrl,
+          songs: songs, imageUrl: imageUrl,
         );
         _remoteLoading = false;
       });
-      _extractPalette(_remoteAsLocal?.customImageUrl ?? songs.firstOrNull?.thumbnailUrl);
-    } catch (e) { _setError(e); }
+      if (color != null) CollectionTrackCache.instance.updatePalette(pl.id, color);
+    } catch (e) { if (!silent) _setError(e); }
   }
 
-  Future<void> _fetchAlbumTracks() async {
-    _setLoading();
+  Future<void> _fetchAlbumTracks({bool silent = false}) async {
+    if (!silent) _setLoading();
     try {
       final sm = ref.read(streamManagerProvider);
       _resolvedBrowseId = widget.albumBrowseId;
@@ -187,28 +392,64 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
       if (_resolvedBrowseId == null) throw Exception('Could not find album');
 
+      final entry = CollectionTrackCache.instance.getEntry(_resolvedBrowseId!);
+      if (entry != null && mounted) {
+        if (entry.paletteColor != null) setState(() => _paletteColor = entry.paletteColor);
+        setState(() {
+          _albumSubtitle = widget.albumArtistName;
+          _remoteAsLocal = _makePlaylist(
+            id: _resolvedBrowseId!,
+            name: widget.albumName ?? widget.albumSongTitle ?? '',
+            description: widget.albumArtistName ?? '',
+            songs: entry.songs,
+            imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
+          );
+          _remoteLoading = false;
+        });
+        if (entry.paletteColor == null) {
+          final isInLib = ref.read(libraryProvider).followedAlbums.any((a) => a.id == _resolvedBrowseId || a.browseId == _resolvedBrowseId);
+          _extractPalette(entry.imageUrl ?? widget.albumThumbnailUrl,
+              persistId: isInLib ? _resolvedBrowseId : null,
+              persistKind: isInLib ? _PersistKind.album : null);
+        }
+        return;
+      }
+
       final result = await sm.getCollectionTracks(_resolvedBrowseId!);
       if (!mounted) return;
       final meta = result.metadata.hasData ? result.metadata : null;
       final songs = result.tracks.map(Song.fromTrack).toList();
+      final imageUrl = meta?.thumbnailUrl?.isNotEmpty == true ? meta!.thumbnailUrl : widget.albumThumbnailUrl;
+      CollectionTrackCache.instance.put(_resolvedBrowseId!, songs, imageUrl: imageUrl);
+      // Extract palette before revealing content so gradient is ready on first frame.
+      final isInLib = ref.read(libraryProvider).followedAlbums.any((a) => a.id == _resolvedBrowseId || a.browseId == _resolvedBrowseId);
+      final color = _paletteColor ?? await _extractPaletteColor(imageUrl);
+      if (!mounted) return;
       setState(() {
+        if (color != null) _paletteColor = color;
         _albumSubtitle = meta?.subtitle ?? widget.albumArtistName;
         _remoteAsLocal = _makePlaylist(
           id: _resolvedBrowseId!,
           name: meta?.title ?? widget.albumName ?? widget.albumSongTitle ?? '',
           description: meta?.subtitle ?? widget.albumArtistName ?? '',
-          songs: songs,
-          imageUrl: meta?.thumbnailUrl?.isNotEmpty == true
-              ? meta!.thumbnailUrl : widget.albumThumbnailUrl,
+          songs: songs, imageUrl: imageUrl,
         );
         _remoteLoading = false;
       });
-      _extractPalette(_remoteAsLocal?.customImageUrl ?? widget.albumThumbnailUrl);
-    } catch (e, s) { logError('Album load failed: $e\n$s', tag: 'AlbumScreen'); _setError(e); }
+      if (color != null) _persistPalette(color, _resolvedBrowseId!, _PersistKind.album);
+      if (isInLib && _resolvedBrowseId != null) {
+        ref.read(libraryProvider.notifier).refreshAlbumMeta(
+          _resolvedBrowseId!,
+          title: meta?.title,
+          artistName: meta?.subtitle ?? widget.albumArtistName,
+          thumbnailUrl: imageUrl,
+        );
+      }
+    } catch (e, s) { logError('Album load failed: $e\n$s', tag: 'AlbumScreen'); if (!silent) _setError(e); }
   }
 
-  Future<void> _fetchArtistTracks() async {
-    _setLoading();
+  Future<void> _fetchArtistTracks({bool silent = false}) async {
+    if (!silent) _setLoading();
     try {
       final sm = ref.read(streamManagerProvider);
       _resolvedBrowseId = widget.albumBrowseId;
@@ -219,70 +460,169 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
       if (_resolvedBrowseId == null) throw Exception('Could not find artist');
 
+      final cached = CollectionTrackCache.instance.getSongs(_resolvedBrowseId!);
+      if (cached != null && mounted) {
+        // Cache hit — only update if not already shown (silent refresh skips UI update)
+        if (!silent || _remoteAsLocal == null) {
+          final cachedPalette = CollectionTrackCache.instance.getPaletteColor(_resolvedBrowseId!);
+          if (cachedPalette != null && _paletteColor == null) setState(() => _paletteColor = cachedPalette);
+          if (_remoteAsLocal == null) {
+            setState(() {
+              _remoteAsLocal = _makePlaylist(
+                id: _resolvedBrowseId!,
+                name: widget.albumName ?? '',
+                songs: cached,
+                imageUrl: CollectionTrackCache.instance.getEntry(_resolvedBrowseId!)?.imageUrl ?? widget.albumThumbnailUrl,
+              );
+              _remoteLoading = false;
+            });
+          }
+          if (cachedPalette == null && _paletteColor == null) {
+            final isInLib = ref.read(libraryProvider).followedArtists.any((a) => a.id == _resolvedBrowseId || a.browseId == _resolvedBrowseId);
+            _extractPalette(_remoteAsLocal?.customImageUrl ?? widget.albumThumbnailUrl,
+                persistId: isInLib ? _resolvedBrowseId : null,
+                persistKind: isInLib ? _PersistKind.artist : null);
+          }
+        }
+        return;
+      }
+
       final result = await sm.getCollectionTracks(_resolvedBrowseId!);
       if (!mounted) return;
       final meta = result.metadata.hasData ? result.metadata : null;
       final songs = result.tracks.map(Song.fromTrack).toList();
+      final imageUrl = meta?.thumbnailUrl?.isNotEmpty == true ? meta!.thumbnailUrl : widget.albumThumbnailUrl;
+      CollectionTrackCache.instance.put(_resolvedBrowseId!, songs, imageUrl: imageUrl);
+      // Extract palette before revealing content so gradient is ready on first frame.
+      final isInLib = ref.read(libraryProvider).followedArtists.any((a) => a.id == _resolvedBrowseId || a.browseId == _resolvedBrowseId);
+      final color = _paletteColor ?? await _extractPaletteColor(imageUrl);
+      if (!mounted) return;
       setState(() {
-        _albumSubtitle = null;
+        if (color != null) _paletteColor = color;
         _remoteAsLocal = _makePlaylist(
           id: _resolvedBrowseId!,
           name: meta?.title ?? widget.albumName ?? '',
-          songs: songs,
-          imageUrl: meta?.thumbnailUrl?.isNotEmpty == true
-              ? meta!.thumbnailUrl : widget.albumThumbnailUrl,
+          songs: songs, imageUrl: imageUrl,
         );
         _remoteLoading = false;
       });
-      _extractPalette(_remoteAsLocal?.customImageUrl ?? widget.albumThumbnailUrl);
-    } catch (e, s) { logError('Artist load failed: $e\n$s', tag: 'ArtistScreen'); _setError(e); }
+      if (color != null) _persistPalette(color, _resolvedBrowseId!, _PersistKind.artist);
+      if (isInLib && _resolvedBrowseId != null) {
+        ref.read(libraryProvider.notifier).refreshArtistMeta(
+          _resolvedBrowseId!,
+          name: meta?.title,
+          thumbnailUrl: imageUrl,
+        );
+      }
+    } catch (e, s) { logError('Artist load failed: $e\n$s', tag: 'ArtistScreen'); if (!silent) _setError(e); }
   }
 
-  Future<void> _fetchImportedPlaylistTracks() async {
+  Future<void> _fetchImportedPlaylistTracks({bool silent = false}) async {
     final local = _localPlaylistCache;
     if (local == null) {
       logWarning('_fetchImportedPlaylistTracks: _localPlaylistCache is null', tag: 'PlaylistScreen');
       return;
     }
     final browseId = local.browseId ?? local.id;
+
+    // Cache hit — populate without loading screen
+    final cached = CollectionTrackCache.instance.getSongs(browseId);
+    if (cached != null) {
+      if (!mounted) return;
+      final cachedPalette = CollectionTrackCache.instance.getPaletteColor(browseId);
+      if (cachedPalette != null && _paletteColor == null) setState(() => _paletteColor = cachedPalette);
+      if (_remoteAsLocal == null) {
+        setState(() {
+          _remoteAsLocal = _makePlaylist(
+            id: local.id, name: local.name, description: local.description,
+            songs: cached,
+            imageUrl: CollectionTrackCache.instance.getEntry(browseId)?.imageUrl ?? local.customImageUrl,
+            browseId: browseId, createdAt: local.createdAt,
+          );
+          _remoteLoading = false;
+        });
+      }
+      if (cachedPalette == null) {
+        _extractPalette(local.customImageUrl ?? cached.firstOrNull?.thumbnailUrl,
+            persistId: local.id, persistKind: _PersistKind.playlist);
+      }
+      return;
+    }
+
+    // No cache — fresh fetch
     logInfo('Fetching imported playlist tracks: id=${local.id} browseId=$browseId', tag: 'PlaylistScreen');
-    _setLoading();
+    if (!silent) _setLoading();
     try {
       final result = await ref.read(streamManagerProvider).getCollectionTracks(browseId);
       if (!mounted) return;
       final meta = result.metadata.hasData ? result.metadata : null;
       final songs = result.tracks.map(Song.fromTrack).toList();
       logInfo('Fetched ${songs.length} songs for imported playlist ${local.id}', tag: 'PlaylistScreen');
+      final imageUrl = meta?.thumbnailUrl?.isNotEmpty == true ? meta!.thumbnailUrl : local.customImageUrl;
+      CollectionTrackCache.instance.put(browseId, songs, imageUrl: imageUrl);
+      // Extract palette before revealing content so gradient is ready on first frame.
+      final color = _paletteColor ?? await _extractPaletteColor(imageUrl ?? songs.firstOrNull?.thumbnailUrl);
+      if (!mounted) return;
       setState(() {
+        if (color != null) _paletteColor = color;
         _remoteAsLocal = _makePlaylist(
           id: local.id,
           name: meta?.title ?? local.name,
           description: meta?.subtitle ?? local.description,
-          songs: songs,
-          imageUrl: meta?.thumbnailUrl?.isNotEmpty == true ? meta!.thumbnailUrl : local.customImageUrl,
-          browseId: browseId,
-          createdAt: local.createdAt,
+          songs: songs, imageUrl: imageUrl,
+          browseId: browseId, createdAt: local.createdAt,
         );
         _remoteLoading = false;
       });
-      _extractPalette(_remoteAsLocal?.customImageUrl ?? songs.firstOrNull?.thumbnailUrl);
+      if (color != null) _persistPalette(color, local.id, _PersistKind.playlist);
+      ref.read(libraryProvider.notifier).refreshPlaylistMeta(
+        local.id,
+        name: meta?.title,
+        description: meta?.subtitle,
+        imageUrl: meta?.thumbnailUrl?.isNotEmpty == true ? meta!.thumbnailUrl : null,
+      );
     } catch (e, s) {
       logError('_fetchImportedPlaylistTracks failed: $e\n$s', tag: 'PlaylistScreen');
-      _setError(e);
+      if (!silent) _setError(e);
     }
   }
 
-  Future<void> _extractPalette(String? imageUrl) async {
-    if (imageUrl == null || imageUrl.isEmpty || imageUrl == _lastPaletteUrl) return;
+  Future<void> _extractPalette(String? imageUrl, {String? persistId, _PersistKind? persistKind}) async {
+    final color = await _extractPaletteColor(imageUrl);
+    if (color == null || !mounted) return;
+    setState(() => _paletteColor = color);
+    if (persistId != null && persistKind != null) {
+      _persistPalette(color, persistId, persistKind);
+    }
+  }
+
+  /// Extracts palette color and returns it without calling setState.
+  /// Use this when you need the color before revealing content.
+  Future<Color?> _extractPaletteColor(String? imageUrl) async {
+    if (imageUrl == null || imageUrl.isEmpty || imageUrl == _lastPaletteUrl) return null;
     _lastPaletteUrl = imageUrl;
     try {
       final gen = await PaletteGenerator.fromImageProvider(
         CachedNetworkImageProvider(imageUrl), size: const Size(200, 200));
       final raw = gen.lightVibrantColor?.color ?? gen.vibrantColor?.color ??
           gen.dominantColor?.color ?? AppColors.primary;
-      final color = PaletteTheme.toPaletteColor(raw);
-      if (mounted) setState(() => _paletteColor = color);
-    } catch (_) {}
+      return PaletteTheme.toPaletteColor(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  void _persistPalette(Color color, String id, _PersistKind kind) {
+    CollectionTrackCache.instance.updatePalette(id, color);
+    final value = color.toARGB32();
+    switch (kind) {
+      case _PersistKind.playlist:
+        ref.read(libraryProvider.notifier).savePlaylistPaletteColor(id, value);
+      case _PersistKind.album:
+        ref.read(libraryProvider.notifier).saveAlbumPaletteColor(id, value);
+      case _PersistKind.artist:
+        ref.read(libraryProvider.notifier).saveArtistPaletteColor(id, value);
+    }
   }
 
   Future<void> _addToLibrary() async {
@@ -317,30 +657,15 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Keep local cache fresh and trigger imported fetch as soon as provider loads
+    // Keep local playlist cache fresh (watches provider for changes).
+    // Do this BEFORE _isRemote / _isImportedLocal checks so they see the latest value.
     if (!widget._isRemotePlaylist && !widget._isAlbum && !widget._isArtist) {
       final local = ref.watch(libraryPlaylistByIdProvider(widget.playlistId));
       _localPlaylistCache = local;
-      if (local != null && local.isImported && !_importedFetchTriggered) {
-        _importedFetchTriggered = true;
-        // Schedule after frame so we're not calling setState during build
-        WidgetsBinding.instance.addPostFrameCallback(
-            (_) { if (mounted) _fetchImportedPlaylistTracks(); });
-      } else if (local != null && !local.isImported && _paletteColor == null) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) { _extractPalette(local.customImageUrl ??
-              local.songs.firstOrNull?.thumbnailUrl); }
-        });
-      }
     }
 
-    // _isRemote is now accurate because _localPlaylistCache is updated above
     if (_isRemote) {
-      // Show loading if actively fetching OR waiting for first fetch result
-      if (_remoteLoading || (_remoteAsLocal == null && _remoteError == null && _importedFetchTriggered)) {
-        return const LoadingScaffold();
-      }
-      if (_remoteError != null) {
+      if (_remoteError != null && _remoteAsLocal == null) {
         return ErrorScaffold(
           message: widget._isArtist ? 'Failed to load artist'
               : widget._isAlbum ? 'Failed to load album' : 'Failed to load playlist',
@@ -350,6 +675,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               : _fetchRemoteTracks,
         );
       }
+      if (_remoteAsLocal == null) return const LoadingScaffold();
     }
 
     final playlist = _isRemote
@@ -357,12 +683,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         : ref.watch(libraryPlaylistByIdProvider(widget.playlistId));
 
     if (playlist == null) {
-      return Scaffold(
-        backgroundColor: AppColors.background,
-        appBar: BackTitleAppBar(title: '', backgroundColor: AppColors.background),
-        body: const Center(child: Text('Playlist not found',
-            style: TextStyle(color: AppColors.textMuted))),
-      );
+      // Local playlist not found in DB — show loading briefly while provider initialises
+      return const LoadingScaffold();
     }
 
     final isInLibrary = _isRemote

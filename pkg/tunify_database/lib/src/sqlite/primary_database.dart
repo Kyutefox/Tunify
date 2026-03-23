@@ -56,7 +56,8 @@ class PrimaryDatabase {
         updated_at text not null,
         custom_image_url text,
         is_imported integer not null default 0,
-        browse_id text
+        browse_id text,
+        cached_palette_color integer
       )
     ''');
     await db.execute('''
@@ -92,6 +93,7 @@ class PrimaryDatabase {
     if (oldVersion < 3) {
       await db.execute('ALTER TABLE playlists ADD COLUMN is_imported INTEGER NOT NULL DEFAULT 0');
       await db.execute('ALTER TABLE playlists ADD COLUMN browse_id TEXT');
+      await db.execute('ALTER TABLE playlists ADD COLUMN cached_palette_color INTEGER');
     }
   }
 

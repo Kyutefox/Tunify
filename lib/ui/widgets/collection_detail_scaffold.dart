@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
-import 'package:tunify/ui/theme/design_tokens.dart';import 'package:tunify/ui/widgets/items/mini_player.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/items/mini_player.dart';
 import 'package:tunify/ui/widgets/button.dart';
 
 const double kCollectionActionRowHeight = 56;
-const double kCollectionSearchRowHeight = 56;
 
 class CollectionDetailScaffold extends StatefulWidget {
   const CollectionDetailScaffold({
@@ -24,12 +24,9 @@ class CollectionDetailScaffold extends StatefulWidget {
     this.headerSliver,
     this.paletteColor,
     this.playButton,
-    // legacy — kept for API compat but ignored
-    this.emptyChild,
   });
 
   final bool isEmpty;
-  final Widget? emptyChild; // unused, kept for compat
   final List<Widget> bodySlivers;
   final bool hasSong;
   final Key? miniPlayerKey;
@@ -83,12 +80,9 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     if (box == null || !box.hasSize) return;
     final topPadding = MediaQuery.of(context).padding.top;
     final appBarBottom = kToolbarHeight + topPadding;
-    // Position of the title's bottom edge in screen coords (at scroll=0)
     final titleBottom = box.localToGlobal(Offset(0, box.size.height)).dy;
-    // We want the title to be hidden (behind AppBar) when scroll reaches this offset
     _titleHideOffset = titleBottom - appBarBottom;
     _titleOffsetMeasured = true;
-    // Re-evaluate opacity in case we're already scrolled
     _onScroll();
   }
 
@@ -96,8 +90,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     if (!_titleOffsetMeasured) _measureTitleOffset();
     final offset = _scrollController.offset;
     final fadeStart = _titleHideOffset - _fadeDuration;
-    final opacity =
-        ((offset - fadeStart) / _fadeDuration).clamp(0.0, 1.0);
+    final opacity = ((offset - fadeStart) / _fadeDuration).clamp(0.0, 1.0);
     _appBarOpacity.value = opacity;
   }
 
@@ -221,14 +214,11 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
   }
 
   List<Widget> _buildSlivers(double appBarHeight, bool hasPalette) {
-    // The header sliver wraps the expanded content in a Stack so the palette
-    // gradient sits behind it and scrolls with the page naturally.
     final headerSliver = SliverToBoxAdapter(
       child: hasPalette
           ? Stack(
               clipBehavior: Clip.none,
               children: [
-                // Gradient panel extends upward behind the AppBar area
                 Positioned(
                   top: -appBarHeight,
                   left: 0,

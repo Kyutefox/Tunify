@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/items/mini_player.dart';
@@ -50,6 +51,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
   final ValueNotifier<double> _appBarOpacity = ValueNotifier(0.0);
   final GlobalKey _actionRowKey = GlobalKey();
   final GlobalKey _titleKey = GlobalKey();
+  final GlobalKey _stackKey = GlobalKey();  // anchor for local coordinate conversion
 
   // Scroll offset at which the page title is exactly at the AppBar bottom.
   // Computed once after first layout; falls back to a safe default until then.
@@ -78,10 +80,14 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     if (ctx == null) return;
     final box = ctx.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
-    final topPadding = MediaQuery.of(context).padding.top;
+    final stackBox = _stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final origin = stackBox != null
+        ? box.localToGlobal(Offset(0, box.size.height), ancestor: stackBox).dy
+        : box.localToGlobal(Offset(0, box.size.height)).dy;
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final topPadding = isDesktop ? 0.0 : MediaQuery.of(context).padding.top;
     final appBarBottom = kToolbarHeight + topPadding;
-    final titleBottom = box.localToGlobal(Offset(0, box.size.height)).dy;
-    _titleHideOffset = titleBottom - appBarBottom;
+    _titleHideOffset = stackBox != null ? origin - appBarBottom : origin - appBarBottom;
     _titleOffsetMeasured = true;
     _onScroll();
   }
@@ -104,7 +110,8 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top;
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final topPadding = isDesktop ? 0.0 : MediaQuery.of(context).padding.top;
     final appBarHeight = kToolbarHeight + topPadding;
     final hasPalette = widget.paletteColor != null;
     final hasPlayButton = widget.playButton != null && _useNewLayout;
@@ -114,6 +121,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
         : AppColors.background;
 
     return Stack(
+      key: _stackKey,
       children: [
         Scaffold(
           backgroundColor: AppColors.background,
@@ -207,6 +215,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
             scrollController: _scrollController,
             appBarHeight: appBarHeight,
             actionRowKey: _actionRowKey,
+            stackKey: _stackKey,
             child: widget.playButton!,
           ),
         if (widget.actionRow != null && _useNewLayout && !widget.isEmpty)
@@ -214,6 +223,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
             scrollController: _scrollController,
             appBarHeight: appBarHeight,
             actionRowKey: _actionRowKey,
+            stackKey: _stackKey,
             height: widget.actionRowHeight,
             child: widget.actionRow!,
           ),
@@ -280,12 +290,14 @@ class _DockingPlayButton extends StatefulWidget {
     required this.scrollController,
     required this.appBarHeight,
     required this.actionRowKey,
+    required this.stackKey,
     required this.child,
   });
 
   final ScrollController scrollController;
   final double appBarHeight;
   final GlobalKey actionRowKey;
+  final GlobalKey stackKey;
   final Widget child;
 
   @override
@@ -314,10 +326,11 @@ class _DockingPlayButtonState extends State<_DockingPlayButton> {
     if (ctx == null) return;
     final box = ctx.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
-    final screenTop = box.localToGlobal(Offset.zero).dy;
-    final scroll = widget.scrollController.hasClients
-        ? widget.scrollController.offset
-        : 0.0;
+    final stackBox = widget.stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final screenTop = stackBox != null
+        ? box.localToGlobal(Offset.zero, ancestor: stackBox).dy
+        : box.localToGlobal(Offset.zero).dy;
+    final scroll = widget.scrollController.hasClients ? widget.scrollController.offset : 0.0;
     _contentCenterY = screenTop + scroll + box.size.height / 2;
     _updatePosition(scroll);
   }
@@ -364,6 +377,7 @@ class _DockingActionRow extends StatefulWidget {
     required this.scrollController,
     required this.appBarHeight,
     required this.actionRowKey,
+    required this.stackKey,
     required this.height,
     required this.child,
   });
@@ -371,6 +385,7 @@ class _DockingActionRow extends StatefulWidget {
   final ScrollController scrollController;
   final double appBarHeight;
   final GlobalKey actionRowKey;
+  final GlobalKey stackKey;
   final double height;
   final Widget child;
 
@@ -395,7 +410,10 @@ class _DockingActionRowState extends State<_DockingActionRow> {
     if (ctx == null) return;
     final box = ctx.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
-    final screenTop = box.localToGlobal(Offset.zero).dy;
+    final stackBox = widget.stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final screenTop = stackBox != null
+        ? box.localToGlobal(Offset.zero, ancestor: stackBox).dy
+        : box.localToGlobal(Offset.zero).dy;
     final scroll = widget.scrollController.hasClients ? widget.scrollController.offset : 0.0;
     _contentTopY = screenTop + scroll;
     _updatePosition(scroll);

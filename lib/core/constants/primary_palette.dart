@@ -7,7 +7,7 @@ abstract final class PrimaryPalette {
   /// Base brand green — buttons, active state indicators, playback progress bar.
   static const Color primary = Color(0xFF1DB954);
 
-  /// Lightened brand green — hover states and gradient end stop.
+  /// Lightened brand green — active icon states on dark surfaces, hover states and gradient end stop.
   static const Color primaryLight = Color(0xFF1ED760);
 
   /// Alias for [primaryLight]; retained for compatibility.

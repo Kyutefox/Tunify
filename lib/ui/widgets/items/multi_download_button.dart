@@ -42,10 +42,10 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
         icon: AppIcon(
           icon: AppIcons.download,
           size: widget.size,
-          color: AppColors.textMuted,
+          color: AppColors.textPrimary,
         ),
         onPressed: null,
-        color: AppColors.textMuted,
+        color: AppColors.textPrimary,
       );
     }
 
@@ -113,7 +113,7 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
             ),
             AppIcon(
               icon: AppIcons.download,
-              color: AppColors.textSecondary,
+              color: AppColors.textPrimary,
               size: widget.iconSize,
             ),
           ],
@@ -123,7 +123,7 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
       icon = AppIcon(
         icon: AppIcons.download,
         size: widget.size,
-        color: AppColors.textMuted,
+        color: AppColors.textPrimary,
       );
     }
 
@@ -137,7 +137,7 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
     return IconButton(
       icon: icon,
       onPressed: onPressed,
-      color: AppColors.textMuted,
+      color: AppColors.textPrimary,
     );
   }
 }

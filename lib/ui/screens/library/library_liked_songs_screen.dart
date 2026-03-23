@@ -97,10 +97,6 @@ class _LibraryLikedSongsScreenState
       ),
       searchField: _SearchInLikedTap(songs: likedSongs),
       bodySlivers: [
-        if (filteredSongs.isNotEmpty)
-          const SliverToBoxAdapter(
-            child: CollectionTrackListHeader(showDurationColumn: true),
-          ),
         if (filteredSongs.isEmpty)
           const SliverFillRemaining(
             hasScrollBody: false,
@@ -123,10 +119,8 @@ class _LibraryLikedSongsScreenState
             delegate: SliverChildBuilderDelegate(
               (context, index) {
                 final song = filteredSongs[index];
-                final originalIndex = likedSongs.indexOf(song) + 1;
                 return _LikedTrackTile(
                   song: song,
-                  index: originalIndex,
                   filteredSongs: filteredSongs,
                 );
               },
@@ -492,32 +486,36 @@ class _LikedActionRow extends ConsumerWidget {
     final canPlay = filteredSongs.isNotEmpty;
     final shuffleEnabled = ref.watch(likedShuffleProvider);
 
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
-      child: Row(
-        children: [
-          AppIconButton(
-            icon: AppIcon(
-              icon: AppIcons.shuffle,
-              size: 24,
-              color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
+    return SizedBox(
+      height: kCollectionActionRowHeight,
+      child: Padding(
+        padding: const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            AppIconButton(
+              icon: AppIcon(
+                icon: AppIcons.shuffle,
+                size: 24,
+                color: shuffleEnabled ? AppColors.primary : AppColors.textPrimary,
+              ),
+              onPressed: canPlay
+                  ? () => ref.read(libraryProvider.notifier).toggleLikedShuffle()
+                  : null,
+              size: 40,
+              iconSize: 24,
             ),
-            onPressed: canPlay
-                ? () => ref.read(libraryProvider.notifier).toggleLikedShuffle()
-                : null,
-            size: 40,
-            iconSize: 24,
-          ),
-          AppIconButton(
-            icon: AppIcon(icon: AppIcons.edit, size: 24, color: AppColors.textMuted),
-            onPressed: onEdit,
-            size: 40,
-            iconSize: 24,
-          ),
-          MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
-          const Spacer(),
-          const SizedBox(width: 56, height: 56),
-        ],
+            AppIconButton(
+              icon: AppIcon(icon: AppIcons.edit, size: 24, color: AppColors.textPrimary),
+              onPressed: onEdit,
+              size: 40,
+              iconSize: 24,
+            ),
+            MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
+            const Spacer(),
+            const SizedBox(width: 56),
+          ],
+        ),
       ),
     );
   }
@@ -704,7 +702,6 @@ class _LikedSearchPageState extends ConsumerState<_LikedSearchPage> {
                   final song = filtered[index];
                   return _LikedTrackTile(
                     song: song,
-                    index: widget.songs.indexOf(song) + 1,
                     filteredSongs: filtered,
                   );
                 },
@@ -742,19 +739,16 @@ class _LikedSearchPageState extends ConsumerState<_LikedSearchPage> {
 class _LikedTrackTile extends ConsumerWidget {
   const _LikedTrackTile({
     required this.song,
-    required this.index,
     required this.filteredSongs,
   });
 
   final Song song;
-  final int index;
   final List<Song> filteredSongs;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return SongListTile(
       song: song,
-      index: index,
       showIndexIndicator: false,
       onTap: () {
         ref.read(playerProvider.notifier).playSong(song,

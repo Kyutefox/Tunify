@@ -752,8 +752,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             ),
       searchField: _SearchInPlaylistTap(songs: songs, playlistId: playlist.id),
       bodySlivers: [
-        if (filteredSongs.isNotEmpty)
-          const SliverToBoxAdapter(child: CollectionTrackListHeader(showDurationColumn: true)),
         if (filteredSongs.isEmpty)
           SliverFillRemaining(
             hasScrollBody: false,
@@ -781,7 +779,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               final song = filteredSongs[i];
               return _TrackTile(
                 song: song,
-                index: songs.indexOf(song) + 1,
                 songs: songs,
                 playlistId: playlist.id,
                 queueSource: widget._isAlbum ? 'album' : 'playlist',
@@ -965,33 +962,39 @@ class _PlaylistActionRow extends ConsumerWidget {
     final shuffleEnabled = disableShuffle ? false : ref.watch(
         libraryProvider.select((s) =>
             s.playlists.where((p) => p.id == playlistId).firstOrNull?.shuffleEnabled ?? false));
-    return Padding(
-      padding: const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
-      child: Row(children: [
-        AppIconButton(
-          icon: AppIcon(icon: AppIcons.shuffle, size: 24,
-              color: shuffleEnabled ? AppColors.primary : AppColors.textMuted),
-          onPressed: filteredSongs.isNotEmpty && !disableShuffle
-              ? () => ref.read(libraryProvider.notifier).togglePlaylistShuffle(playlistId)
-              : null,
-          size: 40, iconSize: 24,
-          color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
+    return SizedBox(
+      height: kCollectionActionRowHeight,
+      child: Padding(
+        padding: const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            AppIconButton(
+              icon: AppIcon(icon: AppIcons.shuffle, size: 24,
+                  color: shuffleEnabled ? AppColors.primary : AppColors.textPrimary),
+              onPressed: filteredSongs.isNotEmpty && !disableShuffle
+                  ? () => ref.read(libraryProvider.notifier).togglePlaylistShuffle(playlistId)
+                  : null,
+              size: 40, iconSize: 24,
+              color: shuffleEnabled ? AppColors.primary : AppColors.textPrimary,
+            ),
+            MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
+            if (showLibraryStatus)
+              AppIconButton(
+                icon: addingToLibrary
+                    ? const SizedBox(width: 22, height: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textMuted))
+                    : AppIcon(
+                        icon: isInLibrary ? AppIcons.checkCircle : AppIcons.addCircleOutline,
+                        size: 24, color: isInLibrary ? AppColors.primary : AppColors.textPrimary),
+                onPressed: (!isInLibrary && !addingToLibrary) ? onAddToLibrary : null,
+                size: 40, iconSize: 24,
+              ),
+            const Spacer(),
+            const SizedBox(width: 56), // placeholder for docking play button
+          ],
         ),
-        MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
-        if (showLibraryStatus)
-          AppIconButton(
-            icon: addingToLibrary
-                ? const SizedBox(width: 22, height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.textMuted))
-                : AppIcon(
-                    icon: isInLibrary ? AppIcons.checkCircle : AppIcons.addCircleOutline,
-                    size: 24, color: isInLibrary ? AppColors.primary : AppColors.textMuted),
-            onPressed: (!isInLibrary && !addingToLibrary) ? onAddToLibrary : null,
-            size: 40, iconSize: 24,
-          ),
-        const Spacer(),
-        const SizedBox(width: 56, height: 56), // placeholder for docking play button
-      ]),
+      ),
     );
   }
 }
@@ -1023,7 +1026,7 @@ class _PlaylistPlayButton extends ConsumerWidget {
             playlistId: playlistId,
             queueSource: collectionType == CollectionType.album ? 'album' : 'playlist');
       } : () {},
-      size: 48, iconSize: 28,
+      size: 56, iconSize: 28,
     );
   }
 }
@@ -1354,8 +1357,7 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
                 padding: const EdgeInsets.only(bottom: AppSpacing.max),
                 itemCount: filtered.length,
                 itemBuilder: (_, i) => _TrackTile(
-                  song: filtered[i], index: widget.songs.indexOf(filtered[i]) + 1,
-                  songs: widget.songs, playlistId: widget.playlistId));
+                  song: filtered[i], songs: widget.songs, playlistId: widget.playlistId));
 
     final page = SharedSearchPage(
       controller: _ctrl, focusNode: _focus,
@@ -1382,11 +1384,10 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
 
 class _TrackTile extends ConsumerWidget {
   const _TrackTile({
-    required this.song, required this.index, required this.songs,
+    required this.song, required this.songs,
     required this.playlistId, this.queueSource = 'playlist', this.isImported = false,
   });
   final Song song;
-  final int index;
   final List<Song> songs;
   final String playlistId, queueSource;
   final bool isImported;
@@ -1394,7 +1395,7 @@ class _TrackTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return SongListTile(
-      song: song, index: index, showIndexIndicator: false,
+      song: song, showIndexIndicator: false,
       onTap: () => ref.read(playerProvider.notifier).playSong(song,
           queue: songs, playlistId: playlistId, queueSource: queueSource),
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [

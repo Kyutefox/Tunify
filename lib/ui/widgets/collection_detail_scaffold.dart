@@ -209,6 +209,14 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
             actionRowKey: _actionRowKey,
             child: widget.playButton!,
           ),
+        if (widget.actionRow != null && _useNewLayout && !widget.isEmpty)
+          _DockingActionRow(
+            scrollController: _scrollController,
+            appBarHeight: appBarHeight,
+            actionRowKey: _actionRowKey,
+            height: widget.actionRowHeight,
+            child: widget.actionRow!,
+          ),
       ],
     );
   }
@@ -244,7 +252,6 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
         child: SizedBox(
           key: _actionRowKey,
           height: widget.actionRowHeight,
-          child: widget.actionRow,
         ),
       ),
       if (widget.pills != null && !widget.isEmpty)
@@ -348,6 +355,110 @@ class _DockingPlayButtonState extends State<_DockingPlayButton> {
       child: widget.child,
     );
   }
+}
+
+/// Mirrors [_DockingPlayButton] but for the action row — absolutely positioned
+/// above the gradient so icons render crisp with no palette bleed.
+class _DockingActionRow extends StatefulWidget {
+  const _DockingActionRow({
+    required this.scrollController,
+    required this.appBarHeight,
+    required this.actionRowKey,
+    required this.height,
+    required this.child,
+  });
+
+  final ScrollController scrollController;
+  final double appBarHeight;
+  final GlobalKey actionRowKey;
+  final double height;
+  final Widget child;
+
+  @override
+  State<_DockingActionRow> createState() => _DockingActionRowState();
+}
+
+class _DockingActionRowState extends State<_DockingActionRow> {
+  final ValueNotifier<double> _topNotifier = ValueNotifier(-1.0);
+  double? _contentTopY;
+
+  @override
+  void initState() {
+    super.initState();
+    _topNotifier.value = widget.appBarHeight + 320.0;
+    widget.scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measure());
+  }
+
+  void _measure() {
+    final ctx = widget.actionRowKey.currentContext;
+    if (ctx == null) return;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final screenTop = box.localToGlobal(Offset.zero).dy;
+    final scroll = widget.scrollController.hasClients ? widget.scrollController.offset : 0.0;
+    _contentTopY = screenTop + scroll;
+    _updatePosition(scroll);
+  }
+
+  void _updatePosition(double scroll) {
+    final contentTop = _contentTopY ?? (widget.appBarHeight + 320.0);
+    final rawTop = contentTop - scroll;
+    _topNotifier.value = rawTop;
+  }
+
+  void _onScroll() {
+    if (!mounted) return;
+    final scroll = widget.scrollController.offset;
+    if (_contentTopY == null) _measure();
+    _updatePosition(scroll);
+  }
+
+  @override
+  void dispose() {
+    widget.scrollController.removeListener(_onScroll);
+    _topNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<double>(
+      valueListenable: _topNotifier,
+      builder: (_, top, child) {
+        // Not yet measured — render at estimated position
+        if (top == -1.0) return const SizedBox.shrink();
+        // Fully scrolled behind appbar — hide
+        if (top + widget.height <= widget.appBarHeight) return const SizedBox.shrink();
+        return Positioned(
+          top: top,
+          left: 0,
+          right: 0,
+          height: widget.height,
+          child: ClipRect(
+            clipper: _TopClipper(
+              clipTop: (widget.appBarHeight - top).clamp(0.0, widget.height),
+            ),
+            child: child!,
+          ),
+        );
+      },
+      child: widget.child,
+    );
+  }
+}
+
+/// Clips [clipTop] pixels from the top of a widget — used to slide the
+/// action row under the appbar as it scrolls up.
+class _TopClipper extends CustomClipper<Rect> {
+  const _TopClipper({required this.clipTop});
+  final double clipTop;
+
+  @override
+  Rect getClip(Size size) => Rect.fromLTWH(0, clipTop, size.width, size.height - clipTop);
+
+  @override
+  bool shouldReclip(_TopClipper old) => old.clipTop != clipTop;
 }
 
 /// Injects [titleKey] into a [CollectionDetailExpandedContent] child.

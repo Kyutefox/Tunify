@@ -17,9 +17,9 @@ abstract final class AppColors {
   static const Color surface = Color(0xFF181818);
   static const Color surfaceElevated = Color(0xFF181818);
   /// surface_card — cards, list tiles
-  static const Color card = Color(0xFF202020);
+  static const Color card = Color(0xFF282828);
   /// surface_hover — hover brighten
-  static const Color surfaceLight = Color(0xFF282828);
+  static const Color surfaceLight = Color(0xFF2A2A2A);
   static const Color surfaceHighlight = Color(0xFF333333);
 
   // ——— Primary / accent (green for active, buttons, playback) ———
@@ -27,6 +27,8 @@ abstract final class AppColors {
   static const Color primaryLight = PrimaryPalette.primaryLight;
   static const Color primaryDark = PrimaryPalette.primaryDark;
   static const Color primaryContainer = PrimaryPalette.primaryContainer;
+  /// Brighter green for active icon states on dark surfaces — more punch than [primary].
+  static const Color primaryIcon = PrimaryPalette.primaryLight;
   static const Color secondary = PrimaryPalette.primaryLight;
   static const Color secondaryLight = PrimaryPalette.primaryLight;
   static const Color accent = PrimaryPalette.primary;
@@ -38,8 +40,8 @@ abstract final class AppColors {
   // ——— Text ———
   static const Color textPrimary = Color(0xFFFFFFFF);
   static const Color textSecondary = Color(0xFFB3B3B3);
-  static const Color textMuted = Color(0xFF535353);
-  static const Color textDisabled = Color(0xFF333333);
+  static const Color textMuted = Color(0xFF9E9E9E);
+  static const Color textDisabled = Color(0xFF727272);
 
   static const Color glassWhite = Color(0x18FFFFFF);
   static const Color glassBlack = Color(0x60000000);

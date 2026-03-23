@@ -240,14 +240,19 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
   Future<void> _fetchImportedPlaylistTracks() async {
     final local = _localPlaylistCache;
-    if (local == null) return;
+    if (local == null) {
+      logWarning('_fetchImportedPlaylistTracks: _localPlaylistCache is null', tag: 'PlaylistScreen');
+      return;
+    }
     final browseId = local.browseId ?? local.id;
+    logInfo('Fetching imported playlist tracks: id=${local.id} browseId=$browseId', tag: 'PlaylistScreen');
     _setLoading();
     try {
       final result = await ref.read(streamManagerProvider).getCollectionTracks(browseId);
       if (!mounted) return;
       final meta = result.metadata.hasData ? result.metadata : null;
       final songs = result.tracks.map(Song.fromTrack).toList();
+      logInfo('Fetched ${songs.length} songs for imported playlist ${local.id}', tag: 'PlaylistScreen');
       setState(() {
         _remoteAsLocal = _makePlaylist(
           id: local.id,
@@ -261,7 +266,10 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         _remoteLoading = false;
       });
       _extractPalette(_remoteAsLocal?.customImageUrl ?? songs.firstOrNull?.thumbnailUrl);
-    } catch (e) { _setError(e); }
+    } catch (e, s) {
+      logError('_fetchImportedPlaylistTracks failed: $e\n$s', tag: 'PlaylistScreen');
+      _setError(e);
+    }
   }
 
   Future<void> _extractPalette(String? imageUrl) async {
@@ -305,30 +313,19 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     if (mounted) setState(() => _addingToLibrary = false);
   }
 
-  Future<void> _deletePlaylistFromEmpty(
-      BuildContext context, String name, String id) async {
-    final ok = await showConfirmDialog(context,
-        title: 'Delete playlist?',
-        message: '$name will be removed from your library.',
-        confirmLabel: 'Delete');
-    if (ok && mounted && context.mounted) {
-      Navigator.of(context).pop();
-      await ref.read(libraryProvider.notifier).deletePlaylist(id);
-    }
-  }
-
   // ── Build ────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    // Cache local playlist and trigger fetches
+    // Keep local cache fresh and trigger imported fetch as soon as provider loads
     if (!widget._isRemotePlaylist && !widget._isAlbum && !widget._isArtist) {
       final local = ref.watch(libraryPlaylistByIdProvider(widget.playlistId));
       _localPlaylistCache = local;
       if (local != null && local.isImported && !_importedFetchTriggered) {
         _importedFetchTriggered = true;
+        // Schedule after frame so we're not calling setState during build
         WidgetsBinding.instance.addPostFrameCallback(
-            (_) { if (mounted) { _fetchImportedPlaylistTracks(); } });
+            (_) { if (mounted) _fetchImportedPlaylistTracks(); });
       } else if (local != null && !local.isImported && _paletteColor == null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) { _extractPalette(local.customImageUrl ??
@@ -337,8 +334,12 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
     }
 
+    // _isRemote is now accurate because _localPlaylistCache is updated above
     if (_isRemote) {
-      if (_remoteLoading) return const LoadingScaffold();
+      // Show loading if actively fetching OR waiting for first fetch result
+      if (_remoteLoading || (_remoteAsLocal == null && _remoteError == null && _importedFetchTriggered)) {
+        return const LoadingScaffold();
+      }
       if (_remoteError != null) {
         return ErrorScaffold(
           message: widget._isArtist ? 'Failed to load artist'
@@ -392,20 +393,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
     return CollectionDetailScaffold(
       isEmpty: songs.isEmpty,
-      paletteColor: _paletteColor,
-      emptyChild: (isImported || widget._isAlbum)
-          ? const SliverFillRemaining(
-              child: Center(child: Text('No songs found',
-                  style: TextStyle(color: AppColors.textMuted))))
-          : SliverFillRemaining(
-              child: _EmptyState(
-                playlistId: playlist.id,
-                playlistName: playlist.name.capitalized,
-                onStartAdding: () => _openAddToPlaylistSheet(
-                    context, playlist.id, playlist.name, () => setState(() {})),
-                onDeletePlaylist: () => _deletePlaylistFromEmpty(
-                    context, playlist.name.capitalized, playlist.id),
-              )),
+      paletteColor: songs.isEmpty ? const Color(0xFF404040) : _paletteColor,
       title: playlist.name.capitalized,
       headerExpandedChild: CollectionDetailExpandedContent(
         cover: _PlaylistCover(songs: songs, imageUrl: coverUrl, isCircle: widget._isArtist),
@@ -422,6 +410,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         onAddToLibrary: _addToLibrary,
         addingToLibrary: _addingToLibrary,
         collectionType: widget.collectionType,
+        onAddSongs: (!isImported && !widget._isAlbum && !widget._isArtist)
+            ? () => _openAddToPlaylistSheet(context, playlist.id, playlist.name, () => setState(() {}))
+            : null,
       ),
       playButton: _PlaylistPlayButton(
         playlistId: playlist.id,
@@ -439,14 +430,27 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             ),
       searchField: _SearchInPlaylistTap(songs: songs, playlistId: playlist.id),
       bodySlivers: [
-        const SliverToBoxAdapter(child: CollectionTrackListHeader(showDurationColumn: true)),
+        if (filteredSongs.isNotEmpty)
+          const SliverToBoxAdapter(child: CollectionTrackListHeader(showDurationColumn: true)),
         if (filteredSongs.isEmpty)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xxl),
-              child: Center(child: Text('No songs',
-                  style: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.9),
-                      fontSize: AppFontSize.base))),
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.xxl),
+                child: Text(
+                  songs.isEmpty
+                      ? (isImported || widget._isAlbum || widget._isArtist
+                          ? 'Nothing here yet — check back soon'
+                          : 'Your playlist is empty.\nAdd songs to get started.')
+                      : 'No songs match your filter',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.textMuted.withValues(alpha: 0.7),
+                    fontSize: AppFontSize.base,
+                  ),
+                ),
+              ),
             ),
           )
         else
@@ -544,9 +548,14 @@ class _PlaylistCover extends StatelessWidget {
     if (songs.isEmpty) {
       return Center(child: Container(
         width: _size, height: _size,
-        decoration: BoxDecoration(color: AppColors.surfaceLight,
-            borderRadius: BorderRadius.circular(AppRadius.sm)),
-        child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted, size: 64)));
+        decoration: BoxDecoration(
+          color: AppColors.surfaceLight,
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 16, offset: const Offset(0, 6))],
+        ),
+        child: Center(child: AppIcon(icon: AppIcons.musicNote,
+            color: AppColors.textMuted, size: 64))));
     }
 
     return Center(
@@ -606,6 +615,7 @@ class _PlaylistActionRow extends ConsumerWidget {
     this.disableShuffle = false, this.showLibraryStatus = false,
     this.isInLibrary = true, this.onAddToLibrary, this.addingToLibrary = false,
     this.collectionType = CollectionType.playlist,
+    this.onAddSongs,
   });
 
   final String playlistId;
@@ -613,9 +623,23 @@ class _PlaylistActionRow extends ConsumerWidget {
   final bool disableShuffle, showLibraryStatus, isInLibrary, addingToLibrary;
   final VoidCallback? onAddToLibrary;
   final CollectionType collectionType;
+  final VoidCallback? onAddSongs; // shown only when empty
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isEmpty = songs.isEmpty;
+
+    // Empty state: only show Add button
+    if (isEmpty && onAddSongs != null) {
+      return Padding(
+        padding: const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
+        child: Row(children: [
+          _Pill(icon: AppIcons.add, label: 'Add songs', onTap: onAddSongs!),
+          const Spacer(),
+        ]),
+      );
+    }
+
     final shuffleEnabled = disableShuffle ? false : ref.watch(
         libraryProvider.select((s) =>
             s.playlists.where((p) => p.id == playlistId).firstOrNull?.shuffleEnabled ?? false));
@@ -1069,44 +1093,6 @@ class _TrackTile extends ConsumerWidget {
         ),
       ]),
     );
-  }
-}
-
-// ─── Empty state ──────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState({
-    required this.playlistId, required this.playlistName,
-    required this.onStartAdding, required this.onDeletePlaylist,
-  });
-  final String playlistId, playlistName;
-  final VoidCallback onStartAdding, onDeletePlaylist;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(child: Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        AppIcon(icon: AppIcons.musicNote, size: 64,
-            color: AppColors.textMuted.withValues(alpha: 0.5)),
-        const SizedBox(height: AppSpacing.xl),
-        const Text('No songs yet', style: TextStyle(color: AppColors.textPrimary,
-            fontSize: AppFontSize.h3, fontWeight: FontWeight.w700)),
-        const SizedBox(height: AppSpacing.sm),
-        Text('Add songs from Now Playing (⋯ → Add to playlist) or from Search.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: AppFontSize.base)),
-        const SizedBox(height: AppSpacing.xl),
-        AppButton(label: 'Start adding songs',
-            icon: AppIcon(icon: AppIcons.add, size: 20, color: AppColors.background),
-            onPressed: onStartAdding,
-            backgroundColor: AppColors.primary, foregroundColor: AppColors.background),
-        const SizedBox(height: AppSpacing.lg),
-        AppButton(label: 'Delete playlist', variant: AppButtonVariant.text,
-            foregroundColor: AppColors.accentRed, onPressed: onDeletePlaylist),
-      ]),
-    ));
   }
 }
 

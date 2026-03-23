@@ -38,6 +38,8 @@ class SqliteCreateController {
         'created_at': map['created_at'],
         'updated_at': map['updated_at'],
         'custom_image_url': map['custom_image_url'],
+        'is_imported': (map['is_imported'] == true) ? 1 : 0,
+        'browse_id': map['browse_id'],
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }

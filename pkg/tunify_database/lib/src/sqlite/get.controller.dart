@@ -35,6 +35,8 @@ class SqliteGetController {
           'created_at': r['created_at'],
           'updated_at': r['updated_at'],
           'custom_image_url': r['custom_image_url'],
+          'is_imported': (r['is_imported'] as int? ?? 0) == 1,
+          'browse_id': r['browse_id'],
         };
       }).toList();
 

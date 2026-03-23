@@ -7,13 +7,11 @@ import 'package:tunify/ui/widgets/button.dart';
 
 const double kCollectionActionRowHeight = 56;
 const double kCollectionSearchRowHeight = 56;
-const double kCollectionShowTitleThreshold = 180;
 
 class CollectionDetailScaffold extends StatefulWidget {
   const CollectionDetailScaffold({
     super.key,
     required this.isEmpty,
-    required this.emptyChild,
     required this.bodySlivers,
     required this.hasSong,
     this.miniPlayerKey,
@@ -26,10 +24,12 @@ class CollectionDetailScaffold extends StatefulWidget {
     this.headerSliver,
     this.paletteColor,
     this.playButton,
+    // legacy — kept for API compat but ignored
+    this.emptyChild,
   });
 
   final bool isEmpty;
-  final Widget emptyChild;
+  final Widget? emptyChild; // unused, kept for compat
   final List<Widget> bodySlivers;
   final bool hasSong;
   final Key? miniPlayerKey;
@@ -52,9 +52,14 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
   final ScrollController _scrollController = ScrollController();
   final ValueNotifier<double> _appBarOpacity = ValueNotifier(0.0);
   final GlobalKey _actionRowKey = GlobalKey();
+  final GlobalKey _titleKey = GlobalKey();
 
-  static const double _fadeStart = 140.0;
-  static const double _fadeEnd = kCollectionShowTitleThreshold;
+  // Scroll offset at which the page title is exactly at the AppBar bottom.
+  // Computed once after first layout; falls back to a safe default until then.
+  double _titleHideOffset = 320.0;
+  bool _titleOffsetMeasured = false;
+
+  static const double _fadeDuration = 40.0; // px over which the fade happens
 
   bool get _useNewLayout =>
       widget.title != null &&
@@ -64,13 +69,35 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
   @override
   void initState() {
     super.initState();
-    if (_useNewLayout) _scrollController.addListener(_onScroll);
+    if (_useNewLayout) {
+      _scrollController.addListener(_onScroll);
+      WidgetsBinding.instance.addPostFrameCallback((_) => _measureTitleOffset());
+    }
+  }
+
+  void _measureTitleOffset() {
+    if (_titleOffsetMeasured) return;
+    final ctx = _titleKey.currentContext;
+    if (ctx == null) return;
+    final box = ctx.findRenderObject() as RenderBox?;
+    if (box == null || !box.hasSize) return;
+    final topPadding = MediaQuery.of(context).padding.top;
+    final appBarBottom = kToolbarHeight + topPadding;
+    // Position of the title's bottom edge in screen coords (at scroll=0)
+    final titleBottom = box.localToGlobal(Offset(0, box.size.height)).dy;
+    // We want the title to be hidden (behind AppBar) when scroll reaches this offset
+    _titleHideOffset = titleBottom - appBarBottom;
+    _titleOffsetMeasured = true;
+    // Re-evaluate opacity in case we're already scrolled
+    _onScroll();
   }
 
   void _onScroll() {
+    if (!_titleOffsetMeasured) _measureTitleOffset();
     final offset = _scrollController.offset;
+    final fadeStart = _titleHideOffset - _fadeDuration;
     final opacity =
-        ((offset - _fadeStart) / (_fadeEnd - _fadeStart)).clamp(0.0, 1.0);
+        ((offset - fadeStart) / _fadeDuration).clamp(0.0, 1.0);
     _appBarOpacity.value = opacity;
   }
 
@@ -137,7 +164,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                               )
                             : const SizedBox.shrink(),
                       ),
-                      centerTitle: false,
+                      centerTitle: true,
                     ),
                   ),
                 )
@@ -163,17 +190,14 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
             child: CustomScrollView(
               controller: _useNewLayout ? _scrollController : null,
               physics: const BouncingScrollPhysics(),
-              slivers: widget.isEmpty
-                  ? [widget.emptyChild]
-                  : _useNewLayout
-                      ? _buildSlivers(appBarHeight, hasPalette)
-                      : [
-                          if (hasPalette)
-                            SliverToBoxAdapter(
-                                child: SizedBox(height: appBarHeight)),
-                          widget.headerSliver!,
-                          ...widget.bodySlivers,
-                        ],
+              slivers: _useNewLayout
+                  ? _buildSlivers(appBarHeight, hasPalette)
+                  : [
+                      if (hasPalette)
+                        SliverToBoxAdapter(child: SizedBox(height: appBarHeight)),
+                      if (widget.headerSliver != null) widget.headerSliver!,
+                      ...widget.bodySlivers,
+                    ],
             ),
           ),
           bottomNavigationBar: widget.hasSong
@@ -185,7 +209,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                 )
               : null,
         ),
-        if (hasPlayButton)
+        if (hasPlayButton && !widget.isEmpty)
           _DockingPlayButton(
             scrollController: _scrollController,
             appBarHeight: appBarHeight,
@@ -216,10 +240,10 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                     ),
                   ),
                 ),
-                widget.headerExpandedChild!,
+                _TitleKeyInjector(titleKey: _titleKey, child: widget.headerExpandedChild!),
               ],
             )
-          : widget.headerExpandedChild!,
+          : _TitleKeyInjector(titleKey: _titleKey, child: widget.headerExpandedChild!),
     );
 
     return [
@@ -233,7 +257,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
           child: widget.actionRow,
         ),
       ),
-      if (widget.pills != null)
+      if (widget.pills != null && !widget.isEmpty)
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(
@@ -245,7 +269,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
         )
       else
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
-      if (widget.searchField != null) ...[
+      if (widget.searchField != null && !widget.isEmpty) ...[
         SliverToBoxAdapter(child: widget.searchField!),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
       ],
@@ -336,18 +360,42 @@ class _DockingPlayButtonState extends State<_DockingPlayButton> {
   }
 }
 
-/// Expanded header content — cover art, title, subtitle.
+/// Injects [titleKey] into a [CollectionDetailExpandedContent] child.
+/// If the child is not a [CollectionDetailExpandedContent], renders it unchanged.
+class _TitleKeyInjector extends StatelessWidget {
+  const _TitleKeyInjector({required this.titleKey, required this.child});
+  final GlobalKey titleKey;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (child is CollectionDetailExpandedContent) {
+      final c = child as CollectionDetailExpandedContent;
+      return CollectionDetailExpandedContent(
+        cover: c.cover,
+        title: c.title,
+        subtitle: c.subtitle,
+        titleKey: titleKey,
+      );
+    }
+    return child;
+  }
+}
+
+
 class CollectionDetailExpandedContent extends StatelessWidget {
   const CollectionDetailExpandedContent({
     super.key,
     required this.cover,
     required this.title,
     this.subtitle,
+    this.titleKey,
   });
 
   final Widget cover;
   final String title;
   final Widget? subtitle;
+  final Key? titleKey;
 
   @override
   Widget build(BuildContext context) {
@@ -362,6 +410,7 @@ class CollectionDetailExpandedContent extends StatelessWidget {
           cover,
           const SizedBox(height: AppSpacing.xl),
           Text(
+            key: titleKey,
             title,
             style: const TextStyle(
               color: AppColors.textPrimary,

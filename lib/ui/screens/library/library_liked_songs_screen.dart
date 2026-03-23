@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -8,16 +9,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/ui/widgets/collection_detail_scaffold.dart';
 import 'package:tunify/ui/widgets/pages/search_page.dart';
 import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/ui/widgets/sheet.dart';
 import 'package:tunify/ui/widgets/confirm_dialog.dart';
 import 'package:tunify/ui/widgets/back_title_app_bar.dart';
 import 'package:tunify/ui/widgets/empty_list_message.dart';
 import 'package:tunify/ui/widgets/items/song_list_tile.dart';
 import 'package:tunify/ui/widgets/items/now_playing_indicator.dart';
 import 'package:tunify/ui/widgets/items/multi_download_button.dart';
+import 'package:tunify/ui/widgets/input_field.dart';
 import '../home/home_shared.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
+import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
@@ -74,17 +78,7 @@ class _LibraryLikedSongsScreenState
 
     return CollectionDetailScaffold(
       isEmpty: isEmpty,
-      paletteColor: () {
-        final base = AppColors.loveThemeColorFor('liked_songs');
-        return PaletteTheme.toPaletteColor(
-          base,
-          lightnessBoost: PaletteTheme.likedLightnessBoost,
-          lightnessMax: PaletteTheme.likedLightnessMax,
-        );
-      }(),
-      emptyChild: const SliverFillRemaining(
-        child: _LikedEmptyState(),
-      ),
+      paletteColor: const Color(0xFFE91E8C),
       title: 'Liked Songs',
       headerExpandedChild: CollectionDetailExpandedContent(
         cover: _LikedCoverWithPalette(songs: likedSongs),
@@ -95,6 +89,7 @@ class _LibraryLikedSongsScreenState
         songs: likedSongs,
         filteredSongs: filteredSongs,
         onEdit: () => _openEditLikedSheet(context, likedSongs),
+        onAddSongs: () => _openAddLikedSheet(context, ref),
       ),
       playButton: _LikedStickyPlayButton(
         songs: likedSongs,
@@ -102,18 +97,21 @@ class _LibraryLikedSongsScreenState
       ),
       searchField: _SearchInLikedTap(songs: likedSongs),
       bodySlivers: [
-        const SliverToBoxAdapter(
-          child: CollectionTrackListHeader(showDurationColumn: true),
-        ),
+        if (filteredSongs.isNotEmpty)
+          const SliverToBoxAdapter(
+            child: CollectionTrackListHeader(showDurationColumn: true),
+          ),
         if (filteredSongs.isEmpty)
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSpacing.xxl),
-              child: Center(
+          const SliverFillRemaining(
+            hasScrollBody: false,
+            child: Center(
+              child: Padding(
+                padding: EdgeInsets.all(AppSpacing.xxl),
                 child: Text(
-                  'No songs',
+                  'Your liked songs will appear here.',
+                  textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppColors.textMuted.withValues(alpha: 0.9),
+                    color: AppColors.textMuted,
                     fontSize: AppFontSize.base,
                   ),
                 ),
@@ -152,6 +150,17 @@ class _LibraryLikedSongsScreenState
     if (h > 0) return '${h}h ${m}min';
     return '${m}min';
   }
+}
+
+void _openAddLikedSheet(BuildContext context, WidgetRef ref) {
+  FocusManager.instance.primaryFocus?.unfocus();
+  // Reuse the recently-played / search sheet by pushing a simple add-song flow.
+  // We show the same sheet used for playlists but wired to liked songs.
+  showAppSheet(
+    context,
+    maxHeight: MediaQuery.of(context).size.height * 0.75,
+    child: _AddToLikedSheet(ref: ref),
+  );
 }
 
 void _openEditLikedSheet(BuildContext context, List<Song> initialSongs) {
@@ -343,57 +352,6 @@ class _EditLikedSheetState extends ConsumerState<_EditLikedSheet> {
   }
 }
 
-class _LikedEmptyState extends StatelessWidget {
-  const _LikedEmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xxl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-              ),
-              child: Center(
-                child: FavouriteIcon(
-                  isLiked: true,
-                  size: 48,
-                  gradient: AppColors.loveThemeGradientFor('liked_songs'),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            const Text(
-              'No liked songs yet',
-              style: TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: AppFontSize.h3,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Tap the heart on any song to add it here',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: AppFontSize.lg,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _LikedCoverWithPalette extends StatelessWidget {
   const _LikedCoverWithPalette({required this.songs});
 
@@ -407,23 +365,19 @@ class _LikedCoverWithPalette extends StatelessWidget {
         child: Container(
           width: size,
           height: size,
-          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.primary.withValues(alpha: 0.3),
-                AppColors.secondary.withValues(alpha: 0.2),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            gradient: AppColors.loveThemeGradientFor('liked_songs'),
             borderRadius: BorderRadius.circular(AppRadius.sm),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFFE91E8C).withValues(alpha: 0.35),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+              ),
+            ],
           ),
-          child: Center(
-            child: FavouriteIcon(
-              isLiked: true,
-              size: 48,
-            ),
+          child: const Center(
+            child: FavouriteIcon(isLiked: true, size: 56, fillColor: Colors.white),
           ),
         ),
       );
@@ -513,14 +467,28 @@ class _LikedActionRow extends ConsumerWidget {
     required this.songs,
     required this.filteredSongs,
     required this.onEdit,
+    this.onAddSongs,
   });
 
   final List<Song> songs;
   final List<Song> filteredSongs;
   final VoidCallback onEdit;
+  final VoidCallback? onAddSongs;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isEmpty = songs.isEmpty;
+
+    if (isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
+        child: Row(children: [
+          _LikedAddPill(onTap: onAddSongs ?? () {}),
+          const Spacer(),
+        ]),
+      );
+    }
+
     final canPlay = filteredSongs.isNotEmpty;
     final shuffleEnabled = ref.watch(likedShuffleProvider);
 
@@ -541,20 +509,42 @@ class _LikedActionRow extends ConsumerWidget {
             iconSize: 24,
           ),
           AppIconButton(
-            icon: AppIcon(
-              icon: AppIcons.edit,
-              size: 24,
-              color: AppColors.textMuted,
-            ),
+            icon: AppIcon(icon: AppIcons.edit, size: 24, color: AppColors.textMuted),
             onPressed: onEdit,
             size: 40,
             iconSize: 24,
           ),
           MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
           const Spacer(),
-          // Transparent placeholder — real play button is the floating overlay
           const SizedBox(width: 56, height: 56),
         ],
+      ),
+    );
+  }
+}
+
+class _LikedAddPill extends StatelessWidget {
+  const _LikedAddPill({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadius.sm),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+        decoration: BoxDecoration(
+          border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.5)),
+          borderRadius: BorderRadius.circular(AppRadius.sm),
+        ),
+        child: Row(mainAxisSize: MainAxisSize.min, children: [
+          AppIcon(icon: AppIcons.add, size: 18, color: AppColors.textSecondary),
+          const SizedBox(width: AppSpacing.xs),
+          const Text('Add songs', style: TextStyle(
+              color: AppColors.textSecondary, fontSize: AppFontSize.md,
+              fontWeight: FontWeight.w500)),
+        ]),
       ),
     );
   }
@@ -794,5 +784,138 @@ class _LikedTrackTile extends ConsumerWidget {
         ],
       ),
     );
+  }
+}
+
+// ─── Add to Liked Sheet ───────────────────────────────────────────────────────
+
+class _AddToLikedSheet extends ConsumerStatefulWidget {
+  const _AddToLikedSheet({required this.ref});
+  final WidgetRef ref;
+
+  @override
+  ConsumerState<_AddToLikedSheet> createState() => _AddToLikedSheetState();
+}
+
+class _AddToLikedSheetState extends ConsumerState<_AddToLikedSheet> {
+  final _searchCtrl = TextEditingController();
+  List<Song> _results = [];
+  bool _searching = false;
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchCtrl.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search(String q) async {
+    if (q.trim().isEmpty) { setState(() { _results = []; _searching = false; }); return; }
+    setState(() => _searching = true);
+    try {
+      final r = await ref.read(playerProvider.notifier).searchSongs(q.trim());
+      if (mounted) setState(() { _results = r; _searching = false; });
+    } catch (_) {
+      if (mounted) setState(() { _results = []; _searching = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final recent = ref.watch(recentlyPlayedProvider);
+    final likedIds = ref.watch(libraryProvider.select(
+        (s) => s.likedSongs.map((e) => e.id).toSet()));
+    final showRecent = _searchCtrl.text.trim().isEmpty;
+    final list = showRecent ? recent : _results;
+
+    return Column(mainAxisSize: MainAxisSize.max, children: [
+      GestureDetector(
+        onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+        behavior: HitTestBehavior.translucent,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: kSheetHorizontalPadding, vertical: AppSpacing.base),
+          child: AppInputField(
+            controller: _searchCtrl,
+            hintText: 'Search YouTube Music',
+            style: InputFieldStyle.filled,
+            prefixIcon: AppIcon(icon: AppIcons.search, color: AppColors.textMuted, size: 20),
+            suffixIcon: _searchCtrl.text.trim().isNotEmpty
+                ? AppIconButton(
+                    icon: AppIcon(icon: AppIcons.clear, size: 24, color: AppColors.textMuted),
+                    onPressed: () { _searchCtrl.clear(); setState(() => _results = []); },
+                    size: 40, iconSize: 24)
+                : null,
+            onChanged: (v) {
+              setState(() {});
+              _debounce?.cancel();
+              _debounce = Timer(const Duration(milliseconds: 350),
+                  () { if (mounted) _search(_searchCtrl.text); });
+            },
+            onSubmitted: _search,
+          ),
+        ),
+      ),
+      if (showRecent)
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
+          child: Align(alignment: Alignment.centerLeft,
+              child: Text('Recently played', style: TextStyle(
+                  color: AppColors.textMuted, fontSize: AppFontSize.sm,
+                  fontWeight: FontWeight.w600))),
+        ),
+      const SizedBox(height: AppSpacing.sm),
+      Expanded(child: _searching
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : list.isEmpty
+              ? Center(child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xl),
+                  child: Text(
+                    showRecent ? 'No recently played songs' : 'No results',
+                    style: const TextStyle(color: AppColors.textMuted),
+                    textAlign: TextAlign.center)))
+              : ListView.builder(
+                  itemCount: list.length,
+                  itemBuilder: (context, i) {
+                    final song = list[i];
+                    final isLiked = likedIds.contains(song.id);
+                    final isNowPlaying = ref.watch(currentSongProvider)?.id == song.id;
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: kSheetHorizontalPadding, vertical: 8),
+                      leading: NowPlayingThumbnail(
+                        isPlaying: isNowPlaying,
+                        isActuallyPlaying: ref.watch(isPlayingProvider),
+                        size: 48,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(AppRadius.xs),
+                          child: CachedNetworkImage(imageUrl: song.thumbnailUrl,
+                              width: 48, height: 48, fit: BoxFit.cover,
+                              errorWidget: (_, __, ___) =>
+                                  AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted, size: 28)),
+                        ),
+                      ),
+                      title: Text(song.title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: isNowPlaying ? AppColors.accent : AppColors.textPrimary)),
+                      subtitle: Text(song.artist, maxLines: 1, overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm)),
+                      trailing: AppIconButton(
+                        icon: AppIcon(
+                          icon: isLiked ? AppIcons.checkCircle : AppIcons.addCircleOutline,
+                          color: isLiked ? AppColors.primary : AppColors.textSecondary,
+                          size: 24),
+                        onPressed: () => ref.read(libraryProvider.notifier).toggleLiked(song),
+                      ),
+                    );
+                  }),
+      ),
+    ]);
   }
 }

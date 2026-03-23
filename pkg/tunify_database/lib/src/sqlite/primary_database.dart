@@ -14,7 +14,7 @@ import 'update.controller.dart';
 /// delegated to get/create/update/delete controllers.
 class PrimaryDatabase {
   static const String _dbName = 'tunify_primary.db';
-  static const int _version = 2;
+  static const int _version = 3;
 
   static final PrimaryDatabase _instance = PrimaryDatabase._internal();
   factory PrimaryDatabase() => _instance;
@@ -54,7 +54,9 @@ class PrimaryDatabase {
         songs text not null default '[]',
         created_at text not null,
         updated_at text not null,
-        custom_image_url text
+        custom_image_url text,
+        is_imported integer not null default 0,
+        browse_id text
       )
     ''');
     await db.execute('''
@@ -86,6 +88,10 @@ class PrimaryDatabase {
     if (oldVersion < 2) {
       await db.execute('ALTER TABLE playlists ADD COLUMN custom_image_url TEXT');
       await _createController.runOnUpgrade(db, oldVersion, newVersion);
+    }
+    if (oldVersion < 3) {
+      await db.execute('ALTER TABLE playlists ADD COLUMN is_imported INTEGER NOT NULL DEFAULT 0');
+      await db.execute('ALTER TABLE playlists ADD COLUMN browse_id TEXT');
     }
   }
 

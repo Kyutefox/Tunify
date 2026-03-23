@@ -765,6 +765,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               playlist: playlist,
               onPlaylistUpdated: () => setState(() {}),
               showNameDetails: !isLiked,
+              isEmpty: songs.isEmpty,
             ),
       searchField: _SearchInPlaylistTap(songs: songs, playlistId: playlist.id),
       bodySlivers: [
@@ -1063,13 +1064,14 @@ class _CollectionPlayButton extends ConsumerWidget {
 class _PlaylistPillRow extends ConsumerWidget {
   const _PlaylistPillRow({
     required this.playlistId, required this.playlist, required this.onPlaylistUpdated,
-    this.showNameDetails = true,
+    this.showNameDetails = true, this.isEmpty = false,
   });
 
   final String playlistId;
   final LibraryPlaylist playlist;
   final VoidCallback onPlaylistUpdated;
   final bool showNameDetails;
+  final bool isEmpty;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1080,16 +1082,18 @@ class _PlaylistPillRow extends ConsumerWidget {
         child: Row(children: [
           _Pill(icon: AppIcons.add, label: 'Add',
               onTap: () => _openAddSongsSheet(context, playlistId, playlistName: playlist.name, onAdded: onPlaylistUpdated)),
-          const SizedBox(width: AppSpacing.sm),
-          _Pill(icon: AppIcons.edit, label: 'Edit',
-              onTap: () => _openEditSongsSheet(context, playlistId, playlist.songs)),
-          const SizedBox(width: AppSpacing.sm),
-          _Pill(icon: AppIcons.sort, label: 'Sort',
-              onTap: () => _openSortSheet(context, playlistId, playlist)),
-          if (showNameDetails) ...[
+          if (!isEmpty) ...[
             const SizedBox(width: AppSpacing.sm),
-            _Pill(icon: AppIcons.editNote, label: 'Name & details',
-                onTap: () => _openNameAndDetailsSheet(context, playlistId, playlist)),
+            _Pill(icon: AppIcons.edit, label: 'Edit',
+                onTap: () => _openEditSongsSheet(context, playlistId, playlist.songs)),
+            const SizedBox(width: AppSpacing.sm),
+            _Pill(icon: AppIcons.sort, label: 'Sort',
+                onTap: () => _openSortSheet(context, playlistId, playlist)),
+            if (showNameDetails) ...[
+              const SizedBox(width: AppSpacing.sm),
+              _Pill(icon: AppIcons.editNote, label: 'Name & details',
+                  onTap: () => _openNameAndDetailsSheet(context, playlistId, playlist)),
+            ],
           ],
         ]),
       ),

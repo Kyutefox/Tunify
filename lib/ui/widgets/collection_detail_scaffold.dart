@@ -254,7 +254,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
           height: widget.actionRowHeight,
         ),
       ),
-      if (widget.pills != null && !widget.isEmpty)
+      if (widget.pills != null)
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(

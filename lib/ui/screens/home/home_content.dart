@@ -264,9 +264,7 @@ class _DynamicSectionsSliceState extends ConsumerState<_DynamicSectionsSlice> {
               playlists: filtered[idx].playlists,
               artists: filtered[idx].artists,
               onPlay: widget.onPlay,
-              pageController: filtered[idx].type != HomeSectionType.songs
-                  ? _ctrlFor(idx)
-                  : null,
+              pageController: _ctrlFor(idx),
               isDesktop: isDesktop,
             ),
           ),
@@ -323,16 +321,20 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav>
     super.dispose();
   }
 
-  bool _hasOverflow(int cols) {
-    if (widget.type == HomeSectionType.playlists) return widget.playlists.length > cols;
-    if (widget.type == HomeSectionType.artists) return widget.artists.length > cols;
+  bool _hasOverflow(ContentLayout layout) {
+    if (widget.type == HomeSectionType.songs) return widget.songs.length > layout.cols * 4;
+    if (widget.type == HomeSectionType.playlists) return widget.playlists.length > layout.cols;
+    if (widget.type == HomeSectionType.artists) return widget.artists.length > layout.cols;
     return false;
   }
 
   @override
   Widget build(BuildContext context) {
-    final layout = ContentLayout.of(context, ref);
-    final showNav = widget.pageController != null && _hasOverflow(layout.cols);
+    // Use itemWidth: 200 for songs to match QuickPicksRow's column calculation exactly.
+    final layout = widget.type == HomeSectionType.songs
+        ? ContentLayout.of(context, ref, itemWidth: 200)
+        : ContentLayout.of(context, ref);
+    final showNav = _hasOverflow(layout);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -360,7 +362,7 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav>
           ),
         ),
         if (widget.type == HomeSectionType.songs)
-          QuickPicksRow(songs: widget.songs, onPlay: widget.onPlay),
+          QuickPicksRow(songs: widget.songs, onPlay: widget.onPlay, pageController: _ctrl),
         if (widget.type == HomeSectionType.playlists)
           PlaylistsRow(playlists: widget.playlists, pageController: _ctrl),
         if (widget.type == HomeSectionType.artists)

@@ -166,7 +166,11 @@ class _QuickPicksRowState extends ConsumerState<QuickPicksRow> with PagedSection
 
     final totalGap = gap * (layout.cols - 1);
     final tileW = ((layout.maxWidth - totalGap) / layout.cols).floorToDouble();
-    final gridH = tileH * maxRows + gap * (maxRows - 1);
+    // Size grid height to actual rows shown, capped at maxRows.
+    final actualRows = ((gridItems.length / layout.cols).ceil()).clamp(1, maxRows);
+    final gridH = tileH * actualRows + gap * (actualRows - 1);
+    // Overflow page always uses full maxRows height for consistent pager size.
+    final fullGridH = tileH * maxRows + gap * (maxRows - 1);
 
     List<List<Song>> toRows(List<Song> items) {
       final rows = <List<Song>>[];
@@ -176,39 +180,50 @@ class _QuickPicksRowState extends ConsumerState<QuickPicksRow> with PagedSection
       return rows;
     }
 
-    Widget buildGrid(List<Song> items) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var r = 0; r < toRows(items).length; r++) ...[
-              if (r > 0) const SizedBox(height: gap),
-              Row(
-                children: [
-                  for (var c = 0; c < toRows(items)[r].length; c++) ...[
-                    if (c > 0) const SizedBox(width: gap),
-                    SizedBox(
-                      width: tileW,
-                      height: tileH,
-                      child: QuickPickTile(
-                        song: toRows(items)[r][c],
-                        height: tileH,
+    Widget buildGrid(List<Song> items) {
+      final rows = toRows(items.take(pageSize).toList());
+      final h = hasOverflow ? fullGridH : gridH;
+      return SizedBox(
+        height: h,
+        child: OverflowBox(
+          maxHeight: double.infinity,
+          alignment: Alignment.topCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var r = 0; r < rows.length; r++) ...[
+                if (r > 0) const SizedBox(height: gap),
+                Row(
+                  children: [
+                    for (var c = 0; c < rows[r].length; c++) ...[
+                      if (c > 0) const SizedBox(width: gap),
+                      SizedBox(
                         width: tileW,
-                        onTap: () => widget.onPlay(toRows(items)[r][c]),
+                        height: tileH,
+                        child: QuickPickTile(
+                          song: rows[r][c],
+                          height: tileH,
+                          width: tileW,
+                          onTap: () => widget.onPlay(rows[r][c]),
+                        ),
                       ),
-                    ),
+                    ],
                   ],
-                ],
-              ),
+                ),
+              ],
             ],
-          ],
-        );
+          ),
+        ),
+      );
+    }
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: layout.hPad),
       child: hasOverflow
           ? _StablePager(
-              height: gridH,
+              height: fullGridH,
               controller: _ctrl,
-              pages: [buildGrid(gridItems), SizedBox(height: gridH, child: buildGrid(overflowItems))],
+              pages: [buildGrid(gridItems), buildGrid(overflowItems)],
             )
           : buildGrid(gridItems),
     );
@@ -355,46 +370,41 @@ class _PlaylistsRowState extends ConsumerState<PlaylistsRow> with PagedSectionMi
       return rows;
     }
 
-    Widget buildGrid() {
-      final gridRows = toRows(pageItems);
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var r = 0; r < gridRows.length; r++) ...[
-            if (r > 0) const SizedBox(height: gap),
-            Row(
-              children: [
-                for (var c = 0; c < gridRows[r].length; c++) ...[
-                  if (c > 0) const SizedBox(width: gap),
-                  SizedBox(
-                    width: tileW,
-                    child: BrowsePlaylistCard(playlist: gridRows[r][c], size: tileW),
-                  ),
-                ],
+    Widget buildGrid(List<Playlist> items) {
+      final gridRows = toRows(items.take(pageSize).toList());
+      return SizedBox(
+        height: gridH,
+        child: OverflowBox(
+          maxHeight: double.infinity,
+          alignment: Alignment.topCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var r = 0; r < gridRows.length; r++) ...[
+                if (r > 0) const SizedBox(height: gap),
+                Row(
+                  children: [
+                    for (var c = 0; c < gridRows[r].length; c++) ...[
+                      if (c > 0) const SizedBox(width: gap),
+                      SizedBox(
+                        width: tileW,
+                        child: BrowsePlaylistCard(playlist: gridRows[r][c], size: tileW),
+                      ),
+                    ],
+                  ],
+                ),
               ],
-            ),
-          ],
-        ],
+            ],
+          ),
+        ),
       );
     }
-
-    Widget buildOverflow() => SizedBox(
-          height: gridH,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: overflowItems.length,
-            separatorBuilder: (_, __) => const SizedBox(width: gap),
-            itemBuilder: (_, i) =>
-                SizedBox(width: tileW, child: BrowsePlaylistCard(playlist: overflowItems[i], size: tileW)),
-          ),
-        );
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: layout.hPad),
       child: hasOverflow
-          ? _StablePager(height: gridH, controller: _ctrl, pages: [buildGrid(), buildOverflow()])
-          : buildGrid(),
+          ? _StablePager(height: gridH, controller: _ctrl, pages: [buildGrid(pageItems), buildGrid(overflowItems)])
+          : buildGrid(pageItems),
     );
   }
 }
@@ -570,55 +580,46 @@ class _ArtistsRowState extends ConsumerState<ArtistsRow> with PagedSectionMixin 
       return rows;
     }
 
-    Widget buildGrid() {
-      final gridRows = toRows(pageItems);
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var r = 0; r < gridRows.length; r++) ...[
-            if (r > 0) const SizedBox(height: gap),
-            Row(
-              children: [
-                for (var c = 0; c < gridRows[r].length; c++) ...[
-                  if (c > 0) const SizedBox(width: gap),
-                  SizedBox(
-                    width: itemW,
-                    height: rowH,
-                    // Use ArtistAvatar with compact:true — replaces HomeArtistAvatar
-                    child: ArtistAvatar(
-                      artist: gridRows[r][c],
-                      size: avatarSize,
-                      compact: true,
-                    ),
-                  ),
-                ],
+    Widget buildGrid(List<Artist> items) {
+      final gridRows = toRows(items.take(pageSize).toList());
+      return SizedBox(
+        height: gridH,
+        child: OverflowBox(
+          maxHeight: double.infinity,
+          alignment: Alignment.topCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var r = 0; r < gridRows.length; r++) ...[
+                if (r > 0) const SizedBox(height: gap),
+                Row(
+                  children: [
+                    for (var c = 0; c < gridRows[r].length; c++) ...[
+                      if (c > 0) const SizedBox(width: gap),
+                      SizedBox(
+                        width: itemW,
+                        height: rowH,
+                        child: ArtistAvatar(
+                          artist: gridRows[r][c],
+                          size: avatarSize,
+                          compact: true,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
-            ),
-          ],
-        ],
+            ],
+          ),
+        ),
       );
     }
-
-    Widget buildOverflow() => SizedBox(
-          height: gridH,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            itemCount: overflowItems.length,
-            separatorBuilder: (_, __) => const SizedBox(width: gap),
-            itemBuilder: (_, i) => SizedBox(
-              width: itemW,
-              height: rowH,
-              child: ArtistAvatar(artist: overflowItems[i], size: avatarSize, compact: true),
-            ),
-          ),
-        );
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: layout.hPad),
       child: hasOverflow
-          ? _StablePager(height: gridH, controller: _ctrl, pages: [buildGrid(), buildOverflow()])
-          : buildGrid(),
+          ? _StablePager(height: gridH, controller: _ctrl, pages: [buildGrid(pageItems), buildGrid(overflowItems)])
+          : buildGrid(pageItems),
     );
   }
 }

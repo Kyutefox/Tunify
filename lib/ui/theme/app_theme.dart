@@ -25,28 +25,29 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: GoogleFonts.plusJakartaSans(
+        titleTextStyle: GoogleFonts.poppins(
           textStyle: AppTextStyle.screenTitle,
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
-      textTheme: GoogleFonts.plusJakartaSansTextTheme(TextTheme(
-        displayLarge: AppTextStyle.display1,
-        displayMedium: AppTextStyle.display2,
-        displaySmall: AppTextStyle.display3,
-        headlineLarge: AppTextStyle.h1,
-        headlineMedium: AppTextStyle.h3,
-        headlineSmall: AppTextStyle.screenTitle,
-        titleLarge: AppTextStyle.titleBase,
-        titleMedium: AppTextStyle.titleLg,
-        titleSmall: AppTextStyle.labelLg,
-        bodyLarge: AppTextStyle.bodyLg,
-        bodyMedium: AppTextStyle.bodyBase,
-        bodySmall: AppTextStyle.caption,
-        labelLarge: AppTextStyle.labelLg,
-        labelMedium: AppTextStyle.labelBase,
-        labelSmall: AppTextStyle.labelSm,
-      )),
+      // Poppins for display/headline/title roles; Inter for body/label roles.
+      textTheme: TextTheme(
+        displayLarge:  GoogleFonts.poppins(textStyle: AppTextStyle.display1),
+        displayMedium: GoogleFonts.poppins(textStyle: AppTextStyle.display2),
+        displaySmall:  GoogleFonts.poppins(textStyle: AppTextStyle.display3),
+        headlineLarge: GoogleFonts.poppins(textStyle: AppTextStyle.h1),
+        headlineMedium: GoogleFonts.poppins(textStyle: AppTextStyle.h3),
+        headlineSmall: GoogleFonts.poppins(textStyle: AppTextStyle.screenTitle),
+        titleLarge:  GoogleFonts.poppins(textStyle: AppTextStyle.titleBase),
+        titleMedium: GoogleFonts.poppins(textStyle: AppTextStyle.titleLg),
+        titleSmall:  GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
+        bodyLarge:   GoogleFonts.inter(textStyle: AppTextStyle.bodyLg),
+        bodyMedium:  GoogleFonts.inter(textStyle: AppTextStyle.bodyBase),
+        bodySmall:   GoogleFonts.inter(textStyle: AppTextStyle.caption),
+        labelLarge:  GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
+        labelMedium: GoogleFonts.inter(textStyle: AppTextStyle.labelBase),
+        labelSmall:  GoogleFonts.inter(textStyle: AppTextStyle.labelSm),
+      ),
       iconTheme: const IconThemeData(color: AppColors.textSecondary),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.background,
@@ -54,13 +55,13 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return GoogleFonts.plusJakartaSans(
+            return GoogleFonts.inter(
               fontSize: AppFontSize.xs,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             );
           }
-          return GoogleFonts.plusJakartaSans(
+          return GoogleFonts.inter(
             fontSize: AppFontSize.xs,
             fontWeight: FontWeight.w500,
             color: AppColors.textMuted,
@@ -109,7 +110,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppRadius.input),
           borderSide: const BorderSide(color: AppColors.accentRed),
         ),
-        errorStyle: GoogleFonts.plusJakartaSans(
+        errorStyle: GoogleFonts.inter(
           color: AppColors.accentRed,
           fontSize: AppFontSize.sm,
         ),

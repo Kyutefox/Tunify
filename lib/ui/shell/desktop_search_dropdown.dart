@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/core/utils/debouncer.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
-import '../screens/search_screen.dart';
+import 'package:tunify/ui/screens/search/search_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 
@@ -30,8 +31,7 @@ class DesktopSearchDropdown extends ConsumerStatefulWidget {
       _DesktopSearchDropdownState();
 }
 
-class _DesktopSearchDropdownState
-    extends ConsumerState<DesktopSearchDropdown> {
+class _DesktopSearchDropdownState extends ConsumerState<DesktopSearchDropdown> {
   late final _suggestionsDebouncer =
       Debouncer(const Duration(milliseconds: 220));
 
@@ -130,4 +130,3 @@ class _DesktopSearchDropdownState
     );
   }
 }
-

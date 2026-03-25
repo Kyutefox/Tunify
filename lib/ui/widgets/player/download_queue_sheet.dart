@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/ui/widgets/sheet.dart' show showAppDraggableSheet, kSheetHorizontalPadding;
+import 'package:tunify/ui/widgets/common/sheet.dart' show showAppDraggableSheet, kSheetHorizontalPadding;
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/downloads/download_service.dart';

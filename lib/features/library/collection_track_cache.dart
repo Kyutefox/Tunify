@@ -7,13 +7,13 @@ class CollectionTrackCache {
   CollectionTrackCache._();
   static final CollectionTrackCache instance = CollectionTrackCache._();
 
-  final Map<String, _CacheEntry> _cache = {};
+  final Map<String, CacheEntry> _cache = {};
 
   /// How long a cached entry stays fresh before a background refresh is triggered.
   static const Duration ttl = Duration(minutes: 30);
 
   /// Returns the full entry for [id], or null if not cached / expired.
-  _CacheEntry? getEntry(String id) {
+  CacheEntry? getEntry(String id) {
     final entry = _cache[id];
     if (entry == null) return null;
     if (DateTime.now().difference(entry.cachedAt) > ttl) {
@@ -32,7 +32,7 @@ class CollectionTrackCache {
   /// Stores songs (and optionally palette + imageUrl) for [id].
   void put(String id, List<Song> songs, {Color? paletteColor, String? imageUrl}) {
     final existing = _cache[id];
-    _cache[id] = _CacheEntry(
+    _cache[id] = CacheEntry(
       songs: songs,
       cachedAt: DateTime.now(),
       // Keep existing palette/image if not provided (e.g. songs refreshed before palette extracted)
@@ -45,7 +45,7 @@ class CollectionTrackCache {
   void updatePalette(String id, Color paletteColor) {
     final existing = _cache[id];
     if (existing == null) return;
-    _cache[id] = _CacheEntry(
+    _cache[id] = CacheEntry(
       songs: existing.songs,
       cachedAt: existing.cachedAt,
       paletteColor: paletteColor,
@@ -60,8 +60,8 @@ class CollectionTrackCache {
   void clear() => _cache.clear();
 }
 
-class _CacheEntry {
-  const _CacheEntry({
+class CacheEntry {
+  const CacheEntry({
     required this.songs,
     required this.cachedAt,
     this.paletteColor,

@@ -16,17 +16,21 @@ abstract final class DesktopSpacing {
 }
 
 abstract final class DesktopFontSize {
-  static const double micro = 11.0;
-  static const double xs    = 12.0;
-  static const double sm    = 13.0;
-  static const double md    = 14.0;
-  static const double base  = 15.0;
-  static const double lg    = 16.0;
-  static const double xl    = 17.0;
-  static const double xxl   = 20.0;
-  static const double h3    = 22.0;
-  static const double h2    = 24.0;
-  static const double h1    = 28.0;
+  static const double micro    = 11.0;
+  static const double xs       = 12.0;
+  static const double sm       = 13.0;
+  static const double md       = 14.0;
+  static const double base     = 15.0;
+  static const double lg       = 16.0;
+  static const double xl       = 17.0;
+  static const double xxl      = 20.0;
+  static const double h3       = 22.0;
+  static const double h2       = 24.0;
+  static const double h1       = 28.0;
+  static const double display3 = 32.0; // collection titles
+  static const double display2 = 40.0; // large display
+  static const double display1 = 52.0; // hero display
+  static const double hero     = 60.0; // welcome / splash
 }
 
 abstract final class DesktopIconSize {
@@ -93,8 +97,13 @@ class _FontTokens {
     required this.h3,
     required this.h2,
     required this.h1,
+    required this.display3,
+    required this.display2,
+    required this.display1,
+    required this.hero,
   });
   final double micro, xs, sm, md, base, lg, xl, xxl, h3, h2, h1;
+  final double display3, display2, display1, hero;
 }
 
 class _IconTokens {
@@ -121,14 +130,18 @@ class _TypographyTokens {
   const _TypographyTokens({
     required this.titleWeight,
     required this.bodyWeight,
-    required this.headingLetterSpacing,
+    required this.headingLetterSpacingLg,
+    required this.headingLetterSpacingSm,
     required this.bodyLineHeight,
     required this.secondaryColor,
     required this.mutedColor,
   });
   final FontWeight titleWeight;
   final FontWeight bodyWeight;
-  final double headingLetterSpacing;
+  /// For h1 / h2 — tighter, more impactful
+  final double headingLetterSpacingLg;
+  /// For h3 and below — relaxed enough to avoid cramping
+  final double headingLetterSpacingSm;
   final double bodyLineHeight;
   final Color secondaryColor;
   final Color mutedColor;
@@ -145,10 +158,15 @@ class AppTokens {
   });
 
   final bool isDesktop;
+  // ignore: library_private_types_in_public_api
   final _SpacingTokens spacing;
+  // ignore: library_private_types_in_public_api
   final _FontTokens font;
+  // ignore: library_private_types_in_public_api
   final _IconTokens icon;
+  // ignore: library_private_types_in_public_api
   final _ButtonTokens button;
+  // ignore: library_private_types_in_public_api
   final _TypographyTokens typography;
 
   /// Shorthand for secondary text color (desktop: #888, mobile: #B3B3B3)
@@ -168,24 +186,29 @@ class AppTokens {
       xxl:  AppSpacing.xxl,
     ),
     font: _FontTokens(
-      micro: AppFontSize.micro,
-      xs:    AppFontSize.xs,
-      sm:    AppFontSize.sm,
-      md:    AppFontSize.md,
-      base:  AppFontSize.base,
-      lg:    AppFontSize.lg,
-      xl:    AppFontSize.xl,
-      xxl:   AppFontSize.xxl,
-      h3:    AppFontSize.h3,
-      h2:    AppFontSize.h2,
-      h1:    AppFontSize.h1,
+      micro:    AppFontSize.micro,
+      xs:       AppFontSize.xs,
+      sm:       AppFontSize.sm,
+      md:       AppFontSize.md,
+      base:     AppFontSize.base,
+      lg:       AppFontSize.lg,
+      xl:       AppFontSize.xl,
+      xxl:      AppFontSize.xxl,
+      h3:       AppFontSize.h3,
+      h2:       AppFontSize.h2,
+      h1:       AppFontSize.h1,
+      display3: AppFontSize.display3,
+      display2: AppFontSize.display2,
+      display1: AppFontSize.display1,
+      hero:     AppFontSize.hero,
     ),
     icon: _IconTokens(xs: 14, sm: 16, md: 20, lg: 24, xl: 28),
     button: _ButtonTokens(sm: 32, md: 40, lg: 48),
     typography: _TypographyTokens(
       titleWeight: FontWeight.w600,
       bodyWeight: FontWeight.w400,
-      headingLetterSpacing: -0.3,
+      headingLetterSpacingLg: -0.3,
+      headingLetterSpacingSm: -0.1,
       bodyLineHeight: 1.3,
       secondaryColor: AppColors.textSecondary,
       mutedColor: AppColors.textMuted,
@@ -204,17 +227,21 @@ class AppTokens {
       xxl:  DesktopSpacing.xxl,
     ),
     font: _FontTokens(
-      micro: DesktopFontSize.micro,
-      xs:    DesktopFontSize.xs,
-      sm:    DesktopFontSize.sm,
-      md:    DesktopFontSize.md,
-      base:  DesktopFontSize.base,
-      lg:    DesktopFontSize.lg,
-      xl:    DesktopFontSize.xl,
-      xxl:   DesktopFontSize.xxl,
-      h3:    DesktopFontSize.h3,
-      h2:    DesktopFontSize.h2,
-      h1:    DesktopFontSize.h1,
+      micro:    DesktopFontSize.micro,
+      xs:       DesktopFontSize.xs,
+      sm:       DesktopFontSize.sm,
+      md:       DesktopFontSize.md,
+      base:     DesktopFontSize.base,
+      lg:       DesktopFontSize.lg,
+      xl:       DesktopFontSize.xl,
+      xxl:      DesktopFontSize.xxl,
+      h3:       DesktopFontSize.h3,
+      h2:       DesktopFontSize.h2,
+      h1:       DesktopFontSize.h1,
+      display3: DesktopFontSize.display3,
+      display2: DesktopFontSize.display2,
+      display1: DesktopFontSize.display1,
+      hero:     DesktopFontSize.hero,
     ),
     icon: _IconTokens(
       xs: DesktopIconSize.xs,
@@ -230,8 +257,9 @@ class AppTokens {
     ),
     typography: _TypographyTokens(
       titleWeight: FontWeight.w700,
-      bodyWeight: FontWeight.w500,
-      headingLetterSpacing: -0.8,
+      bodyWeight: FontWeight.w400,
+      headingLetterSpacingLg: -0.8,
+      headingLetterSpacingSm: -0.4,
       bodyLineHeight: 1.45,
       secondaryColor: AppColors.desktopTextSecondary,
       mutedColor: AppColors.desktopTextMuted,

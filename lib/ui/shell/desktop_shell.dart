@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
-import 'package:tunify/ui/widgets/create_library_options.dart';
-import 'package:tunify/ui/widgets/sections/mood_section.dart';
+import 'package:tunify/ui/screens/library/create_library_options.dart';
+import 'package:tunify/ui/widgets/common/mood_section.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/screens/home/home_screen.dart';
 import 'package:tunify/ui/screens/library/create_library_item_screen.dart';
-import '../screens/library_screen.dart';
-import '../screens/search_screen.dart';
+import 'package:tunify/ui/screens/library/library_screen.dart';
+import 'package:tunify/ui/screens/search/search_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
@@ -57,10 +57,12 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
   late final Animation<Offset> _sidebarSlide = Tween<Offset>(
     begin: const Offset(1.0, 0.0),
     end: Offset.zero,
-  ).animate(CurvedAnimation(parent: _sidebarAnim, curve: Curves.easeInOutCubic));
+  ).animate(
+      CurvedAnimation(parent: _sidebarAnim, curve: Curves.easeInOutCubic));
 
   // Track whether the sidebar is logically open so we can snap layout width.
   bool _sidebarOpen = false;
+
   /// 0 = Home · 1 = Search (unused on desktop) · 2 = Library
   int _selectedIndex = 0;
 
@@ -80,15 +82,13 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
 
   /// Rebuilds the shell whenever the nested Navigator pushes/pops so that
   /// [_canGoBack] / [_canGoForward] stay accurate in the top bar.
-  late final _ContentNavObserver _contentNavObserver =
-      _ContentNavObserver(() {
-        SchedulerBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() {});
-        });
-      });
+  late final _ContentNavObserver _contentNavObserver = _ContentNavObserver(() {
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() {});
+    });
+  });
 
-  bool get _contentCanPop =>
-      _contentNavKey.currentState?.canPop() ?? false;
+  bool get _contentCanPop => _contentNavKey.currentState?.canPop() ?? false;
 
   bool get _canGoBack => _contentCanPop || _history.length > 1;
 
@@ -241,96 +241,96 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
               padding: const EdgeInsets.fromLTRB(_gap, 0, _gap, _gap),
               child: Column(
                 children: [
-              // ── Nav bar — no card, content floats on canvas ─────────────
-              DesktopTopBar(
-                selectedIndex: _selectedIndex,
-                canGoBack: _canGoBack,
-                canGoForward: _canGoForward,
-                onBack: _goBack,
-                onForward: _goForward,
-                onHomePressed: () => _navigateTo(0),
-                onSearchActivated: (_) => _openSearchOverlay(),
-                searchController: _searchController,
-                searchFocusNode: _searchFocusNode,
-                sidebarWidth: kDesktopSidebarWidth,
-                isSearchOverlayOpen: _searchOverlayOpen,
-                onBrowsePressed: _openBrowse,
-              ),
+                  // ── Nav bar — no card, content floats on canvas ─────────────
+                  DesktopTopBar(
+                    selectedIndex: _selectedIndex,
+                    canGoBack: _canGoBack,
+                    canGoForward: _canGoForward,
+                    onBack: _goBack,
+                    onForward: _goForward,
+                    onHomePressed: () => _navigateTo(0),
+                    onSearchActivated: (_) => _openSearchOverlay(),
+                    searchController: _searchController,
+                    searchFocusNode: _searchFocusNode,
+                    sidebarWidth: kDesktopSidebarWidth,
+                    isSearchOverlayOpen: _searchOverlayOpen,
+                    onBrowsePressed: _openBrowse,
+                  ),
 
-              const SizedBox(height: 2),
+                  const SizedBox(height: 2),
 
-              // ── Middle row: sidebar + main content ─────────────────────────
-              Expanded(
-                child: Row(
-                  children: [
-                    // Sidebar — elevated surface panel
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(_radius),
-                      child: DesktopSidebar(
-                        onCreatePlaylist: () => _showCreateDialog(
-                            CreateLibraryItemMode.createPlaylist),
-                        onCreateFolder: () => _showCreateDialog(
-                            CreateLibraryItemMode.createFolder),
-                        onNavigateTo: _pushDetail,
-                      ),
-                    ),
+                  // ── Middle row: sidebar + main content ─────────────────────────
+                  Expanded(
+                    child: Row(
+                      children: [
+                        // Sidebar — elevated surface panel
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(_radius),
+                          child: DesktopSidebar(
+                            onCreatePlaylist: () => _showCreateDialog(
+                                CreateLibraryItemMode.createPlaylist),
+                            onCreateFolder: () => _showCreateDialog(
+                                CreateLibraryItemMode.createFolder),
+                            onNavigateTo: _pushDetail,
+                          ),
+                        ),
 
-                    const SizedBox(width: _gap),
+                        const SizedBox(width: _gap),
 
-                    // Main content — elevated surface panel
-                    Expanded(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(_radius),
-                        child: ColoredBox(
-                          color: AppColors.desktopSurface,
-                          child: Navigator(
-                            key: _contentNavKey,
-                            observers: [_contentNavObserver],
-                            onGenerateRoute: (_) => MaterialPageRoute<void>(
-                              builder: (_) => ValueListenableBuilder<int>(
-                                valueListenable: _tabIndexNotifier,
-                                builder: (_, idx, __) => IndexedStack(
-                                  index: idx,
-                                  children: const [
-                                    HomeScreen(),
-                                    SearchScreen(),
-                                    LibraryScreen(),
-                                    _BrowsePage(),
-                                  ],
+                        // Main content — elevated surface panel
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(_radius),
+                            child: ColoredBox(
+                              color: AppColors.desktopSurface,
+                              child: Navigator(
+                                key: _contentNavKey,
+                                observers: [_contentNavObserver],
+                                onGenerateRoute: (_) => MaterialPageRoute<void>(
+                                  builder: (_) => ValueListenableBuilder<int>(
+                                    valueListenable: _tabIndexNotifier,
+                                    builder: (_, idx, __) => IndexedStack(
+                                      index: idx,
+                                      children: const [
+                                        HomeScreen(),
+                                        SearchScreen(),
+                                        LibraryScreen(),
+                                        _BrowsePage(),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
 
-                    // Right sidebar — layout snaps instantly, content slides visually.
-                    // Using SlideTransition on content only means LayoutBuilder in
-                    // the main content area never fires during the animation.
-                    if (_sidebarOpen) ...[
-                      const SizedBox(width: _gap),
-                      ClipRect(
-                        child: SlideTransition(
-                          position: _sidebarSlide,
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(_radius),
-                            child: const DesktopRightSidebar(),
+                        // Right sidebar — layout snaps instantly, content slides visually.
+                        // Using SlideTransition on content only means LayoutBuilder in
+                        // the main content area never fires during the animation.
+                        if (_sidebarOpen) ...[
+                          const SizedBox(width: _gap),
+                          ClipRect(
+                            child: SlideTransition(
+                              position: _sidebarSlide,
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(_radius),
+                                child: const DesktopRightSidebar(),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
+                        ],
+                      ],
+                    ),
+                  ),
 
-              const SizedBox(height: _gap),
+                  const SizedBox(height: _gap),
 
-              // ── Player bar — background-level panel (same layer as nav) ────
-              ClipRRect(
-                borderRadius: BorderRadius.circular(_radius),
-                child: const DesktopPlayerBar(),
-              ),
+                  // ── Player bar — background-level panel (same layer as nav) ────
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(_radius),
+                    child: const DesktopPlayerBar(),
+                  ),
                 ],
               ),
             ),
@@ -356,8 +356,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
                     onResultTapped: _closeSearchOverlay,
                     onQuerySelected: (q) {
                       _searchController.text = q;
-                      _searchController.selection =
-                          TextSelection.fromPosition(
+                      _searchController.selection = TextSelection.fromPosition(
                         TextPosition(offset: q.length),
                       );
                       ref.read(searchProvider.notifier).search(q);
@@ -400,8 +399,8 @@ class _BrowsePage extends StatelessWidget {
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverPadding(
-            padding: const EdgeInsets.fromLTRB(
-                0, AppSpacing.xl, 0, AppSpacing.max),
+            padding:
+                const EdgeInsets.fromLTRB(0, AppSpacing.xl, 0, AppSpacing.max),
             sliver: SliverList(
               delegate: SliverChildListDelegate(const [
                 MoodSection(showAll: true),

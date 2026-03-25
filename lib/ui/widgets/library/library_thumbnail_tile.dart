@@ -5,12 +5,8 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/widgets/common/hover_tile.dart';
 
-/// A compact tappable list tile for library items that have a thumbnail
-/// (albums, artists) or an icon placeholder (downloads, etc.).
-///
-/// Used by the desktop sidebar and can be reused wherever a thumbnail-based
-/// library row is needed.
 class LibraryThumbnailTile extends StatelessWidget {
   const LibraryThumbnailTile({
     super.key,
@@ -26,11 +22,7 @@ class LibraryThumbnailTile extends StatelessWidget {
   final String subtitle;
   final VoidCallback onTap;
   final String? thumbnailUrl;
-
-  /// When true, the thumbnail is clipped as a circle (for artists).
   final bool isCircle;
-
-  /// When provided, renders an icon placeholder instead of a network image.
   final List<List<dynamic>>? icon;
 
   @override
@@ -42,7 +34,8 @@ class LibraryThumbnailTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: t.spacing.sm, horizontal: t.spacing.sm),
+          padding: EdgeInsets.symmetric(
+              vertical: t.spacing.sm, horizontal: t.spacing.sm),
           child: Row(
             children: [
               icon != null
@@ -60,14 +53,15 @@ class LibraryThumbnailTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight: t.isDesktop ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight:
+                            t.isDesktop ? FontWeight.w700 : FontWeight.w600,
                       ),
                     ),
                     Text(
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: AppColors.textMuted,
                         fontSize: AppFontSize.md,
                       ),
@@ -82,7 +76,7 @@ class LibraryThumbnailTile extends StatelessWidget {
     );
 
     if (t.isDesktop) {
-      return _DesktopHoverWrapper(child: tile);
+      return HoverTile(borderRadius: AppRadius.sm, child: tile);
     }
     return tile;
   }
@@ -104,7 +98,8 @@ class _IconThumb extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Center(
-        child: AppIcon(icon: icon, color: AppColors.textMuted, size: size * 0.5),
+        child:
+            AppIcon(icon: icon, color: AppColors.textMuted, size: size * 0.5),
       ),
     );
   }
@@ -144,32 +139,4 @@ class _Thumb extends StatelessWidget {
           size: size * 0.5,
         ),
       );
-}
-
-class _DesktopHoverWrapper extends StatefulWidget {
-  const _DesktopHoverWrapper({required this.child});
-  final Widget child;
-
-  @override
-  State<_DesktopHoverWrapper> createState() => _DesktopHoverWrapperState();
-}
-
-class _DesktopHoverWrapperState extends State<_DesktopHoverWrapper> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        decoration: BoxDecoration(
-          color: _hovered ? AppColors.hoverOverlay : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: widget.child,
-      ),
-    );
-  }
 }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';

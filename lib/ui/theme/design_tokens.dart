@@ -46,8 +46,10 @@ abstract final class AppLineHeight {
 }
 
 // ─── Semantic text styles ─────────────────────────────────────────────────────
-// Use these instead of inline TextStyle() to guarantee Inter font + consistent
-// sizing. Color can be overridden per-use via .copyWith(color: ...).
+// Font pairing:
+//   Poppins  → display, headings, screen/sheet titles, tile titles (expressive)
+//   Inter    → body, labels, captions, nav labels (readable UI text)
+// Apply via GoogleFonts.poppins(textStyle: ...) or GoogleFonts.inter(textStyle: ...).
 
 abstract final class AppTextStyle {
   // ── Display ──

@@ -5,7 +5,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/features/library/library_provider.dart';
-import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
@@ -127,11 +127,17 @@ class PlaylistCoverThumbnail extends StatelessWidget {
       );
 }
 
-/// A single item in the library playlists section: Liked Songs, a folder, or a playlist.
+/// A single item in the library playlists section: Liked Songs, Downloads, a folder, or a playlist.
 sealed class LibrarySectionEntry {}
 
 class LikedSongsEntry extends LibrarySectionEntry {
   LikedSongsEntry({required this.songCount, required this.onTap});
+  final int songCount;
+  final VoidCallback onTap;
+}
+
+class DownloadsEntry extends LibrarySectionEntry {
+  DownloadsEntry({required this.songCount, required this.onTap});
   final int songCount;
   final VoidCallback onTap;
 }
@@ -324,6 +330,15 @@ class _LibrarySectionGrid extends StatelessWidget {
               backgroundColor: AppColors.surfaceLight,
               backgroundGradient: AppColors.loveThemeGradientFor('liked_songs'),
               title: 'Liked Songs',
+              subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
+              onTap: onTap,
+            ),
+          DownloadsEntry(:final songCount, :final onTap) => _StaticGridCard(
+              icon: AppIcons.download,
+              iconColor: Colors.white,
+              backgroundColor: AppColors.surfaceLight,
+              backgroundGradient: AppColors.downloadGradient,
+              title: 'Downloads',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
@@ -715,6 +730,15 @@ class _LibrarySectionList extends StatelessWidget {
                   songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
+          DownloadsEntry(:final songCount, :final onTap) => _StaticListTile(
+              icon: AppIcons.download,
+              iconColor: Colors.white,
+              backgroundColor: AppColors.surfaceLight,
+              backgroundGradient: AppColors.downloadGradient,
+              title: 'Downloads',
+              subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
+              onTap: onTap,
+            ),
           FolderEntry(:final folder) => _LibraryFolderListTile(
               folder: folder,
               onTap: () => onFolderTap(folder),
@@ -762,7 +786,7 @@ class _StaticListTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
+          padding: EdgeInsets.symmetric(vertical: t.spacing.sm, horizontal: t.spacing.sm),
           child: Row(
             children: [
               Container(
@@ -777,7 +801,7 @@ class _StaticListTile extends StatelessWidget {
                   child: iconWidget ?? AppIcon(icon: icon!, color: iconColor!, size: 28),
                 ),
               ),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: t.spacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -837,11 +861,11 @@ class _LibraryPlaylistListTile extends StatelessWidget {
         onLongPress: () => onOptions(null),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
+          padding: EdgeInsets.symmetric(vertical: t.spacing.sm, horizontal: t.spacing.sm),
           child: Row(
             children: [
               PlaylistCoverThumbnail(playlist: playlist, size: thumbSize),
-              const SizedBox(width: AppSpacing.md),
+              SizedBox(width: t.spacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

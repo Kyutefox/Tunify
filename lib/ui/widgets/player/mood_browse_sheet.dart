@@ -2,7 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../sheet.dart';
+import '../common/sheet.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/related_feed.dart';
 import 'package:tunify/data/models/mood.dart';

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
-import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/connectivity_provider.dart';
@@ -9,42 +8,21 @@ import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
-import 'player/song_options_sheet.dart';
+import 'package:tunify/core/utils/debouncer.dart';
+import '../player/song_options_sheet.dart';
 
-import 'package:tunify/ui/widgets/sections/mood_section.dart';
-import 'package:tunify/ui/widgets/sections/recently_played_section.dart';
-import 'package:tunify/ui/widgets/pages/search_page.dart';
-import 'package:tunify/ui/widgets/button.dart';
-import 'package:tunify/ui/widgets/items/mini_player.dart';
-import 'package:tunify/ui/widgets/items/mood_browse_sheet.dart';
-import 'package:tunify/ui/widgets/items/song_list_tile.dart';
+import 'package:tunify/ui/widgets/common/mood_section.dart';
+import 'package:tunify/ui/widgets/common/recently_played_section.dart';
+import 'package:tunify/ui/screens/search/search_page.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/widgets/player/mini_player.dart';
+import 'package:tunify/ui/widgets/player/mood_browse_sheet.dart';
+import 'package:tunify/ui/widgets/library/song_list_tile.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
-
-class Debouncer {
-  final Duration delay;
-  VoidCallback? _action;
-  bool _disposed = false;
-  Timer? _timer;
-
-  Debouncer(this.delay);
-
-  void run(VoidCallback action) {
-    _action = action;
-    _timer?.cancel();
-    _timer = Timer(delay, () {
-      if (!_disposed) _action?.call();
-    });
-  }
-
-  void dispose() {
-    _timer?.cancel();
-    _disposed = true;
-  }
-}
 
 class _SearchBarPlaceholder extends ConsumerWidget {
   const _SearchBarPlaceholder({required this.onTap});
@@ -190,7 +168,8 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
       });
     }
     try {
-      final list = await ref.read(streamManagerProvider).getSearchSuggestions(forQuery);
+      final list =
+          await ref.read(streamManagerProvider).getSearchSuggestions(forQuery);
       if (mounted && _suggestionsForQuery == forQuery) {
         setState(() {
           _suggestions = list;
@@ -375,7 +354,8 @@ class SearchResultsBody extends ConsumerWidget {
       );
     }
 
-    final suggestionCount = showInlineSuggestions ? inlineSuggestions.length : 0;
+    final suggestionCount =
+        showInlineSuggestions ? inlineSuggestions.length : 0;
     final contentCount = state.isLoading ? 8 : displayResults.length;
     final totalCount = suggestionCount + contentCount;
     final hasContent = state.isLoading || hasResults;
@@ -386,15 +366,20 @@ class SearchResultsBody extends ConsumerWidget {
         children: [
           if (isOffline)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+              padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl, vertical: AppSpacing.md),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  AppIcon(icon: AppIcons.wifiOff, color: AppColors.textMuted, size: 16),
+                  AppIcon(
+                      icon: AppIcons.wifiOff,
+                      color: AppColors.textMuted,
+                      size: 16),
                   const SizedBox(width: AppSpacing.xs),
                   const Text(
                     "You're offline — suggestions unavailable",
-                    style: TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                    style: TextStyle(
+                        color: AppColors.textMuted, fontSize: AppFontSize.sm),
                   ),
                 ],
               ),
@@ -501,8 +486,8 @@ class SearchResultsBody extends ConsumerWidget {
                   color: AppColors.textMuted,
                   size: 20,
                 ),
-                onPressedWithContext: (btnCtx) =>
-                    showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
+                onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
+                    song: song, ref: ref, buttonContext: btnCtx),
                 iconSize: 20,
                 size: 40,
               ),
@@ -588,8 +573,7 @@ class RecentSearchSection extends ConsumerWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () =>
-                    ref.read(recentSearchProvider.notifier).clearAll(),
+                onTap: () => ref.read(recentSearchProvider.notifier).clearAll(),
                 child: ShaderMask(
                   shaderCallback: (bounds) =>
                       AppColors.primaryGradient.createShader(bounds),

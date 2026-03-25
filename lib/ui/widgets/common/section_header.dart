@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
@@ -51,7 +50,7 @@ class SectionHeader extends StatelessWidget {
                     fontSize: titleFontSize,
                     fontWeight: FontWeight.w700,
                     letterSpacing: t.isDesktop
-                        ? (useCompactStyle ? -0.6 : t.typography.headingLetterSpacing)
+                        ? (useCompactStyle ? -0.6 : t.typography.headingLetterSpacingSm)
                         : (useCompactStyle ? -0.3 : -0.5),
                   ),
                 ),

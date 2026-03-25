@@ -9,10 +9,10 @@ import 'package:sqflite/sqflite.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 
-import 'package:tunify/ui/widgets/button.dart';
-import 'package:tunify/ui/widgets/sheet.dart';
-import 'package:tunify/ui/widgets/back_title_app_bar.dart';
-import 'package:tunify/ui/widgets/input_field.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/widgets/common/sheet.dart';
+import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
+import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/databases/supabase/supabase_prefs.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
@@ -28,7 +28,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'about_screen.dart';
-import 'package:tunify/ui/widgets/sheet_drag_handle.dart';
+import 'package:tunify/ui/widgets/common/sheet_drag_handle.dart';
 
 void _showDataResultSnackBar(BuildContext context,
     {String? success, Object? error}) {

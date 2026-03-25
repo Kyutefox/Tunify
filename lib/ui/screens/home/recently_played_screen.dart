@@ -4,9 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
-import 'package:tunify/ui/widgets/button.dart';
-import 'package:tunify/ui/widgets/back_title_app_bar.dart';
-import 'package:tunify/ui/widgets/items/song_list_tile.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
+import 'package:tunify/ui/widgets/library/song_list_tile.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
@@ -15,8 +15,8 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import '../player/song_options_sheet.dart';
-import 'package:tunify/ui/widgets/empty_state_placeholder.dart';
-import 'package:tunify/ui/widgets/items/mini_player.dart';
+import 'package:tunify/ui/widgets/common/empty_state_placeholder.dart';
+import 'package:tunify/ui/widgets/player/mini_player.dart';
 
 final _rpShuffleProvider = StateProvider<bool>((ref) => false);
 

@@ -56,6 +56,7 @@ class LibraryState {
     this.viewMode = LibraryViewMode.list,
     this.searchQuery = '',
     this.downloadedShuffleEnabled = false,
+    this.downloadsSortOrder = PlaylistTrackSortOrder.customOrder,
     this.followedArtists = const [],
     this.followedAlbums = const [],
   });
@@ -66,6 +67,7 @@ class LibraryState {
   final LibraryViewMode viewMode;
   final String searchQuery;
   final bool downloadedShuffleEnabled;
+  final PlaylistTrackSortOrder downloadsSortOrder;
   final List<LibraryArtist> followedArtists;
   final List<LibraryAlbum> followedAlbums;
 
@@ -118,6 +120,7 @@ class LibraryState {
     LibraryViewMode? viewMode,
     String? searchQuery,
     bool? downloadedShuffleEnabled,
+    PlaylistTrackSortOrder? downloadsSortOrder,
     List<LibraryArtist>? followedArtists,
     List<LibraryAlbum>? followedAlbums,
   }) => LibraryState(
@@ -127,6 +130,7 @@ class LibraryState {
     viewMode: viewMode ?? this.viewMode,
     searchQuery: searchQuery ?? this.searchQuery,
     downloadedShuffleEnabled: downloadedShuffleEnabled ?? this.downloadedShuffleEnabled,
+    downloadsSortOrder: downloadsSortOrder ?? this.downloadsSortOrder,
     followedArtists: followedArtists ?? this.followedArtists,
     followedAlbums: followedAlbums ?? this.followedAlbums,
   );
@@ -157,6 +161,7 @@ class LibraryNotifier extends Notifier<LibraryState> {
         sortOrder: LibrarySortOrderX.fromString(data.sortOrder),
         viewMode: LibraryViewModeX.fromString(data.viewMode),
         downloadedShuffleEnabled: data.downloadedShuffleEnabled,
+        downloadsSortOrder: PlaylistTrackSortOrderX.fromString(data.downloadsSortOrder),
         followedArtists: data.followedArtists,
         followedAlbums: data.followedAlbums,
       ),
@@ -174,6 +179,7 @@ class LibraryNotifier extends Notifier<LibraryState> {
           sortOrder: state.sortOrder.value,
           viewMode: state.viewMode.value,
           downloadedShuffleEnabled: state.downloadedShuffleEnabled,
+          downloadsSortOrder: state.downloadsSortOrder.value,
           followedArtists: state.followedArtists,
           followedAlbums: state.followedAlbums,
         ),
@@ -291,6 +297,11 @@ class LibraryNotifier extends Notifier<LibraryState> {
   Future<void> setPlaylistSortOrder(String playlistId, PlaylistTrackSortOrder order) async {
     state = state.copyWith(playlists: state.playlists.map((p) =>
         p.id == playlistId ? p.copyWith(sortOrder: order) : p).toList());
+    await _persist();
+  }
+
+  Future<void> setDownloadsSortOrder(PlaylistTrackSortOrder order) async {
+    state = state.copyWith(downloadsSortOrder: order);
     await _persist();
   }
 

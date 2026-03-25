@@ -5,10 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:on_audio_query_pluse/on_audio_query.dart';
 
-import 'package:tunify/ui/widgets/button.dart';
-import 'package:tunify/ui/widgets/confirm_dialog.dart';
-import 'package:tunify/ui/widgets/items/song_list_tile.dart';
-import 'package:tunify/ui/widgets/items/now_playing_indicator.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/widgets/common/confirm_dialog.dart';
+import 'package:tunify/ui/widgets/library/song_list_tile.dart';
+import 'package:tunify/ui/widgets/player/now_playing_indicator.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
@@ -18,10 +18,11 @@ import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_routes.dart';
+import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
 import '../player/song_options_sheet.dart';
 import '../home/home_shared.dart';
-import 'library_downloaded_screen.dart';
-import 'package:tunify/ui/widgets/empty_state_placeholder.dart';
+import 'package:tunify/ui/widgets/common/empty_state_placeholder.dart';
 
 /// Inline content for Library > Downloaded filter. Shows either library
 /// downloads (Play all, Shuffle, Edit) or device music (Play all, Shuffle).
@@ -82,8 +83,8 @@ List<Song> _sortSongsByOrder(List<Song> songs, LibrarySortOrder order) {
   switch (order) {
     case LibrarySortOrder.alphabetical:
       return List<Song>.from(songs)
-        ..sort((a, b) =>
-            a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        ..sort(
+            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
     case LibrarySortOrder.recent:
     case LibrarySortOrder.recentlyAdded:
       return songs;
@@ -117,8 +118,7 @@ class _LibraryDownloadedList extends ConsumerWidget {
             size: 48,
           ),
           title: 'No downloads yet',
-          subtitle:
-              'Tap Download on a song in the player to add it here.',
+          subtitle: 'Tap Download on a song in the player to add it here.',
         ),
       );
     }
@@ -134,9 +134,7 @@ class _LibraryDownloadedList extends ConsumerWidget {
             icon: AppIcon(
               icon: AppIcons.shuffle,
               size: 22,
-              color: shuffleEnabled
-                  ? AppColors.primary
-                  : AppColors.textMuted,
+              color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
             ),
             onPressed: () {
               ref.read(libraryProvider.notifier).toggleDownloadedShuffle();
@@ -197,7 +195,8 @@ class _LibraryDownloadedList extends ConsumerWidget {
                       queue: displaySongs,
                       queueSource: 'downloads',
                     ),
-                onOptions: () => showSongOptionsSheet(context, song: song, ref: ref),
+                onOptions: () =>
+                    showSongOptionsSheet(context, song: song, ref: ref),
                 onRemove: () => _confirmRemoveDownload(context, ref, song),
               );
             },
@@ -259,8 +258,11 @@ class _LibraryDownloadedList extends ConsumerWidget {
                       icon: AppIcons.moreVert,
                       color: AppColors.textMuted,
                       size: 20),
-                  onPressedWithContext: (btnCtx) =>
-                      showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
+                  onPressedWithContext: (btnCtx) => showSongOptionsSheet(
+                      context,
+                      song: song,
+                      ref: ref,
+                      buttonContext: btnCtx),
                   size: 40,
                   iconSize: 20,
                 ),
@@ -322,15 +324,13 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
                   Container(
                     decoration: isNowPlaying
                         ? BoxDecoration(
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.md),
-                            border: Border.all(
-                                color: AppColors.primary, width: 2),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            border:
+                                Border.all(color: AppColors.primary, width: 2),
                           )
                         : null,
                     child: ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(AppRadius.md),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       child: song.thumbnailUrl.isNotEmpty
                           ? CachedNetworkImage(
                               imageUrl: song.thumbnailUrl,
@@ -338,7 +338,8 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
                               width: double.infinity,
                               height: double.infinity,
                               placeholder: (_, __) => PlaceholderArt(size: 120),
-                              errorWidget: (_, __, ___) => PlaceholderArt(size: 120),
+                              errorWidget: (_, __, ___) =>
+                                  PlaceholderArt(size: 120),
                             )
                           : PlaceholderArt(size: 120),
                     ),
@@ -346,8 +347,7 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
                   if (isNowPlaying)
                     Positioned.fill(
                       child: ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.md),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         child: Container(
                           color: Colors.black.withValues(alpha: 0.5),
                           child: Center(
@@ -387,9 +387,7 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
             Text(
               song.title,
               style: TextStyle(
-                color: isNowPlaying
-                    ? AppColors.accent
-                    : AppColors.textPrimary,
+                color: isNowPlaying ? AppColors.accent : AppColors.textPrimary,
                 fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
@@ -425,8 +423,7 @@ class _DeviceMusicList extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(deviceMusicProvider);
     final showExplicit = ref.watch(showExplicitContentProvider);
-    final filtered =
-        filterByExplicitSetting(state.songs, showExplicit);
+    final filtered = filterByExplicitSetting(state.songs, showExplicit);
     final displaySongs = _sortSongsByOrder(filtered, sortOrder);
 
     if (state.isLoading && state.songs.isEmpty) {
@@ -477,8 +474,7 @@ class _DeviceMusicList extends ConsumerWidget {
               color: AppColors.textMuted,
             ),
             onPressed: () {
-              final shuffled = List<Song>.from(displaySongs)
-                ..shuffle(Random());
+              final shuffled = List<Song>.from(displaySongs)..shuffle(Random());
               ref.read(playerProvider.notifier).playSong(
                     shuffled.first,
                     queue: shuffled,
@@ -531,7 +527,8 @@ class _DeviceMusicList extends ConsumerWidget {
                       queue: displaySongs,
                       queueSource: 'device',
                     ),
-                onOptions: () => showSongOptionsSheet(context, song: song, ref: ref),
+                onOptions: () =>
+                    showSongOptionsSheet(context, song: song, ref: ref),
               );
             },
           ),
@@ -549,9 +546,9 @@ class _DeviceMusicList extends ConsumerWidget {
           return SongListTile(
             song: song,
             onTap: () {
-              ref.read(playerProvider.notifier).playSong(song,
-                  queue: displaySongs,
-                  queueSource: 'device');
+              ref
+                  .read(playerProvider.notifier)
+                  .playSong(song, queue: displaySongs, queueSource: 'device');
             },
             thumbnail: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -594,8 +591,11 @@ class _DeviceMusicList extends ConsumerWidget {
                       icon: AppIcons.moreVert,
                       color: AppColors.textMuted,
                       size: 20),
-                  onPressedWithContext: (btnCtx) =>
-                      showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
+                  onPressedWithContext: (btnCtx) => showSongOptionsSheet(
+                      context,
+                      song: song,
+                      ref: ref,
+                      buttonContext: btnCtx),
                   size: 40,
                   iconSize: 20,
                 ),
@@ -643,15 +643,13 @@ class _DeviceMusicGridCard extends ConsumerWidget {
                   Container(
                     decoration: isNowPlaying
                         ? BoxDecoration(
-                            borderRadius:
-                                BorderRadius.circular(AppRadius.md),
-                            border: Border.all(
-                                color: AppColors.primary, width: 2),
+                            borderRadius: BorderRadius.circular(AppRadius.md),
+                            border:
+                                Border.all(color: AppColors.primary, width: 2),
                           )
                         : null,
                     child: ClipRRect(
-                      borderRadius:
-                          BorderRadius.circular(AppRadius.md),
+                      borderRadius: BorderRadius.circular(AppRadius.md),
                       child: QueryArtworkWidget(
                         id: audioId,
                         type: ArtworkType.AUDIO,
@@ -676,8 +674,7 @@ class _DeviceMusicGridCard extends ConsumerWidget {
                   if (isNowPlaying)
                     Positioned.fill(
                       child: ClipRRect(
-                        borderRadius:
-                            BorderRadius.circular(AppRadius.md),
+                        borderRadius: BorderRadius.circular(AppRadius.md),
                         child: Container(
                           color: Colors.black.withValues(alpha: 0.5),
                           child: Center(
@@ -717,9 +714,7 @@ class _DeviceMusicGridCard extends ConsumerWidget {
             Text(
               song.title,
               style: TextStyle(
-                color: isNowPlaying
-                    ? AppColors.accent
-                    : AppColors.textPrimary,
+                color: isNowPlaying ? AppColors.accent : AppColors.textPrimary,
                 fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
@@ -767,6 +762,164 @@ class _DevicePermissionPrompt extends StatelessWidget {
           : 'Grant permission to see music stored on your device.',
       actionLabel: permanentlyDenied ? 'Open Settings' : 'Grant Permission',
       onAction: permanentlyDenied ? onOpenSettings : onGrant,
+    );
+  }
+}
+
+// ─── Edit Downloads Sheet ─────────────────────────────────────────────────────
+
+void openEditDownloadedSheet(BuildContext context, List<Song> initialSongs) {
+  Navigator.of(context).push(
+    appPageRoute<void>(
+      builder: (_) => _EditDownloadedSheet(initialSongs: initialSongs),
+    ),
+  );
+}
+
+class _EditDownloadedSheet extends ConsumerStatefulWidget {
+  const _EditDownloadedSheet({required this.initialSongs});
+  final List<Song> initialSongs;
+
+  @override
+  ConsumerState<_EditDownloadedSheet> createState() =>
+      _EditDownloadedSheetState();
+}
+
+class _EditDownloadedSheetState extends ConsumerState<_EditDownloadedSheet> {
+  late List<Song> _items;
+  final Set<String> _pendingRemoveIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List<Song>.from(widget.initialSongs);
+  }
+
+  void _toggleRemove(Song song) {
+    setState(() {
+      if (_pendingRemoveIds.contains(song.id)) {
+        _pendingRemoveIds.remove(song.id);
+      } else {
+        _pendingRemoveIds.add(song.id);
+      }
+    });
+  }
+
+  void _onReorder(int oldIndex, int newIndex) {
+    setState(() {
+      if (newIndex > oldIndex) newIndex -= 1;
+      final song = _items.removeAt(oldIndex);
+      _items.insert(newIndex, song);
+    });
+  }
+
+  Future<void> _save() async {
+    final toKeep =
+        _items.where((s) => !_pendingRemoveIds.contains(s.id)).toList();
+    final downloadService = ref.read(downloadServiceProvider);
+    for (final song in _items.where((s) => _pendingRemoveIds.contains(s.id))) {
+      await downloadService.removeDownload(song.id);
+    }
+    if (toKeep.isNotEmpty) {
+      await downloadService.reorderDownloaded(toKeep);
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Downloads updated'),
+            behavior: SnackBarBehavior.floating),
+      );
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: BackTitleAppBar(
+        title: 'Edit Downloads',
+        backgroundColor: AppColors.background,
+        actions: [
+          TextButton(
+            onPressed: _save,
+            child: const Text('Save',
+                style: TextStyle(
+                    color: AppColors.primary, fontWeight: FontWeight.w600)),
+          ),
+        ],
+      ),
+      body: ReorderableListView.builder(
+        buildDefaultDragHandles: false,
+        itemCount: _items.length,
+        onReorder: _onReorder,
+        itemBuilder: (context, index) {
+          final song = _items[index];
+          final marked = _pendingRemoveIds.contains(song.id);
+          return ListTile(
+            key: ValueKey(song.id),
+            leading: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                AppIconButton(
+                  icon: AppIcon(
+                    icon: marked
+                        ? AppIcons.removeCircle
+                        : AppIcons.removeCircleOutline,
+                    color: marked ? AppColors.accentRed : AppColors.textMuted,
+                    size: 22,
+                  ),
+                  onPressed: () => _toggleRemove(song),
+                  size: 40,
+                  iconSize: 22,
+                ),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                  child: CachedNetworkImage(
+                    imageUrl: song.thumbnailUrl,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                        width: 48,
+                        height: 48,
+                        color: AppColors.surfaceLight,
+                        child: Center(
+                            child: AppIcon(
+                                icon: AppIcons.musicNote,
+                                color: AppColors.textMuted,
+                                size: 24))),
+                    errorWidget: (_, __, ___) => Container(
+                        width: 48,
+                        height: 48,
+                        color: AppColors.surfaceLight,
+                        child: Center(
+                            child: AppIcon(
+                                icon: AppIcons.musicNote,
+                                color: AppColors.textMuted,
+                                size: 24))),
+                  ),
+                ),
+              ],
+            ),
+            title: Text(song.title,
+                style: TextStyle(
+                    color: marked ? AppColors.textMuted : AppColors.textPrimary,
+                    decoration: marked ? TextDecoration.lineThrough : null)),
+            subtitle: Text(song.artist,
+                style: TextStyle(
+                    color: AppColors.textMuted,
+                    decoration: marked ? TextDecoration.lineThrough : null)),
+            trailing: ReorderableDragStartListener(
+              index: index,
+              child: AppIcon(
+                  icon: AppIcons.dragHandle,
+                  color: AppColors.textMuted,
+                  size: 22),
+            ),
+          );
+        },
+      ),
     );
   }
 }

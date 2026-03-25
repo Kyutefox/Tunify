@@ -4,10 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
 
-import 'package:tunify/ui/widgets/sheet.dart';
-import 'package:tunify/ui/widgets/confirm_dialog.dart';
-import 'package:tunify/ui/widgets/input_field.dart';
-import 'package:tunify/ui/widgets/empty_list_message.dart';
+import 'package:tunify/ui/widgets/common/sheet.dart';
+import 'package:tunify/ui/widgets/common/confirm_dialog.dart';
+import 'package:tunify/ui/widgets/common/input_field.dart';
+import 'package:tunify/ui/widgets/common/empty_list_message.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_album.dart';
 import 'package:tunify/data/models/library_artist.dart';
@@ -21,15 +21,15 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/core/utils/string_utils.dart';
-import 'library/create_library_item_screen.dart';
-import 'library/library_playlist_screen.dart';
-import 'library/library_playlists_section.dart';
-import 'library/library_app_bar.dart';
-import 'library/library_downloaded_content.dart';
-import 'library/library_search_screen.dart';
-import 'package:tunify/ui/widgets/adaptive_menu.dart';
-import 'package:tunify/ui/widgets/create_library_options.dart';
-import 'download_queue_sheet.dart';
+import 'package:tunify/ui/screens/library/create_library_item_screen.dart';
+import 'package:tunify/ui/screens/library/library_playlist_screen.dart';
+import 'package:tunify/ui/screens/library/library_playlists_section.dart';
+import 'package:tunify/ui/screens/library/library_app_bar.dart';
+import 'package:tunify/ui/screens/library/library_downloaded_content.dart';
+import 'package:tunify/ui/screens/library/library_search_screen.dart';
+import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
+import 'package:tunify/ui/screens/library/create_library_options.dart';
+import 'package:tunify/ui/widgets/player/download_queue_sheet.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
@@ -41,9 +41,11 @@ class LibraryScreen extends ConsumerStatefulWidget {
 class _LibraryScreenState extends ConsumerState<LibraryScreen> {
   /// Drives the chip row.
   LibraryFilter? _filter;
+
   /// Drives the body content (kept in sync with _filter for smooth transitions).
   LibraryFilter? _contentFilter;
   DownloadedSource _downloadedSource = DownloadedSource.library;
+
   /// When non-null, section shows this folder's playlists with a back row instead of main list.
   String? _selectedFolderId;
 
@@ -172,9 +174,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       onCreateTap: () => showCreateLibrarySheet(context, ref),
       selectedFilter: _filter,
       onFilterChanged: _onFilterChanged,
-      downloadedSource: _filter == LibraryFilter.downloaded
-          ? _downloadedSource
-          : null,
+      downloadedSource:
+          _filter == LibraryFilter.downloaded ? _downloadedSource : null,
       onDownloadedSourceChanged: _filter == LibraryFilter.downloaded
           ? (s) => setState(() => _downloadedSource = s)
           : null,
@@ -199,8 +200,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       final scrollView = CustomScrollView(
         key: contentKey,
         physics: withRefresh
-            ? const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics())
-            : const BouncingScrollPhysics(parent: AlwaysScrollableScrollPhysics()),
+            ? const AlwaysScrollableScrollPhysics(
+                parent: BouncingScrollPhysics())
+            : const BouncingScrollPhysics(
+                parent: AlwaysScrollableScrollPhysics()),
         slivers: [
           ..._buildContentSlivers(viewMode, sortOrder, rootPlaylists),
           const SliverToBoxAdapter(child: SizedBox(height: 160)),
@@ -274,8 +277,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             // Empty main playlists view: we show "Create your first playlist".
             folders.isEmpty &&
             rootPlaylists.isEmpty;
-        final disableEmptyFadeTransition = showCreateFirstPlaylistEmptyState &&
-            entries.isEmpty;
+        final disableEmptyFadeTransition =
+            showCreateFirstPlaylistEmptyState && entries.isEmpty;
         if (disableEmptyFadeTransition) {
           return [
             SliverFillRemaining(
@@ -296,7 +299,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
               onPlaylistOptions: _onPlaylistOptions,
               onFolderTap: _onFolderTap,
               onFolderOptions: _onFolderOptions,
-              showCreateFirstPlaylistEmptyState: showCreateFirstPlaylistEmptyState,
+              showCreateFirstPlaylistEmptyState:
+                  showCreateFirstPlaylistEmptyState,
               isFolderView: _selectedFolderId != null,
             ),
           ),
@@ -369,7 +373,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final copy = List<LibraryArtist>.from(list);
     switch (sortOrder) {
       case LibrarySortOrder.alphabetical:
-        copy.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+        copy.sort(
+            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
       case LibrarySortOrder.recent:
       case LibrarySortOrder.recentlyAdded:
         copy.sort((a, b) => b.followedAt.compareTo(a.followedAt));
@@ -384,7 +389,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     final copy = List<LibraryAlbum>.from(list);
     switch (sortOrder) {
       case LibrarySortOrder.alphabetical:
-        copy.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+        copy.sort(
+            (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
       case LibrarySortOrder.recent:
       case LibrarySortOrder.recentlyAdded:
         copy.sort((a, b) => b.followedAt.compareTo(a.followedAt));
@@ -411,7 +417,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   void _onPlaylistOptions(LibraryPlaylist playlist, Rect? anchorRect) {
     _unfocus();
-    showLibraryPlaylistOptionsSheet(context, ref, playlist, anchorRect: anchorRect);
+    showLibraryPlaylistOptionsSheet(context, ref, playlist,
+        anchorRect: anchorRect);
   }
 }
 
@@ -459,7 +466,10 @@ class _FollowedArtistsList extends ConsumerWidget {
                         width: 52,
                         height: 52,
                         color: AppColors.surfaceLight,
-                        child: AppIcon(icon: AppIcons.person, color: AppColors.textMuted, size: 28),
+                        child: AppIcon(
+                            icon: AppIcons.person,
+                            color: AppColors.textMuted,
+                            size: 28),
                       ),
                     ),
                   ),
@@ -480,14 +490,21 @@ class _FollowedArtistsList extends ConsumerWidget {
                         ),
                         const Text(
                           'Artist',
-                          style: TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.md),
+                          style: TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: AppFontSize.md),
                         ),
                       ],
                     ),
                   ),
                   IconButton(
-                    icon: AppIcon(icon: AppIcons.checkCircle, color: AppColors.primary, size: 22),
-                    onPressed: () => ref.read(libraryProvider.notifier).toggleFollowArtist(artist),
+                    icon: AppIcon(
+                        icon: AppIcons.checkCircle,
+                        color: AppColors.primary,
+                        size: 22),
+                    onPressed: () => ref
+                        .read(libraryProvider.notifier)
+                        .toggleFollowArtist(artist),
                     iconSize: 22,
                   ),
                 ],
@@ -528,7 +545,8 @@ class _FollowedArtistsGrid extends ConsumerWidget {
               ),
             ),
           ),
-          onLongPress: () => ref.read(libraryProvider.notifier).toggleFollowArtist(artist),
+          onLongPress: () =>
+              ref.read(libraryProvider.notifier).toggleFollowArtist(artist),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -566,7 +584,8 @@ class _FollowedArtistsGrid extends ConsumerWidget {
               ),
               const Text(
                 'Artist',
-                style: TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.xs),
+                style: TextStyle(
+                    color: AppColors.textMuted, fontSize: AppFontSize.xs),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -626,7 +645,10 @@ class _FollowedAlbumsList extends ConsumerWidget {
                         width: 52,
                         height: 52,
                         color: AppColors.surfaceLight,
-                        child: AppIcon(icon: AppIcons.album, color: AppColors.textMuted, size: 28),
+                        child: AppIcon(
+                            icon: AppIcons.album,
+                            color: AppColors.textMuted,
+                            size: 28),
                       ),
                     ),
                   ),
@@ -647,7 +669,9 @@ class _FollowedAlbumsList extends ConsumerWidget {
                         ),
                         Text(
                           album.artistName,
-                          style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.md),
+                          style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: AppFontSize.md),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -655,8 +679,13 @@ class _FollowedAlbumsList extends ConsumerWidget {
                     ),
                   ),
                   IconButton(
-                    icon: AppIcon(icon: AppIcons.checkCircle, color: AppColors.primary, size: 22),
-                    onPressed: () => ref.read(libraryProvider.notifier).toggleFollowAlbum(album),
+                    icon: AppIcon(
+                        icon: AppIcons.checkCircle,
+                        color: AppColors.primary,
+                        size: 22),
+                    onPressed: () => ref
+                        .read(libraryProvider.notifier)
+                        .toggleFollowAlbum(album),
                     iconSize: 22,
                   ),
                 ],
@@ -699,7 +728,8 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
               ),
             ),
           ),
-          onLongPress: () => ref.read(libraryProvider.notifier).toggleFollowAlbum(album),
+          onLongPress: () =>
+              ref.read(libraryProvider.notifier).toggleFollowAlbum(album),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -737,7 +767,8 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
               ),
               Text(
                 album.artistName,
-                style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.xs),
+                style: const TextStyle(
+                    color: AppColors.textMuted, fontSize: AppFontSize.xs),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -841,37 +872,39 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
       children: [
         const SizedBox(height: AppSpacing.sm),
         Padding(
-                padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
-                child: Row(
-                  children: [
-                    AppIcon(
-                      icon: AppIcons.folder,
-                      color: AppColors.primary,
-                      size: 22,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    const Text(
-                      'Add to folder',
-                      style: TextStyle(
-                        color: AppColors.textPrimary,
-                        fontSize: AppFontSize.h3,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const Spacer(),
-                    Text(
-                      '${widget.folders.length}',
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
-                        fontSize: AppFontSize.base,
-                      ),
-                    ),
-                  ],
+          padding:
+              const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
+          child: Row(
+            children: [
+              AppIcon(
+                icon: AppIcons.folder,
+                color: AppColors.primary,
+                size: 22,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              const Text(
+                'Add to folder',
+                style: TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: AppFontSize.h3,
+                  fontWeight: FontWeight.w700,
                 ),
+              ),
+              const Spacer(),
+              Text(
+                '${widget.folders.length}',
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: AppFontSize.base,
+                ),
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: AppSpacing.sm),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
+          padding:
+              const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
           child: Container(
             height: 50,
             decoration: BoxDecoration(
@@ -898,8 +931,8 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                   GestureDetector(
                     onTap: () => _searchController.clear(),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: AppSpacing.md),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       child: AppIcon(
                         icon: AppIcons.clear,
                         color: AppColors.textMuted,
@@ -948,18 +981,17 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                       ),
                       title: Text(
                         f.name.capitalized,
-                        style:
-                            const TextStyle(color: AppColors.textPrimary),
+                        style: const TextStyle(color: AppColors.textPrimary),
                       ),
                       subtitle: Text(
                         '${f.playlistCount} playlists',
                         style: const TextStyle(
-                            color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                            color: AppColors.textMuted,
+                            fontSize: AppFontSize.sm),
                       ),
                       trailing: hasPlaylist
                           ? AppIcon(
-                              icon: AppIcons.check,
-                              color: AppColors.primary)
+                              icon: AppIcons.check, color: AppColors.primary)
                           : null,
                       onTap: () {
                         Navigator.pop(context);
@@ -998,9 +1030,13 @@ void showLibraryPlaylistOptionsSheet(
         color: alreadyIn ? AppColors.primary : null,
         onTap: () {
           if (alreadyIn) {
-            ref.read(libraryProvider.notifier).removePlaylistFromFolder(f.id, playlist.id);
+            ref
+                .read(libraryProvider.notifier)
+                .removePlaylistFromFolder(f.id, playlist.id);
           } else {
-            ref.read(libraryProvider.notifier).addPlaylistToFolder(f.id, playlist.id);
+            ref
+                .read(libraryProvider.notifier)
+                .addPlaylistToFolder(f.id, playlist.id);
           }
         },
       );
@@ -1013,7 +1049,8 @@ void showLibraryPlaylistOptionsSheet(
         AppMenuEntry(
           icon: playlist.isPinned ? AppIcons.pinOff : AppIcons.pin,
           label: playlist.isPinned ? 'Unpin' : 'Pin to top',
-          onTap: () => ref.read(libraryProvider.notifier).togglePlaylistPin(playlist.id),
+          onTap: () =>
+              ref.read(libraryProvider.notifier).togglePlaylistPin(playlist.id),
         ),
         if (folders.isNotEmpty)
           AppMenuEntry(
@@ -1031,11 +1068,14 @@ void showLibraryPlaylistOptionsSheet(
             final confirmed = await showConfirmDialog(
               context,
               title: 'Delete playlist?',
-              message: '${playlist.name.capitalized} will be removed from your library.',
+              message:
+                  '${playlist.name.capitalized} will be removed from your library.',
               confirmLabel: 'Delete',
             );
             if (confirmed) {
-              await ref.read(libraryProvider.notifier).deletePlaylist(playlist.id);
+              await ref
+                  .read(libraryProvider.notifier)
+                  .deletePlaylist(playlist.id);
             }
           },
         ),
@@ -1057,7 +1097,8 @@ void showLibraryPlaylistOptionsSheet(
         final confirmed = await showConfirmDialog(
           context,
           title: 'Delete playlist?',
-          message: '${playlist.name.capitalized} will be removed from your library.',
+          message:
+              '${playlist.name.capitalized} will be removed from your library.',
           confirmLabel: 'Delete',
         );
         if (confirmed) {
@@ -1092,7 +1133,8 @@ void showLibraryFolderOptionsSheet(
         AppMenuEntry(
           icon: folder.isPinned ? AppIcons.pinOff : AppIcons.pin,
           label: folder.isPinned ? 'Unpin' : 'Pin to top',
-          onTap: () => ref.read(libraryProvider.notifier).toggleFolderPin(folder.id),
+          onTap: () =>
+              ref.read(libraryProvider.notifier).toggleFolderPin(folder.id),
         ),
         AppMenuEntry(
           icon: AppIcons.edit,
@@ -1106,7 +1148,9 @@ void showLibraryFolderOptionsSheet(
               ),
             );
             if (newName != null && newName.trim().isNotEmpty) {
-              ref.read(libraryProvider.notifier).renameFolder(folder.id, newName.trim());
+              ref
+                  .read(libraryProvider.notifier)
+                  .renameFolder(folder.id, newName.trim());
             }
           },
         ),
@@ -1119,7 +1163,8 @@ void showLibraryFolderOptionsSheet(
             final confirmed = await showConfirmDialog(
               context,
               title: 'Delete folder?',
-              message: '${folder.name.capitalized} will be removed. Playlists inside will not be deleted.',
+              message:
+                  '${folder.name.capitalized} will be removed. Playlists inside will not be deleted.',
               confirmLabel: 'Delete',
             );
             if (confirmed) {
@@ -1153,14 +1198,17 @@ void showLibraryFolderOptionsSheet(
         );
         if (navigator.mounted) navigator.pop();
         if (newName != null && newName.trim().isNotEmpty) {
-          ref.read(libraryProvider.notifier).renameFolder(folder.id, newName.trim());
+          ref
+              .read(libraryProvider.notifier)
+              .renameFolder(folder.id, newName.trim());
         }
       },
       onDelete: () async {
         final confirmed = await showConfirmDialog(
           context,
           title: 'Delete folder?',
-          message: '${folder.name.capitalized} will be removed. Playlists inside will not be deleted.',
+          message:
+              '${folder.name.capitalized} will be removed. Playlists inside will not be deleted.',
           confirmLabel: 'Delete',
         );
         if (confirmed) {

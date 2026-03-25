@@ -5,8 +5,8 @@ import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
-import 'package:tunify/ui/widgets/items/mini_player.dart';
-import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/ui/widgets/player/mini_player.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
 
 const double kCollectionActionRowHeight = 56;
 

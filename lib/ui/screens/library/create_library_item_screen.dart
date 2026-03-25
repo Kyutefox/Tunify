@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:tunify/ui/widgets/back_title_app_bar.dart';
-import 'package:tunify/ui/widgets/input_field.dart';
+import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
+import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 

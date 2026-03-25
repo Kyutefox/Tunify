@@ -10,7 +10,7 @@ import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/settings/guest_profile_provider.dart';
 import 'package:tunify/data/repositories/database_repository.dart';
 import 'package:tunify/core/constants/app_strings.dart';
-import 'package:tunify/ui/widgets/sheet.dart';
+import 'package:tunify/ui/widgets/common/sheet.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';

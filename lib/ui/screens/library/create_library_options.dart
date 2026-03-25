@@ -5,7 +5,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/screens/library/create_library_item_screen.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
-import 'adaptive_menu.dart';
+import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
 
 /// Shared logic for the "Create playlist / folder" flow.
 ///

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 
-import 'package:tunify/ui/widgets/adaptive_menu.dart';
-import 'package:tunify/ui/widgets/library_filter_chips.dart';
-import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
+import 'package:tunify/ui/widgets/library/library_filter_chips.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/widgets/items/download_queue_progress_icon.dart';
+import 'package:tunify/ui/widgets/player/download_queue_progress_icon.dart';
 
 enum LibraryFilter {
   all,
@@ -58,8 +58,10 @@ class LibraryAppBar extends StatefulWidget {
   final VoidCallback onSearchTap;
   final VoidCallback onDownloadQueueTap;
   final VoidCallback onCreateTap;
+
   /// Null = no filter (main section). Non-null = that filter's section is shown.
   final LibraryFilter? selectedFilter;
+
   /// Pass null to clear filter and show main section.
   final ValueChanged<LibraryFilter?> onFilterChanged;
   final DownloadedSource? downloadedSource;
@@ -68,9 +70,11 @@ class LibraryAppBar extends StatefulWidget {
   final LibraryViewMode viewMode;
   final ValueChanged<LibrarySortOrder> onSortChanged;
   final ValueChanged<LibraryViewMode> onViewModeChanged;
+
   /// When set, the filter chip row is replaced by [X] and folder name (exit folder view).
   final String? folderName;
   final VoidCallback? onExitFolder;
+
   /// When true (default), wraps content in [SliverToBoxAdapter]. When false, returns the header widget only for use in a fixed header.
   final bool asSliver;
 
@@ -205,41 +209,41 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                   ),
                 ),
               ),
-                if (widget.selectedFilter == LibraryFilter.downloaded &&
-                    widget.downloadedSource != null &&
-                    widget.onDownloadedSourceChanged != null) ...[
-                  const SizedBox(width: AppSpacing.md),
-                  _LibraryDeviceSwitch(
-                    source: widget.downloadedSource!,
-                    onChanged: widget.onDownloadedSourceChanged!,
-                  ),
-                ],
-                const Spacer(),
-                AppIconButton(
-                  tooltip: widget.viewMode == LibraryViewMode.list
-                      ? 'Grid view'
-                      : 'List view',
-                  color: AppColors.textSecondary,
-                  onPressed: () => widget.onViewModeChanged(
-                    widget.viewMode == LibraryViewMode.list
-                        ? LibraryViewMode.grid
-                        : LibraryViewMode.list,
-                  ),
-                  icon: AppIcon(
-                    icon: widget.viewMode == LibraryViewMode.list
-                        ? AppIcons.gridView
-                        : AppIcons.listView,
-                    size: _sortGridIconSize,
-                    color: AppColors.textSecondary,
-                  ),
-                  iconSize: _sortGridIconSize,
-                  size: 36,
+              if (widget.selectedFilter == LibraryFilter.downloaded &&
+                  widget.downloadedSource != null &&
+                  widget.onDownloadedSourceChanged != null) ...[
+                const SizedBox(width: AppSpacing.md),
+                _LibraryDeviceSwitch(
+                  source: widget.downloadedSource!,
+                  onChanged: widget.onDownloadedSourceChanged!,
                 ),
               ],
-            ),
+              const Spacer(),
+              AppIconButton(
+                tooltip: widget.viewMode == LibraryViewMode.list
+                    ? 'Grid view'
+                    : 'List view',
+                color: AppColors.textSecondary,
+                onPressed: () => widget.onViewModeChanged(
+                  widget.viewMode == LibraryViewMode.list
+                      ? LibraryViewMode.grid
+                      : LibraryViewMode.list,
+                ),
+                icon: AppIcon(
+                  icon: widget.viewMode == LibraryViewMode.list
+                      ? AppIcons.gridView
+                      : AppIcons.listView,
+                  size: _sortGridIconSize,
+                  color: AppColors.textSecondary,
+                ),
+                iconSize: _sortGridIconSize,
+                size: 36,
+              ),
+            ],
           ),
-        ],
-      );
+        ),
+      ],
+    );
   }
 
   @override
@@ -250,7 +254,6 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
     return _buildHeaderContent();
   }
 }
-
 
 class _LibraryDeviceSwitch extends StatelessWidget {
   const _LibraryDeviceSwitch({
@@ -330,4 +333,3 @@ class _Segment extends StatelessWidget {
     );
   }
 }
-

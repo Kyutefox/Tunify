@@ -94,7 +94,6 @@ class _LibraryFilterChipsState extends State<LibraryFilterChips>
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
     final effectiveFilters = widget.filters ??
         LibraryFilter.values.where((f) => f != LibraryFilter.all).toList();
 

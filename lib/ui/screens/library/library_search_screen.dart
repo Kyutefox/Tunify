@@ -2,8 +2,8 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/ui/widgets/pages/search_page.dart';
-import 'package:tunify/ui/widgets/empty_list_message.dart';
+import 'package:tunify/ui/screens/search/search_page.dart';
+import 'package:tunify/ui/widgets/common/empty_list_message.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/data/models/library_folder.dart';
@@ -14,7 +14,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'library_playlist_screen.dart';
-import 'package:tunify/ui/widgets/items/mini_player.dart';
+import 'package:tunify/ui/widgets/player/mini_player.dart';
 
 /// Full-screen library search using [SharedSearchPage]. Filters playlists
 /// and folders by name; tap opens a playlist or opens a folder in the library.

@@ -15,6 +15,7 @@ typedef LibraryData = ({
   String sortOrder,
   String viewMode,
   bool downloadedShuffleEnabled,
+  String downloadsSortOrder,
   List<LibraryArtist> followedArtists,
   List<LibraryAlbum> followedAlbums,
 });
@@ -189,6 +190,7 @@ class DatabaseRepository {
       sortOrder: raw['sortOrder'] as String? ?? 'recent',
       viewMode: raw['viewMode'] as String? ?? 'list',
       downloadedShuffleEnabled: raw['downloadedShuffleEnabled'] as bool? ?? false,
+      downloadsSortOrder: raw['downloadsSortOrder'] as String? ?? 'customOrder',
       followedArtists: followedArtists,
       followedAlbums: followedAlbums,
     );
@@ -223,6 +225,7 @@ class DatabaseRepository {
       'sortOrder': data.sortOrder,
       'viewMode': data.viewMode,
       'downloadedShuffleEnabled': data.downloadedShuffleEnabled,
+      'downloadsSortOrder': data.downloadsSortOrder,
       'followedArtists': data.followedArtists.map((a) => a.toJson()).toList(),
       'followedAlbums': data.followedAlbums.map((a) => a.toJson()).toList(),
     };

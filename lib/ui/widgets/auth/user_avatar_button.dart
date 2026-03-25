@@ -5,17 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/settings/guest_profile_provider.dart';
-import 'package:tunify/ui/screens/detail/desktop_settings_screen.dart';
+import 'package:tunify/ui/screens/settings/desktop_settings_screen.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
-import 'package:tunify/ui/screens/guest_profile_setup_screen.dart';
+import 'package:tunify/ui/screens/auth/guest_profile_setup_screen.dart';
 import 'package:tunify/ui/screens/home/home_settings_sheet.dart';
 import 'package:tunify/ui/screens/home/home_shared.dart';
 import 'package:tunify/ui/screens/home/home_user_menu.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
-import 'package:tunify/ui/widgets/sheet.dart';
-import 'adaptive_menu.dart';
+import 'package:tunify/ui/widgets/common/sheet.dart';
+import '../common/adaptive_menu.dart';
 
 /// Derives the current user's display name and avatar URL from auth/guest
 /// providers, renders a 36 px circular avatar, and opens the user menu on tap.

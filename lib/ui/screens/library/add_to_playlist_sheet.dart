@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/ui/widgets/input_field.dart';
-import 'package:tunify/ui/widgets/sheet.dart' show showAppSheet, kSheetHorizontalPadding;
+import 'package:tunify/ui/widgets/common/input_field.dart';
+import 'package:tunify/ui/widgets/common/sheet.dart' show showAppSheet, kSheetHorizontalPadding;
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/library/library_provider.dart';

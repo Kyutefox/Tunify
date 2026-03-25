@@ -7,8 +7,9 @@ import 'package:tunify/features/settings/content_settings_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/widgets/common/hover_tile.dart';
 import '../../../../ui/screens/home/home_shared.dart';
-import 'now_playing_indicator.dart';
+import '../player/now_playing_indicator.dart';
 
 class SongListTile extends ConsumerWidget {
   const SongListTile({
@@ -57,7 +58,8 @@ class SongListTile extends ConsumerWidget {
             SizedBox(
               width: 24,
               child: status.isNowPlaying && showIndexIndicator
-                  ? NowPlayingIndicator(size: 16, barCount: 3, animate: status.isPlaying)
+                  ? NowPlayingIndicator(
+                      size: 16, barCount: 3, animate: status.isPlaying)
                   : Text(
                       '$index',
                       style: TextStyle(
@@ -87,7 +89,8 @@ class SongListTile extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (status.isNowPlaying && (index == null || !showIndexIndicator))
+                    if (status.isNowPlaying &&
+                        (index == null || !showIndexIndicator))
                       InlineNowPlayingDot(animate: status.isPlaying),
                     Expanded(
                       child: Text(
@@ -137,7 +140,13 @@ class SongListTile extends ConsumerWidget {
     );
 
     if (t.isDesktop) {
-      return _HoverTile(child: InkWell(onTap: onTap, borderRadius: BorderRadius.circular(AppRadius.sm), child: tile));
+      return HoverTile(
+        borderRadius: AppRadius.sm,
+        child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: tile),
+      );
     }
 
     return InkWell(
@@ -158,35 +167,6 @@ class SongListTile extends ConsumerWidget {
           color: AppColors.textMuted,
           size: thumbnailSize > 50 ? 24 : 22,
         ),
-      ),
-    );
-  }
-}
-
-/// Subtle hover highlight for desktop list rows.
-class _HoverTile extends StatefulWidget {
-  const _HoverTile({required this.child});
-  final Widget child;
-
-  @override
-  State<_HoverTile> createState() => _HoverTileState();
-}
-
-class _HoverTileState extends State<_HoverTile> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        decoration: BoxDecoration(
-          color: _hovered ? AppColors.hoverOverlay : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: widget.child,
       ),
     );
   }

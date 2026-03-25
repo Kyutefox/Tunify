@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tunify/ui/widgets/button.dart';
-import 'package:tunify/ui/widgets/input_field.dart';
-import 'package:tunify/ui/widgets/sheet.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/widgets/common/input_field.dart';
+import 'package:tunify/ui/widgets/common/sheet.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/core/constants/app_strings.dart';
 import 'package:tunify/features/auth/auth_provider.dart';

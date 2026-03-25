@@ -10,7 +10,7 @@ import '../../../../ui/screens/home/recently_played_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import '../../../../ui/theme/app_routes.dart';
-import 'package:tunify/ui/widgets/items/section_header.dart';
+import 'package:tunify/ui/widgets/common/section_header.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/shell/desktop_right_sidebar.dart';
 

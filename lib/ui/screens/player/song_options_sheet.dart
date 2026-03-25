@@ -3,8 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/ui/widgets/adaptive_menu.dart';
-import 'package:tunify/ui/widgets/sheet.dart' show showAppSheet, kSheetHorizontalPadding, SheetOptionTile;
+import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
+import 'package:tunify/ui/widgets/common/sheet.dart' show showAppSheet, kSheetHorizontalPadding, SheetOptionTile;
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_playlist.dart';

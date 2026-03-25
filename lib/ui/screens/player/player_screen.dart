@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/ui/widgets/sheet.dart' show showAppDraggableSheet, showAppSheet, kSheetHorizontalPadding;
+import 'package:tunify/ui/widgets/common/sheet.dart'
+    show showAppDraggableSheet, showAppSheet, kSheetHorizontalPadding;
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
@@ -16,13 +17,15 @@ import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/player/sleep_timer_provider.dart';
 import 'package:tunify/features/device/device_discovery_service.dart';
+import 'package:tunify/features/device/device_discovery_service_extensions.dart';
 import 'package:tunify/ui/screens/player/song_options_sheet.dart';
-import 'package:tunify/ui/theme/app_colors.dart';import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/widgets/items/download_progress_ring.dart';
-import 'package:tunify/ui/widgets/items/song_list_tile.dart';
-import 'package:tunify/ui/widgets/items/mini_player_play_button.dart';
-import 'package:tunify/ui/widgets/empty_state_placeholder.dart';
-import 'package:tunify/ui/widgets/button.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/player/download_progress_ring.dart';
+import 'package:tunify/ui/widgets/library/song_list_tile.dart';
+import 'package:tunify/ui/widgets/player/mini_player_play_button.dart';
+import 'package:tunify/ui/widgets/common/empty_state_placeholder.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
 import 'player_controls.dart';
 import 'player_progress_bar.dart';
 import 'player_shared.dart';
@@ -158,6 +161,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       ),
     );
   }
+
   Widget _buildTopBar() {
     final status = ref.watch(playerProvider.select((s) => s.status));
     final label = switch (status) {
@@ -251,7 +255,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               borderRadius: BorderRadius.circular(AppRadius.xl),
               boxShadow: [
                 BoxShadow(
-                  color: dominantColor.withValues(alpha: PaletteTheme.playerArtGlowAlpha),
+                  color: dominantColor.withValues(
+                      alpha: PaletteTheme.playerArtGlowAlpha),
                   blurRadius: 50,
                   spreadRadius: 5,
                   offset: const Offset(0, 12),
@@ -360,11 +365,15 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         PlayerExtraButton(
             icon: AppIcons.devices, label: 'Devices', onTap: _showDevicesSheet),
         PlayerExtraButton(
-            icon: AppIcons.lyrics, label: 'Lyrics', onTap: () => _showLyricsSheet(dominantColor)),
+            icon: AppIcons.lyrics,
+            label: 'Lyrics',
+            onTap: () => _showLyricsSheet(dominantColor)),
         PlayerExtraButton(
             icon: AppIcons.queueMusic, label: 'Queue', onTap: _showQueueSheet),
         PlayerExtraButton(
-            icon: AppIcons.bedtime, label: 'Sleep', onTap: _showSleepTimerSheet),
+            icon: AppIcons.bedtime,
+            label: 'Sleep',
+            onTap: _showSleepTimerSheet),
       ],
     );
   }
@@ -393,7 +402,8 @@ bool _isDesktopPlatform() {
       defaultTargetPlatform == TargetPlatform.linux;
 }
 
-void _showDesktopQueuePanel(BuildContext context, {BuildContext? buttonContext}) {
+void _showDesktopQueuePanel(BuildContext context,
+    {BuildContext? buttonContext}) {
   final overlay = Overlay.of(context);
   late OverlayEntry entry;
   entry = OverlayEntry(
@@ -417,7 +427,8 @@ void showLyricsSheet(
     decoration: BoxDecoration(
       gradient: LinearGradient(
         colors: [
-          dominantColor.withValues(alpha: PaletteTheme.playerQueueGradientAlpha),
+          dominantColor.withValues(
+              alpha: PaletteTheme.playerQueueGradientAlpha),
           AppColors.surface,
           AppColors.surface,
         ],
@@ -511,7 +522,8 @@ class _SleepTimerSheetContentState
       children: [
         // Title
         Padding(
-          padding: const EdgeInsets.fromLTRB(kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 0),
+          padding: const EdgeInsets.fromLTRB(
+              kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 0),
           child: Text(
             'Sleep timer',
             style: TextStyle(
@@ -546,7 +558,8 @@ class _SleepTimerSheetContentState
           ),
         ] else ...[
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
+            padding:
+                const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
             child: Wrap(
               alignment: WrapAlignment.center,
               spacing: 10,
@@ -589,7 +602,8 @@ class _SleepTimerSheetContentState
                 ),
                 _SleepTimerChip(
                   label: 'Custom',
-                  onTap: () => setState(() => _showCustomInput = !_showCustomInput),
+                  onTap: () =>
+                      setState(() => _showCustomInput = !_showCustomInput),
                 ),
               ],
             ),
@@ -699,57 +713,57 @@ class _SleepTimerHero extends StatelessWidget {
       ),
       child: Center(
         child: showCountdown
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    formatDuration(remaining!),
+                    style: TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: AppFontSize.display3,
+                      fontWeight: FontWeight.w400,
+                      letterSpacing: AppLetterSpacing.label,
+                      height: AppLineHeight.tight,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'remaining',
+                    style: TextStyle(
+                      color: AppColors.textSecondary.withValues(alpha: 0.9),
+                      fontSize: AppFontSize.xs,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: AppLetterSpacing.normal,
+                    ),
+                  ),
+                ],
+              )
+            : showEndOfTrack
                 ? Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(
-                        formatDuration(remaining!),
-                        style: TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: AppFontSize.display3,
-                          fontWeight: FontWeight.w400,
-                          letterSpacing: AppLetterSpacing.label,
-                          height: AppLineHeight.tight,
-                        ),
+                      AppIcon(
+                        icon: AppIcons.musicNote,
+                        color: AppColors.textSecondary,
+                        size: 28,
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: AppSpacing.xs + 2),
                       Text(
-                        'remaining',
+                        'End of song',
                         style: TextStyle(
-                          color: AppColors.textSecondary.withValues(alpha: 0.9),
+                          color:
+                              AppColors.textSecondary.withValues(alpha: 0.95),
                           fontSize: AppFontSize.xs,
                           fontWeight: FontWeight.w500,
-                          letterSpacing: AppLetterSpacing.normal,
                         ),
                       ),
                     ],
                   )
-                : showEndOfTrack
-                    ? Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AppIcon(
-                            icon: AppIcons.musicNote,
-                            color: AppColors.textSecondary,
-                            size: 28,
-                          ),
-                          const SizedBox(height: AppSpacing.xs + 2),
-                          Text(
-                            'End of song',
-                            style: TextStyle(
-                              color: AppColors.textSecondary
-                                  .withValues(alpha: 0.95),
-                              fontSize: AppFontSize.xs,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      )
-                    : AppIcon(
-                        icon: AppIcons.bedtime,
-                        color: AppColors.textPrimary.withValues(alpha: 0.85),
-                        size: 44,
-                      ),
+                : AppIcon(
+                    icon: AppIcons.bedtime,
+                    color: AppColors.textPrimary.withValues(alpha: 0.85),
+                    size: 44,
+                  ),
       ),
     );
   }
@@ -860,40 +874,6 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
     });
   }
 
-  List<List<dynamic>> _iconForType(AudioDeviceType type) {
-    switch (type) {
-      case AudioDeviceType.thisDevice:
-        return AppIcons.smartphone;
-      case AudioDeviceType.bluetooth:
-        return AppIcons.bluetooth;
-      case AudioDeviceType.wired:
-        return AppIcons.headphones;
-      case AudioDeviceType.chromecast:
-        return AppIcons.cast;
-      case AudioDeviceType.dlna:
-        return AppIcons.tv;
-      case AudioDeviceType.airplay:
-        return AppIcons.airplay;
-    }
-  }
-
-  String _subtitleForType(AudioDeviceType type) {
-    switch (type) {
-      case AudioDeviceType.thisDevice:
-        return 'Phone speaker';
-      case AudioDeviceType.bluetooth:
-        return 'Bluetooth';
-      case AudioDeviceType.wired:
-        return 'Wired';
-      case AudioDeviceType.chromecast:
-        return 'Google Cast';
-      case AudioDeviceType.dlna:
-        return 'DLNA';
-      case AudioDeviceType.airplay:
-        return 'AirPlay';
-    }
-  }
-
   @override
   void dispose() {
     _pulseCtrl.dispose();
@@ -911,7 +891,8 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
       padding: EdgeInsets.zero,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(kSheetHorizontalPadding, 20, kSheetHorizontalPadding, 4),
+          padding: const EdgeInsets.fromLTRB(
+              kSheetHorizontalPadding, 20, kSheetHorizontalPadding, 4),
           child: Row(
             children: [
               AppIcon(
@@ -947,7 +928,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
         const SizedBox(height: AppSpacing.sm),
         _SectionLabel(label: 'CURRENT DEVICE'),
         _DeviceTile(
-          icon: _iconForType(_activeDevice.type),
+          icon: _activeDevice.type.icon,
           name: hasBluetoothActive || hasWiredActive
               ? _activeDevice.name
               : 'This Phone',
@@ -1006,10 +987,8 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
           ..._bluetoothDevices.map((d) => _DeviceTile(
                 icon: AppIcons.bluetooth,
                 name: d.name,
-                subtitle:
-                    d.subtype == 'a2dp' ? 'Bluetooth audio' : 'Bluetooth',
-                isActive:
-                    hasBluetoothActive && _activeDevice.name == d.name,
+                subtitle: d.subtype == 'a2dp' ? 'Bluetooth audio' : 'Bluetooth',
+                isActive: hasBluetoothActive && _activeDevice.name == d.name,
                 accentColor: AppColors.primary,
               )),
         const SizedBox(height: AppSpacing.xs),
@@ -1059,14 +1038,13 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
           )
         else
           ..._networkDevices.map((d) => _DeviceTile(
-                icon: _iconForType(d.type),
+                icon: d.type.icon,
                 name: d.name,
                 subtitle:
-                    '${_subtitleForType(d.type)}${d.ip != null ? '  •  ${d.ip}' : ''}',
+                    '${d.type.subtitle}${d.ip != null ? '  •  ${d.ip}' : ''}',
                 isActive: false,
                 accentColor: AppColors.primary,
               )),
-
         const SizedBox(height: AppSpacing.xxl),
       ],
     );
@@ -1081,7 +1059,8 @@ class _SectionLabel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(kSheetHorizontalPadding, 12, kSheetHorizontalPadding, 6),
+      padding: const EdgeInsets.fromLTRB(
+          kSheetHorizontalPadding, 12, kSheetHorizontalPadding, 6),
       child: Row(
         children: [
           Expanded(
@@ -1120,7 +1099,8 @@ class _DeviceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding, vertical: 12),
+      padding: const EdgeInsets.symmetric(
+          horizontal: kSheetHorizontalPadding, vertical: 12),
       child: Row(
         children: [
           Container(
@@ -1221,7 +1201,8 @@ class _EmptySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding, vertical: 16),
+      padding: const EdgeInsets.symmetric(
+          horizontal: kSheetHorizontalPadding, vertical: 16),
       child: Row(
         children: [
           AppIcon(icon: icon, color: AppColors.textMuted, size: 28),
@@ -1267,7 +1248,8 @@ class _ScanningPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding, vertical: 20),
+      padding: const EdgeInsets.symmetric(
+          horizontal: kSheetHorizontalPadding, vertical: 20),
       child: Row(
         children: [
           FadeTransition(
@@ -1291,7 +1273,6 @@ class _ScanningPlaceholder extends StatelessWidget {
     );
   }
 }
-
 
 class _PlayerDownloadButton extends ConsumerStatefulWidget {
   const _PlayerDownloadButton();
@@ -1467,19 +1448,21 @@ class QueuePanelContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final queue = ref.watch(playerProvider.select((s) => s.queue));
-    final currentIndex = ref.watch(playerProvider.select((s) => s.currentIndex));
+    final currentIndex =
+        ref.watch(playerProvider.select((s) => s.currentIndex));
     final isPlaying = ref.watch(playerProvider.select((s) => s.isPlaying));
     final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
-    final isShuffleEnabled = ref.watch(playerProvider.select((s) => s.isShuffleEnabled));
-    final currentSong =
-        (currentIndex >= 0 && currentIndex < queue.length)
-            ? queue[currentIndex]
-            : null;
+    final isShuffleEnabled =
+        ref.watch(playerProvider.select((s) => s.isShuffleEnabled));
+    final currentSong = (currentIndex >= 0 && currentIndex < queue.length)
+        ? queue[currentIndex]
+        : null;
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(kSheetHorizontalPadding, 16, kSheetHorizontalPadding, 8),
+          padding: const EdgeInsets.fromLTRB(
+              kSheetHorizontalPadding, 16, kSheetHorizontalPadding, 8),
           child: Row(
             children: [
               AppIcon(
@@ -1528,7 +1511,8 @@ class QueuePanelContent extends ConsumerWidget {
         else ...[
           if (currentSong != null)
             Padding(
-              padding: const EdgeInsets.fromLTRB(kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 8),
+              padding: const EdgeInsets.fromLTRB(
+                  kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1569,7 +1553,8 @@ class QueuePanelContent extends ConsumerWidget {
             ),
           if (isShuffleEnabled)
             Padding(
-              padding: const EdgeInsets.fromLTRB(kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 8),
+              padding: const EdgeInsets.fromLTRB(
+                  kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 8),
               child: Row(
                 children: [
                   AppIcon(
@@ -1706,7 +1691,8 @@ class _DesktopQueueOverlayState extends State<_DesktopQueueOverlay>
       final box = widget.anchorContext!.findRenderObject() as RenderBox?;
       if (box != null && box.hasSize) {
         final offset = box.localToGlobal(Offset.zero);
-        left = (offset.dx - panelWidth + box.size.width).clamp(8.0, screenSize.width - panelWidth - 8);
+        left = (offset.dx - panelWidth + box.size.width)
+            .clamp(8.0, screenSize.width - panelWidth - 8);
         top = offset.dy - panelHeight - 4;
         if (top < 8) top = offset.dy + box.size.height + 4;
       }
@@ -1839,7 +1825,6 @@ class _QueueItem extends ConsumerWidget {
   }
 }
 
-
 class LyricsPanelContent extends ConsumerStatefulWidget {
   const LyricsPanelContent({
     super.key,
@@ -1850,8 +1835,7 @@ class LyricsPanelContent extends ConsumerStatefulWidget {
   final ScrollController scrollController;
 
   @override
-  ConsumerState<LyricsPanelContent> createState() =>
-      _LyricsPanelContentState();
+  ConsumerState<LyricsPanelContent> createState() => _LyricsPanelContentState();
 }
 
 class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
@@ -1928,9 +1912,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
           child: Row(
             children: [
               AppIcon(
-                  icon: AppIcons.lyrics,
-                  color: widget.dominantColor,
-                  size: 22),
+                  icon: AppIcons.lyrics, color: widget.dominantColor, size: 22),
               const SizedBox(width: AppSpacing.sm + 2),
               const Text(
                 'Lyrics',
@@ -2007,7 +1989,8 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                   }
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                   decoration: BoxDecoration(
                     color: AppColors.surfaceHighlight,
                     borderRadius: BorderRadius.circular(AppRadius.full),

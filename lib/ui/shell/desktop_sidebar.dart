@@ -8,17 +8,16 @@ import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/library/library_provider.dart';
-import 'package:tunify/ui/widgets/adaptive_menu.dart';
-import 'package:tunify/ui/widgets/library_filter_chips.dart';
-import 'package:tunify/ui/widgets/library_thumbnail_tile.dart';
-import 'package:tunify/ui/widgets/button.dart';
-import 'package:tunify/ui/widgets/input_field.dart';
+import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
+import 'package:tunify/ui/widgets/library/library_filter_chips.dart';
+import 'package:tunify/ui/widgets/library/library_thumbnail_tile.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/ui/screens/library/library_app_bar.dart';
-import '../screens/library/library_downloaded_screen.dart';
-import '../screens/library/library_playlist_screen.dart';
-import '../screens/library/library_playlists_section.dart';
-import '../screens/library/library_search_screen.dart';
-import '../screens/library_screen.dart';
+import 'package:tunify/ui/screens/library/library_playlist_screen.dart';
+import 'package:tunify/ui/screens/library/library_playlists_section.dart';
+import 'package:tunify/ui/screens/library/library_search_screen.dart';
+import 'package:tunify/ui/screens/library/library_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
@@ -46,6 +45,7 @@ class DesktopSidebar extends ConsumerStatefulWidget {
 
   final VoidCallback onCreatePlaylist;
   final VoidCallback onCreateFolder;
+
   /// Pushes a page into the main content Navigator (desktop in-panel nav).
   final void Function(Widget page) onNavigateTo;
 
@@ -88,13 +88,12 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
   void _openPlaylist(LibraryPlaylist p) =>
       widget.onNavigateTo(LibraryPlaylistScreen(playlistId: p.id));
 
-  void _openFolderInline(LibraryFolder f) =>
-      setState(() => _openFolder = f);
+  void _openFolderInline(LibraryFolder f) => setState(() => _openFolder = f);
 
-  void _closeFolderInline() =>
-      setState(() => _openFolder = null);
+  void _closeFolderInline() => setState(() => _openFolder = null);
 
-  void _openAlbum(LibraryAlbum a) => widget.onNavigateTo(LibraryPlaylistScreen.album(
+  void _openAlbum(LibraryAlbum a) =>
+      widget.onNavigateTo(LibraryPlaylistScreen.album(
         songTitle: a.title,
         artistName: a.artistName,
         thumbnailUrl: a.thumbnailUrl,
@@ -102,8 +101,11 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
         name: a.title,
       ));
 
-  void _openArtist(LibraryArtist a) => widget.onNavigateTo(
-      LibraryPlaylistScreen.artist(artistName: a.name, thumbnailUrl: a.thumbnailUrl, browseId: a.browseId));
+  void _openArtist(LibraryArtist a) =>
+      widget.onNavigateTo(LibraryPlaylistScreen.artist(
+          artistName: a.name,
+          thumbnailUrl: a.thumbnailUrl,
+          browseId: a.browseId));
 
   // ── Build ────────────────────────────────────────────────────────────────
 
@@ -129,7 +131,9 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
 
     // Folders are hidden when the Playlists filter is active (matches mobile).
     final folders = showAll
-        ? library.sortedFolders.where((f) => q.isEmpty || f.name.toLowerCase().contains(q)).toList()
+        ? library.sortedFolders
+            .where((f) => q.isEmpty || f.name.toLowerCase().contains(q))
+            .toList()
         : <LibraryFolder>[];
 
     // Playlists filter shows ALL playlists as a flat list (including those
@@ -137,14 +141,21 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
     final rootPlaylists = !showPlaylists
         ? <LibraryPlaylist>[]
         : isPlaylistsFilter
-            ? library.sortedPlaylists.where((p) => q.isEmpty || p.name.toLowerCase().contains(q)).toList()
+            ? library.sortedPlaylists
+                .where((p) => q.isEmpty || p.name.toLowerCase().contains(q))
+                .toList()
             : library.sortedPlaylists
-                .where((p) => !inFolderIds.contains(p.id) && (q.isEmpty || p.name.toLowerCase().contains(q)))
+                .where((p) =>
+                    !inFolderIds.contains(p.id) &&
+                    (q.isEmpty || p.name.toLowerCase().contains(q)))
                 .toList();
 
     // Liked songs tile only shows in the unfiltered "all" view (matches mobile).
-    final showLiked =
-        showAll && (q.isEmpty || 'liked songs'.contains(q));
+    final showLiked = showAll && (q.isEmpty || 'liked songs'.contains(q));
+
+    final downloadCount = showAll && _openFolder == null
+        ? ref.watch(downloadServiceProvider).downloadedSongs.length
+        : 0;
 
     // Build section entries — same helper pattern as LibraryScreen
     final List<LibrarySectionEntry> playlistEntries = [
@@ -153,15 +164,28 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
           songCount: library.likedSongs.length,
           onTap: () => widget.onNavigateTo(const LibraryPlaylistScreen.liked()),
         ),
+      if (showAll && _openFolder == null && downloadCount > 0)
+        DownloadsEntry(
+          songCount: downloadCount,
+          onTap: () =>
+              widget.onNavigateTo(const LibraryPlaylistScreen.downloads()),
+        ),
       ...folders.map(FolderEntry.new),
       ...rootPlaylists.map(PlaylistEntry.new),
     ];
 
     final albums = showAlbums
-        ? library.followedAlbums.where((a) => q.isEmpty || a.title.toLowerCase().contains(q) || a.artistName.toLowerCase().contains(q)).toList()
+        ? library.followedAlbums
+            .where((a) =>
+                q.isEmpty ||
+                a.title.toLowerCase().contains(q) ||
+                a.artistName.toLowerCase().contains(q))
+            .toList()
         : <LibraryAlbum>[];
     final artists = showArtists
-        ? library.followedArtists.where((a) => q.isEmpty || a.name.toLowerCase().contains(q)).toList()
+        ? library.followedArtists
+            .where((a) => q.isEmpty || a.name.toLowerCase().contains(q))
+            .toList()
         : <LibraryArtist>[];
 
     // ── When a folder is open, override the list to show only its playlists ─
@@ -171,10 +195,6 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
             .where((p) => _openFolder!.playlistIds.contains(p.id))
             .map(PlaylistEntry.new)
             .toList();
-
-    final downloadCount = showAll && _openFolder == null
-        ? ref.watch(downloadServiceProvider).downloadedSongs.length
-        : 0;
 
     final hasContent = (folderEntries?.isNotEmpty ?? false) ||
         playlistEntries.isNotEmpty ||
@@ -193,8 +213,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
           children: [
             // ── Header ────────────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                  DesktopSpacing.base, DesktopSpacing.lg, DesktopSpacing.sm, DesktopSpacing.md),
+              padding: const EdgeInsets.fromLTRB(DesktopSpacing.base,
+                  DesktopSpacing.lg, DesktopSpacing.sm, DesktopSpacing.md),
               child: Row(
                 children: [
                   const Expanded(
@@ -240,8 +260,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
               child: _isSearching
                   ? Padding(
                       key: const ValueKey('search-field'),
-                      padding: const EdgeInsets.fromLTRB(
-                          DesktopSpacing.base, 0, DesktopSpacing.sm, DesktopSpacing.xs),
+                      padding: const EdgeInsets.fromLTRB(DesktopSpacing.base, 0,
+                          DesktopSpacing.sm, DesktopSpacing.xs),
                       child: Container(
                         height: 36,
                         decoration: BoxDecoration(
@@ -269,7 +289,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                             Expanded(
                               child: Theme(
                                 data: Theme.of(context).copyWith(
-                                  inputDecorationTheme: const InputDecorationTheme(
+                                  inputDecorationTheme:
+                                      const InputDecorationTheme(
                                     border: InputBorder.none,
                                     filled: false,
                                   ),
@@ -309,23 +330,27 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                     )
                   : Padding(
                       key: const ValueKey('controls-row'),
-                      padding: const EdgeInsets.fromLTRB(
-                          DesktopSpacing.base, 0, DesktopSpacing.sm, DesktopSpacing.xs),
+                      padding: const EdgeInsets.fromLTRB(DesktopSpacing.base, 0,
+                          DesktopSpacing.sm, DesktopSpacing.xs),
                       child: Row(
                         children: [
                           Builder(
                             builder: (btnCtx) => GestureDetector(
                               behavior: HitTestBehavior.opaque,
                               onTap: () {
-                                final box = btnCtx.findRenderObject() as RenderBox?;
+                                final box =
+                                    btnCtx.findRenderObject() as RenderBox?;
                                 Rect? rect;
                                 if (box != null && box.hasSize) {
-                                  rect = box.localToGlobal(Offset.zero) & box.size;
+                                  rect =
+                                      box.localToGlobal(Offset.zero) & box.size;
                                 }
                                 showLibrarySortSheet(
                                   context,
                                   sortOrder,
-                                  (o) => ref.read(libraryProvider.notifier).setSortOrder(o),
+                                  (o) => ref
+                                      .read(libraryProvider.notifier)
+                                      .setSortOrder(o),
                                   anchorRect: rect,
                                 );
                               },
@@ -399,7 +424,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                 switchInCurve: AppCurves.decelerate,
                 switchOutCurve: AppCurves.standard,
                 transitionBuilder: (child, animation) {
-                  final currentKey = ValueKey('sidebar-$_filter-${_openFolder?.id}-$_isSearching');
+                  final currentKey = ValueKey(
+                      'sidebar-$_filter-${_openFolder?.id}-$_isSearching');
                   final isIncoming = child.key == currentKey;
                   if (isIncoming) {
                     return FadeTransition(
@@ -419,122 +445,122 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                   return FadeTransition(opacity: animation, child: child);
                 },
                 child: KeyedSubtree(
-                  key: ValueKey('sidebar-$_filter-${_openFolder?.id}-$_isSearching'),
+                  key: ValueKey(
+                      'sidebar-$_filter-${_openFolder?.id}-$_isSearching'),
                   child: _isSearching
-                  // ── Search mode: same body component as LibrarySearchScreen ──
-                  ? LibrarySearchBody(
-                      query: _searchQuery.trim().toLowerCase(),
-                      onFolderTap: _openFolderInline,
-                      onPlaylistTap: _openPlaylist,
-                    )
-                  // ── Normal mode: full library list ─────────────────────────
-                  : !hasContent
-                      ? LibraryFilterPlaceholder(
-                          icon: _filter == LibraryFilter.albums
-                              ? AppIcons.album
-                              : _filter == LibraryFilter.artists
-                                  ? AppIcons.artist
-                                  : AppIcons.playlist,
-                          message: _filter == LibraryFilter.playlists
-                              ? 'Playlists you create will appear here'
-                              : _filter == LibraryFilter.albums
-                                  ? 'Albums you save will appear here'
-                                  : _filter == LibraryFilter.artists
-                                      ? 'Artists you follow will appear here'
-                                      : 'Your library is empty.\nTap + to get started.',
+                      // ── Search mode: same body component as LibrarySearchScreen ──
+                      ? LibrarySearchBody(
+                          query: _searchQuery.trim().toLowerCase(),
+                          onFolderTap: _openFolderInline,
+                          onPlaylistTap: _openPlaylist,
                         )
-                      : ListView(
-                      padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: 8),
-                      children: [
-                        // Folder open: show only that folder's playlists
-                        if (folderEntries != null) ...[
-                          if (folderEntries.isEmpty)
-                            const Padding(
-                              padding: EdgeInsets.all(AppSpacing.xl),
-                              child: Text(
-                                'No playlists in this folder.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                    color: AppColors.textMuted, fontSize: AppFontSize.md),
-                              ),
+                      // ── Normal mode: full library list ─────────────────────────
+                      : !hasContent
+                          ? LibraryFilterPlaceholder(
+                              icon: _filter == LibraryFilter.albums
+                                  ? AppIcons.album
+                                  : _filter == LibraryFilter.artists
+                                      ? AppIcons.artist
+                                      : AppIcons.playlist,
+                              message: _filter == LibraryFilter.playlists
+                                  ? 'Playlists you create will appear here'
+                                  : _filter == LibraryFilter.albums
+                                      ? 'Albums you save will appear here'
+                                      : _filter == LibraryFilter.artists
+                                          ? 'Artists you follow will appear here'
+                                          : 'Your library is empty.\nTap + to get started.',
                             )
-                          else
-                            LibraryPlaylistsSection(
-                              entries: folderEntries,
-                              viewMode: viewMode,
-                              onPlaylistTap: _openPlaylist,
-                              onPlaylistOptions: (p, rect) =>
-                                  showLibraryPlaylistOptionsSheet(
-                                      context, ref, p, anchorRect: rect),
-                              onFolderTap: _openFolderInline,
-                              onFolderOptions: (f, rect) =>
-                                  showLibraryFolderOptionsSheet(
-                                      context, ref, f, anchorRect: rect),
-                            ),
-                        ] else ...[
-                          // Normal library list
-                          if (downloadCount > 0)
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                              child: LibraryThumbnailTile(
-                                title: 'Downloads',
-                                subtitle: '$downloadCount songs',
-                                onTap: () => widget.onNavigateTo(
-                                    const LibraryDownloadedScreen()),
-                                icon: AppIcons.download,
-                              ),
-                            ),
-                          if (playlistEntries.isNotEmpty)
-                            LibraryPlaylistsSection(
-                              entries: playlistEntries,
-                              viewMode: viewMode,
-                              onPlaylistTap: _openPlaylist,
-                              onPlaylistOptions: (p, rect) =>
-                                  showLibraryPlaylistOptionsSheet(
-                                      context, ref, p, anchorRect: rect),
-                              onFolderTap: _openFolderInline,
-                              onFolderOptions: (f, rect) =>
-                                  showLibraryFolderOptionsSheet(
-                                      context, ref, f, anchorRect: rect),
-                            ),
+                          : ListView(
+                              padding: const EdgeInsets.only(
+                                  top: AppSpacing.xs, bottom: 8),
+                              children: [
+                                // Folder open: show only that folder's playlists
+                                if (folderEntries != null) ...[
+                                  if (folderEntries.isEmpty)
+                                    const Padding(
+                                      padding: EdgeInsets.all(AppSpacing.xl),
+                                      child: Text(
+                                        'No playlists in this folder.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                            color: AppColors.textMuted,
+                                            fontSize: AppFontSize.md),
+                                      ),
+                                    )
+                                  else
+                                    LibraryPlaylistsSection(
+                                      entries: folderEntries,
+                                      viewMode: viewMode,
+                                      onPlaylistTap: _openPlaylist,
+                                      onPlaylistOptions: (p, rect) =>
+                                          showLibraryPlaylistOptionsSheet(
+                                              context, ref, p,
+                                              anchorRect: rect),
+                                      onFolderTap: _openFolderInline,
+                                      onFolderOptions: (f, rect) =>
+                                          showLibraryFolderOptionsSheet(
+                                              context, ref, f,
+                                              anchorRect: rect),
+                                    ),
+                                ] else ...[
+                                  // Normal library list
+                                  if (playlistEntries.isNotEmpty)
+                                    LibraryPlaylistsSection(
+                                      entries: playlistEntries,
+                                      viewMode: viewMode,
+                                      onPlaylistTap: _openPlaylist,
+                                      onPlaylistOptions: (p, rect) =>
+                                          showLibraryPlaylistOptionsSheet(
+                                              context, ref, p,
+                                              anchorRect: rect),
+                                      onFolderTap: _openFolderInline,
+                                      onFolderOptions: (f, rect) =>
+                                          showLibraryFolderOptionsSheet(
+                                              context, ref, f,
+                                              anchorRect: rect),
+                                    ),
 
-                          if (albums.isNotEmpty) ...[
-                            if (showAll)
-                              const _SectionLabel(label: 'ALBUMS'),
-                            for (final a in albums)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                                child: LibraryThumbnailTile(
-                                  thumbnailUrl: a.thumbnailUrl.isNotEmpty
-                                      ? a.thumbnailUrl
-                                      : null,
-                                  title: a.title,
-                                  subtitle: a.artistName,
-                                  onTap: () => _openAlbum(a),
-                                ),
-                              ),
-                          ],
+                                  if (albums.isNotEmpty) ...[
+                                    if (showAll)
+                                      const _SectionLabel(label: 'ALBUMS'),
+                                    for (final a in albums)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSpacing.sm),
+                                        child: LibraryThumbnailTile(
+                                          thumbnailUrl:
+                                              a.thumbnailUrl.isNotEmpty
+                                                  ? a.thumbnailUrl
+                                                  : null,
+                                          title: a.title,
+                                          subtitle: a.artistName,
+                                          onTap: () => _openAlbum(a),
+                                        ),
+                                      ),
+                                  ],
 
-                          if (artists.isNotEmpty) ...[
-                            if (showAll)
-                              const _SectionLabel(label: 'ARTISTS'),
-                            for (final a in artists)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-                                child: LibraryThumbnailTile(
-                                  thumbnailUrl: a.thumbnailUrl.isNotEmpty
-                                      ? a.thumbnailUrl
-                                      : null,
-                                  title: a.name,
-                                  subtitle: 'Artist',
-                                  isCircle: true,
-                                  onTap: () => _openArtist(a),
-                                ),
-                              ),
-                          ],
-                        ],
-                      ],
-                    ),
+                                  if (artists.isNotEmpty) ...[
+                                    if (showAll)
+                                      const _SectionLabel(label: 'ARTISTS'),
+                                    for (final a in artists)
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSpacing.sm),
+                                        child: LibraryThumbnailTile(
+                                          thumbnailUrl:
+                                              a.thumbnailUrl.isNotEmpty
+                                                  ? a.thumbnailUrl
+                                                  : null,
+                                          title: a.name,
+                                          subtitle: 'Artist',
+                                          isCircle: true,
+                                          onTap: () => _openArtist(a),
+                                        ),
+                                      ),
+                                  ],
+                                ],
+                              ],
+                            ),
                 ),
               ),
             ),
@@ -575,7 +601,8 @@ class _CreateMenuButton extends StatelessWidget {
         ),
       ],
       child: AppIconButton(
-        icon: AppIcon(icon: AppIcons.add, size: 20, color: AppColors.textPrimary),
+        icon:
+            AppIcon(icon: AppIcons.add, size: 20, color: AppColors.textPrimary),
         onPressed: null, // tap handled by AdaptiveMenuAnchor
         size: 36,
         iconSize: 20,
@@ -607,5 +634,3 @@ class _SectionLabel extends StatelessWidget {
     );
   }
 }
-
-

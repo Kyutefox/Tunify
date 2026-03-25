@@ -206,8 +206,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
     final hasContent = (folderEntries?.isNotEmpty ?? false) ||
         playlistEntries.isNotEmpty ||
         albums.isNotEmpty ||
-        artists.isNotEmpty ||
-        downloadCount > 0;
+        artists.isNotEmpty;
 
     return SizedBox(
       width: kDesktopSidebarWidth,
@@ -533,7 +532,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                     for (final a in albums)
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: AppSpacing.sm),
+                                            horizontal: DesktopSpacing.base),
                                         child: LibraryThumbnailTile(
                                           thumbnailUrl:
                                               a.thumbnailUrl.isNotEmpty
@@ -552,7 +551,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                     for (final a in artists)
                                       Padding(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: AppSpacing.sm),
+                                            horizontal: DesktopSpacing.base),
                                         child: LibraryThumbnailTile(
                                           thumbnailUrl:
                                               a.thumbnailUrl.isNotEmpty

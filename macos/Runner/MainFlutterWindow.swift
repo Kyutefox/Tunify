@@ -7,14 +7,17 @@ class MainFlutterWindow: NSWindow {
     let windowFrame = self.frame
     self.contentViewController = flutterViewController
 
-    self.minSize = NSSize(width: 1024, height: 700)
+    let minWidth: CGFloat  = 1280
+    let minHeight: CGFloat = 800
 
-    if self.frame.width < 1024 || self.frame.height < 700 {
+    self.minSize = NSSize(width: minWidth, height: minHeight)
+
+    if self.frame.width < minWidth || self.frame.height < minHeight {
       let newFrame = NSRect(
         x: self.frame.origin.x,
         y: self.frame.origin.y,
-        width: 1024,
-        height: 700
+        width: max(self.frame.width, minWidth),
+        height: max(self.frame.height, minHeight)
       )
       self.setFrame(newFrame, display: true, animate: true)
     } else {

@@ -207,6 +207,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
   // ── Build ───────────────────────────────────────────────────────────────────
 
   static const double _gap = 4;
+  static const double _sidebarGap = 8;
   static const double _radius = 12;
   static const double _topBarHeight = 64;
 
@@ -284,7 +285,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
                           ),
                         ),
 
-                        const SizedBox(width: _gap),
+                        const SizedBox(width: _sidebarGap),
 
                         // Main content — elevated surface panel
                         Expanded(
@@ -318,7 +319,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
                         // Using SlideTransition on content only means LayoutBuilder in
                         // the main content area never fires during the animation.
                         if (_sidebarOpen) ...[
-                          const SizedBox(width: _gap),
+                          const SizedBox(width: _sidebarGap),
                           ClipRect(
                             child: SlideTransition(
                               position: _sidebarSlide,

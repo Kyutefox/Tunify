@@ -265,6 +265,9 @@ class LibraryNotifier extends Notifier<LibraryState> {
       createdAt: DateTime.now(), updatedAt: DateTime.now(), songs: const [],
       customImageUrl: playlist.customImageUrl,
       isImported: true, browseId: playlist.browseId ?? playlist.id,
+      remoteTrackCount: playlist.songs.isNotEmpty
+          ? playlist.songs.length
+          : playlist.remoteTrackCount,
     );
     state = state.copyWith(playlists: [minimal, ...state.playlists]);
     await _persist();

@@ -9,11 +9,11 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/features/library/library_provider.dart';
-import 'package:tunify/core/utils/string_utils.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'library_playlist_screen.dart';
+import 'library_playlists_section.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 
 /// Full-screen library search using [SharedSearchPage]. Filters playlists
@@ -145,134 +145,39 @@ class LibrarySearchBody extends ConsumerWidget {
       );
     }
 
+    final entries = <LibrarySectionEntry>[
+      ...filteredFolders.map(FolderEntry.new),
+      ...filteredPlaylists.map(PlaylistEntry.new),
+    ];
+
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: AppSpacing.max),
+      padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.max),
       children: [
-        if (filteredFolders.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.base,
-              vertical: AppSpacing.sm,
-            ),
-            child: Text(
-              'FOLDERS',
-              style: TextStyle(
-                color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: AppFontSize.sm,
-                fontWeight: FontWeight.w700,
-                letterSpacing: AppLetterSpacing.label,
-              ),
-            ),
-          ),
-          ...filteredFolders.map((folder) => _FolderTile(
-                folder: folder,
-                onTap: onFolderTap != null
-                    ? () => onFolderTap!(folder)
-                    : () => Navigator.of(context).pop(folder.id),
-              )),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-        if (filteredPlaylists.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.base,
-              vertical: AppSpacing.sm,
-            ),
-            child: Text(
-              'PLAYLISTS',
-              style: TextStyle(
-                color: AppColors.textMuted.withValues(alpha: 0.9),
-                fontSize: AppFontSize.sm,
-                fontWeight: FontWeight.w700,
-                letterSpacing: AppLetterSpacing.label,
-              ),
-            ),
-          ),
-          ...filteredPlaylists.map((playlist) => _PlaylistTile(
-                playlist: playlist,
-                onTap: onPlaylistTap != null
-                    ? () => onPlaylistTap!(playlist)
-                    : () {
-                        Navigator.pop(context);
-                        Navigator.of(context).push(
-                          appPageRoute<void>(
-                            builder: (_) =>
-                                LibraryPlaylistScreen(playlistId: playlist.id),
-                          ),
-                        );
-                      },
-              )),
-        ],
+        LibraryPlaylistsSection(
+          entries: entries,
+          viewMode: LibraryViewMode.list,
+          onPlaylistTap: (p) {
+            if (onPlaylistTap != null) {
+              onPlaylistTap!(p);
+            } else {
+              Navigator.pop(context);
+              Navigator.of(context).push(appPageRoute<void>(
+                builder: (_) => LibraryPlaylistScreen(playlistId: p.id),
+              ));
+            }
+          },
+          onPlaylistOptions: (_, __) {},
+          onFolderTap: (f) {
+            if (onFolderTap != null) {
+              onFolderTap!(f);
+            } else {
+              Navigator.of(context).pop(f.id);
+            }
+          },
+          onFolderOptions: (_, __) {},
+        ),
       ],
-    );
-  }
-}
-
-class _FolderTile extends StatelessWidget {
-  const _FolderTile({required this.folder, required this.onTap});
-
-  final LibraryFolder folder;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: AppIcon(
-        icon: AppIcons.folder,
-        color: AppColors.primary,
-        size: 24,
-      ),
-      title: Text(
-        folder.name.capitalized,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: AppFontSize.xl,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
-        style: const TextStyle(
-          color: AppColors.textMuted,
-          fontSize: AppFontSize.md,
-        ),
-      ),
-      onTap: onTap,
-    );
-  }
-}
-
-class _PlaylistTile extends StatelessWidget {
-  const _PlaylistTile({required this.playlist, required this.onTap});
-
-  final LibraryPlaylist playlist;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: AppIcon(
-        icon: AppIcons.playlist,
-        color: AppColors.textSecondary,
-        size: 24,
-      ),
-      title: Text(
-        playlist.name.capitalized,
-        style: const TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: AppFontSize.xl,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        '${playlist.songs.length} song${playlist.songs.length == 1 ? '' : 's'}',
-        style: const TextStyle(
-          color: AppColors.textMuted,
-          fontSize: AppFontSize.md,
-        ),
-      ),
-      onTap: onTap,
     );
   }
 }

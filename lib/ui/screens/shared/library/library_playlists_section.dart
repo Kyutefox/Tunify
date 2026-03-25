@@ -200,8 +200,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
     final showFolderEmptyState = isFolderView && contentEntries.isEmpty;
 
     return Padding(
-      padding: EdgeInsets.symmetric(
-          horizontal: t.isDesktop ? AppSpacing.sm : AppSpacing.base),
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -326,7 +325,7 @@ class _LibrarySectionGrid extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.zero,
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.85,
@@ -530,6 +529,15 @@ class _LibraryPlaylistGridCard extends StatelessWidget {
               ),
             ],
           ),
+          Text(
+            playlist.trackCountLabel,
+            style: const TextStyle(
+              color: AppColors.textMuted,
+              fontSize: AppFontSize.xs,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -647,6 +655,7 @@ class _LibraryFolderListTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         onLongPress: () => onOptions(null),
+        hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
@@ -834,6 +843,7 @@ class _StaticListTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: t.spacing.sm),
@@ -911,6 +921,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         onLongPress: () => onOptions(null),
+        hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: t.spacing.sm),
@@ -929,6 +940,15 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                         fontSize: AppFontSize.lg,
                         fontWeight:
                             t.isDesktop ? FontWeight.w700 : FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      playlist.trackCountLabel,
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: AppFontSize.md,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -988,6 +1008,7 @@ class _LibraryHoverTileState extends State<_LibraryHoverTile> {
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
         decoration: BoxDecoration(
           color: _hovered ? AppColors.hoverOverlay : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.sm),

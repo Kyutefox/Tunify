@@ -61,6 +61,10 @@ class LibraryPlaylist {
   /// Cached palette color (ARGB int) extracted from the cover image.
   /// Stored so the gradient shows instantly on re-open without re-extraction.
   final int? cachedPaletteColor;
+  /// Track count from the remote API, stored at import time.
+  /// Used as a fallback display value for imported playlists whose songs are
+  /// not persisted locally (songs list stays empty between sessions).
+  final int? remoteTrackCount;
 
   const LibraryPlaylist({
     required this.id,
@@ -76,9 +80,14 @@ class LibraryPlaylist {
     this.isImported = false,
     this.browseId,
     this.cachedPaletteColor,
+    this.remoteTrackCount,
   });
 
-  int get trackCount => songs.length;
+  /// For imported playlists, songs are not persisted — fall back to the
+  /// remote count stored at import time so the library tile shows a real number.
+  int get trackCount => songs.isNotEmpty
+      ? songs.length
+      : (isImported ? (remoteTrackCount ?? 0) : 0);
 
   String get trackCountLabel =>
       trackCount == 1 ? '1 song' : '$trackCount songs';
@@ -97,6 +106,7 @@ class LibraryPlaylist {
     bool? isImported,
     String? browseId,
     int? cachedPaletteColor,
+    int? remoteTrackCount,
   }) {
     return LibraryPlaylist(
       id: id ?? this.id,
@@ -112,6 +122,7 @@ class LibraryPlaylist {
       isImported: isImported ?? this.isImported,
       browseId: browseId ?? this.browseId,
       cachedPaletteColor: cachedPaletteColor ?? this.cachedPaletteColor,
+      remoteTrackCount: remoteTrackCount ?? this.remoteTrackCount,
     );
   }
 
@@ -146,6 +157,7 @@ class LibraryPlaylist {
         'isImported': isImported,
         if (browseId != null) 'browseId': browseId,
         if (cachedPaletteColor != null) 'cachedPaletteColor': cachedPaletteColor,
+        if (remoteTrackCount != null) 'remoteTrackCount': remoteTrackCount,
       };
 
   factory LibraryPlaylist.fromJson(Map<String, dynamic> json) {
@@ -169,6 +181,7 @@ class LibraryPlaylist {
       isImported: json['isImported'] as bool? ?? false,
       browseId: json['browseId'] as String?,
       cachedPaletteColor: json['cachedPaletteColor'] as int?,
+      remoteTrackCount: json['remoteTrackCount'] as int?,
     );
   }
 

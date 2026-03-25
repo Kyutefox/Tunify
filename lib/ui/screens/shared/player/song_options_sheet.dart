@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:tunify/features/device/device_music_provider.dart';
 import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart'
     show showAppSheet, kSheetHorizontalPadding, SheetOptionTile;
@@ -41,6 +44,8 @@ void showSongOptionsSheet(
   int? queueIndex,
   Rect? anchorRect,
   BuildContext? buttonContext,
+  bool isDownloads = false,
+  bool isLocalFiles = false,
 }) {
   if (_isDesktop()) {
     _showDesktopSongMenu(
@@ -63,6 +68,8 @@ void showSongOptionsSheet(
       showAddToPlaylist: showAddToPlaylist,
       onRemoveFromPlaylist: onRemoveFromPlaylist,
       queueIndex: queueIndex,
+      isDownloads: isDownloads,
+      isLocalFiles: isLocalFiles,
     ),
   );
 }
@@ -259,6 +266,8 @@ class _SongOptionsContent extends ConsumerWidget {
     this.showAddToPlaylist = true,
     this.onRemoveFromPlaylist,
     this.queueIndex,
+    this.isDownloads = false,
+    this.isLocalFiles = false,
   });
 
   final Song song;
@@ -266,6 +275,8 @@ class _SongOptionsContent extends ConsumerWidget {
   final bool showAddToPlaylist;
   final VoidCallback? onRemoveFromPlaylist;
   final int? queueIndex;
+  final bool isDownloads;
+  final bool isLocalFiles;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -348,8 +359,14 @@ class _SongOptionsContent extends ConsumerWidget {
             isDownloaded: isDownloaded,
             isLocalSong: isLocalSong,
             isLiked: isLiked,
-            showPlaylist: showAddToPlaylist || onRemoveFromPlaylist != null,
-            isRemoveFromPlaylist: onRemoveFromPlaylist != null,
+            showPlaylist: showAddToPlaylist ||
+                onRemoveFromPlaylist != null ||
+                isDownloads ||
+                isLocalFiles,
+            isRemoveFromPlaylist:
+                onRemoveFromPlaylist != null || isDownloads || isLocalFiles,
+            isDownloads: isDownloads,
+            isLocalFiles: isLocalFiles,
             onDownload: isLocalSong
                 ? null
                 : () {
@@ -362,7 +379,21 @@ class _SongOptionsContent extends ConsumerWidget {
                   },
             onPlaylist: () {
               Navigator.of(context).pop();
-              if (onRemoveFromPlaylist != null) {
+              if (isDownloads) {
+                ref.read(downloadServiceProvider).removeDownload(song.id);
+              } else if (isLocalFiles) {
+                final deviceState = ref.read(deviceMusicProvider);
+                final filePath = deviceState.pathMap[song.id];
+                if (filePath != null) {
+                  try {
+                    final file = File(filePath);
+                    file.deleteSync();
+                  } catch (_) {
+                    // File might have been moved or deleted already
+                  }
+                  ref.read(deviceMusicProvider.notifier).loadSongs();
+                }
+              } else if (onRemoveFromPlaylist != null) {
                 onRemoveFromPlaylist!();
               } else {
                 showAddToPlaylistSheet(context, song: song);
@@ -453,6 +484,8 @@ class _QuickActionRow extends StatelessWidget {
     required this.isLiked,
     required this.showPlaylist,
     this.isRemoveFromPlaylist = false,
+    this.isDownloads = false,
+    this.isLocalFiles = false,
     this.onDownload,
     required this.onPlaylist,
     required this.onLiked,
@@ -464,6 +497,8 @@ class _QuickActionRow extends StatelessWidget {
   final bool isLiked;
   final bool showPlaylist;
   final bool isRemoveFromPlaylist;
+  final bool isDownloads;
+  final bool isLocalFiles;
   final VoidCallback? onDownload;
   final VoidCallback onPlaylist;
   final VoidCallback onLiked;
@@ -494,11 +529,15 @@ class _QuickActionRow extends StatelessWidget {
         if (showPlaylist)
           Expanded(
             child: _QuickActionButton(
-              icon: isRemoveFromPlaylist
+              icon: isRemoveFromPlaylist || isDownloads || isLocalFiles
                   ? AppIcons.removeCircleOutline
                   : AppIcons.playlistAdd,
               iconColor: AppColors.textSecondary,
-              label: isRemoveFromPlaylist ? 'Remove' : 'Playlist',
+              label: isDownloads
+                  ? 'Remove'
+                  : (isLocalFiles
+                      ? 'Remove'
+                      : (isRemoveFromPlaylist ? 'Remove' : 'Playlist')),
               onTap: onPlaylist,
             ),
           ),

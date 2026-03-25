@@ -938,8 +938,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 songs: songs,
                 sortOrder: sortOrder,
               ),
-        searchField:
-            _SearchInPlaylistTap(songs: songs, playlistId: 'downloads'),
+        searchField: _SearchInPlaylistTap(
+            songs: songs, playlistId: 'downloads', isDownloads: true),
         bodySlivers: [
           if (filteredSongs.isEmpty)
             SliverFillRemaining(
@@ -969,6 +969,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   playlistId: 'downloads',
                   queueSource: 'downloads',
                   isImported: false,
+                  isDownloads: true,
                 );
               },
               childCount: filteredSongs.length,
@@ -1023,8 +1024,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 songs: songs,
                 sortOrder: sortOrder,
               ),
-        searchField:
-            _SearchInPlaylistTap(songs: songs, playlistId: 'localFiles'),
+        searchField: _SearchInPlaylistTap(
+            songs: songs, playlistId: 'localFiles', isLocalFiles: true),
         bodySlivers: [
           if (!deviceState.hasPermission && songs.isEmpty)
             SliverFillRemaining(
@@ -1078,6 +1079,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   playlistId: 'localFiles',
                   queueSource: 'localFiles',
                   isImported: false,
+                  isLocalFiles: true,
                 );
               },
               childCount: filteredSongs.length,
@@ -2090,9 +2092,16 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
 // ─── Search in playlist ───────────────────────────────────────────────────────
 
 class _SearchInPlaylistTap extends StatelessWidget {
-  const _SearchInPlaylistTap({required this.songs, required this.playlistId});
+  const _SearchInPlaylistTap({
+    required this.songs,
+    required this.playlistId,
+    this.isDownloads = false,
+    this.isLocalFiles = false,
+  });
   final List<Song> songs;
   final String playlistId;
+  final bool isDownloads;
+  final bool isLocalFiles;
 
   @override
   Widget build(BuildContext context) {
@@ -2100,8 +2109,12 @@ class _SearchInPlaylistTap extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
       child: GestureDetector(
         onTap: () => Navigator.of(context).push(appPageRoute<void>(
-            builder: (_) =>
-                _PlaylistSearchPage(songs: songs, playlistId: playlistId))),
+            builder: (_) => _PlaylistSearchPage(
+                  songs: songs,
+                  playlistId: playlistId,
+                  isDownloads: isDownloads,
+                  isLocalFiles: isLocalFiles,
+                ))),
         child: Container(
           height: 44,
           decoration: BoxDecoration(
@@ -2126,9 +2139,16 @@ class _SearchInPlaylistTap extends StatelessWidget {
 }
 
 class _PlaylistSearchPage extends ConsumerStatefulWidget {
-  const _PlaylistSearchPage({required this.songs, required this.playlistId});
+  const _PlaylistSearchPage({
+    required this.songs,
+    required this.playlistId,
+    this.isDownloads = false,
+    this.isLocalFiles = false,
+  });
   final List<Song> songs;
   final String playlistId;
+  final bool isDownloads;
+  final bool isLocalFiles;
 
   @override
   ConsumerState<_PlaylistSearchPage> createState() =>
@@ -2192,7 +2212,9 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
                 itemBuilder: (_, i) => _TrackTile(
                     song: filtered[i],
                     songs: widget.songs,
-                    playlistId: widget.playlistId));
+                    playlistId: widget.playlistId,
+                    isDownloads: widget.isDownloads,
+                    isLocalFiles: widget.isLocalFiles));
 
     final page = SharedSearchPage(
         controller: _ctrl,
@@ -2228,11 +2250,15 @@ class _TrackTile extends ConsumerWidget {
     required this.playlistId,
     this.queueSource = 'playlist',
     this.isImported = false,
+    this.isDownloads = false,
+    this.isLocalFiles = false,
   });
   final Song song;
   final List<Song> songs;
   final String playlistId, queueSource;
   final bool isImported;
+  final bool isDownloads;
+  final bool isLocalFiles;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2252,8 +2278,10 @@ class _TrackTile extends ConsumerWidget {
               song: song,
               ref: ref,
               buttonContext: btnCtx,
-              showAddToPlaylist: !isImported,
-              onRemoveFromPlaylist: isImported
+              showAddToPlaylist: !isImported && !isDownloads && !isLocalFiles,
+              isDownloads: isDownloads,
+              isLocalFiles: isLocalFiles,
+              onRemoveFromPlaylist: isImported || isDownloads || isLocalFiles
                   ? null
                   : () {
                       ref

@@ -1709,19 +1709,23 @@ class PlayerNotifier extends Notifier<PlayerState> {
     final duration = state.duration;
 
     if (song != null && duration != null && duration.inMilliseconds > 0) {
-      final cacheInfo = await _audioRepository.getCacheInfo(song.id);
-      if (cacheInfo.exists && !cacheInfo.isComplete) {
-        final isPositionCached = await _audioRepository.isPositionCached(
-          song.id,
-          position,
-          duration,
-        );
+      final isDownloaded = _resolveLocalPath(song.id) != null;
 
-        if (!isPositionCached) {
-          log('Player: seekTo $position - position not cached, reloading from URL',
-              tag: 'Player');
-          await _reloadCurrentSongFromUrl(position);
-          return;
+      if (!isDownloaded) {
+        final cacheInfo = await _audioRepository.getCacheInfo(song.id);
+        if (cacheInfo.exists && !cacheInfo.isComplete) {
+          final isPositionCached = await _audioRepository.isPositionCached(
+            song.id,
+            position,
+            duration,
+          );
+
+          if (!isPositionCached) {
+            log('Player: seekTo $position - position not cached, reloading from URL',
+                tag: 'Player');
+            await _reloadCurrentSongFromUrl(position);
+            return;
+          }
         }
       }
     }

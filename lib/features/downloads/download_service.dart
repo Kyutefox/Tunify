@@ -274,6 +274,16 @@ class DownloadService extends ChangeNotifier {
       _notifyDownloadedIdsChanged();
       notifyListeners();
     } catch (e, st) {
+      // Check if this was a cancellation
+      if (e.toString().contains('Download cancelled')) {
+        log('DownloadService: ${song.id} download was cancelled',
+            tag: 'DownloadService');
+        // Don't mark as failed - just clean up and don't add to downloads
+        _activeIds.remove(song.id);
+        _lastProgressBytes.remove(song.id);
+        _lastProgressTime.remove(song.id);
+        return;
+      }
       logError('download failed ${song.id}: $e\n$st', tag: 'DownloadService');
       _lastError = e.toString();
       final i = _queue.indexWhere((entry) => entry.song.id == song.id);
@@ -298,21 +308,60 @@ class DownloadService extends ChangeNotifier {
   ) async {
     final cachedFile = File(cacheInfo.filePath!);
 
-    // If cache is complete, just copy the file
-    if (cacheInfo.isComplete) {
-      log('DownloadService: ${song.id} cache is complete, copying file',
+    // Check if cache file exists and has data
+    if (!await cachedFile.exists()) {
+      log('DownloadService: ${song.id} cache file does not exist, doing full download',
           tag: 'DownloadService');
-      _updateEntryProgress(song.id, cacheInfo.totalBytes, 0);
-      await cachedFile.copy(targetPath);
-      _updateEntryProgress(song.id, cacheInfo.totalBytes,
-          cacheInfo.totalBytes ?? cacheInfo.cachedBytes);
+      await _downloadFull(song, streamUrl, headers, targetPath);
       return;
     }
 
-    // Cache is partial - copy existing and download missing chunks
-    log('DownloadService: ${song.id} cache is partial (${cacheInfo.cachedBytes} bytes), downloading remaining',
-        tag: 'DownloadService');
+    final fileSize = await cachedFile.length();
+    if (fileSize == 0) {
+      log('DownloadService: ${song.id} cache file is empty, doing full download',
+          tag: 'DownloadService');
+      await _downloadFull(song, streamUrl, headers, targetPath);
+      return;
+    }
 
+    // Check if we have totalBytes to determine if cache is complete
+    // If totalBytes is null or 0, we can't verify completeness, so complete the download
+    if (cacheInfo.totalBytes == null || cacheInfo.totalBytes == 0) {
+      log('DownloadService: ${song.id} cache has no totalBytes info ($fileSize bytes), completing download',
+          tag: 'DownloadService');
+      await _completeCacheAndCopy(
+          song, cacheInfo, streamUrl, headers, targetPath, cachedFile);
+      return;
+    }
+
+    // If cached bytes equals total bytes, cache is complete - just copy
+    if (cacheInfo.cachedBytes >= cacheInfo.totalBytes!) {
+      log('DownloadService: ${song.id} cache is complete (${cacheInfo.cachedBytes} bytes), copying file',
+          tag: 'DownloadService');
+      _updateEntryProgress(song.id, cacheInfo.totalBytes, 0);
+      await cachedFile.copy(targetPath);
+      _updateEntryProgress(
+          song.id, cacheInfo.totalBytes, cacheInfo.totalBytes!);
+      return;
+    }
+
+    // Cache is partial - download missing chunks
+    log('DownloadService: ${song.id} cache is partial (${cacheInfo.cachedBytes} bytes of $cacheInfo.totalBytes bytes), downloading remaining',
+        tag: 'DownloadService');
+    await _completeCacheAndCopy(
+        song, cacheInfo, streamUrl, headers, targetPath, cachedFile);
+  }
+
+  /// Completes partial cache by downloading missing chunks, then copies to downloads.
+  Future<void> _completeCacheAndCopy(
+    Song song,
+    CacheInfo cacheInfo,
+    String streamUrl,
+    Map<String, String> headers,
+    String targetPath,
+    File cachedFile,
+  ) async {
+    // Download missing chunks
     await _streamCache.startIncrementalDownload(
       song.id,
       streamUrl,
@@ -325,7 +374,7 @@ class DownloadService extends ChangeNotifier {
 
     // Copy the now-complete cached file to downloads
     await cachedFile.copy(targetPath);
-    log('DownloadService: ${song.id} download from cache completed',
+    log('DownloadService: ${song.id} download completed and copied to downloads',
         tag: 'DownloadService');
   }
 
@@ -374,7 +423,8 @@ class DownloadService extends ChangeNotifier {
           _cancelledIds.remove(song.id);
           _lastProgressBytes.remove(song.id);
           _lastProgressTime.remove(song.id);
-          return;
+          // Throw exception to skip saving to database
+          throw Exception('Download cancelled');
         }
         writeBuffer.addAll(chunk);
         downloaded += chunk.length;

@@ -27,16 +27,17 @@ class _DominantColorNotifier extends Notifier<Color> {
     });
     // Kick off extraction for the song that's already playing on first build.
     final url = ref.read(currentSongProvider)?.thumbnailUrl;
-    if (url != null) _extract(url);
+    if (url != null && url.isNotEmpty) _extract(url);
     // Return cached color immediately if available — avoids the primary-color
     // flash on first open when the palette has already been extracted.
-    if (url != null && _cache.containsKey(url)) return _cache[url]!;
-    return AppColors.surfaceLight;
+    if (url != null && url.isNotEmpty && _cache.containsKey(url)) return _cache[url]!;
+    return (url == null || url.isEmpty) ? Colors.white : AppColors.surfaceLight;
   }
 
   Future<void> _extract(String? url) async {
-    if (url == null) {
-      // No song playing — keep current state, don't flash to primary.
+    if (url == null || url.isEmpty) {
+      // No cover art — use white so player controls remain visible.
+      state = Colors.white;
       return;
     }
     if (_cache.containsKey(url)) {

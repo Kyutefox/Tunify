@@ -326,7 +326,7 @@ class _LibrarySectionGrid extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+      padding: EdgeInsets.zero,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.85,
@@ -649,8 +649,7 @@ class _LibraryFolderListTile extends StatelessWidget {
         onLongPress: () => onOptions(null),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(
-              vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           child: Row(
             children: [
               Container(
@@ -837,8 +836,7 @@ class _StaticListTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: EdgeInsets.symmetric(
-              vertical: t.spacing.sm, horizontal: t.spacing.sm),
+          padding: EdgeInsets.symmetric(vertical: t.spacing.sm),
           child: Row(
             children: [
               Container(
@@ -915,8 +913,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
         onLongPress: () => onOptions(null),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: EdgeInsets.symmetric(
-              vertical: t.spacing.sm, horizontal: t.spacing.sm),
+          padding: EdgeInsets.symmetric(vertical: t.spacing.sm),
           child: Row(
             children: [
               PlaylistCoverThumbnail(playlist: playlist, size: thumbSize),

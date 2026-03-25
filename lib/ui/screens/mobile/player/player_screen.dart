@@ -236,26 +236,36 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.xl),
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.22),
-                child: CachedNetworkImage(
-                  imageUrl: song.thumbnailUrl,
-                  width: artSize,
-                  height: artSize,
-                  memCacheWidth: cachePx,
-                  memCacheHeight: cachePx,
-                  fit: BoxFit.contain,
-                  errorWidget: (_, __, ___) => Container(
-                    width: artSize,
-                    height: artSize,
-                    color: AppColors.surfaceLight,
-                    child: AppIcon(
-                        icon: AppIcons.musicNote,
-                        color: AppColors.textMuted,
-                        size: 80),
-                  ),
-                ),
-              ),
+              child: song.thumbnailUrl.isEmpty
+                  ? Container(
+                      width: artSize,
+                      height: artSize,
+                      color: AppColors.surfaceLight,
+                      child: AppIcon(
+                          icon: AppIcons.musicNote,
+                          color: AppColors.textMuted,
+                          size: 80),
+                    )
+                  : Container(
+                      color: Colors.black.withValues(alpha: 0.22),
+                      child: CachedNetworkImage(
+                        imageUrl: song.thumbnailUrl,
+                        width: artSize,
+                        height: artSize,
+                        memCacheWidth: cachePx,
+                        memCacheHeight: cachePx,
+                        fit: BoxFit.contain,
+                        errorWidget: (_, __, ___) => Container(
+                          width: artSize,
+                          height: artSize,
+                          color: AppColors.surfaceLight,
+                          child: AppIcon(
+                              icon: AppIcons.musicNote,
+                              color: AppColors.textMuted,
+                              size: 80),
+                        ),
+                      ),
+                    ),
             ),
           ),
         ),

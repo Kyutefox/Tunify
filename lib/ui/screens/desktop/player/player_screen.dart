@@ -241,10 +241,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               animation: radius,
               builder: (_, __) => ClipRRect(
                 borderRadius: BorderRadius.circular(radius.value),
-                child: CachedNetworkImage(
-                  imageUrl: song.thumbnailUrl,
-                  fit: BoxFit.contain,
-                ),
+                child: song.thumbnailUrl.isEmpty
+                    ? Container(
+                        color: AppColors.surfaceLight,
+                        child: AppIcon(
+                            icon: AppIcons.musicNote,
+                            color: AppColors.textMuted,
+                            size: 80),
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: song.thumbnailUrl,
+                        fit: BoxFit.contain,
+                      ),
               ),
             );
           },
@@ -270,26 +278,36 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.xl),
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.22),
-                child: CachedNetworkImage(
-                  imageUrl: song.thumbnailUrl,
-                  width: artSize,
-                  height: artSize,
-                  memCacheWidth: cachePx,
-                  memCacheHeight: cachePx,
-                  fit: BoxFit.contain,
-                  errorWidget: (_, __, ___) => Container(
-                    width: artSize,
-                    height: artSize,
-                    color: AppColors.surfaceLight,
-                    child: AppIcon(
-                        icon: AppIcons.musicNote,
-                        color: AppColors.textMuted,
-                        size: 80),
-                  ),
-                ),
-              ),
+              child: song.thumbnailUrl.isEmpty
+                  ? Container(
+                      width: artSize,
+                      height: artSize,
+                      color: AppColors.surfaceLight,
+                      child: AppIcon(
+                          icon: AppIcons.musicNote,
+                          color: AppColors.textMuted,
+                          size: 80),
+                    )
+                  : Container(
+                      color: Colors.black.withValues(alpha: 0.22),
+                      child: CachedNetworkImage(
+                        imageUrl: song.thumbnailUrl,
+                        width: artSize,
+                        height: artSize,
+                        memCacheWidth: cachePx,
+                        memCacheHeight: cachePx,
+                        fit: BoxFit.contain,
+                        errorWidget: (_, __, ___) => Container(
+                          width: artSize,
+                          height: artSize,
+                          color: AppColors.surfaceLight,
+                          child: AppIcon(
+                              icon: AppIcons.musicNote,
+                              color: AppColors.textMuted,
+                              size: 80),
+                        ),
+                      ),
+                    ),
             ),
           ),
         ),

@@ -94,6 +94,7 @@ void _showDesktopSongMenu(
 
   final downloadService = ref.read(downloadServiceProvider);
   final isDownloaded = downloadService.isDownloaded(song.id);
+  final isLocalSong = song.id.startsWith('device_');
   final isLiked = ref.read(libraryProvider).likedSongIds.contains(song.id);
   final queue = ref.read(playerProvider).queue;
   final effectiveQueueIndex =
@@ -174,17 +175,18 @@ void _showDesktopSongMenu(
         }
       },
     ),
-    AppMenuEntry(
-      icon: isDownloaded ? AppIcons.checkCircle : AppIcons.download,
-      label: isDownloaded ? 'Remove download' : 'Download',
-      onTap: () {
-        if (isDownloaded) {
-          ref.read(downloadServiceProvider).removeDownload(song.id);
-        } else {
-          ref.read(downloadServiceProvider).enqueue(song);
-        }
-      },
-    ),
+    if (!isLocalSong)
+      AppMenuEntry(
+        icon: isDownloaded ? AppIcons.checkCircle : AppIcons.download,
+        label: isDownloaded ? 'Remove download' : 'Download',
+        onTap: () {
+          if (isDownloaded) {
+            ref.read(downloadServiceProvider).removeDownload(song.id);
+          } else {
+            ref.read(downloadServiceProvider).enqueue(song);
+          }
+        },
+      ),
     const AppMenuEntry.divider(),
     AppMenuEntry(
       icon: AppIcons.artist,
@@ -272,6 +274,7 @@ class _SongOptionsContent extends ConsumerWidget {
         currentSong != null && currentSong.id == song.id ? currentSong : song;
     final downloadService = ref.watch(downloadServiceProvider);
     final isDownloaded = downloadService.isDownloaded(song.id);
+    final isLocalSong = song.id.startsWith('device_');
     final likedIds = ref.watch(libraryProvider.select((s) => s.likedSongIds));
     final isLiked = likedIds.contains(song.id);
     final queue = ref.watch(playerProvider.select((s) => s.queue));
@@ -343,17 +346,20 @@ class _SongOptionsContent extends ConsumerWidget {
           _QuickActionRow(
             songId: song.id,
             isDownloaded: isDownloaded,
+            isLocalSong: isLocalSong,
             isLiked: isLiked,
             showPlaylist: showAddToPlaylist || onRemoveFromPlaylist != null,
             isRemoveFromPlaylist: onRemoveFromPlaylist != null,
-            onDownload: () {
-              Navigator.of(context).pop();
-              if (isDownloaded) {
-                ref.read(downloadServiceProvider).removeDownload(song.id);
-              } else {
-                ref.read(downloadServiceProvider).enqueue(song);
-              }
-            },
+            onDownload: isLocalSong
+                ? null
+                : () {
+                    Navigator.of(context).pop();
+                    if (isDownloaded) {
+                      ref.read(downloadServiceProvider).removeDownload(song.id);
+                    } else {
+                      ref.read(downloadServiceProvider).enqueue(song);
+                    }
+                  },
             onPlaylist: () {
               Navigator.of(context).pop();
               if (onRemoveFromPlaylist != null) {
@@ -443,20 +449,22 @@ class _QuickActionRow extends StatelessWidget {
   const _QuickActionRow({
     required this.songId,
     required this.isDownloaded,
+    required this.isLocalSong,
     required this.isLiked,
     required this.showPlaylist,
     this.isRemoveFromPlaylist = false,
-    required this.onDownload,
+    this.onDownload,
     required this.onPlaylist,
     required this.onLiked,
   });
 
   final String songId;
   final bool isDownloaded;
+  final bool isLocalSong;
   final bool isLiked;
   final bool showPlaylist;
   final bool isRemoveFromPlaylist;
-  final VoidCallback onDownload;
+  final VoidCallback? onDownload;
   final VoidCallback onPlaylist;
   final VoidCallback onLiked;
 
@@ -465,14 +473,23 @@ class _QuickActionRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _QuickActionButton(
-            icon: isDownloaded ? AppIcons.checkCircle : AppIcons.download,
-            iconColor:
-                isDownloaded ? AppColors.primary : AppColors.textSecondary,
-            label: 'Download',
-            isActive: isDownloaded,
-            onTap: onDownload,
-          ),
+          child: isLocalSong
+              ? _QuickActionButton(
+                  icon: AppIcons.smartphone,
+                  iconColor: AppColors.primary,
+                  label: 'On Device',
+                  isActive: true,
+                  onTap: () {},
+                )
+              : _QuickActionButton(
+                  icon: isDownloaded ? AppIcons.checkCircle : AppIcons.download,
+                  iconColor: isDownloaded
+                      ? AppColors.primary
+                      : AppColors.textSecondary,
+                  label: 'Download',
+                  isActive: isDownloaded,
+                  onTap: onDownload ?? () {},
+                ),
         ),
         if (showPlaylist)
           Expanded(

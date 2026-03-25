@@ -150,10 +150,18 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                             animation: radius,
                             builder: (_, __) => ClipRRect(
                               borderRadius: BorderRadius.circular(radius.value),
-                              child: CachedNetworkImage(
-                                imageUrl: song.thumbnailUrl,
-                                fit: BoxFit.contain,
-                              ),
+                              child: song.thumbnailUrl.isEmpty
+                                  ? Container(
+                                      color: AppColors.surfaceLight,
+                                      child: AppIcon(
+                                          icon: AppIcons.musicNote,
+                                          color: AppColors.textMuted,
+                                          size: 20),
+                                    )
+                                  : CachedNetworkImage(
+                                      imageUrl: song.thumbnailUrl,
+                                      fit: BoxFit.contain,
+                                    ),
                             ),
                           );
                         },
@@ -226,27 +234,38 @@ class _AlbumThumb extends StatelessWidget {
     final cachePx = (44 * MediaQuery.of(context).devicePixelRatio).round();
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.md),
-      child: Container(
-        color: Colors.black.withValues(alpha: 0.18),
-        child: CachedNetworkImage(
-          imageUrl: url,
-          width: 44,
-          height: 44,
-          memCacheWidth: cachePx,
-          memCacheHeight: cachePx,
-          fit: BoxFit.contain,
-          errorWidget: (_, __, ___) => Container(
-            width: 44,
-            height: 44,
-            color: AppColors.surface,
-            child: AppIcon(
-              icon: AppIcons.musicNote,
-              color: AppColors.textMuted,
-              size: 20,
+      child: url.isEmpty
+          ? Container(
+              width: 44,
+              height: 44,
+              color: AppColors.surface,
+              child: AppIcon(
+                icon: AppIcons.musicNote,
+                color: AppColors.textMuted,
+                size: 20,
+              ),
+            )
+          : Container(
+              color: Colors.black.withValues(alpha: 0.18),
+              child: CachedNetworkImage(
+                imageUrl: url,
+                width: 44,
+                height: 44,
+                memCacheWidth: cachePx,
+                memCacheHeight: cachePx,
+                fit: BoxFit.contain,
+                errorWidget: (_, __, ___) => Container(
+                  width: 44,
+                  height: 44,
+                  color: AppColors.surface,
+                  child: AppIcon(
+                    icon: AppIcons.musicNote,
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 }

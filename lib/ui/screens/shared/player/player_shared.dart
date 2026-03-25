@@ -18,33 +18,38 @@ class PlayerBlurredBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasArt = url.isNotEmpty;
     return Stack(
       fit: StackFit.expand,
       children: [
-        ColorFiltered(
-          colorFilter: ColorFilter.mode(
-            Colors.black.withValues(alpha: PaletteTheme.playerDarkOverlayAlpha),
-            BlendMode.darken,
-          ),
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-            child: CachedNetworkImage(
-              imageUrl: url,
-              fit: BoxFit.cover,
-              memCacheWidth: 100,
-              memCacheHeight: 100,
-              errorWidget: (_, __, ___) =>
-                  Container(color: AppColors.background),
+        if (hasArt)
+          ColorFiltered(
+            colorFilter: ColorFilter.mode(
+              Colors.black.withValues(alpha: PaletteTheme.playerDarkOverlayAlpha),
+              BlendMode.darken,
+            ),
+            child: ImageFiltered(
+              imageFilter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+              child: CachedNetworkImage(
+                imageUrl: url,
+                fit: BoxFit.cover,
+                memCacheWidth: 100,
+                memCacheHeight: 100,
+                errorWidget: (_, __, ___) =>
+                    Container(color: AppColors.background),
+              ),
+            ),
+          )
+        else
+          Container(color: AppColors.background),
+        if (hasArt)
+          AnimatedContainer(
+            duration: AppDuration.medium,
+            curve: AppCurves.decelerate,
+            decoration: BoxDecoration(
+              gradient: PaletteTheme.playerGradient(dominantColor),
             ),
           ),
-        ),
-        AnimatedContainer(
-          duration: AppDuration.medium,
-          curve: AppCurves.decelerate,
-          decoration: BoxDecoration(
-            gradient: PaletteTheme.playerGradient(dominantColor),
-          ),
-        ),
       ],
     );
   }

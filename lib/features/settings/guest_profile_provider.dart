@@ -20,4 +20,9 @@ class GuestUsernameNotifier extends AsyncNotifier<String?> {
         .setSetting(kGuestUsernameKey, username.trim());
     state = AsyncData(username.trim());
   }
+
+  Future<void> clearGuestData() async {
+    await ref.read(databaseBridgeProvider).setSetting(kGuestUsernameKey, '');
+    state = const AsyncData(null);
+  }
 }

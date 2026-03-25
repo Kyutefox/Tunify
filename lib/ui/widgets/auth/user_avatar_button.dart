@@ -31,7 +31,8 @@ class UserAvatarButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final isGuest = ref.watch(guestModeProvider);
-    final guestUsername = isGuest ? ref.watch(guestUsernameProvider).value : null;
+    final guestUsername =
+        isGuest ? ref.watch(guestUsernameProvider).value : null;
     final username = (user?.userMetadata?['username'] as String?) ??
         (user?.email?.split('@').first) ??
         (isGuest ? (guestUsername ?? 'Guest') : 'V');
@@ -72,7 +73,8 @@ class UserAvatarButton extends ConsumerWidget {
           gradient: AppColors.primaryGradient,
         ),
         child: Center(
-          child: AppIcon(icon: AppIcons.person, color: Colors.white, size: size * 0.5),
+          child: AppIcon(
+              icon: AppIcons.person, color: Colors.white, size: size * 0.5),
         ),
       );
 }
@@ -94,6 +96,7 @@ void _showMobileSheet(
       onSignOut: () async {
         Navigator.of(context).pop();
         if (isGuest) {
+          await ref.read(guestUsernameProvider.notifier).clearGuestData();
           ref.read(guestModeProvider.notifier).exitGuestMode();
         } else {
           await ref.read(authNotifierProvider.notifier).signOut();
@@ -108,7 +111,8 @@ void _showMobileSheet(
               Navigator.of(context).pop();
               Navigator.of(context).push(
                 appPageRoute<void>(
-                  builder: (_) => const GuestProfileSetupScreen(isInitial: false),
+                  builder: (_) =>
+                      const GuestProfileSetupScreen(isInitial: false),
                 ),
               );
             }
@@ -226,6 +230,7 @@ void _showDesktopMenu(
         color: AppColors.secondary,
         onTap: () async {
           if (isGuest) {
+            await ref.read(guestUsernameProvider.notifier).clearGuestData();
             ref.read(guestModeProvider.notifier).exitGuestMode();
           } else {
             await ref.read(authNotifierProvider.notifier).signOut();

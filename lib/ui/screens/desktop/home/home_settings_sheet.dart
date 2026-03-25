@@ -18,6 +18,7 @@ import 'package:tunify/data/databases/supabase/supabase_prefs.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/library/collection_track_cache.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
+import 'package:tunify/features/settings/guest_profile_provider.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
@@ -272,10 +273,8 @@ class _CrossfadeTile extends StatelessWidget {
               thumbColor: AppColors.primary,
               overlayColor: AppColors.primary.withValues(alpha: 0.12),
               trackHeight: 3,
-              thumbShape:
-                  const RoundSliderThumbShape(enabledThumbRadius: 7),
-              overlayShape:
-                  const RoundSliderOverlayShape(overlayRadius: 16),
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
             ),
             child: Slider(
               value: value.toDouble(),
@@ -512,8 +511,7 @@ Future<void> _dataResetRecommendations(
   }
 }
 
-Future<void> _dataClearRecentSearch(
-    BuildContext context, WidgetRef ref) async {
+Future<void> _dataClearRecentSearch(BuildContext context, WidgetRef ref) async {
   try {
     await ref.read(recentSearchProvider.notifier).clearAll();
     if (context.mounted) {
@@ -558,9 +556,8 @@ class PlaybackSettingsBody extends ConsumerWidget {
           label: 'Show Explicit Content',
           subtitle: 'Show songs tagged with "E" in lists',
           value: showExplicit,
-          onChanged: (v) => ref
-              .read(showExplicitContentProvider.notifier)
-              .setShowExplicit(v),
+          onChanged: (v) =>
+              ref.read(showExplicitContentProvider.notifier).setShowExplicit(v),
         ),
         _PlaybackToggleTile(
           icon: AppIcons.shuffle,
@@ -638,8 +635,8 @@ class _PlaybackToggleTile extends StatelessWidget {
                 ),
                 Text(
                   subtitle,
-                  style:
-                      const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                  style: const TextStyle(
+                      color: AppColors.textMuted, fontSize: AppFontSize.sm),
                 ),
               ],
             ),
@@ -773,8 +770,9 @@ class _SupabaseSettingsBodyState extends ConsumerState<SupabaseSettingsBody> {
       await Supabase.instance.client.auth.signOut();
     } catch (_) {}
 
-    // Exit guest mode
+    // Exit guest mode and clear guest data
     try {
+      await ref.read(guestUsernameProvider.notifier).clearGuestData();
       await ref.read(guestModeProvider.notifier).exitGuestMode();
     } catch (_) {}
 
@@ -805,7 +803,8 @@ class _SupabaseSettingsBodyState extends ConsumerState<SupabaseSettingsBody> {
       await deleteDatabase(p.join(dir.path, 'tunify_primary.db'));
       await deleteDatabase(p.join(dir.path, 'downloads.db'));
     } catch (e) {
-      logWarning('Factory reset: failed to delete databases: $e', tag: 'Settings');
+      logWarning('Factory reset: failed to delete databases: $e',
+          tag: 'Settings');
     }
 
     // Clear all SharedPreferences except Supabase credentials
@@ -814,8 +813,10 @@ class _SupabaseSettingsBodyState extends ConsumerState<SupabaseSettingsBody> {
       final savedUrl = prefs.getString('supabase_custom_url');
       final savedKey = prefs.getString('supabase_custom_anon_key');
       await prefs.clear();
-      if (savedUrl != null) await prefs.setString('supabase_custom_url', savedUrl);
-      if (savedKey != null) await prefs.setString('supabase_custom_anon_key', savedKey);
+      if (savedUrl != null)
+        await prefs.setString('supabase_custom_url', savedUrl);
+      if (savedKey != null)
+        await prefs.setString('supabase_custom_anon_key', savedKey);
     } catch (_) {}
 
     if (mounted) {

@@ -813,10 +813,12 @@ class _SupabaseSettingsBodyState extends ConsumerState<SupabaseSettingsBody> {
       final savedUrl = prefs.getString('supabase_custom_url');
       final savedKey = prefs.getString('supabase_custom_anon_key');
       await prefs.clear();
-      if (savedUrl != null)
+      if (savedUrl != null) {
         await prefs.setString('supabase_custom_url', savedUrl);
-      if (savedKey != null)
+      }
+      if (savedKey != null) {
         await prefs.setString('supabase_custom_anon_key', savedKey);
+      }
     } catch (_) {}
 
     if (mounted) {

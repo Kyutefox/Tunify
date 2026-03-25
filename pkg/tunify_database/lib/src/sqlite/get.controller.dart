@@ -12,7 +12,7 @@ class SqliteGetController {
   Future<Map<String, dynamic>> loadLibraryData() async {
     final db = await _getDb();
     try {
-      final playlistRows = await db.query('playlists', orderBy: 'updated_at DESC');
+      final playlistRows = await db.query('playlists', where: 'is_saved = 1', orderBy: 'updated_at DESC');
       final folderRows = await db.query('folders', orderBy: 'name');
       final junctionRows = await db.query('folder_playlists');
 
@@ -165,5 +165,83 @@ class SqliteGetController {
       'api_key': await getSetting('yt_api_key'),
       'client_version': await getSetting('yt_client_version'),
     };
+  }
+
+  /// Returns the cached_palette_color for any playlist row with [browseId].
+  Future<int?> getPlaylistPaletteColor(String browseId) async {
+    try {
+      final db = await _getDb();
+      final rows = await db.query(
+        'playlists',
+        columns: ['cached_palette_color'],
+        where: 'browse_id = ?',
+        whereArgs: [browseId],
+        limit: 1,
+      );
+      if (rows.isEmpty) return null;
+      return rows.first['cached_palette_color'] as int?;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static const Duration _collectionTrackTtl = Duration(minutes: 30);
+
+  /// Returns cached collection tracks for [browseId], or null if missing/expired.
+  Future<List<Map<String, dynamic>>?> getCollectionTracks(String browseId) async {
+    try {
+      final db = await _getDb();
+      final rows = await db.query(
+        'collection_tracks',
+        where: 'browse_id = ? AND is_saved = 0',
+        whereArgs: [browseId],
+        orderBy: 'track_index ASC',
+      );
+      if (rows.isEmpty) return null;
+      final now = DateTime.now().toUtc();
+      final allExpired = rows.every((r) {
+        final cachedAt = DateTime.tryParse(r['cached_at'] as String? ?? '');
+        if (cachedAt == null) return true;
+        return now.difference(cachedAt) > _collectionTrackTtl;
+      });
+      if (allExpired) {
+        await db.delete('collection_tracks', where: 'browse_id = ? AND is_saved = 0', whereArgs: [browseId]);
+        return null;
+      }
+      return rows.map((r) {
+        final trackDataJson = r['track_data'] as String? ?? '{}';
+        return Map<String, dynamic>.from(jsonDecode(trackDataJson) as Map);
+      }).toList();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Returns cached stream URL for [videoId], or null if missing or expired.
+  /// Deletes the expired row inline before returning null.
+  Future<Map<String, dynamic>?> getStreamUrlCache(String videoId) async {
+    try {
+      final db = await _getDb();
+      final rows = await db.query('stream_url_cache', where: 'video_id = ?', whereArgs: [videoId]);
+      if (rows.isEmpty) return null;
+      final row = rows.first;
+      final expiresAt = DateTime.parse(row['expires_at'] as String);
+      if (DateTime.now().toUtc().isAfter(expiresAt)) {
+        await db.delete('stream_url_cache', where: 'video_id = ?', whereArgs: [videoId]);
+        return null;
+      }
+      final headersJson = row['headers'] as String? ?? '{}';
+      final headersMap = (jsonDecode(headersJson) as Map<String, dynamic>?)
+              ?.map((k, v) => MapEntry(k, v.toString())) ??
+          {};
+      return {
+        'url': row['url'] as String,
+        'headers': headersMap,
+        'bitrate': row['bitrate'] as int? ?? 0,
+        'quality': row['quality'] as String? ?? '',
+      };
+    } catch (_) {
+      return null;
+    }
   }
 }

@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:scrapper/scrapper.dart' as scrapper;
 
+import 'package:tunify_database/tunify_database.dart' hide StorageKeys;
 import 'package:tunify_logger/tunify_logger.dart';
 
 import 'package:tunify/core/constants/storage_keys.dart';
@@ -174,6 +175,7 @@ class MusicStreamManager {
   final Map<String, _CachedStream> _streamCache = {};
   int _hits = 0;
   int _misses = 0;
+  final DatabaseBridge? _db;
 
   MusicStreamManager({
     String? visitorData,
@@ -181,7 +183,9 @@ class MusicStreamManager {
     String? clientVersion,
     OnVisitorDataReceived? onVisitorDataReceived,
     scrapper.YTMusicAuth? auth,
+    DatabaseBridge? db,
   })  : _visitorData = visitorData,
+        _db = db,
         _apiKey = apiKey,
         _clientVersion = clientVersion,
         _auth = auth {
@@ -277,6 +281,11 @@ class MusicStreamManager {
 
   String? get visitorData => _visitorData;
 
+  /// Clears expired stream URL cache entries from SQLite. Call once after construction.
+  Future<void> init() async {
+    await _db?.clearExpiredStreamUrlCache();
+  }
+
   /// True once a live apiKey + clientVersion have been loaded from cache or
   /// from a successful VisitorDataFetcher fetch. When false, the first API
   /// call is using the hardcoded fallback constants — a fresh fetch is needed.
@@ -324,6 +333,40 @@ class MusicStreamManager {
       }
       _misses++;
       log('PlayFlow: getStreamUrl CACHE MISS videoId=$videoId calling youtube_direct.fetchBestAudioStream', tag: 'PlayFlow');
+      // L2: SQLite cache check
+      final sqliteCached = await _db?.getStreamUrlCache(videoId);
+      if (sqliteCached != null) {
+        log('PlayFlow: getStreamUrl SQLITE HIT videoId=$videoId', tag: 'PlayFlow');
+        final url = sqliteCached['url'] as String;
+        final headers = sqliteCached['headers'] as Map<String, String>? ?? {};
+        final bitrate = sqliteCached['bitrate'] as int? ?? 0;
+        final quality = sqliteCached['quality'] as String? ?? '';
+        // Populate L1 from L2
+        final audioQuality = bitrate >= 160 ? AudioQuality.high : bitrate >= 80 ? AudioQuality.medium : AudioQuality.low;
+        final stream = AudioStream(
+          url: url,
+          bitrate: bitrate,
+          quality: audioQuality,
+          codec: 'opus',
+          headers: Map<String, String>.from(scrapper.streamHeaders),
+        );
+        final result = StreamResult(
+          trackId: videoId,
+          highQuality: audioQuality == AudioQuality.high ? stream : null,
+          mediumQuality: audioQuality == AudioQuality.medium ? stream : null,
+          lowQuality: audioQuality == AudioQuality.low ? stream : null,
+        );
+        if (_streamCache.length >= _kMaxCacheEntries) {
+          _streamCache.remove(_streamCache.keys.first);
+        }
+        _streamCache[videoId] = _CachedStream(result);
+        return {
+          'stream_url': url,
+          'bitrate': bitrate,
+          'quality': quality,
+          'headers': headers,
+        };
+      }
       final fetchT0 = apiSw.elapsedMilliseconds;
       final ytStream = await _ytDirect.streams.fetchBestAudioStream(
         videoId,
@@ -358,6 +401,21 @@ class MusicStreamManager {
         _streamCache.remove(_streamCache.keys.first);
       }
       _streamCache[videoId] = _CachedStream(result);
+      // Persist to L2 SQLite cache
+      final expiresAt = DateTime.now().toUtc().add(_kStreamUrlTtl);
+      final db = _db;
+      if (db != null) {
+        db.trimStreamUrlCacheIfNeeded().then((_) =>
+          db.upsertStreamUrlCache(
+            videoId,
+            ytStream.url,
+            Map<String, String>.from(scrapper.streamHeaders),
+            bitrate,
+            quality.label,
+            expiresAt,
+          )
+        ).ignore();
+      }
       log('PlayFlow: getStreamUrl total (fetch+cache) ${apiSw.elapsedMilliseconds}ms', tag: 'PlayFlow');
       log('PlayFlow: getStreamUrl mimeType=${ytStream.mimeType} bitrate=${bitrate}kbps', tag: 'PlayFlow');
       return {
@@ -442,6 +500,7 @@ class MusicStreamManager {
 
   void clearCacheFor(String videoId) {
     _streamCache.remove(videoId);
+    _db?.deleteStreamUrlCache(videoId).ignore();
   }
 
   Future<void> prefetch(List<String> videoIds) async {
@@ -649,6 +708,7 @@ class MusicStreamManager {
 
   void clearCache() {
     _streamCache.clear();
+    _db?.clearAllStreamUrlCache().ignore();
   }
 
   Map<String, int> getStats() => {

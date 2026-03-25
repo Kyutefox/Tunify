@@ -41,6 +41,7 @@ class SqliteCreateController {
         'is_imported': (map['is_imported'] == true) ? 1 : 0,
         'browse_id': map['browse_id'],
         'cached_palette_color': map['cached_palette_color'],
+        'is_saved': 1,
       }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }
@@ -71,5 +72,75 @@ class SqliteCreateController {
   /// Inserts or replaces a single setting [key]=[value] within [txn].
   Future<void> setSettingInTransaction(Transaction txn, String key, String value) async {
     await txn.insert('settings', {'key': key, 'value': value}, conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  /// Inserts a playlist cache entry (INSERT OR IGNORE). Sets is_saved=0.
+  Future<void> upsertPlaylistCache(
+    Database db,
+    String browseId,
+    int? paletteColor,
+    String? imageUrl,
+  ) async {
+    try {
+      await db.insert('playlists', {
+        'id': browseId,
+        'name': browseId,
+        'description': '',
+        'sort_order': 'customOrder',
+        'songs': '[]',
+        'created_at': DateTime.now().toUtc().toIso8601String(),
+        'updated_at': DateTime.now().toUtc().toIso8601String(),
+        'custom_image_url': imageUrl,
+        'is_imported': 0,
+        'browse_id': browseId,
+        'cached_palette_color': paletteColor,
+        'is_saved': 0,
+      }, conflictAlgorithm: ConflictAlgorithm.ignore);
+    } catch (_) {}
+  }
+
+  /// Inserts or replaces collection track cache rows for [browseId].
+  Future<void> upsertCollectionTracks(
+    Database db,
+    String browseId,
+    List<Map<String, dynamic>> tracks,
+  ) async {
+    try {
+      final now = DateTime.now().toUtc().toIso8601String();
+      final batch = db.batch();
+      batch.delete('collection_tracks', where: 'browse_id = ? AND is_saved = 0', whereArgs: [browseId]);
+      for (var i = 0; i < tracks.length; i++) {
+        batch.insert('collection_tracks', {
+          'browse_id': browseId,
+          'track_index': i,
+          'track_data': jsonEncode(tracks[i]),
+          'is_saved': 0,
+          'cached_at': now,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
+      }
+      await batch.commit(noResult: true);
+    } catch (_) {}
+  }
+
+  /// Inserts or replaces a stream URL cache entry.
+  Future<void> upsertStreamUrlCache(
+    Database db,
+    String videoId,
+    String url,
+    Map<String, String> headers,
+    int bitrate,
+    String quality,
+    DateTime expiresAt,
+  ) async {
+    try {
+      await db.insert('stream_url_cache', {
+        'video_id': videoId,
+        'url': url,
+        'headers': jsonEncode(headers),
+        'bitrate': bitrate,
+        'quality': quality,
+        'expires_at': expiresAt.toUtc().toIso8601String(),
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    } catch (_) {}
   }
 }

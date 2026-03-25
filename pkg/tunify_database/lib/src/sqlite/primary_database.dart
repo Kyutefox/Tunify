@@ -14,7 +14,7 @@ import 'update.controller.dart';
 /// delegated to get/create/update/delete controllers.
 class PrimaryDatabase {
   static const String _dbName = 'tunify_primary.db';
-  static const int _version = 3;
+  static const int _version = 4;
 
   static final PrimaryDatabase _instance = PrimaryDatabase._internal();
   factory PrimaryDatabase() => _instance;
@@ -57,7 +57,8 @@ class PrimaryDatabase {
         custom_image_url text,
         is_imported integer not null default 0,
         browse_id text,
-        cached_palette_color integer
+        cached_palette_color integer,
+        is_saved integer not null default 1
       )
     ''');
     await db.execute('''
@@ -82,6 +83,26 @@ class PrimaryDatabase {
         value text not null
       )
     ''');
+    await db.execute('''
+      create table if not exists stream_url_cache (
+        video_id   text primary key,
+        url        text not null,
+        headers    text not null default '{}',
+        bitrate    integer not null default 0,
+        quality    text not null default '',
+        expires_at text not null
+      )
+    ''');
+    await db.execute('''
+      create table if not exists collection_tracks (
+        browse_id   text not null,
+        track_index integer not null,
+        track_data  text not null,
+        is_saved    integer not null default 0,
+        cached_at   text not null,
+        primary key (browse_id, track_index)
+      )
+    ''');
     await _createController.runOnCreate(db);
   }
 
@@ -94,6 +115,29 @@ class PrimaryDatabase {
       await db.execute('ALTER TABLE playlists ADD COLUMN is_imported INTEGER NOT NULL DEFAULT 0');
       await db.execute('ALTER TABLE playlists ADD COLUMN browse_id TEXT');
       await db.execute('ALTER TABLE playlists ADD COLUMN cached_palette_color INTEGER');
+    }
+    if (oldVersion < 4) {
+      await db.execute('ALTER TABLE playlists ADD COLUMN is_saved INTEGER NOT NULL DEFAULT 1');
+      await db.execute('''
+        create table if not exists stream_url_cache (
+          video_id   text primary key,
+          url        text not null,
+          headers    text not null default '{}',
+          bitrate    integer not null default 0,
+          quality    text not null default '',
+          expires_at text not null
+        )
+      ''');
+      await db.execute('''
+        create table if not exists collection_tracks (
+          browse_id   text not null,
+          track_index integer not null,
+          track_data  text not null,
+          is_saved    integer not null default 0,
+          cached_at   text not null,
+          primary key (browse_id, track_index)
+        )
+      ''');
     }
   }
 
@@ -185,5 +229,77 @@ class PrimaryDatabase {
       await _db!.close();
       _db = null;
     }
+  }
+
+  // ── Stream URL Cache ──────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>?> getStreamUrlCache(String videoId) async =>
+      _getController.getStreamUrlCache(videoId);
+
+  Future<void> upsertStreamUrlCache(
+    String videoId,
+    String url,
+    Map<String, String> headers,
+    int bitrate,
+    String quality,
+    DateTime expiresAt,
+  ) async {
+    final db = await _getDb();
+    await _createController.upsertStreamUrlCache(db, videoId, url, headers, bitrate, quality, expiresAt);
+  }
+
+  Future<void> deleteStreamUrlCache(String videoId) async {
+    final db = await _getDb();
+    await _deleteController.deleteStreamUrlCache(db, videoId);
+  }
+
+  Future<void> clearExpiredStreamUrlCache() async {
+    final db = await _getDb();
+    await _deleteController.clearExpiredStreamUrlCache(db);
+  }
+
+  Future<void> clearAllStreamUrlCache() async {
+    final db = await _getDb();
+    await _deleteController.clearAllStreamUrlCache(db);
+  }
+
+  Future<void> trimStreamUrlCacheIfNeeded() async {
+    final db = await _getDb();
+    await _deleteController.trimStreamUrlCacheIfNeeded(db);
+  }
+
+  // ── Playlist Cache ────────────────────────────────────────────────────────
+
+  Future<void> upsertPlaylistCache(String browseId, int? paletteColor, String? imageUrl) async {
+    final db = await _getDb();
+    await _createController.upsertPlaylistCache(db, browseId, paletteColor, imageUrl);
+  }
+
+  Future<int?> getPlaylistPaletteColor(String browseId) async =>
+      _getController.getPlaylistPaletteColor(browseId);
+
+  Future<void> clearCacheOnlyPlaylists() async {
+    final db = await _getDb();
+    await _deleteController.clearCacheOnlyPlaylists(db);
+  }
+
+  // ── Collection Track Cache ────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>?> getCollectionTracks(String browseId) async =>
+      _getController.getCollectionTracks(browseId);
+
+  Future<void> upsertCollectionTracks(String browseId, List<Map<String, dynamic>> tracks) async {
+    final db = await _getDb();
+    await _createController.upsertCollectionTracks(db, browseId, tracks);
+  }
+
+  Future<void> deleteCollectionTracks(String browseId) async {
+    final db = await _getDb();
+    await _deleteController.deleteCollectionTracks(db, browseId);
+  }
+
+  Future<void> clearCacheOnlyCollectionTracks() async {
+    final db = await _getDb();
+    await _deleteController.clearCacheOnlyCollectionTracks(db);
   }
 }

@@ -270,8 +270,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             ?.followedAlbums
             .where((a) => a.id == browseId || a.browseId == browseId)
             .firstOrNull;
-        if (album?.cachedPaletteColor != null)
+        if (album?.cachedPaletteColor != null) {
           _paletteColor = Color(album!.cachedPaletteColor!);
+        }
       }
       _remoteLoading = true;
       return;
@@ -281,11 +282,11 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     if (widget._isArtist) {
       final browseId = widget.albumBrowseId;
       if (browseId != null) {
-        final songs = CollectionTrackCache.instance.getSongs(browseId);
+        final entry = CollectionTrackCache.instance.getEntry(browseId);
+        final songs = entry?.songs;
         if (songs != null) {
           _resolvedBrowseId = browseId;
-          _paletteColor =
-              CollectionTrackCache.instance.getPaletteColor(browseId);
+          _paletteColor = entry?.paletteColor;
           _remoteAsLocal = _makePlaylist(
             id: browseId,
             name: widget.albumName ?? '',
@@ -302,8 +303,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             ?.followedArtists
             .where((a) => a.id == browseId || a.browseId == browseId)
             .firstOrNull;
-        if (artist?.cachedPaletteColor != null)
+        if (artist?.cachedPaletteColor != null) {
           _paletteColor = Color(artist!.cachedPaletteColor!);
+        }
       }
       _remoteLoading = true;
       return;
@@ -324,7 +326,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     }
   }
 
-  void _startAfterTransition() {
+  Future<void> _startAfterTransition() async {
     if (!mounted) return;
     // Liked songs — purely local, no fetching needed
     if (widget.playlistId == 'liked') return;
@@ -344,12 +346,13 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           }
           // Check cache — if hit, populate _remoteAsLocal right now (no loading)
           final browseId = local.browseId ?? local.id;
-          final cached = CollectionTrackCache.instance.getSongs(browseId);
+          final cached = await CollectionTrackCache.instance.getSongs(browseId);
           if (cached != null && _remoteAsLocal == null) {
             final cachedPalette =
-                CollectionTrackCache.instance.getPaletteColor(browseId);
-            if (cachedPalette != null)
+                await CollectionTrackCache.instance.getPaletteColor(browseId);
+            if (cachedPalette != null) {
               setState(() => _paletteColor = cachedPalette);
+            }
             setState(() {
               _remoteAsLocal = _makePlaylist(
                 id: local.id,
@@ -428,11 +431,12 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         _remoteError = null;
       });
   void _setError(Object e) {
-    if (mounted)
+    if (mounted) {
       setState(() {
         _remoteError = e.toString();
         _remoteLoading = false;
       });
+    }
   }
 
   LibraryPlaylist _makePlaylist({
@@ -507,8 +511,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         );
         _remoteLoading = false;
       });
-      if (color != null)
+      if (color != null) {
         CollectionTrackCache.instance.updatePalette(pl.id, color);
+      }
     } catch (e) {
       if (!silent) _setError(e);
     }
@@ -534,8 +539,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
       final entry = CollectionTrackCache.instance.getEntry(_resolvedBrowseId!);
       if (entry != null && mounted) {
-        if (entry.paletteColor != null)
+        if (entry.paletteColor != null) {
           setState(() => _paletteColor = entry.paletteColor);
+        }
         setState(() {
           _albumSubtitle = widget.albumArtistName;
           _remoteAsLocal = _makePlaylist(
@@ -583,8 +589,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         );
         _remoteLoading = false;
       });
-      if (color != null)
+      if (color != null) {
         _persistPalette(color, _resolvedBrowseId!, _PersistKind.album);
+      }
       if (isInLib && _resolvedBrowseId != null) {
         ref.read(libraryProvider.notifier).refreshAlbumMeta(
               _resolvedBrowseId!,
@@ -611,14 +618,15 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
       if (_resolvedBrowseId == null) throw Exception('Could not find artist');
 
-      final cached = CollectionTrackCache.instance.getSongs(_resolvedBrowseId!);
+      final cached = await CollectionTrackCache.instance.getSongs(_resolvedBrowseId!);
       if (cached != null && mounted) {
         // Cache hit — only update if not already shown (silent refresh skips UI update)
         if (!silent || _remoteAsLocal == null) {
           final cachedPalette =
-              CollectionTrackCache.instance.getPaletteColor(_resolvedBrowseId!);
-          if (cachedPalette != null && _paletteColor == null)
+              await CollectionTrackCache.instance.getPaletteColor(_resolvedBrowseId!);
+          if (cachedPalette != null && _paletteColor == null) {
             setState(() => _paletteColor = cachedPalette);
+          }
           if (_remoteAsLocal == null) {
             setState(() {
               _remoteAsLocal = _makePlaylist(
@@ -669,8 +677,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         );
         _remoteLoading = false;
       });
-      if (color != null)
+      if (color != null) {
         _persistPalette(color, _resolvedBrowseId!, _PersistKind.artist);
+      }
       if (isInLib && _resolvedBrowseId != null) {
         ref.read(libraryProvider.notifier).refreshArtistMeta(
               _resolvedBrowseId!,
@@ -694,13 +703,14 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final browseId = local.browseId ?? local.id;
 
     // Cache hit — populate without loading screen
-    final cached = CollectionTrackCache.instance.getSongs(browseId);
+    final cached = await CollectionTrackCache.instance.getSongs(browseId);
     if (cached != null) {
       if (!mounted) return;
       final cachedPalette =
-          CollectionTrackCache.instance.getPaletteColor(browseId);
-      if (cachedPalette != null && _paletteColor == null)
+          await CollectionTrackCache.instance.getPaletteColor(browseId);
+      if (cachedPalette != null && _paletteColor == null) {
         setState(() => _paletteColor = cachedPalette);
+      }
       if (_remoteAsLocal == null) {
         setState(() {
           _remoteAsLocal = _makePlaylist(
@@ -761,8 +771,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         );
         _remoteLoading = false;
       });
-      if (color != null)
+      if (color != null) {
         _persistPalette(color, local.id, _PersistKind.playlist);
+      }
       ref.read(libraryProvider.notifier).refreshPlaylistMeta(
             local.id,
             name: meta?.title,
@@ -791,8 +802,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   /// Extracts palette color and returns it without calling setState.
   /// Use this when you need the color before revealing content.
   Future<Color?> _extractPaletteColor(String? imageUrl) async {
-    if (imageUrl == null || imageUrl.isEmpty || imageUrl == _lastPaletteUrl)
+    if (imageUrl == null || imageUrl.isEmpty || imageUrl == _lastPaletteUrl) {
       return null;
+    }
     _lastPaletteUrl = imageUrl;
     try {
       final gen = await PaletteGenerator.fromImageProvider(
@@ -1740,17 +1752,19 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
     setState(() => _searching = true);
     try {
       final r = await ref.read(playerProvider.notifier).searchSongs(q.trim());
-      if (mounted)
+      if (mounted) {
         setState(() {
           _results = r;
           _searching = false;
         });
+      }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _results = [];
           _searching = false;
         });
+      }
     }
   }
 

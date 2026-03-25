@@ -6,9 +6,9 @@ class MainFlutterWindow: NSWindow {
     let flutterViewController = FlutterViewController()
     let windowFrame = self.frame
     self.contentViewController = flutterViewController
-    
+
     self.minSize = NSSize(width: 1024, height: 700)
-    
+
     if self.frame.width < 1024 || self.frame.height < 700 {
       let newFrame = NSRect(
         x: self.frame.origin.x,
@@ -22,6 +22,8 @@ class MainFlutterWindow: NSWindow {
     }
 
     RegisterGeneratedPlugins(registry: flutterViewController)
+    MdnsPlugin.register(with: flutterViewController.registrar(forPlugin: "MdnsPlugin"))
+    LocalFilesPlugin.register(with: flutterViewController)
 
     super.awakeFromNib()
   }

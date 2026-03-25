@@ -1474,7 +1474,15 @@ class PlayerNotifier extends Notifier<PlayerState> {
       currentSong: newQueue[newCurrentIndex],
     );
     _applyQueueInvariant();
-    if (_usingPlaylist) {
+    // Only call moveInPlaylist when both indices are within the loaded playlist
+    // window. On Apple platforms (iOS/macOS) and crossfade mode, _loadedPlaylistLength
+    // is always 1, so any drag between indices ≥ 1 would cause ConcatenatingAudioSource
+    // to removeAt(n) on a 1-element list → RangeError (length): Invalid value: Only
+    // valid value is 0: 1. The app-state queue is already updated above, so skipping
+    // the player call is safe — the player is in single-source mode anyway.
+    if (_usingPlaylist &&
+        oldIndex < _loadedPlaylistLength &&
+        insertIndex < _loadedPlaylistLength) {
       _audioPlayer.moveInPlaylist(oldIndex, insertIndex);
     }
   }

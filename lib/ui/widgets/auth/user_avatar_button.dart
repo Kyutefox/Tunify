@@ -5,6 +5,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/settings/guest_profile_provider.dart';
+import 'package:tunify/data/repositories/database_repository.dart'
+    show databaseRepositoryProvider;
+import 'package:tunify/features/home/home_state_provider.dart';
+import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/features/search/recent_search_provider.dart';
 import 'package:tunify/ui/screens/desktop/settings/desktop_settings_screen.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/screens/shared/auth/guest_profile_setup_screen.dart';
@@ -16,6 +21,12 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart';
 import '../common/adaptive_menu.dart';
+
+void _refreshProvidersForSignOut(WidgetRef ref) {
+  ref.read(homeProvider.notifier).onAuthChanged(null);
+  ref.read(libraryProvider.notifier).onAuthChanged(null);
+  ref.read(recentSearchProvider.notifier).onAuthChanged();
+}
 
 /// Derives the current user's display name and avatar URL from auth/guest
 /// providers, renders a 36 px circular avatar, and opens the user menu on tap.
@@ -96,8 +107,10 @@ void _showMobileSheet(
       onSignOut: () async {
         Navigator.of(context).pop();
         if (isGuest) {
+          await ref.read(databaseRepositoryProvider).clearAllLocalData();
           await ref.read(guestUsernameProvider.notifier).clearGuestData();
           ref.read(guestModeProvider.notifier).exitGuestMode();
+          _refreshProvidersForSignOut(ref);
         } else {
           await ref.read(authNotifierProvider.notifier).signOut();
         }
@@ -230,8 +243,10 @@ void _showDesktopMenu(
         color: AppColors.secondary,
         onTap: () async {
           if (isGuest) {
+            await ref.read(databaseRepositoryProvider).clearAllLocalData();
             await ref.read(guestUsernameProvider.notifier).clearGuestData();
             ref.read(guestModeProvider.notifier).exitGuestMode();
+            _refreshProvidersForSignOut(ref);
           } else {
             await ref.read(authNotifierProvider.notifier).signOut();
           }

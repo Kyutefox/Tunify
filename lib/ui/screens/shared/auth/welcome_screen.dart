@@ -15,6 +15,7 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/widgets/auth/auth_shared.dart';
 import 'package:tunify/ui/widgets/auth/desktop_auth_layout.dart';
+import 'package:tunify/ui/widgets/auth/guest_profile_setup_form.dart';
 import 'package:tunify/ui/screens/mobile/auth/auth_screen.dart' as mobile_auth;
 import 'guest_profile_setup_screen.dart';
 
@@ -30,6 +31,7 @@ class WelcomeScreen extends ConsumerStatefulWidget {
 
 class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   bool _showAuthForm = false;
+  bool _showGuestSetup = false;
   bool _initialSignUp = false;
 
   @override
@@ -37,24 +39,26 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     if (_isDesktop) {
       return DesktopAuthLayout(
         rightContent: AnimatedSwitcher(
-          duration: AppDuration.normal,
-          switchInCurve: Curves.easeOut,
-          switchOutCurve: Curves.easeIn,
+          duration: const Duration(milliseconds: 240),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeOutCubic,
           transitionBuilder: (child, animation) {
             return FadeTransition(
               opacity: animation,
               child: SlideTransition(
                 position: Tween<Offset>(
-                  begin: const Offset(0.05, 0),
+                  begin: const Offset(0, 0.03),
                   end: Offset.zero,
                 ).animate(animation),
                 child: child,
               ),
             );
           },
-          child: _showAuthForm
-              ? _buildDesktopAuthCard()
-              : _buildDesktopWelcomeButtons(),
+          child: _showGuestSetup
+              ? _buildDesktopGuestSetupCard()
+              : (_showAuthForm
+                  ? _buildDesktopAuthCard()
+                  : _buildDesktopWelcomeButtons()),
         ),
       );
     }
@@ -66,6 +70,64 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           child: mobile_auth.MobileAuthScreen(initialSignUp: signUp),
         );
       },
+      onShowGuestSetup: () {
+        showRawSheet(
+          context,
+          child: const GuestProfileSetupScreen(isInitial: true),
+        );
+      },
+    );
+  }
+
+  Widget _buildDesktopGuestSetupCard() {
+    return Container(
+      key: const ValueKey('guest-setup'),
+      constraints: const BoxConstraints(maxWidth: 400),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
+          border: Border.all(
+            color: AppColors.glassBorder,
+            width: 0.5,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.2),
+              blurRadius: 40,
+              offset: const Offset(0, 20),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(AppSpacing.xxl),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildBackButton(() {
+              setState(() {
+                _showGuestSetup = false;
+              });
+            }),
+            const SizedBox(height: AppSpacing.lg),
+            GuestProfileSetupForm(
+              isInitial: true,
+              onBack: () {
+                setState(() {
+                  _showGuestSetup = false;
+                });
+              },
+              onContinue: () {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
+            ),
+          ],
+        ),
+      ).animate().fadeIn(duration: AppDuration.slow).slideY(
+            begin: 0.1,
+            end: 0,
+            duration: AppDuration.slow,
+            curve: Curves.easeOut,
+          ),
     );
   }
 
@@ -196,13 +258,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     );
   }
 
-  Widget _buildBackButton() {
+  Widget _buildBackButton([VoidCallback? onBack]) {
     return GestureDetector(
-      onTap: () {
-        setState(() {
-          _showAuthForm = false;
-        });
-      },
+      onTap: onBack ??
+          () {
+            setState(() {
+              _showAuthForm = false;
+            });
+          },
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -227,6 +290,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   Widget _buildGuestLink() {
     return GestureDetector(
       onTap: () async {
+        if (_isDesktop) {
+          setState(() {
+            _showGuestSetup = true;
+          });
+          return;
+        }
         final existing = await ref
             .read(databaseBridgeProvider)
             .getSetting(kGuestUsernameKey);
@@ -309,9 +378,13 @@ class _DesktopButton extends StatelessWidget {
 }
 
 class _MobileWelcomeScreen extends StatelessWidget {
-  const _MobileWelcomeScreen({required this.onShowAuth});
+  const _MobileWelcomeScreen({
+    required this.onShowAuth,
+    required this.onShowGuestSetup,
+  });
 
   final void Function(bool signUp) onShowAuth;
+  final VoidCallback onShowGuestSetup;
 
   @override
   Widget build(BuildContext context) {

@@ -96,7 +96,16 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
   bool get _canGoForward => _future.isNotEmpty && !_contentCanPop;
 
   @override
+  void deactivate() {
+    _sidebarAnim.stop();
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    if (mounted) {
+      _sidebarAnim.stop();
+    }
     _sidebarAnim.dispose();
     _tabIndexNotifier.dispose();
     _searchController.dispose();

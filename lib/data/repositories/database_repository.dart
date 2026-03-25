@@ -40,20 +40,25 @@ class DatabaseRepository {
 
   Future<List<RecentlyPlayedSong>> loadRecentlyPlayed({String? userId}) async {
     final list = await _bridge.loadRecentlyPlayed();
-    return list.map((m) => RecentlyPlayedSong(
-      id: m['id'] as String? ?? '',
-      title: m['title'] as String? ?? '',
-      artist: m['artist'] as String? ?? '',
-      thumbnailUrl: m['thumbnailUrl'] as String? ?? '',
-      durationSeconds: m['durationSeconds'] as int? ??
-          (m['durationMs'] != null ? (m['durationMs'] as int) ~/ 1000 : 0),
-      lastPlayed: m['lastPlayed'] != null
-          ? DateTime.parse(m['lastPlayed'] as String)
-          : DateTime.now(),
-    )).toList();
+    return list
+        .map((m) => RecentlyPlayedSong(
+              id: m['id'] as String? ?? '',
+              title: m['title'] as String? ?? '',
+              artist: m['artist'] as String? ?? '',
+              thumbnailUrl: m['thumbnailUrl'] as String? ?? '',
+              durationSeconds: m['durationSeconds'] as int? ??
+                  (m['durationMs'] != null
+                      ? (m['durationMs'] as int) ~/ 1000
+                      : 0),
+              lastPlayed: m['lastPlayed'] != null
+                  ? DateTime.parse(m['lastPlayed'] as String)
+                  : DateTime.now(),
+            ))
+        .toList();
   }
 
-  Future<void> saveRecentlyPlayed(List<RecentlyPlayedSong> songs, {String? userId}) async {
+  Future<void> saveRecentlyPlayed(List<RecentlyPlayedSong> songs,
+      {String? userId}) async {
     await _bridge.saveRecentlyPlayed(songs.map((s) => s.toJson()).toList());
     _syncManager.requestSync();
   }
@@ -73,14 +78,16 @@ class DatabaseRepository {
     _syncManager.requestSync();
   }
 
-  Future<List<String>> loadRecentSearches() async => _bridge.loadRecentSearches();
+  Future<List<String>> loadRecentSearches() async =>
+      _bridge.loadRecentSearches();
 
   Future<void> saveRecentSearches(List<String> queries) async {
     await _bridge.saveRecentSearches(queries);
     _syncManager.requestSync();
   }
 
-  Future<List<String>> loadDownloadedSongIds() async => _bridge.loadDownloadedSongIds();
+  Future<List<String>> loadDownloadedSongIds() async =>
+      _bridge.loadDownloadedSongIds();
 
   Future<void> saveDownloadedSongIds(List<String> ids) async {
     await _bridge.saveDownloadedSongIds(ids);
@@ -97,6 +104,23 @@ class DatabaseRepository {
 
   Future<void> close() async => _bridge.close();
 
+  Future<void> clearAllLocalData() async {
+    await _bridge.saveLibraryData({
+      'playlists': [],
+      'folders': [],
+      'sortOrder': 'dateAdded',
+      'viewMode': 'grid',
+      'downloadedShuffleEnabled': false,
+      'downloadsSortOrder': 'dateAdded',
+      'followedArtists': [],
+      'followedAlbums': [],
+    });
+    await _bridge.saveRecentlyPlayed([]);
+    await _bridge.saveRecentSearches([]);
+    await _bridge.saveDownloadedSongIds([]);
+    await _bridge.saveYtPersonalization({});
+  }
+
   // ── Serialization ──────────────────────────────────────────────────────────
 
   LibraryData _rawToLibraryData(Map<String, dynamic> raw) {
@@ -108,8 +132,10 @@ class DatabaseRepository {
     // already present, OR if it exists but is empty while the legacy array has data
     // (handles the case where a bad save wrote an empty 'liked' entry before migration ran).
     final likedRaw = raw['likedSongs'] as List<dynamic>? ?? [];
-    final existingLiked = playlistsRaw.cast<Map>().where((p) => p['id'] == 'liked').firstOrNull;
-    final likedSongsInPlaylist = (existingLiked?['songs'] as List<dynamic>? ?? []);
+    final existingLiked =
+        playlistsRaw.cast<Map>().where((p) => p['id'] == 'liked').firstOrNull;
+    final likedSongsInPlaylist =
+        (existingLiked?['songs'] as List<dynamic>? ?? []);
     final needsMigration = existingLiked == null ||
         (likedSongsInPlaylist.isEmpty && likedRaw.isNotEmpty);
 
@@ -145,7 +171,8 @@ class DatabaseRepository {
           _migrateFallbackDuration(sm);
           return Song.fromJson(sm);
         }).toList(),
-        sortOrder: PlaylistTrackSortOrderX.fromString(m['sort_order'] as String?),
+        sortOrder:
+            PlaylistTrackSortOrderX.fromString(m['sort_order'] as String?),
         shuffleEnabled: m['shuffleEnabled'] as bool? ?? false,
         isPinned: m['is_pinned'] as bool? ?? false,
         customImageUrl: m['custom_image_url'] as String?,
@@ -189,7 +216,8 @@ class DatabaseRepository {
       folders: folders,
       sortOrder: raw['sortOrder'] as String? ?? 'recent',
       viewMode: raw['viewMode'] as String? ?? 'list',
-      downloadedShuffleEnabled: raw['downloadedShuffleEnabled'] as bool? ?? false,
+      downloadedShuffleEnabled:
+          raw['downloadedShuffleEnabled'] as bool? ?? false,
       downloadsSortOrder: raw['downloadsSortOrder'] as String? ?? 'customOrder',
       followedArtists: followedArtists,
       followedAlbums: followedAlbums,
@@ -198,30 +226,35 @@ class DatabaseRepository {
 
   Map<String, dynamic> _libraryDataToRaw(LibraryData data) {
     return {
-      'playlists': data.playlists.map((p) => {
-        'id': p.id,
-        'name': p.name,
-        'description': p.description,
-        'sort_order': p.sortOrder.value,
-        // Imported playlists always re-fetch tracks — don't persist songs.
-        // The 'liked' playlist is never imported, so its songs are always saved.
-        'songs': p.isImported ? [] : p.songs.map((s) => s.toJson()).toList(),
-        'created_at': p.createdAt.toUtc().toIso8601String(),
-        'updated_at': p.updatedAt.toUtc().toIso8601String(),
-        'custom_image_url': p.customImageUrl,
-        'is_pinned': p.isPinned,
-        'shuffleEnabled': p.shuffleEnabled,
-        'is_imported': p.isImported,
-        'browse_id': p.browseId,
-        'cached_palette_color': p.cachedPaletteColor,
-      }).toList(),
-      'folders': data.folders.map((f) => {
-        'id': f.id,
-        'name': f.name,
-        'created_at': f.createdAt.toUtc().toIso8601String(),
-        'is_pinned': f.isPinned,
-        'playlistIds': f.playlistIds,
-      }).toList(),
+      'playlists': data.playlists
+          .map((p) => {
+                'id': p.id,
+                'name': p.name,
+                'description': p.description,
+                'sort_order': p.sortOrder.value,
+                // Imported playlists always re-fetch tracks — don't persist songs.
+                // The 'liked' playlist is never imported, so its songs are always saved.
+                'songs':
+                    p.isImported ? [] : p.songs.map((s) => s.toJson()).toList(),
+                'created_at': p.createdAt.toUtc().toIso8601String(),
+                'updated_at': p.updatedAt.toUtc().toIso8601String(),
+                'custom_image_url': p.customImageUrl,
+                'is_pinned': p.isPinned,
+                'shuffleEnabled': p.shuffleEnabled,
+                'is_imported': p.isImported,
+                'browse_id': p.browseId,
+                'cached_palette_color': p.cachedPaletteColor,
+              })
+          .toList(),
+      'folders': data.folders
+          .map((f) => {
+                'id': f.id,
+                'name': f.name,
+                'created_at': f.createdAt.toUtc().toIso8601String(),
+                'is_pinned': f.isPinned,
+                'playlistIds': f.playlistIds,
+              })
+          .toList(),
       'sortOrder': data.sortOrder,
       'viewMode': data.viewMode,
       'downloadedShuffleEnabled': data.downloadedShuffleEnabled,
@@ -245,7 +278,8 @@ class DatabaseRepository {
   }
 }
 
-final databaseBridgeProvider = Provider<DatabaseBridge>((ref) => DatabaseBridge());
+final databaseBridgeProvider =
+    Provider<DatabaseBridge>((ref) => DatabaseBridge());
 
 /// True while a Supabase → SQLite hydration pull is in progress after login.
 final databaseHydrationInProgressProvider = StateProvider<bool>((ref) => false);

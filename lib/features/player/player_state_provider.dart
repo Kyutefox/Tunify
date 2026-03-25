@@ -379,7 +379,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
       if (songIdx != -1) {
         final updatedSongs = List<Song>.from(playlist.songs);
         updatedSongs[songIdx] = song.copyWith(duration: realDuration);
-        ref.read(libraryProvider.notifier).setPlaylistSongs(playlist.id, updatedSongs);
+        ref
+            .read(libraryProvider.notifier)
+            .setPlaylistSongs(playlist.id, updatedSongs);
       }
     }
   }
@@ -706,7 +708,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
                 tag: 'Player',
               );
               final endPos = dur ?? position;
-              state = state.copyWith(status: PlayerStatus.paused, position: endPos);
+              state =
+                  state.copyWith(status: PlayerStatus.paused, position: endPos);
               _macosLastPositionMs = null;
               _handleCompletion();
               return;
@@ -915,7 +918,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // are appended lazily by _extendPlaylistTo when playNext() is called.
     final List<Song> effectiveQueue;
     final int effectiveIndex;
-    if (((Platform.isIOS || Platform.isMacOS) || state.crossfadeDurationSeconds > 0) && index > 0) {
+    if (((Platform.isIOS || Platform.isMacOS) ||
+            state.crossfadeDurationSeconds > 0) &&
+        index > 0) {
       // Apple platforms (iOS, macOS): AVQueuePlayer single-source mode always
       // starts at index 0. Android+crossfade: maxItems=1, so toResolve=[queue[0..0]]
       // but effectiveIndex could be >0 after a swap — rebase to avoid RangeError.
@@ -945,33 +950,49 @@ class PlayerNotifier extends Notifier<PlayerState> {
       // any auto-advance; ProcessingState.completed at song end is blocked by
       // the isCrossfading guard, and _extendPlaylistTo / _handleCompletion
       // provide the correct fallback if the crossfade itself fails.
-      final maxItems =
-          ((Platform.isIOS || Platform.isMacOS) || state.crossfadeDurationSeconds > 0) ? 1 : 5;
+      final maxItems = ((Platform.isIOS || Platform.isMacOS) ||
+              state.crossfadeDurationSeconds > 0)
+          ? 1
+          : 5;
       final toResolve = effectiveQueue.take(maxItems).toList();
       final sources = <ja.AudioSource>[];
 
       // Resolve upcoming items concurrently so we don't serialize N×network latency.
+      // Uses resolveForPlayback which checks cache first - if cache exists, playback starts instantly.
       final futures = List.generate(toResolve.length, (i) async {
         try {
-          return await _audioRepository
-              .resolveToAudioSource(toResolve[i])
+          final resolved = await _audioRepository
+              .resolveForPlayback(toResolve[i])
               .timeout(resolveTimeout,
                   onTimeout: () => throw TimeoutException('Resolve timed out'));
+
+          if (resolved is ResolvedAudioSourceStream) {
+            _audioRepository.startBackgroundCacheDownload(
+              toResolve[i].id,
+              resolved.url,
+              resolved.headers,
+            );
+          }
+
+          return (
+            resolved: resolved,
+            source: _audioRepository.toAudioSource(resolved)
+          );
         } catch (e) {
           logWarning(
-              'Player: resolveToAudioSource failed for ${toResolve[i].id}: $e',
+              'Player: resolveForPlayback failed for ${toResolve[i].id}: $e',
               tag: 'Player');
           return null;
         }
       });
 
-      final resolved = await Future.wait(futures);
+      final resolvedResults = await Future.wait(futures);
 
       // Bail if a newer song selection preempted this load while we were fetching URLs.
       if (_transitionGeneration != myGeneration) return;
 
       // If the primary song failed to resolve, surface an error immediately.
-      if (resolved.isEmpty || resolved[effectiveIndex] == null) {
+      if (resolvedResults.isEmpty || resolvedResults[effectiveIndex] == null) {
         logError(
             'Player: Primary song failed to resolve, cannot start playback',
             tag: 'Player');
@@ -980,13 +1001,43 @@ class PlayerNotifier extends Notifier<PlayerState> {
         return;
       }
 
+      // Check if primary song has cache with resume position - verify position is actually cached
+      if (position > Duration.zero) {
+        final primaryResult = resolvedResults[effectiveIndex];
+        if (primaryResult != null) {
+          final resolved = primaryResult.resolved;
+          if (resolved is ResolvedAudioSourceFile &&
+              resolved.kind == AudioSourceKind.streamCached) {
+            final cacheInfo = await _audioRepository
+                .getCacheInfo(toResolve[effectiveIndex].id);
+            if (cacheInfo.isComplete) {
+              log('Player: cache is complete (${cacheInfo.cachedBytes} bytes), using file directly',
+                  tag: 'Player');
+            } else {
+              final isPositionCached = await _audioRepository.isPositionCached(
+                toResolve[effectiveIndex].id,
+                position,
+                state.duration,
+              );
+              if (!isPositionCached) {
+                log('Player: cache incomplete and position not cached, falling back to URL',
+                    tag: 'Player');
+                await _reloadCurrentSongFromUrl(position);
+                _isTransitioning = false;
+                return;
+              }
+            }
+          }
+        }
+      }
+
       // Build the sources list, tracking the adjusted index (some items may be skipped).
       int initialIndex = 0;
-      for (int i = 0; i < resolved.length; i++) {
-        final src = resolved[i];
-        if (src != null) {
+      for (int i = 0; i < resolvedResults.length; i++) {
+        final result = resolvedResults[i];
+        if (result != null) {
           if (i == effectiveIndex) initialIndex = sources.length;
-          sources.add(src);
+          sources.add(result.source);
         }
       }
 
@@ -1204,7 +1255,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
         // and let _maybeFetchRealDurationOnMacOS own the duration field.
         duration: Platform.isMacOS
             ? state.duration
-            : (dur != null && dur.inMilliseconds > 0) ? dur : state.duration,
+            : (dur != null && dur.inMilliseconds > 0)
+                ? dur
+                : state.duration,
       );
     } catch (e) {
       logWarning('Player: _syncPositionAndDurationFromPlayer failed: $e',
@@ -1498,8 +1551,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // causes just_audio to wrap into a ConcatenatingAudioSource and emit the
     // combined duration of both songs, breaking the seek bar. Queue advance is
     // handled by _syncPlaylistToQueue reloading per song on those platforms.
-    if (_usingPlaylist && _hasLoadedSource &&
-        !Platform.isIOS && !Platform.isMacOS) {
+    if (_usingPlaylist &&
+        _hasLoadedSource &&
+        !Platform.isIOS &&
+        !Platform.isMacOS) {
       try {
         final source = await _audioRepository
             .resolveToAudioSource(song)
@@ -1646,12 +1701,55 @@ class PlayerNotifier extends Notifier<PlayerState> {
   }
 
   Future<void> seekTo(Duration position) async {
-    // Seek cancels any in-progress crossfade or preload (via CrossfadeEngine.seek)
-    // and resets both index guards so the crossfade window is recalculated freshly.
     _resetCrossfadeIndices();
     _crossfadeInFlight = false;
+
+    final song = state.currentSong;
+    final duration = state.duration;
+
+    if (song != null && duration != null && duration.inMilliseconds > 0) {
+      final cacheInfo = await _audioRepository.getCacheInfo(song.id);
+      if (cacheInfo.exists && !cacheInfo.isComplete) {
+        final isPositionCached = await _audioRepository.isPositionCached(
+          song.id,
+          position,
+          duration,
+        );
+
+        if (!isPositionCached) {
+          log('Player: seekTo $position - position not cached, reloading from URL',
+              tag: 'Player');
+          await _reloadCurrentSongFromUrl(position);
+          return;
+        }
+      }
+    }
+
     await _audioPlayer.seek(position);
     state = state.copyWith(position: position);
+  }
+
+  Future<void> _reloadCurrentSongFromUrl([Duration? seekPosition]) async {
+    final song = state.currentSong;
+    if (song == null) return;
+
+    try {
+      final streamData = await _streamManager.getStreamUrl(song.id);
+      final url = streamData['stream_url'] as String;
+      final headers = streamData['headers'] as Map<String, String>?;
+
+      await _audioPlayer.playUrl(
+        url,
+        headers: headers,
+        initialPosition: seekPosition,
+      );
+
+      _audioRepository.startBackgroundCacheDownload(song.id, url, headers);
+      log('Player: reloaded from URL, caching continues in background',
+          tag: 'Player');
+    } catch (e) {
+      logError('Player: _reloadCurrentSongFromUrl failed: $e', tag: 'Player');
+    }
   }
 
   Future<void> playNext() async {
@@ -1780,7 +1878,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     final queue = state.queue;
     if (queue.isEmpty) return;
 
-    const limit = 3;
+    const limit = 5;
     final upcoming = <String>[];
     for (var i = fromIndex + 1;
         i < queue.length && upcoming.length < limit;
@@ -1790,17 +1888,16 @@ class PlayerNotifier extends Notifier<PlayerState> {
     if (upcoming.isEmpty) return;
 
     try {
-      // 1) Warm the stream URL + headers cache (cheap API calls).
-      await _streamManager.prefetch(upcoming);
-
-      // 2) Start background byte-level caching for the same upcoming tracks so
-      //    the next plays can start from disk instead of a cold network fetch.
+      // Check which songs are not yet cached and need downloading
       for (final id in upcoming) {
         try {
-          final streamData = await _streamManager.getStreamUrl(id);
-          final url = streamData['stream_url'] as String;
-          final headers = streamData['headers'] as Map<String, String>?;
-          _audioRepository.startBackgroundCacheDownload(id, url, headers);
+          final cacheInfo = await _audioRepository.getCacheInfo(id);
+          if (!cacheInfo.exists || !cacheInfo.isComplete) {
+            final streamData = await _streamManager.getStreamUrl(id);
+            final url = streamData['stream_url'] as String;
+            final headers = streamData['headers'] as Map<String, String>?;
+            _audioRepository.startBackgroundCacheDownload(id, url, headers);
+          }
         } catch (e) {
           logWarning('Player: _prefetchUpcoming cache warm failed for $id: $e',
               tag: 'Player');

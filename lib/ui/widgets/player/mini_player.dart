@@ -19,7 +19,10 @@ void openFullPlayerRoute(BuildContext context) {
       transitionDuration: const Duration(milliseconds: 320),
       reverseTransitionDuration: const Duration(milliseconds: 260),
       transitionsBuilder: (_, anim, __, child) {
-        final curved = CurvedAnimation(parent: anim, curve: Curves.easeOutCubic, reverseCurve: Curves.easeOutCubic);
+        final curved = CurvedAnimation(
+            parent: anim,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeOutCubic);
         return FadeTransition(
           opacity: curved,
           child: SlideTransition(
@@ -214,7 +217,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   }
 }
 
-
 class _AlbumThumb extends StatelessWidget {
   const _AlbumThumb({required this.url});
   final String url;
@@ -249,7 +251,6 @@ class _AlbumThumb extends StatelessWidget {
   }
 }
 
-
 /// Tappable seek bar at the bottom of the mini player.
 /// Tapping a position seeks to that point; the bar also shows playback progress.
 class _MiniPlayerSeekBar extends ConsumerWidget {
@@ -272,8 +273,9 @@ class _MiniPlayerSeekBar extends ConsumerWidget {
         final duration = ref.read(playerProvider).duration;
         if (duration != null && duration.inMilliseconds > 0) {
           ref.read(playerProvider.notifier).seekTo(
-            Duration(milliseconds: (fraction * duration.inMilliseconds).round()),
-          );
+                Duration(
+                    milliseconds: (fraction * duration.inMilliseconds).round()),
+              );
         }
       },
       child: ClipRRect(

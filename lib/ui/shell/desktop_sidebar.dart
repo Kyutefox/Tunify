@@ -7,6 +7,7 @@ import 'package:tunify/data/models/library_artist.dart';
 import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
+import 'package:tunify/features/device/device_music_provider.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
 import 'package:tunify/ui/widgets/library/library_filter_chips.dart';
@@ -153,9 +154,9 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
     // Liked songs tile only shows in the unfiltered "all" view (matches mobile).
     final showLiked = showAll && (q.isEmpty || 'liked songs'.contains(q));
 
-    final downloadCount = showAll && _openFolder == null
-        ? ref.watch(downloadServiceProvider).downloadedSongs.length
-        : 0;
+    final downloadCount =
+        ref.watch(downloadServiceProvider).downloadedSongs.length;
+    final localFilesCount = ref.watch(deviceMusicProvider).songs.length;
 
     // Build section entries — same helper pattern as LibraryScreen
     final List<LibrarySectionEntry> playlistEntries = [
@@ -164,11 +165,17 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
           songCount: library.likedSongs.length,
           onTap: () => widget.onNavigateTo(const LibraryPlaylistScreen.liked()),
         ),
-      if (showAll && _openFolder == null && downloadCount > 0)
+      if (showAll && _openFolder == null)
         DownloadsEntry(
           songCount: downloadCount,
           onTap: () =>
               widget.onNavigateTo(const LibraryPlaylistScreen.downloads()),
+        ),
+      if (showAll && _openFolder == null)
+        LocalFilesEntry(
+          songCount: localFilesCount,
+          onTap: () =>
+              widget.onNavigateTo(const LibraryPlaylistScreen.localFiles()),
         ),
       ...folders.map(FolderEntry.new),
       ...rootPlaylists.map(PlaylistEntry.new),

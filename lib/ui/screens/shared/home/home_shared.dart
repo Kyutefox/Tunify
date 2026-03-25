@@ -342,7 +342,8 @@ class HoverPlayOverlay extends StatelessWidget {
                     ),
                   ],
                 ),
-                child: AppIcon(icon: AppIcons.play, color: Colors.white, size: 30),
+                child:
+                    AppIcon(icon: AppIcons.play, color: Colors.white, size: 30),
               ),
             ),
           ),

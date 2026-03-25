@@ -14,7 +14,6 @@ enum LibraryFilter {
   playlists,
   albums,
   artists,
-  downloaded,
 }
 
 extension LibraryFilterX on LibraryFilter {
@@ -28,13 +27,9 @@ extension LibraryFilterX on LibraryFilter {
         return 'Albums';
       case LibraryFilter.artists:
         return 'Artists';
-      case LibraryFilter.downloaded:
-        return 'Downloaded';
     }
   }
 }
-
-enum DownloadedSource { library, device }
 
 class LibraryAppBar extends StatefulWidget {
   const LibraryAppBar({
@@ -44,8 +39,6 @@ class LibraryAppBar extends StatefulWidget {
     required this.onCreateTap,
     required this.selectedFilter,
     required this.onFilterChanged,
-    this.downloadedSource,
-    this.onDownloadedSourceChanged,
     required this.sortOrder,
     required this.viewMode,
     required this.onSortChanged,
@@ -64,8 +57,6 @@ class LibraryAppBar extends StatefulWidget {
 
   /// Pass null to clear filter and show main section.
   final ValueChanged<LibraryFilter?> onFilterChanged;
-  final DownloadedSource? downloadedSource;
-  final ValueChanged<DownloadedSource>? onDownloadedSourceChanged;
   final LibrarySortOrder sortOrder;
   final LibraryViewMode viewMode;
   final ValueChanged<LibrarySortOrder> onSortChanged;
@@ -209,15 +200,6 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                   ),
                 ),
               ),
-              if (widget.selectedFilter == LibraryFilter.downloaded &&
-                  widget.downloadedSource != null &&
-                  widget.onDownloadedSourceChanged != null) ...[
-                const SizedBox(width: AppSpacing.md),
-                _LibraryDeviceSwitch(
-                  source: widget.downloadedSource!,
-                  onChanged: widget.onDownloadedSourceChanged!,
-                ),
-              ],
               const Spacer(),
               AppIconButton(
                 tooltip: widget.viewMode == LibraryViewMode.list
@@ -252,84 +234,5 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
       return SliverToBoxAdapter(child: _buildHeaderContent());
     }
     return _buildHeaderContent();
-  }
-}
-
-class _LibraryDeviceSwitch extends StatelessWidget {
-  const _LibraryDeviceSwitch({
-    required this.source,
-    required this.onChanged,
-  });
-
-  final DownloadedSource source;
-  final ValueChanged<DownloadedSource> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: AppColors.surfaceLight.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          _Segment(
-            label: 'Library',
-            selected: source == DownloadedSource.library,
-            onTap: () => onChanged(DownloadedSource.library),
-          ),
-          _Segment(
-            label: 'Device',
-            selected: source == DownloadedSource.device,
-            onTap: () => onChanged(DownloadedSource.device),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _Segment extends StatelessWidget {
-  const _Segment({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.xs),
-        child: Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.sm,
-            vertical: 6,
-          ),
-          decoration: BoxDecoration(
-            color: selected
-                ? AppColors.primary.withValues(alpha: 0.2)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(AppRadius.xs),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? AppColors.primary : AppColors.textSecondary,
-              fontSize: AppFontSize.sm,
-              fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }

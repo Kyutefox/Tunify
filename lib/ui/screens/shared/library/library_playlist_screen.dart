@@ -32,6 +32,7 @@ import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
+import 'package:tunify/features/device/device_music_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
@@ -157,6 +158,17 @@ class LibraryPlaylistScreen extends ConsumerStatefulWidget {
         albumSongId = null,
         collectionType = CollectionType.playlist;
 
+  const LibraryPlaylistScreen.localFiles({super.key})
+      : playlistId = 'localFiles',
+        remotePlaylist = null,
+        albumSongTitle = null,
+        albumArtistName = null,
+        albumThumbnailUrl = null,
+        albumBrowseId = null,
+        albumName = null,
+        albumSongId = null,
+        collectionType = CollectionType.playlist;
+
   final String playlistId;
   final Playlist? remotePlaylist;
   final CollectionType collectionType;
@@ -198,6 +210,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       !widget._isArtist &&
       widget.playlistId != 'liked' &&
       widget.playlistId != 'downloads' &&
+      widget.playlistId != 'localFiles' &&
       _localPlaylistCache?.isImported == true;
 
   @override
@@ -223,6 +236,12 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
     // Downloads — always local, never needs loading
     if (widget.playlistId == 'downloads') {
+      _remoteLoading = false;
+      return;
+    }
+
+    // Local Files — always local, never needs loading
+    if (widget.playlistId == 'localFiles') {
       _remoteLoading = false;
       return;
     }
@@ -618,12 +637,13 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
       if (_resolvedBrowseId == null) throw Exception('Could not find artist');
 
-      final cached = await CollectionTrackCache.instance.getSongs(_resolvedBrowseId!);
+      final cached =
+          await CollectionTrackCache.instance.getSongs(_resolvedBrowseId!);
       if (cached != null && mounted) {
         // Cache hit — only update if not already shown (silent refresh skips UI update)
         if (!silent || _remoteAsLocal == null) {
-          final cachedPalette =
-              await CollectionTrackCache.instance.getPaletteColor(_resolvedBrowseId!);
+          final cachedPalette = await CollectionTrackCache.instance
+              .getPaletteColor(_resolvedBrowseId!);
           if (cachedPalette != null && _paletteColor == null) {
             setState(() => _paletteColor = cachedPalette);
           }
@@ -960,6 +980,115 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       );
     }
 
+    // Local Files — build a synthetic playlist from the device music provider.
+    if (widget.playlistId == 'localFiles') {
+      // Trigger load on first build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(deviceMusicProvider.notifier).loadSongs();
+      });
+      final deviceState = ref.watch(deviceMusicProvider);
+      final songs = deviceState.songs;
+      final showExplicit = ref.watch(showExplicitContentProvider);
+      final sortOrder =
+          ref.watch(libraryProvider.select((s) => s.downloadsSortOrder));
+      final sortedSongs = _sortBySortOrder(songs, sortOrder);
+      final filteredSongs = filterByExplicitSetting(sortedSongs, showExplicit);
+      final hasSong = ref.watch(currentSongProvider) != null;
+      const localFilesColor = Color(0xFFFF9F43);
+      return CollectionDetailScaffold(
+        isEmpty: songs.isEmpty,
+        paletteColor: localFilesColor,
+        title: 'Local Files',
+        headerExpandedChild: CollectionDetailExpandedContent(
+          cover: _PlaylistCover(songs: songs, isLocalFiles: true),
+          title: 'Local Files',
+          subtitle: _buildCountDuration(songs),
+        ),
+        actionRow: _ActionRow(
+          playlistId: 'localFiles',
+          songs: songs,
+          filteredSongs: filteredSongs,
+          isLocalFiles: true,
+        ),
+        playButton: _CollectionPlayButton(
+          playlistId: 'localFiles',
+          songs: songs,
+          filteredSongs: filteredSongs,
+          queueSource: 'localFiles',
+          isLocalFiles: true,
+        ),
+        pills: songs.isEmpty
+            ? null
+            : _DownloadsPillRow(
+                songs: songs,
+                sortOrder: sortOrder,
+              ),
+        searchField:
+            _SearchInPlaylistTap(songs: songs, playlistId: 'localFiles'),
+        bodySlivers: [
+          if (!deviceState.hasPermission && songs.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xxl),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Permission required to access local files',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: AppColors.textMuted.withValues(alpha: 0.7),
+                          fontSize: AppFontSize.base,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else if (filteredSongs.isEmpty)
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.xxl),
+                  child: Text(
+                    deviceState.isLoading
+                        ? 'Loading...'
+                        : 'No local files found',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textMuted.withValues(alpha: 0.7),
+                      fontSize: AppFontSize.base,
+                    ),
+                  ),
+                ),
+              ),
+            )
+          else
+            SliverList(
+                delegate: SliverChildBuilderDelegate(
+              (context, i) {
+                final song = filteredSongs[i];
+                return _TrackTile(
+                  song: song,
+                  songs: sortedSongs,
+                  playlistId: 'localFiles',
+                  queueSource: 'localFiles',
+                  isImported: false,
+                );
+              },
+              childCount: filteredSongs.length,
+            )),
+          const SliverToBoxAdapter(child: SizedBox(height: 160)),
+        ],
+        hasSong: hasSong,
+        miniPlayerKey: const ValueKey('localFiles-mini-player'),
+      );
+    }
+
     if (_isRemote) {
       if (_remoteError != null && _remoteAsLocal == null) {
         return ErrorScaffold(
@@ -1166,13 +1295,15 @@ class _PlaylistCover extends StatelessWidget {
       this.imageUrl,
       this.isCircle = false,
       this.isLiked = false,
-      this.isDownloads = false});
+      this.isDownloads = false,
+      this.isLocalFiles = false});
 
   final List<Song> songs;
   final String? imageUrl;
   final bool isCircle;
   final bool isLiked;
   final bool isDownloads;
+  final bool isLocalFiles;
 
   static const double _size = 200.0;
 
@@ -1202,6 +1333,33 @@ class _PlaylistCover extends StatelessWidget {
           child: Center(
               child: AppIcon(
                   icon: AppIcons.download, color: Colors.white, size: 56)),
+        ),
+      );
+    }
+
+    // Local Files — always show gradient icon cover
+    if (isLocalFiles) {
+      return Center(
+        child: Container(
+          width: _size,
+          height: _size,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFFFF9F43), Color(0xFFFF6B35)],
+            ),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            boxShadow: [
+              BoxShadow(
+                  color: const Color(0xFFFF9F43).withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6))
+            ],
+          ),
+          child: Center(
+              child: AppIcon(
+                  icon: AppIcons.folder, color: Colors.white, size: 56)),
         ),
       );
     }
@@ -1390,6 +1548,7 @@ class _ActionRow extends ConsumerWidget {
     this.onAddToLibrary,
     this.addingToLibrary = false,
     this.isDownloads = false,
+    this.isLocalFiles = false,
   });
 
   final String playlistId;
@@ -1398,14 +1557,15 @@ class _ActionRow extends ConsumerWidget {
       showLibraryStatus,
       isInLibrary,
       addingToLibrary,
-      isDownloads;
+      isDownloads,
+      isLocalFiles;
   final VoidCallback? onAddToLibrary;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final shuffleEnabled = disableShuffle
         ? false
-        : isDownloads
+        : isDownloads || isLocalFiles
             ? ref.watch(downloadedShuffleProvider)
             : ref.watch(libraryProvider.select((s) =>
                 s.playlists
@@ -1427,7 +1587,7 @@ class _ActionRow extends ConsumerWidget {
                 color:
                     shuffleEnabled ? AppColors.primary : AppColors.textPrimary),
             onPressed: filteredSongs.isNotEmpty && !disableShuffle
-                ? () => isDownloads
+                ? () => isDownloads || isLocalFiles
                     ? ref
                         .read(libraryProvider.notifier)
                         .toggleDownloadedShuffle()
@@ -1438,7 +1598,7 @@ class _ActionRow extends ConsumerWidget {
             size: 40,
             iconSize: 24,
           ),
-          if (!isDownloads)
+          if (!isDownloads && !isLocalFiles)
             MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
           if (showLibraryStatus)
             AppIconButton(
@@ -1479,17 +1639,18 @@ class _CollectionPlayButton extends ConsumerWidget {
     required this.queueSource,
     this.disableShuffle = false,
     this.isDownloads = false,
+    this.isLocalFiles = false,
   });
 
   final String playlistId, queueSource;
   final List<Song> songs, filteredSongs;
-  final bool disableShuffle, isDownloads;
+  final bool disableShuffle, isDownloads, isLocalFiles;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final shuffleEnabled = disableShuffle
         ? false
-        : isDownloads
+        : isDownloads || isLocalFiles
             ? ref.watch(downloadedShuffleProvider)
             : ref.watch(libraryProvider.select((s) =>
                 s.playlists

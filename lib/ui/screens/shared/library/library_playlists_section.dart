@@ -30,7 +30,8 @@ class PlaylistCoverThumbnail extends StatelessWidget {
     final radius = borderRadius ?? BorderRadius.circular(AppRadius.sm);
 
     // 1. Custom image (e.g. saved from a remote playlist)
-    if (playlist.customImageUrl != null && playlist.customImageUrl!.isNotEmpty) {
+    if (playlist.customImageUrl != null &&
+        playlist.customImageUrl!.isNotEmpty) {
       return ClipRRect(
         borderRadius: radius,
         child: CachedNetworkImage(
@@ -110,7 +111,10 @@ class PlaylistCoverThumbnail extends StatelessWidget {
         height: s,
         color: AppColors.surfaceLight,
         child: Center(
-          child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted, size: s * 0.4),
+          child: AppIcon(
+              icon: AppIcons.musicNote,
+              color: AppColors.textMuted,
+              size: s * 0.4),
         ),
       );
 
@@ -121,7 +125,10 @@ class PlaylistCoverThumbnail extends StatelessWidget {
           height: s,
           color: AppColors.surfaceLight,
           child: Center(
-            child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted, size: s * 0.5),
+            child: AppIcon(
+                icon: AppIcons.musicNote,
+                color: AppColors.textMuted,
+                size: s * 0.5),
           ),
         ),
       );
@@ -138,6 +145,12 @@ class LikedSongsEntry extends LibrarySectionEntry {
 
 class DownloadsEntry extends LibrarySectionEntry {
   DownloadsEntry({required this.songCount, required this.onTap});
+  final int songCount;
+  final VoidCallback onTap;
+}
+
+class LocalFilesEntry extends LibrarySectionEntry {
+  LocalFilesEntry({required this.songCount, required this.onTap});
   final int songCount;
   final VoidCallback onTap;
 }
@@ -171,8 +184,10 @@ class LibraryPlaylistsSection extends StatelessWidget {
   final void Function(LibraryPlaylist, Rect?) onPlaylistOptions;
   final void Function(LibraryFolder) onFolderTap;
   final void Function(LibraryFolder, Rect?) onFolderOptions;
+
   /// When true and there are no entries (Playlists tab with no folders/playlists), show empty state.
   final bool showCreateFirstPlaylistEmptyState;
+
   /// When true, we're showing a folder's playlists; empty content shows folder empty message.
   final bool isFolderView;
 
@@ -180,17 +195,18 @@ class LibraryPlaylistsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
     final contentEntries = entries;
-    final showCreateFirstEmptyState = showCreateFirstPlaylistEmptyState &&
-        contentEntries.isEmpty;
-    final showFolderEmptyState =
-        isFolderView && contentEntries.isEmpty;
+    final showCreateFirstEmptyState =
+        showCreateFirstPlaylistEmptyState && contentEntries.isEmpty;
+    final showFolderEmptyState = isFolderView && contentEntries.isEmpty;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: t.isDesktop ? AppSpacing.sm : AppSpacing.base),
+      padding: EdgeInsets.symmetric(
+          horizontal: t.isDesktop ? AppSpacing.sm : AppSpacing.base),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (showFolderEmptyState)            _SectionEmptyState(
+          if (showFolderEmptyState)
+            _SectionEmptyState(
               child: Text(
                 'No playlists in this folder',
                 style: TextStyle(
@@ -342,6 +358,19 @@ class _LibrarySectionGrid extends StatelessWidget {
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
+          LocalFilesEntry(:final songCount, :final onTap) => _StaticGridCard(
+              icon: AppIcons.folder,
+              iconColor: Colors.white,
+              backgroundColor: AppColors.surfaceLight,
+              backgroundGradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFF9F43), Color(0xFFFF6B35)],
+              ),
+              title: 'Local Files',
+              subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
+              onTap: onTap,
+            ),
           FolderEntry(:final folder) => _LibraryFolderGridCard(
               folder: folder,
               onTap: () => onFolderTap(folder),
@@ -395,11 +424,12 @@ class _StaticGridCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppRadius.md),
               ),
               child: Center(
-                child: iconWidget ?? AppIcon(
-                  icon: icon!,
-                  color: iconColor!,
-                  size: 40,
-                ),
+                child: iconWidget ??
+                    AppIcon(
+                      icon: icon!,
+                      color: iconColor!,
+                      size: 40,
+                    ),
               ),
             ),
           ),
@@ -619,7 +649,8 @@ class _LibraryFolderListTile extends StatelessWidget {
         onLongPress: () => onOptions(null),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(
+              vertical: AppSpacing.sm, horizontal: AppSpacing.sm),
           child: Row(
             children: [
               Container(
@@ -630,7 +661,10 @@ class _LibraryFolderListTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Center(
-                  child: AppIcon(icon: AppIcons.folder, color: AppColors.primary, size: 28),
+                  child: AppIcon(
+                      icon: AppIcons.folder,
+                      color: AppColors.primary,
+                      size: 28),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -643,7 +677,8 @@ class _LibraryFolderListTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight: t.isDesktop ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight:
+                            t.isDesktop ? FontWeight.w700 : FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -663,11 +698,15 @@ class _LibraryFolderListTile extends StatelessWidget {
               if (folder.isPinned)
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: AppIcon(icon: AppIcons.pin, size: 14, color: AppColors.primary),
+                  child: AppIcon(
+                      icon: AppIcons.pin, size: 14, color: AppColors.primary),
                 ),
               Builder(
                 builder: (btnCtx) => AppIconButton(
-                  icon: AppIcon(icon: AppIcons.moreHoriz, size: 22, color: AppColors.textMuted),
+                  icon: AppIcon(
+                      icon: AppIcons.moreHoriz,
+                      size: 22,
+                      color: AppColors.textMuted),
                   onPressedWithContext: (btnCtx) {
                     final box = btnCtx.findRenderObject() as RenderBox?;
                     onOptions(box != null && box.hasSize
@@ -726,8 +765,7 @@ class _LibrarySectionList extends StatelessWidget {
               backgroundColor: AppColors.surfaceLight,
               backgroundGradient: AppColors.loveThemeGradientFor('liked_songs'),
               title: 'Liked Songs',
-              subtitle:
-                  songCount == 0 ? 'No songs yet' : '$songCount songs',
+              subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
           DownloadsEntry(:final songCount, :final onTap) => _StaticListTile(
@@ -736,6 +774,19 @@ class _LibrarySectionList extends StatelessWidget {
               backgroundColor: AppColors.surfaceLight,
               backgroundGradient: AppColors.downloadGradient,
               title: 'Downloads',
+              subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
+              onTap: onTap,
+            ),
+          LocalFilesEntry(:final songCount, :final onTap) => _StaticListTile(
+              icon: AppIcons.folder,
+              iconColor: Colors.white,
+              backgroundColor: AppColors.surfaceLight,
+              backgroundGradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFFFF9F43), Color(0xFFFF6B35)],
+              ),
+              title: 'Local Files',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
@@ -786,7 +837,8 @@ class _StaticListTile extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: t.spacing.sm, horizontal: t.spacing.sm),
+          padding: EdgeInsets.symmetric(
+              vertical: t.spacing.sm, horizontal: t.spacing.sm),
           child: Row(
             children: [
               Container(
@@ -798,7 +850,8 @@ class _StaticListTile extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Center(
-                  child: iconWidget ?? AppIcon(icon: icon!, color: iconColor!, size: 28),
+                  child: iconWidget ??
+                      AppIcon(icon: icon!, color: iconColor!, size: 28),
                 ),
               ),
               SizedBox(width: t.spacing.md),
@@ -811,7 +864,8 @@ class _StaticListTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight: t.isDesktop ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight:
+                            t.isDesktop ? FontWeight.w700 : FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -861,7 +915,8 @@ class _LibraryPlaylistListTile extends StatelessWidget {
         onLongPress: () => onOptions(null),
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: t.spacing.sm, horizontal: t.spacing.sm),
+          padding: EdgeInsets.symmetric(
+              vertical: t.spacing.sm, horizontal: t.spacing.sm),
           child: Row(
             children: [
               PlaylistCoverThumbnail(playlist: playlist, size: thumbSize),
@@ -875,7 +930,8 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColors.textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight: t.isDesktop ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight:
+                            t.isDesktop ? FontWeight.w700 : FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -886,11 +942,15 @@ class _LibraryPlaylistListTile extends StatelessWidget {
               if (playlist.isPinned)
                 Padding(
                   padding: const EdgeInsets.only(right: 4),
-                  child: AppIcon(icon: AppIcons.pin, size: 14, color: AppColors.primary),
+                  child: AppIcon(
+                      icon: AppIcons.pin, size: 14, color: AppColors.primary),
                 ),
               Builder(
                 builder: (btnCtx) => AppIconButton(
-                  icon: AppIcon(icon: AppIcons.moreHoriz, size: 22, color: AppColors.textMuted),
+                  icon: AppIcon(
+                      icon: AppIcons.moreHoriz,
+                      size: 22,
+                      color: AppColors.textMuted),
                   onPressedWithContext: (btnCtx) {
                     final box = btnCtx.findRenderObject() as RenderBox?;
                     onOptions(box != null && box.hasSize

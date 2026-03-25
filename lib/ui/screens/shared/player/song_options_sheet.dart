@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
-import 'package:tunify/ui/widgets/common/sheet.dart' show showAppSheet, kSheetHorizontalPadding, SheetOptionTile;
+import 'package:tunify/ui/widgets/common/sheet.dart'
+    show showAppSheet, kSheetHorizontalPadding, SheetOptionTile;
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_playlist.dart';
@@ -86,7 +87,8 @@ void _showDesktopSongMenu(
   // open inside the desktop content panel instead of full-screen.
   // Use getElementForInheritedWidgetOfExactType (read-only, no rebuild
   // subscription) because this is a one-shot call, not a build method.
-  final pushDetail = (context.getElementForInheritedWidgetOfExactType<ShellContext>()
+  final pushDetail = (context
+          .getElementForInheritedWidgetOfExactType<ShellContext>()
           ?.widget as ShellContext?)
       ?.onPushDetail;
 
@@ -164,7 +166,9 @@ void _showDesktopSongMenu(
       label: isInQueue ? 'Remove from queue' : 'Add to queue',
       onTap: () {
         if (isInQueue) {
-          ref.read(playerProvider.notifier).removeFromQueue(effectiveQueueIndex);
+          ref
+              .read(playerProvider.notifier)
+              .removeFromQueue(effectiveQueueIndex);
         } else {
           ref.read(playerProvider.notifier).addToQueue(song);
         }
@@ -264,9 +268,8 @@ class _SongOptionsContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentSong = ref.watch(currentSongProvider);
-    final songForNav = currentSong != null && currentSong.id == song.id
-        ? currentSong
-        : song;
+    final songForNav =
+        currentSong != null && currentSong.id == song.id ? currentSong : song;
     final downloadService = ref.watch(downloadServiceProvider);
     final isDownloaded = downloadService.isDownloaded(song.id);
     final likedIds = ref.watch(libraryProvider.select((s) => s.likedSongIds));
@@ -284,53 +287,53 @@ class _SongOptionsContent extends ConsumerWidget {
           Row(
             children: [
               ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              child: CachedNetworkImage(
-                imageUrl: song.thumbnailUrl,
-                width: 48,
-                height: 48,
-                fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => Container(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: CachedNetworkImage(
+                  imageUrl: song.thumbnailUrl,
                   width: 48,
                   height: 48,
-                  color: AppColors.surfaceLight,
-                  child: AppIcon(
-                      icon: AppIcons.musicNote,
-                      color: AppColors.textMuted,
-                      size: 24),
+                  fit: BoxFit.cover,
+                  errorWidget: (_, __, ___) => Container(
+                    width: 48,
+                    height: 48,
+                    color: AppColors.surfaceLight,
+                    child: AppIcon(
+                        icon: AppIcons.musicNote,
+                        color: AppColors.textMuted,
+                        size: 24),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(width: AppSpacing.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    song.title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
-                      fontSize: AppFontSize.xl,
-                      fontWeight: FontWeight.w700,
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      song.title,
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: AppFontSize.xl,
+                        fontWeight: FontWeight.w700,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    song.artist,
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: AppFontSize.md,
+                    const SizedBox(height: 2),
+                    Text(
+                      song.artist,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: AppFontSize.md,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
           const SizedBox(height: AppSpacing.lg),
           Divider(
             color: Colors.white.withValues(alpha: 0.08),
@@ -406,9 +409,8 @@ class _SongOptionsContent extends ConsumerWidget {
             },
           ),
           SheetOptionTile(
-            icon: isInQueue
-                ? AppIcons.removeCircleOutline
-                : AppIcons.queueMusic,
+            icon:
+                isInQueue ? AppIcons.removeCircleOutline : AppIcons.queueMusic,
             label: isInQueue ? 'Remove from queue' : 'Add to queue',
             onTap: () {
               Navigator.of(context).pop();
@@ -417,9 +419,7 @@ class _SongOptionsContent extends ConsumerWidget {
                     .read(playerProvider.notifier)
                     .removeFromQueue(effectiveQueueIndex);
               } else {
-                ref
-                    .read(playerProvider.notifier)
-                    .addToQueue(song);
+                ref.read(playerProvider.notifier).addToQueue(song);
               }
             },
             showChevron: false,
@@ -467,7 +467,8 @@ class _QuickActionRow extends StatelessWidget {
         Expanded(
           child: _QuickActionButton(
             icon: isDownloaded ? AppIcons.checkCircle : AppIcons.download,
-            iconColor: isDownloaded ? AppColors.primary : AppColors.textSecondary,
+            iconColor:
+                isDownloaded ? AppColors.primary : AppColors.textSecondary,
             label: 'Download',
             isActive: isDownloaded,
             onTap: onDownload,
@@ -476,7 +477,9 @@ class _QuickActionRow extends StatelessWidget {
         if (showPlaylist)
           Expanded(
             child: _QuickActionButton(
-              icon: isRemoveFromPlaylist ? AppIcons.removeCircleOutline : AppIcons.playlistAdd,
+              icon: isRemoveFromPlaylist
+                  ? AppIcons.removeCircleOutline
+                  : AppIcons.playlistAdd,
               iconColor: AppColors.textSecondary,
               label: isRemoveFromPlaylist ? 'Remove' : 'Playlist',
               onTap: onPlaylist,
@@ -509,7 +512,7 @@ class _QuickActionButton extends StatelessWidget {
     required this.onTap,
     this.isActive = false,
   }) : assert(icon != null && iconColor != null || iconWidget != null,
-         'Provide either icon+iconColor or iconWidget');
+            'Provide either icon+iconColor or iconWidget');
 
   final List<List<dynamic>>? icon;
   final Color? iconColor;
@@ -552,11 +555,12 @@ class _QuickActionButton extends StatelessWidget {
                   ),
                 ),
                 child: Center(
-                  child: iconWidget ?? AppIcon(
-                    icon: icon!,
-                    color: iconColor!,
-                    size: _iconSize,
-                  ),
+                  child: iconWidget ??
+                      AppIcon(
+                        icon: icon!,
+                        color: iconColor!,
+                        size: _iconSize,
+                      ),
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
@@ -575,4 +579,3 @@ class _QuickActionButton extends StatelessWidget {
     );
   }
 }
-

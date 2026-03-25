@@ -25,11 +25,12 @@ import 'package:tunify/ui/screens/shared/library/create_library_item_screen.dart
 import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/screens/shared/library/library_playlists_section.dart';
 import 'package:tunify/ui/screens/shared/library/library_app_bar.dart';
-import 'package:tunify/ui/screens/shared/library/library_downloaded_content.dart';
 import 'package:tunify/ui/screens/shared/library/library_search_screen.dart';
 import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
 import 'package:tunify/ui/screens/shared/library/create_library_options.dart';
 import 'package:tunify/ui/widgets/player/download_queue_sheet.dart';
+import 'package:tunify/features/downloads/download_provider.dart';
+import 'package:tunify/features/device/device_music_provider.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
@@ -44,10 +45,17 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   /// Drives the body content (kept in sync with _filter for smooth transitions).
   LibraryFilter? _contentFilter;
-  DownloadedSource _downloadedSource = DownloadedSource.library;
 
   /// When non-null, section shows this folder's playlists with a back row instead of main list.
   String? _selectedFolderId;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(deviceMusicProvider.notifier).loadSongs();
+    });
+  }
 
   void _unfocus() => FocusManager.instance.primaryFocus?.unfocus();
 
@@ -80,13 +88,16 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     }
   }
 
-  /// Builds the main list entries (Liked Songs + folders + playlists) or playlists-only.
+  /// Builds the main list entries (Liked Songs + Downloads + Local Files + folders + playlists) or playlists-only.
   List<LibrarySectionEntry> _buildSectionEntries({
     required bool includeLikedSongs,
     required List<LibraryFolder> folders,
     required List<LibraryPlaylist> rootPlaylists,
   }) {
     if (includeLikedSongs) {
+      final downloadCount =
+          ref.watch(downloadServiceProvider).downloadedSongs.length;
+      final localFilesCount = ref.watch(deviceMusicProvider).songs.length;
       return [
         LikedSongsEntry(
           songCount: ref.watch(libraryLikedCountProvider),
@@ -94,6 +105,26 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             Navigator.of(context).push(
               appPageRoute<void>(
                 builder: (_) => const LibraryPlaylistScreen.liked(),
+              ),
+            );
+          },
+        ),
+        DownloadsEntry(
+          songCount: downloadCount,
+          onTap: () {
+            Navigator.of(context).push(
+              appPageRoute<void>(
+                builder: (_) => const LibraryPlaylistScreen.downloads(),
+              ),
+            );
+          },
+        ),
+        LocalFilesEntry(
+          songCount: localFilesCount,
+          onTap: () {
+            Navigator.of(context).push(
+              appPageRoute<void>(
+                builder: (_) => const LibraryPlaylistScreen.localFiles(),
               ),
             );
           },
@@ -174,11 +205,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
       onCreateTap: () => showCreateLibrarySheet(context, ref),
       selectedFilter: _filter,
       onFilterChanged: _onFilterChanged,
-      downloadedSource:
-          _filter == LibraryFilter.downloaded ? _downloadedSource : null,
-      onDownloadedSourceChanged: _filter == LibraryFilter.downloaded
-          ? (s) => setState(() => _downloadedSource = s)
-          : null,
       sortOrder: sortOrder,
       viewMode: viewMode,
       onSortChanged: (order) =>
@@ -354,14 +380,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 160)),
-        ];
-      case LibraryFilter.downloaded:
-        return [
-          LibraryDownloadedContent(
-            isLibraryMode: _downloadedSource == DownloadedSource.library,
-            viewMode: viewMode,
-            sortOrder: sortOrder,
-          ),
         ];
     }
   }

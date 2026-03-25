@@ -285,7 +285,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
       logWarning('Player: getLocalPath (downloads) failed: $e', tag: 'Player');
     }
     try {
-      return ref.read(deviceMusicProvider).pathMap[songId];
+      final deviceState = ref.read(deviceMusicProvider);
+      if (deviceState.pathMap.isEmpty && !deviceState.isLoading) {
+        ref.read(deviceMusicProvider.notifier).loadSongs();
+      }
+      return deviceState.pathMap[songId];
     } catch (e) {
       logWarning('Player: getLocalPath (device) failed: $e', tag: 'Player');
       return null;
@@ -2380,7 +2384,11 @@ final audioRepositoryProvider = Provider<AudioRepository>((ref) {
             tag: 'AudioRepository');
       }
       try {
-        return ref.read(deviceMusicProvider).pathMap[songId];
+        final deviceState = ref.read(deviceMusicProvider);
+        if (deviceState.pathMap.isEmpty && !deviceState.isLoading) {
+          ref.read(deviceMusicProvider.notifier).loadSongs();
+        }
+        return deviceState.pathMap[songId];
       } catch (e) {
         logWarning('AudioRepository: getLocalPath (device) failed: $e',
             tag: 'AudioRepository');

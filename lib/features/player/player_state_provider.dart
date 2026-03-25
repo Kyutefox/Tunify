@@ -1075,6 +1075,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
         // cold-start races show a pause icon while audio never starts.
         status: shouldPlay ? PlayerStatus.loading : PlayerStatus.paused,
       );
+      unawaited(_cacheSongMetadata(loadedSong));
       _syncMediaNotification(state.currentSong!);
       if (shouldPlay) {
         _playRequestedAt = DateTime.now();
@@ -1879,27 +1880,34 @@ class PlayerNotifier extends Notifier<PlayerState> {
     if (queue.isEmpty) return;
 
     const limit = 5;
-    final upcoming = <String>[];
+    final upcomingSongs = <Song>[];
     for (var i = fromIndex + 1;
-        i < queue.length && upcoming.length < limit;
+        i < queue.length && upcomingSongs.length < limit;
         i++) {
-      upcoming.add(queue[i].id);
+      upcomingSongs.add(queue[i]);
     }
-    if (upcoming.isEmpty) return;
+    if (upcomingSongs.isEmpty) return;
 
     try {
-      // Check which songs are not yet cached and need downloading
-      for (final id in upcoming) {
+      // Cache metadata for all upcoming songs
+      await ref
+          .read(downloadServiceProvider)
+          .cacheSongMetadataBatch(upcomingSongs);
+
+      // Check which songs are not yet cached and need audio downloading
+      for (final song in upcomingSongs) {
         try {
-          final cacheInfo = await _audioRepository.getCacheInfo(id);
+          final cacheInfo = await _audioRepository.getCacheInfo(song.id);
           if (!cacheInfo.exists || !cacheInfo.isComplete) {
-            final streamData = await _streamManager.getStreamUrl(id);
+            final streamData = await _streamManager.getStreamUrl(song.id);
             final url = streamData['stream_url'] as String;
             final headers = streamData['headers'] as Map<String, String>?;
-            _audioRepository.startBackgroundCacheDownload(id, url, headers);
+            _audioRepository.startBackgroundCacheDownload(
+                song.id, url, headers);
           }
         } catch (e) {
-          logWarning('Player: _prefetchUpcoming cache warm failed for $id: $e',
+          logWarning(
+              'Player: _prefetchUpcoming cache warm failed for ${song.id}: $e',
               tag: 'Player');
         }
       }
@@ -2270,6 +2278,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
       }
     } catch (_) {
       // Tracking optional; ignore errors.
+    }
+  }
+
+  Future<void> _cacheSongMetadata(Song song) async {
+    try {
+      await ref.read(downloadServiceProvider).cacheSongMetadata(song);
+    } catch (_) {
+      // Caching optional; ignore errors.
     }
   }
 

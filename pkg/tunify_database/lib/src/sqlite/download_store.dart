@@ -10,7 +10,7 @@ class DownloadStore {
   DownloadStore();
 
   static const String _dbName = 'downloads.db';
-  static const int _version = 2;
+  static const int _version = 3;
 
   Database? _db;
 
@@ -37,6 +37,14 @@ class DownloadStore {
         sort_order INTEGER NOT NULL DEFAULT 0
       )
     ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS cached_songs (
+        song_id TEXT PRIMARY KEY,
+        song_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        last_accessed_at TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -53,6 +61,16 @@ class DownloadStore {
           whereArgs: [rows[i]['song_id']],
         );
       }
+    }
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS cached_songs (
+          song_id TEXT PRIMARY KEY,
+          song_json TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          last_accessed_at TEXT NOT NULL
+        )
+      ''');
     }
   }
 
@@ -95,7 +113,8 @@ class DownloadStore {
   }
 
   /// Inserts or replaces a download row. [songJson] is stored as-is (e.g. from app's Song.toJson()).
-  Future<void> saveDownload(String songId, String localPath, Map<String, dynamic> songJson) async {
+  Future<void> saveDownload(
+      String songId, String localPath, Map<String, dynamic> songJson) async {
     final db = await _getDb();
     int sortOrder;
     final existing = await db.query(
@@ -159,5 +178,100 @@ class DownloadStore {
       await _db!.close();
       _db = null;
     }
+  }
+
+  /// Caches a song's metadata. Upserts if already exists, updates last_accessed_at.
+  Future<void> cacheSongMetadata(
+      String songId, Map<String, dynamic> songJson) async {
+    final db = await _getDb();
+    final now = DateTime.now().toUtc().toIso8601String();
+    await db.insert(
+      'cached_songs',
+      {
+        'song_id': songId,
+        'song_json': jsonEncode(songJson),
+        'created_at': now,
+        'last_accessed_at': now,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Gets cached song metadata by songId. Returns null if not cached.
+  Future<Map<String, dynamic>?> getCachedSongMetadata(String songId) async {
+    final db = await _getDb();
+    final rows = await db.query(
+      'cached_songs',
+      where: 'song_id = ?',
+      whereArgs: [songId],
+    );
+    if (rows.isEmpty) return null;
+    await db.update(
+      'cached_songs',
+      {'last_accessed_at': DateTime.now().toUtc().toIso8601String()},
+      where: 'song_id = ?',
+      whereArgs: [songId],
+    );
+    return jsonDecode(rows.first['song_json'] as String)
+        as Map<String, dynamic>;
+  }
+
+  /// Gets cached song metadata for multiple songIds. Returns map of songId -> metadata.
+  Future<Map<String, Map<String, dynamic>>> getCachedSongMetadataBatch(
+      List<String> songIds) async {
+    if (songIds.isEmpty) return {};
+    final db = await _getDb();
+    final placeholders = List.filled(songIds.length, '?').join(',');
+    final rows = await db.query(
+      'cached_songs',
+      where: 'song_id IN ($placeholders)',
+      whereArgs: songIds,
+    );
+    final now = DateTime.now().toUtc().toIso8601String();
+    final result = <String, Map<String, dynamic>>{};
+    for (final row in rows) {
+      final songId = row['song_id'] as String;
+      result[songId] =
+          jsonDecode(row['song_json'] as String) as Map<String, dynamic>;
+      await db.update(
+        'cached_songs',
+        {'last_accessed_at': now},
+        where: 'song_id = ?',
+        whereArgs: [songId],
+      );
+    }
+    return result;
+  }
+
+  /// Removes a song from the cache.
+  Future<void> removeCachedSong(String songId) async {
+    final db = await _getDb();
+    await db.delete('cached_songs', where: 'song_id = ?', whereArgs: [songId]);
+  }
+
+  /// Clears old cached songs (older than [maxAge]). Returns count of deleted entries.
+  Future<int> clearOldCachedSongs(Duration maxAge) async {
+    final db = await _getDb();
+    final cutoff = DateTime.now().subtract(maxAge).toUtc().toIso8601String();
+    final deleted = await db.delete(
+      'cached_songs',
+      where: 'last_accessed_at < ?',
+      whereArgs: [cutoff],
+    );
+    return deleted;
+  }
+
+  /// Clears all cached songs.
+  Future<void> clearAllCachedSongs() async {
+    final db = await _getDb();
+    await db.delete('cached_songs');
+  }
+
+  /// Gets count of cached songs.
+  Future<int> getCachedSongsCount() async {
+    final db = await _getDb();
+    final result =
+        await db.rawQuery('SELECT COUNT(*) as count FROM cached_songs');
+    return (result.first['count'] as num?)?.toInt() ?? 0;
   }
 }

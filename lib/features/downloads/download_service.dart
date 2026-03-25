@@ -9,6 +9,7 @@ import 'package:tunify_database/tunify_database.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 import 'package:tunify/features/settings/music_stream_manager.dart';
+import 'package:tunify/features/settings/stream_cache_service.dart';
 
 /// Lifecycle state of a single download operation.
 enum DownloadStatus {
@@ -66,14 +67,17 @@ class DownloadService extends ChangeNotifier {
 
   DownloadService({
     MusicStreamManager? streamManager,
+    StreamCacheService? streamCache,
     void Function(List<String> ids)? onDownloadedIdsChanged,
   })  : _streamManager = streamManager ?? MusicStreamManager(),
+        _streamCache = streamCache ?? StreamCacheService(),
         _onDownloadedIdsChanged = onDownloadedIdsChanged {
     _loadDownloaded();
   }
 
   final DownloadStore _store = DownloadStore();
   final MusicStreamManager _streamManager;
+  final StreamCacheService _streamCache;
   final void Function(List<String> ids)? _onDownloadedIdsChanged;
 
   void _notifyDownloadedIdsChanged() {
@@ -170,7 +174,8 @@ class DownloadService extends ChangeNotifier {
       }
 
       _activeIds.add(entry.song.id);
-      _queue[index] = DownloadEntry(song: entry.song, status: DownloadStatus.downloading);
+      _queue[index] =
+          DownloadEntry(song: entry.song, status: DownloadStatus.downloading);
       notifyListeners();
 
       _downloadOne(entry.song).then((_) {
@@ -180,7 +185,8 @@ class DownloadService extends ChangeNotifier {
         _processQueue();
         notifyListeners();
       }).catchError((Object e, StackTrace st) {
-        logError('Download error in queue processing: $e\n$st', tag: 'DownloadService');
+        logError('Download error in queue processing: $e\n$st',
+            tag: 'DownloadService');
         _activeIds.remove(entry.song.id);
         notifyListeners();
       });
@@ -188,11 +194,13 @@ class DownloadService extends ChangeNotifier {
   }
 
   static const int _progressNotifyEveryBytes = 262144;
+
   /// Progress notification is throttled to this interval to reduce widget rebuilds.
   static const int _progressNotifyEveryMs = 500;
   static const int _writeBufferSize = 262144;
 
-  void _updateEntryProgress(String songId, int? expectedBytes, int downloadedBytes) {
+  void _updateEntryProgress(
+      String songId, int? expectedBytes, int downloadedBytes) {
     final i = _queue.indexWhere((e) => e.song.id == songId);
     if (i < 0) return;
     final e = _queue[i];
@@ -200,7 +208,9 @@ class DownloadService extends ChangeNotifier {
     final now = DateTime.now();
     final lastBytes = _lastProgressBytes[songId];
     final lastTime = _lastProgressTime[songId];
-    if (lastTime != null && lastBytes != null && now.difference(lastTime).inMilliseconds > 0) {
+    if (lastTime != null &&
+        lastBytes != null &&
+        now.difference(lastTime).inMilliseconds > 0) {
       final sec = now.difference(lastTime).inMilliseconds / 1000.0;
       if (sec > 0) speed = (downloadedBytes - lastBytes) / sec;
     }
@@ -231,82 +241,38 @@ class DownloadService extends ChangeNotifier {
       final ext = streamUrl.contains('m4a') ? 'm4a' : 'webm';
       final path = join(dirPath, '${song.id}.$ext');
 
-      final client = http.Client();
-      try {
-        final request = http.Request('GET', Uri.parse(streamUrl));
-        if (headers.isNotEmpty) request.headers.addAll(headers);
-        final response = await client.send(request);
-        if (response.statusCode != 200 && response.statusCode != 206) {
-          throw Exception('HTTP ${response.statusCode}');
-        }
-        final contentLength = response.contentLength;
-        _updateEntryProgress(song.id, contentLength, 0);
+      // Check if song has cached data - optimize download if available
+      final cacheInfo = await _streamCache.getCacheInfo(song.id);
 
-        final file = File(path);
-        final sink = file.openWrite();
-        int downloaded = 0;
-        int lastNotifiedAt = 0;
-        DateTime? lastNotifiedTime;
-        final List<int> writeBuffer = [];
-        void flushBuffer() {
-          if (writeBuffer.isEmpty) return;
-          sink.add(Uint8List.fromList(writeBuffer));
-          writeBuffer.clear();
-        }
-        await for (final chunk in response.stream) {
-          if (_cancelledIds.contains(song.id)) {
-            flushBuffer();
-            await sink.flush();
-            await sink.close();
-            try {
-              await file.delete();
-            } catch (e) {
-              logWarning('DownloadService: delete cancelled file failed: $e', tag: 'DownloadService');
-            }
-            _activeIds.remove(song.id);
-            _cancelledIds.remove(song.id);
-            _lastProgressBytes.remove(song.id);
-            _lastProgressTime.remove(song.id);
-            return;
-          }
-          writeBuffer.addAll(chunk);
-          downloaded += chunk.length;
-          if (writeBuffer.length >= _writeBufferSize) flushBuffer();
-          final now = DateTime.now();
-          final timeOk = lastNotifiedTime == null ||
-              now.difference(lastNotifiedTime).inMilliseconds >= _progressNotifyEveryMs;
-          if (timeOk && downloaded - lastNotifiedAt >= _progressNotifyEveryBytes) {
-            lastNotifiedAt = downloaded;
-            lastNotifiedTime = now;
-            _updateEntryProgress(song.id, null, downloaded);
-          }
-        }
-        flushBuffer();
-        await sink.close();
-        _updateEntryProgress(song.id, contentLength ?? downloaded, downloaded);
-
-        if (_cancelledIds.contains(song.id)) {
-          try {
-            await file.delete();
-          } catch (e) {
-            logWarning('DownloadService: delete cancelled file failed: $e', tag: 'DownloadService');
-          }
-          _activeIds.remove(song.id);
-          _cancelledIds.remove(song.id);
-          _lastProgressBytes.remove(song.id);
-          _lastProgressTime.remove(song.id);
-          return;
-        }
-
-        await _store.saveDownload(song.id, path, song.toJson());
-        _downloadedIds.add(song.id);
-        _pathBySongId[song.id] = path;
-        _downloadedSongs.insert(0, song);
-        _notifyDownloadedIdsChanged();
-        notifyListeners();
-      } finally {
-        client.close();
+      if (cacheInfo.exists && cacheInfo.filePath != null) {
+        log('DownloadService: ${song.id} has cached data (${cacheInfo.cachedBytes} bytes), optimizing download',
+            tag: 'DownloadService');
+        await _downloadWithCache(song, cacheInfo, streamUrl, headers, path);
+      } else {
+        await _downloadFull(song, streamUrl, headers, path);
       }
+
+      // Check cancellation after download
+      if (_cancelledIds.contains(song.id)) {
+        try {
+          await File(path).delete();
+        } catch (e) {
+          logWarning('DownloadService: delete cancelled file failed: $e',
+              tag: 'DownloadService');
+        }
+        _activeIds.remove(song.id);
+        _cancelledIds.remove(song.id);
+        _lastProgressBytes.remove(song.id);
+        _lastProgressTime.remove(song.id);
+        return;
+      }
+
+      await _store.saveDownload(song.id, path, song.toJson());
+      _downloadedIds.add(song.id);
+      _pathBySongId[song.id] = path;
+      _downloadedSongs.insert(0, song);
+      _notifyDownloadedIdsChanged();
+      notifyListeners();
     } catch (e, st) {
       logError('download failed ${song.id}: $e\n$st', tag: 'DownloadService');
       _lastError = e.toString();
@@ -319,6 +285,118 @@ class DownloadService extends ChangeNotifier {
         );
       }
       notifyListeners();
+    }
+  }
+
+  /// Downloads a song that has cached data - copies existing cache and downloads missing chunks.
+  Future<void> _downloadWithCache(
+    Song song,
+    CacheInfo cacheInfo,
+    String streamUrl,
+    Map<String, String> headers,
+    String targetPath,
+  ) async {
+    final cachedFile = File(cacheInfo.filePath!);
+
+    // If cache is complete, just copy the file
+    if (cacheInfo.isComplete) {
+      log('DownloadService: ${song.id} cache is complete, copying file',
+          tag: 'DownloadService');
+      _updateEntryProgress(song.id, cacheInfo.totalBytes, 0);
+      await cachedFile.copy(targetPath);
+      _updateEntryProgress(song.id, cacheInfo.totalBytes,
+          cacheInfo.totalBytes ?? cacheInfo.cachedBytes);
+      return;
+    }
+
+    // Cache is partial - copy existing and download missing chunks
+    log('DownloadService: ${song.id} cache is partial (${cacheInfo.cachedBytes} bytes), downloading remaining',
+        tag: 'DownloadService');
+
+    await _streamCache.startIncrementalDownload(
+      song.id,
+      streamUrl,
+      headers,
+      fromByte: cacheInfo.cachedBytes,
+      onProgress: (downloaded, total) {
+        _updateEntryProgress(song.id, total, downloaded);
+      },
+    );
+
+    // Copy the now-complete cached file to downloads
+    await cachedFile.copy(targetPath);
+    log('DownloadService: ${song.id} download from cache completed',
+        tag: 'DownloadService');
+  }
+
+  /// Downloads a song from scratch (no cache available).
+  Future<void> _downloadFull(
+    Song song,
+    String streamUrl,
+    Map<String, String> headers,
+    String path,
+  ) async {
+    final client = http.Client();
+    try {
+      final request = http.Request('GET', Uri.parse(streamUrl));
+      if (headers.isNotEmpty) request.headers.addAll(headers);
+      final response = await client.send(request);
+      if (response.statusCode != 200 && response.statusCode != 206) {
+        throw Exception('HTTP ${response.statusCode}');
+      }
+      final contentLength = response.contentLength;
+      _updateEntryProgress(song.id, contentLength, 0);
+
+      final file = File(path);
+      final sink = file.openWrite();
+      int downloaded = 0;
+      int lastNotifiedAt = 0;
+      DateTime? lastNotifiedTime;
+      final List<int> writeBuffer = [];
+      void flushBuffer() {
+        if (writeBuffer.isEmpty) return;
+        sink.add(Uint8List.fromList(writeBuffer));
+        writeBuffer.clear();
+      }
+
+      await for (final chunk in response.stream) {
+        if (_cancelledIds.contains(song.id)) {
+          flushBuffer();
+          await sink.flush();
+          await sink.close();
+          try {
+            await file.delete();
+          } catch (e) {
+            logWarning('DownloadService: delete cancelled file failed: $e',
+                tag: 'DownloadService');
+          }
+          _activeIds.remove(song.id);
+          _cancelledIds.remove(song.id);
+          _lastProgressBytes.remove(song.id);
+          _lastProgressTime.remove(song.id);
+          return;
+        }
+        writeBuffer.addAll(chunk);
+        downloaded += chunk.length;
+        if (writeBuffer.length >= _writeBufferSize) flushBuffer();
+        final now = DateTime.now();
+        final timeOk = lastNotifiedTime == null ||
+            now.difference(lastNotifiedTime).inMilliseconds >=
+                _progressNotifyEveryMs;
+        if (timeOk &&
+            downloaded - lastNotifiedAt >= _progressNotifyEveryBytes) {
+          lastNotifiedAt = downloaded;
+          lastNotifiedTime = now;
+          _updateEntryProgress(song.id, null, downloaded);
+        }
+      }
+      flushBuffer();
+      await sink.close();
+      _updateEntryProgress(song.id, contentLength ?? downloaded, downloaded);
+      log('DownloadService: ${song.id} full download completed',
+          tag: 'DownloadService');
+    } finally {
+      client.close();
     }
   }
 
@@ -342,7 +420,8 @@ class DownloadService extends ChangeNotifier {
         final file = File(path);
         if (await file.exists()) await file.delete();
       } catch (e) {
-        logWarning('DownloadService: removeDownload delete failed: $e', tag: 'DownloadService');
+        logWarning('DownloadService: removeDownload delete failed: $e',
+            tag: 'DownloadService');
       }
     }
     await _store.removeDownload(songId);
@@ -370,7 +449,8 @@ class DownloadService extends ChangeNotifier {
           await file.delete();
         }
       } catch (e) {
-        logWarning('DownloadService: clearAll delete failed: $e', tag: 'DownloadService');
+        logWarning('DownloadService: clearAll delete failed: $e',
+            tag: 'DownloadService');
       }
     }
     _downloadedIds.clear();
@@ -384,5 +464,24 @@ class DownloadService extends ChangeNotifier {
   void dispose() {
     _store.close();
     super.dispose();
+  }
+
+  Future<void> cacheSongMetadata(Song song) async {
+    await _store.cacheSongMetadata(song.id, song.toJson());
+  }
+
+  Future<void> cacheSongMetadataBatch(List<Song> songs) async {
+    for (final song in songs) {
+      await _store.cacheSongMetadata(song.id, song.toJson());
+    }
+  }
+
+  Future<Map<String, dynamic>?> getCachedSongMetadata(String songId) async {
+    return _store.getCachedSongMetadata(songId);
+  }
+
+  Future<Map<String, Map<String, dynamic>>> getCachedSongMetadataBatch(
+      List<String> songIds) async {
+    return _store.getCachedSongMetadataBatch(songIds);
   }
 }

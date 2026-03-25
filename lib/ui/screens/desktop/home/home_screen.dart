@@ -7,7 +7,7 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'home_app_bar.dart';
-import 'home_content.dart';
+import '../../shared/home/home_content.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/settings/guest_profile_provider.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';

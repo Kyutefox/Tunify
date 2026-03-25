@@ -18,7 +18,7 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/player/sleep_timer_provider.dart';
 import 'package:tunify/features/device/device_discovery_service.dart';
 import 'package:tunify/features/device/device_discovery_service_extensions.dart';
-import 'package:tunify/ui/screens/player/song_options_sheet.dart';
+import 'package:tunify/ui/screens/shared/player/song_options_sheet.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/player/download_progress_ring.dart';
@@ -26,9 +26,9 @@ import 'package:tunify/ui/widgets/library/song_list_tile.dart';
 import 'package:tunify/ui/widgets/player/mini_player_play_button.dart';
 import 'package:tunify/ui/widgets/common/empty_state_placeholder.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
-import 'player_controls.dart';
-import 'player_progress_bar.dart';
-import 'player_shared.dart';
+import 'package:tunify/ui/screens/shared/player/player_controls.dart';
+import 'package:tunify/ui/screens/shared/player/player_progress_bar.dart';
+import 'package:tunify/ui/screens/shared/player/player_shared.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   const PlayerScreen({super.key});

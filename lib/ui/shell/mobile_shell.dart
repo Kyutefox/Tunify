@@ -9,10 +9,10 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
-import 'package:tunify/ui/screens/home/home_screen.dart';
-import '../screens/library/library_screen.dart';
-import '../screens/auth/loading_screen.dart';
-import '../screens/search/search_screen.dart';
+import 'package:tunify/ui/screens/desktop/home/home_screen.dart';
+import '../screens/shared/library/library_screen.dart';
+import '../screens/shared/auth/loading_screen.dart';
+import '../screens/shared/search/search_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 

@@ -5,7 +5,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/artist.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import '../../../../ui/screens/home/home_shared.dart';
+import 'package:tunify/ui/screens/shared/home/home_shared.dart';
 
 class ArtistAvatar extends StatefulWidget {
   final Artist artist;

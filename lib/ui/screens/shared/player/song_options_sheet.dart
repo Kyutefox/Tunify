@@ -16,7 +16,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import '../library/add_to_playlist_sheet.dart';
-import 'package:tunify/ui/screens/library/library_playlist_screen.dart';
+import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 
 class SongOptionExtra {
   final List<List<dynamic>> icon;

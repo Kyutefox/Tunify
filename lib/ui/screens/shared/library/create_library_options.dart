@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/library/library_provider.dart';
-import 'package:tunify/ui/screens/library/create_library_item_screen.dart';
+import 'package:tunify/ui/screens/shared/library/create_library_item_screen.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
 

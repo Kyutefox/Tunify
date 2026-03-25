@@ -5,10 +5,10 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
-import 'package:tunify/ui/screens/player/player_screen.dart';
+import 'package:tunify/ui/screens/desktop/player/player_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'mini_player_play_button.dart';
+import '../player/../player/mini_player_play_button.dart';
 
 void openFullPlayerRoute(BuildContext context) {
   Navigator.of(context).push(

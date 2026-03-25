@@ -8,7 +8,7 @@ import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/ui/widgets/common/artist_avatar.dart';
 import 'package:tunify/ui/widgets/player/mood_browse_sheet.dart';
-import 'package:tunify/ui/screens/library/library_playlist_screen.dart';
+import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/screens/home/about_screen.dart';
-import 'package:tunify/ui/screens/home/home_settings_sheet.dart';
+import 'package:tunify/ui/screens/desktop/home/about_screen.dart';
+import 'package:tunify/ui/screens/desktop/home/home_settings_sheet.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 

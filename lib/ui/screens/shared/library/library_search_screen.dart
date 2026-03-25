@@ -2,7 +2,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/ui/screens/search/search_page.dart';
+import 'package:tunify/ui/screens/shared/search/search_page.dart';
 import 'package:tunify/ui/widgets/common/empty_list_message.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/player/player_state_provider.dart';

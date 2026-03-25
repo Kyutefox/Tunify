@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/screens/library/library_app_bar.dart';
+import 'package:tunify/ui/screens/shared/library/library_app_bar.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';

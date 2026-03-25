@@ -9,11 +9,11 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
 import 'package:tunify/core/utils/debouncer.dart';
-import '../player/song_options_sheet.dart';
+import 'package:tunify/ui/screens/shared/player/song_options_sheet.dart';
 
 import 'package:tunify/ui/widgets/common/mood_section.dart';
 import 'package:tunify/ui/widgets/common/recently_played_section.dart';
-import 'package:tunify/ui/screens/search/search_page.dart';
+import 'package:tunify/ui/screens/shared/search/search_page.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify/ui/widgets/player/mood_browse_sheet.dart';

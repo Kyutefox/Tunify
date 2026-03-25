@@ -4,13 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
-import 'package:tunify/ui/screens/library/create_library_options.dart';
+import 'package:tunify/ui/screens/shared/library/create_library_options.dart';
 import 'package:tunify/ui/widgets/common/mood_section.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
-import 'package:tunify/ui/screens/home/home_screen.dart';
-import 'package:tunify/ui/screens/library/create_library_item_screen.dart';
-import 'package:tunify/ui/screens/library/library_screen.dart';
-import 'package:tunify/ui/screens/search/search_screen.dart';
+import 'package:tunify/ui/screens/desktop/home/home_screen.dart';
+import 'package:tunify/ui/screens/shared/library/create_library_item_screen.dart';
+import 'package:tunify/ui/screens/shared/library/library_screen.dart';
+import 'package:tunify/ui/screens/shared/search/search_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';

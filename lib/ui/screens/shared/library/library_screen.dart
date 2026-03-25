@@ -21,14 +21,14 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/core/utils/string_utils.dart';
-import 'package:tunify/ui/screens/library/create_library_item_screen.dart';
-import 'package:tunify/ui/screens/library/library_playlist_screen.dart';
-import 'package:tunify/ui/screens/library/library_playlists_section.dart';
-import 'package:tunify/ui/screens/library/library_app_bar.dart';
-import 'package:tunify/ui/screens/library/library_downloaded_content.dart';
-import 'package:tunify/ui/screens/library/library_search_screen.dart';
+import 'package:tunify/ui/screens/shared/library/create_library_item_screen.dart';
+import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
+import 'package:tunify/ui/screens/shared/library/library_playlists_section.dart';
+import 'package:tunify/ui/screens/shared/library/library_app_bar.dart';
+import 'package:tunify/ui/screens/shared/library/library_downloaded_content.dart';
+import 'package:tunify/ui/screens/shared/library/library_search_screen.dart';
 import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
-import 'package:tunify/ui/screens/library/create_library_options.dart';
+import 'package:tunify/ui/screens/shared/library/create_library_options.dart';
 import 'package:tunify/ui/widgets/player/download_queue_sheet.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {

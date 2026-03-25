@@ -8,7 +8,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/common/hover_tile.dart';
-import '../../../../ui/screens/home/home_shared.dart';
+import 'package:tunify/ui/screens/shared/home/home_shared.dart';
 import '../player/now_playing_indicator.dart';
 
 class SongListTile extends ConsumerWidget {

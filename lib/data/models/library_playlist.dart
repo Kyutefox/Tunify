@@ -1,4 +1,3 @@
-import 'package:tunify/core/utils/json_string_mixin.dart';
 import 'package:tunify/data/models/song.dart';
 
 /// Sort order applied to the track list inside a [LibraryPlaylist].
@@ -183,9 +182,6 @@ class LibraryPlaylist {
       remoteTrackCount: json['remoteTrackCount'] as int?,
     );
   }
-
-  static LibraryPlaylist? fromJsonString(String? s) =>
-      parseJsonString(s, LibraryPlaylist.fromJson);
 
   @override
   bool operator ==(Object other) =>

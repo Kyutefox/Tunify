@@ -1,5 +1,3 @@
-import 'package:tunify/core/utils/json_string_mixin.dart';
-
 /// A named folder that groups [LibraryPlaylist] IDs for organizational purposes.
 class LibraryFolder {
   final String id;
@@ -68,6 +66,4 @@ class LibraryFolder {
     );
   }
 
-  static LibraryFolder? fromJsonString(String? s) =>
-      parseJsonString(s, LibraryFolder.fromJson);
 }

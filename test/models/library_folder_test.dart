@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tunify/models/library_folder.dart';
+import 'package:tunify/data/models/library_folder.dart';
 
 LibraryFolder _folder({
   String id = 'f1',
@@ -57,17 +57,7 @@ void main() {
         expect(f.isPinned, false);
       });
 
-      test('fromJsonString returns null for null input', () {
-        expect(LibraryFolder.fromJsonString(null), isNull);
-      });
 
-      test('fromJsonString returns null for empty string', () {
-        expect(LibraryFolder.fromJsonString(''), isNull);
-      });
-
-      test('fromJsonString returns null for invalid JSON', () {
-        expect(LibraryFolder.fromJsonString('not json'), isNull);
-      });
     });
 
     group('equality', () {

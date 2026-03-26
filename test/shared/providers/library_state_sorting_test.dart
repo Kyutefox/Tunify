@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tunify/models/library_folder.dart';
-import 'package:tunify/models/library_playlist.dart';
-import 'package:tunify/models/song.dart';
-import 'package:tunify/shared/providers/library_provider.dart';
+import 'package:tunify/data/models/library_folder.dart';
+import 'package:tunify/data/models/library_playlist.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/library/library_provider.dart';
 
 Song _song(String id) => Song(
       id: id,
@@ -152,7 +152,13 @@ void main() {
 
   group('LibraryState.likedSongIds', () {
     test('contains IDs of all liked songs', () {
-      final state = LibraryState(likedSongs: [_song('s1'), _song('s2'), _song('s3')]);
+      final state = LibraryState(playlists: [
+        LibraryPlaylist(
+          id: 'liked', name: 'Liked Songs',
+          createdAt: DateTime(2024), updatedAt: DateTime(2024),
+          songs: [_song('s1'), _song('s2'), _song('s3')],
+        ),
+      ]);
       expect(state.likedSongIds, {'s1', 's2', 's3'});
     });
 
@@ -162,7 +168,13 @@ void main() {
     });
 
     test('membership test is O(1) and correct', () {
-      final state = LibraryState(likedSongs: [_song('s1')]);
+      final state = LibraryState(playlists: [
+        LibraryPlaylist(
+          id: 'liked', name: 'Liked Songs',
+          createdAt: DateTime(2024), updatedAt: DateTime(2024),
+          songs: [_song('s1')],
+        ),
+      ]);
       expect(state.likedSongIds.contains('s1'), isTrue);
       expect(state.likedSongIds.contains('s99'), isFalse);
     });

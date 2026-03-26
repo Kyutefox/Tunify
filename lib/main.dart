@@ -1,38 +1,35 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:tunify/config/app_icons.dart';
-import 'package:tunify/config/app_strings.dart';
-import 'package:tunify/shared/providers/auth_provider.dart';
-import 'package:tunify/shared/providers/connectivity_provider.dart';
-import 'package:tunify/shared/providers/content_settings_provider.dart';
-import 'package:tunify/shared/providers/home_state_provider.dart';
-import 'package:tunify/shared/providers/library_provider.dart';
-import 'package:tunify/shared/providers/player_state_provider.dart';
-import 'package:tunify/shared/providers/recent_search_provider.dart';
-import 'package:tunify/shared/providers/search_provider.dart';
-import 'package:tunify/system/bridges/database_repository.dart';
-import 'package:tunify/shared/services/audio/audio_handler.dart';
-import 'package:tunify/shared/services/audio/audio_player_service.dart';
-import 'package:tunify/shared/services/audio/crossfade_engine.dart';
+import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/core/constants/app_strings.dart';
+import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/features/auth/auth_provider.dart';
+import 'package:tunify/features/settings/content_settings_provider.dart';
+import 'package:tunify/features/home/home_state_provider.dart';
+import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/features/library/collection_track_cache.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/features/search/recent_search_provider.dart';
+import 'package:tunify/data/repositories/database_repository.dart';
+import 'package:tunify/features/player/audio/audio_handler.dart';
+import 'package:tunify/features/player/audio/audio_player_service.dart';
+import 'package:tunify/features/player/audio/crossfade_engine.dart';
 import 'package:tunify_logger/tunify_logger.dart';
-import 'package:tunify/system/databases/supabase/supabase_prefs.dart';
-import 'package:tunify/ui/components/ui/button.dart';
-import 'package:tunify/ui/components/ui/sheet.dart';
-import 'package:tunify/ui/components/ui/widgets/mini_player.dart';
-import 'package:tunify/ui/screens/home_screen.dart';
-import 'package:tunify/ui/screens/library/create_library_item_screen.dart';
-import 'package:tunify/ui/screens/library_screen.dart';
-import 'package:tunify/ui/screens/loading_screen.dart';
-import 'package:tunify/ui/screens/search_screen.dart';
-import 'package:tunify/ui/screens/welcome_screen.dart';
-import 'package:tunify/ui/theme/app_theme.dart';
+import 'package:tunify/data/databases/supabase/supabase_prefs.dart';
+import 'package:tunify/ui/shell/desktop_shell.dart';
+import 'package:tunify/ui/shell/mobile_shell.dart';
+import 'package:tunify/ui/screens/shared/auth/loading_screen.dart';
+import 'package:tunify/ui/screens/shared/auth/welcome_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_theme.dart';
 
 final supabaseInitProvider = FutureProvider<void>((ref) async {
   try {
@@ -54,17 +51,20 @@ final supabaseInitProvider = FutureProvider<void>((ref) async {
 Future<void> main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+    await Hive.initFlutter();
 
     final crossfadeEngine = CrossfadeEngine(AudioPlayerService());
 
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF121212),
-      systemNavigationBarIconBrightness: Brightness.light,
-    ));
-
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    // SystemChrome APIs are mobile-only (Android/iOS status bar + nav bar).
+    if (Platform.isAndroid || Platform.isIOS) {
+      SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Color(0xFF121212),
+        systemNavigationBarIconBrightness: Brightness.light,
+      ));
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    }
 
     runApp(ProviderScope(
       overrides: [
@@ -238,6 +238,7 @@ class _TunifyAppContent extends ConsumerWidget {
             // Flush cached stream URLs on logout — they are tied to session
             // cookies and would fail or serve wrong content for the next user.
             ref.read(streamManagerProvider).clearCache();
+            CollectionTrackCache.instance.clear();
             ref.read(homeProvider.notifier).onAuthChanged(next);
             ref.read(libraryProvider.notifier).onAuthChanged(next);
             ref.read(recentSearchProvider.notifier).onAuthChanged();
@@ -250,16 +251,22 @@ class _TunifyAppContent extends ConsumerWidget {
       },
     );
 
+    // Use the Spotify-style desktop shell on macOS; the standard mobile
+    // shell (bottom nav + mini player) on iOS and Android.
+    Widget shell() => Platform.isMacOS
+        ? const DesktopShell()
+        : const MobileShell();
+
     return MaterialApp(
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       builder: _noKeyboardShiftBuilder,
       home: isGuest
-          ? const AppShell()
+          ? shell()
           : (user == null
               ? const WelcomeScreen()
-              : (isHydrating ? const LoadingScreen() : const AppShell())),
+              : (isHydrating ? const LoadingScreen() : shell())),
     );
   }
 }
@@ -316,341 +323,6 @@ class _NoKeyboardShiftState extends State<_NoKeyboardShift> {
   }
 }
 
-// ── App Shell ─────────────────────────────────────────────────────────────────
-
-class AppShell extends ConsumerStatefulWidget {
-  const AppShell({super.key});
-
-  @override
-  ConsumerState<AppShell> createState() => _AppShellState();
-}
-
-class _AppShellState extends ConsumerState<AppShell> {
-  /// Page index in the IndexedStack: 0=Home, 1=Search, 2=Library, 3=DeviceMusic
-  int _selectedIndex = 0;
-
-  // Nav icon list is final — hoist to avoid per-build List allocation.
-  // AppIcons uses getters (not const), so static final is used instead of const.
-  static final _navIcons = [
-    AppIcons.home,
-    AppIcons.search,
-    AppIcons.library,
-    AppIcons.add,
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final isGuest = ref.watch(guestModeProvider);
-    final homeIsLoading = ref.watch(homeIsLoadingProvider);
-    final homeIsLoaded = ref.watch(homeIsLoadedProvider);
-    final hasSong = ref.watch(currentSongProvider) != null;
-
-    final showGuestHomeFullScreenLoading =
-        isGuest && _selectedIndex == 0 && homeIsLoading && !homeIsLoaded;
-
-    if (showGuestHomeFullScreenLoading) {
-      return const Scaffold(
-        backgroundColor: AppColors.background,
-        body: LoadingScreen(),
-      );
-    }
-
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: Column(
-        children: [
-          // Offline banner — isolated ConsumerWidget so only the banner rebuilds
-          // on connectivity changes, not the entire AppShell.
-          const _OfflineBanner(),
-          // IndexedStack preserves tab state (scroll position, loaded data)
-          // across navigation — screens are built once and kept alive.
-          Expanded(
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: const [HomeScreen(), SearchScreen(), LibraryScreen()],
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Persistent mini player sits above the nav bar
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (child, anim) => SizeTransition(
-              sizeFactor: CurvedAnimation(
-                parent: anim,
-                curve: Curves.easeOut,
-              ),
-              axisAlignment: -1,
-              child: child,
-            ),
-            child: hasSong
-                ? const MiniPlayer(key: ValueKey('mini-player'))
-                : const SizedBox.shrink(key: ValueKey('hidden')),
-          ),
-          _buildNavBar(),
-        ],
-      ),
-    );
-  }
-
-  void _showCreateSheet() {
-    showAppSheet(
-      context,
-      child: Padding(
-        padding:
-            const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SheetOptionTile(
-              icon: AppIcons.playlistAdd,
-              label: 'Create playlist',
-              showChevron: false,
-              onTap: () async {
-                Navigator.of(context).pop();
-                final name = await Navigator.of(context).push<String>(
-                  MaterialPageRoute<String>(
-                    builder: (_) => const CreateLibraryItemScreen(
-                      mode: CreateLibraryItemMode.createPlaylist,
-                    ),
-                  ),
-                );
-                if (name != null && name.trim().isNotEmpty && mounted) {
-                  await ref
-                      .read(libraryProvider.notifier)
-                      .createPlaylist(name.trim());
-                }
-              },
-            ),
-            SheetOptionTile(
-              icon: AppIcons.newFolder,
-              label: 'Create folder',
-              showChevron: false,
-              onTap: () async {
-                Navigator.of(context).pop();
-                final name = await Navigator.of(context).push<String>(
-                  MaterialPageRoute<String>(
-                    builder: (_) => const CreateLibraryItemScreen(
-                      mode: CreateLibraryItemMode.createFolder,
-                    ),
-                  ),
-                );
-                if (name != null && name.trim().isNotEmpty && mounted) {
-                  await ref
-                      .read(libraryProvider.notifier)
-                      .createFolder(name.trim());
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavBar() {
-    // Nav order: Home, Search, Library, + (create)
-    // The + button (index 3) is modal — doesn't map to a page.
-    // Page indices: 0=Home, 1=Search, 2=Library
-
-    /// Map nav bar index → page index (-1 for modal-only items).
-    const navToPage = [0, 1, 2, -1];
-
-    /// Map page index → nav bar index for highlighting.
-    const pageToNav = [0, 1, 2];
-
-    final activeNavIndex =
-        _selectedIndex >= 0 && _selectedIndex < pageToNav.length
-            ? pageToNav[_selectedIndex]
-            : 0;
-
-    final bottomPadding = MediaQuery.of(context).padding.bottom;
-
-    return Container(
-      height: 56 + bottomPadding,
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border(
-          top: BorderSide(
-            color: AppColors.glassBorder,
-            width: 0.5,
-          ),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(bottom: bottomPadding > 0 ? bottomPadding : 0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: List.generate(4, (i) {
-            final selected = activeNavIndex == i;
-            final isCreate = i == 3;
-
-            return Expanded(
-              child: isCreate
-                  ? _NavCreateButton(onTap: _showCreateSheet)
-                  : _NavItem(
-                      icon: _navIcons[i],
-                      selected: selected,
-                      onTap: () {
-                        final pageIndex = navToPage[i];
-                        if (pageIndex < 0) return;
-                        if (_selectedIndex == 1 && pageIndex != 1) {
-                          ref.read(searchProvider.notifier).search('');
-                        }
-                        final wasOnHome = _selectedIndex == 0;
-                        setState(() => _selectedIndex = pageIndex);
-                        if (pageIndex == 0 && !wasOnHome) {
-                          ref.read(homeProvider.notifier).refresh();
-                        }
-                      },
-                    ),
-            );
-          }),
-        ),
-      ),
-    );
-  }
-}
-
-/// Watches [connectivityProvider] in isolation so only this widget rebuilds
-/// on network changes, not the entire [AppShell].
-class _OfflineBanner extends ConsumerWidget {
-  const _OfflineBanner();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isOnline = ref.watch(connectivityProvider).maybeWhen(
-          data: (connected) => connected,
-          orElse: () => true,
-        );
-
-    if (isOnline) return const SizedBox.shrink();
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.orangeAccent.withValues(alpha: 0.12),
-      child: Row(
-        children: [
-          const Icon(Icons.wifi_off, size: 18, color: Colors.orangeAccent),
-          const SizedBox(width: 8),
-          const Expanded(
-            child: Text(
-              "You're offline — some features may be limited",
-              style: TextStyle(
-                color: Colors.orangeAccent,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NavItem extends StatelessWidget {
-  const _NavItem({
-    required this.icon,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final List<List<dynamic>> icon;
-  final bool selected;
-  final VoidCallback onTap;
-
-  static const double _iconSize = 24.0;
-  static const double _circleSize = 40.0;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          splashColor: AppColors.primary.withValues(alpha: 0.12),
-          highlightColor: AppColors.primary.withValues(alpha: 0.06),
-          child: SizedBox(
-            width: _circleSize,
-            height: _circleSize,
-            child: Center(
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                width: _circleSize,
-                height: _circleSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: selected
-                      ? AppColors.primary.withValues(alpha: 0.18)
-                      : Colors.transparent,
-                ),
-                child: Center(
-                  child: AppIcon(
-                    icon: icon,
-                    color: selected ? AppColors.primary : AppColors.textMuted,
-                    size: _iconSize,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NavCreateButton extends StatelessWidget {
-  const _NavCreateButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(20),
-          splashColor: AppColors.primary.withValues(alpha: 0.3),
-          highlightColor: AppColors.primary.withValues(alpha: 0.2),
-          child: Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: AppColors.primary,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.35),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Center(
-              child: AppIcon(
-                icon: AppIcons.add,
-                color: AppColors.textPrimary,
-                size: 22,
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _InitErrorScreen extends StatelessWidget {
   const _InitErrorScreen({required this.onRetry});
 
@@ -662,7 +334,7 @@ class _InitErrorScreen extends StatelessWidget {
       backgroundColor: AppColors.background,
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -671,22 +343,22 @@ class _InitErrorScreen extends StatelessWidget {
                 color: AppColors.textMuted,
                 size: 42,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: AppSpacing.md),
               const Text(
                 'Unable to initialize services',
                 style: TextStyle(
                   color: AppColors.textPrimary,
-                  fontSize: 16,
+                  fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: AppSpacing.sm),
               const Text(
                 'Please check your connection and try again.',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: AppColors.textSecondary),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: AppSpacing.base),
               AppButton(
                 label: 'Retry',
                 onPressed: onRetry,

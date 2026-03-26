@@ -7,6 +7,9 @@ class AppTheme {
   static ThemeData get darkTheme {
     return ThemeData.dark(useMaterial3: true).copyWith(
       scaffoldBackgroundColor: AppColors.background,
+      splashFactory: NoSplash.splashFactory,
+      splashColor: Colors.transparent,
+      highlightColor: Colors.white.withValues(alpha: 0.06),
       colorScheme: const ColorScheme.dark(
         primary: AppColors.primary,
         primaryContainer: AppColors.primaryContainer,
@@ -18,103 +21,33 @@ class AppTheme {
         onSurface: AppColors.textPrimary,
         outline: AppColors.glassBorder,
       ),
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.2,
+        titleTextStyle: GoogleFonts.poppins(
+          textStyle: AppTextStyle.screenTitle,
         ),
-        iconTheme: IconThemeData(color: AppColors.textPrimary),
+        iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
-      textTheme: GoogleFonts.interTextTheme(const TextTheme(
-        displayLarge: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 48,
-          fontWeight: FontWeight.w800,
-          letterSpacing: -1.5,
-          height: 1.1,
-        ),
-        displayMedium: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 36,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -1.0,
-          height: 1.15,
-        ),
-        displaySmall: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 28,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.5,
-        ),
-        headlineLarge: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 24,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.3,
-        ),
-        headlineMedium: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          letterSpacing: -0.2,
-        ),
-        headlineSmall: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-        ),
-        titleLarge: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-        titleMedium: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 15,
-          fontWeight: FontWeight.w500,
-        ),
-        titleSmall: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
-        bodyLarge: TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 15,
-          fontWeight: FontWeight.w400,
-        ),
-        bodyMedium: TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 14,
-          fontWeight: FontWeight.w400,
-        ),
-        bodySmall: TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-        ),
-        labelLarge: TextStyle(
-          color: AppColors.textPrimary,
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 0.1,
-        ),
-        labelMedium: TextStyle(
-          color: AppColors.textSecondary,
-          fontSize: 12,
-          fontWeight: FontWeight.w500,
-        ),
-        labelSmall: TextStyle(
-          color: AppColors.textMuted,
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-        ),
-      )),
+      // Poppins for display/headline/title roles; Inter for body/label roles.
+      textTheme: TextTheme(
+        displayLarge:  GoogleFonts.poppins(textStyle: AppTextStyle.display1),
+        displayMedium: GoogleFonts.poppins(textStyle: AppTextStyle.display2),
+        displaySmall:  GoogleFonts.poppins(textStyle: AppTextStyle.display3),
+        headlineLarge: GoogleFonts.poppins(textStyle: AppTextStyle.h1),
+        headlineMedium: GoogleFonts.poppins(textStyle: AppTextStyle.h3),
+        headlineSmall: GoogleFonts.poppins(textStyle: AppTextStyle.screenTitle),
+        titleLarge:  GoogleFonts.poppins(textStyle: AppTextStyle.titleBase),
+        titleMedium: GoogleFonts.poppins(textStyle: AppTextStyle.titleLg),
+        titleSmall:  GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
+        bodyLarge:   GoogleFonts.inter(textStyle: AppTextStyle.bodyLg),
+        bodyMedium:  GoogleFonts.inter(textStyle: AppTextStyle.bodyBase),
+        bodySmall:   GoogleFonts.inter(textStyle: AppTextStyle.caption),
+        labelLarge:  GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
+        labelMedium: GoogleFonts.inter(textStyle: AppTextStyle.labelBase),
+        labelSmall:  GoogleFonts.inter(textStyle: AppTextStyle.labelSm),
+      ),
       iconTheme: const IconThemeData(color: AppColors.textSecondary),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.background,
@@ -122,14 +55,14 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const TextStyle(
-              fontSize: 11,
+            return GoogleFonts.inter(
+              fontSize: AppFontSize.xs,
               fontWeight: FontWeight.w600,
               color: AppColors.textPrimary,
             );
           }
-          return const TextStyle(
-            fontSize: 11,
+          return GoogleFonts.inter(
+            fontSize: AppFontSize.xs,
             fontWeight: FontWeight.w500,
             color: AppColors.textMuted,
           );
@@ -177,7 +110,10 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppRadius.input),
           borderSide: const BorderSide(color: AppColors.accentRed),
         ),
-        errorStyle: const TextStyle(color: AppColors.accentRed, fontSize: 12),
+        errorStyle: GoogleFonts.inter(
+          color: AppColors.accentRed,
+          fontSize: AppFontSize.sm,
+        ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 14,
@@ -212,7 +148,7 @@ class AppTheme {
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surface,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(AppRadius.xxl),
         ),
       ),
     );

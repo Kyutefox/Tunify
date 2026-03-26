@@ -80,7 +80,16 @@ class DatabaseBridge {
   Future<void> pullFromSupabase(String userId) async {
     try {
       final library = await _remote.fetchLibraryData(userId);
-      if (library != null) await _db.saveLibraryData(library);
+      if (library != null) {
+        // Ensure all Supabase-sourced playlists are marked as library entries
+        final playlists = (library['playlists'] as List<dynamic>? ?? []).map((p) {
+          final map = Map<String, dynamic>.from(p as Map);
+          map['is_saved'] = 1;
+          return map;
+        }).toList();
+        library['playlists'] = playlists;
+        await _db.saveLibraryData(library);
+      }
 
       final recent = await _remote.fetchRecentlyPlayed(userId);
       if (recent != null && recent.isNotEmpty) await _db.saveRecentlyPlayed(recent);
@@ -109,7 +118,13 @@ class DatabaseBridge {
   Future<void> pushToSupabase(String userId) async {
     try {
       final library = await _db.loadLibraryData();
-      await _remote.pushLibraryData(userId, library);
+      // loadLibraryData already returns only is_saved=1 rows, but add explicit guard for safety
+      final filteredLibrary = Map<String, dynamic>.from(library);
+      final playlists = (filteredLibrary['playlists'] as List<dynamic>? ?? [])
+          .where((p) => (p as Map)['is_saved'] != false)
+          .toList();
+      filteredLibrary['playlists'] = playlists;
+      await _remote.pushLibraryData(userId, filteredLibrary);
 
       final recent = await _db.loadRecentlyPlayed();
       await _remote.pushRecentlyPlayed(userId, recent);
@@ -132,4 +147,58 @@ class DatabaseBridge {
 
   /// Closes the primary database.
   Future<void> close() async => _db.close();
+
+  // ── Stream URL Cache ──────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>?> getStreamUrlCache(String videoId) =>
+      _db.getStreamUrlCache(videoId);
+
+  Future<void> upsertStreamUrlCache(
+    String videoId,
+    String url,
+    Map<String, String> headers,
+    int bitrate,
+    String quality,
+    DateTime expiresAt,
+  ) =>
+      _db.upsertStreamUrlCache(videoId, url, headers, bitrate, quality, expiresAt);
+
+  Future<void> deleteStreamUrlCache(String videoId) =>
+      _db.deleteStreamUrlCache(videoId);
+
+  Future<void> clearExpiredStreamUrlCache() => _db.clearExpiredStreamUrlCache();
+
+  Future<void> clearAllStreamUrlCache() => _db.clearAllStreamUrlCache();
+
+  Future<void> trimStreamUrlCacheIfNeeded() => _db.trimStreamUrlCacheIfNeeded();
+
+  // ── Playlist Cache ────────────────────────────────────────────────────────
+
+  Future<void> upsertPlaylistCache(String browseId, int? paletteColor, String? imageUrl) =>
+      _db.upsertPlaylistCache(browseId, paletteColor, imageUrl);
+
+  Future<int?> getPlaylistPaletteColor(String browseId) =>
+      _db.getPlaylistPaletteColor(browseId);
+
+  Future<void> clearCacheOnlyPlaylists() => _db.clearCacheOnlyPlaylists();
+
+  // ── Collection Track Cache ────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>?> getCollectionTracks(String browseId) =>
+      _db.getCollectionTracks(browseId);
+
+  Future<void> upsertCollectionTracks(String browseId, List<Map<String, dynamic>> tracks) =>
+      _db.upsertCollectionTracks(browseId, tracks);
+
+  Future<void> deleteCollectionTracks(String browseId) =>
+      _db.deleteCollectionTracks(browseId);
+
+  Future<void> clearCacheOnlyCollectionTracks() => _db.clearCacheOnlyCollectionTracks();
+
+  /// Clears all cache-only data. Call on logout.
+  Future<void> clearCacheData() async {
+    await _db.clearCacheOnlyPlaylists();
+    await _db.clearCacheOnlyCollectionTracks();
+    await _db.clearAllStreamUrlCache();
+  }
 }

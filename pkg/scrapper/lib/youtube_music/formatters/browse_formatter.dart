@@ -6,7 +6,6 @@ import 'package:scrapper/youtube_music/parsers/inner_tube_parsers.dart' as p;
 /// Helpers for turning raw YouTube Music `browse` responses into strongly
 /// typed feed models such as [RelatedHomeFeed] and [MoodDetailResult].
 class BrowseFormatter {
-
   /// Extracts a [Track] from a `musicResponsiveListItemRenderer` node.
   static Track? parseTrackFromResponsiveItem(Map<String, dynamic> item) {
     final nav = item['navigationEndpoint'] as Map<String, dynamic>?;
@@ -22,11 +21,12 @@ class BrowseFormatter {
 
     if (columns != null && columns.isNotEmpty) {
       title = p.extractColumnRunsText(columns, 0);
-      
+
       // Collect all text from columns 1 and onwards (Artist, Album, etc.)
       final metadataRuns = <dynamic>[];
       for (var i = 1; i < columns.length; i++) {
-        final col = (columns[i] as Map<String, dynamic>?)?['musicResponsiveListItemFlexColumnRenderer'];
+        final col = (columns[i] as Map<String, dynamic>?)?[
+            'musicResponsiveListItemFlexColumnRenderer'];
         final text = col?['text'];
         if (text != null && text['runs'] != null) {
           metadataRuns.addAll(text['runs'] as List);
@@ -40,15 +40,18 @@ class BrowseFormatter {
 
     final fixedColumns = item['fixedColumns'] as List<dynamic>?;
     final durationText = p.extractFixedColumnText(fixedColumns, 0);
-    final duration = p.parseDuration(durationText) ?? ParserConstants.defaultTrackDuration;
+    final duration =
+        p.parseDuration(durationText) ?? ParserConstants.defaultTrackDuration;
 
     final badges = item['badges'] as List<dynamic>?;
     bool isExplicit = p.extractIsExplicitFromBadges(badges);
     if (!isExplicit && columns != null && columns.length > 1) {
       final subtitle = p.extractColumnRunsText(columns, 1) ?? '';
       final norm = subtitle.trim();
-      isExplicit = norm.endsWith(' E') || norm.endsWith('• E') ||
-          norm.endsWith(' • E') || norm == 'E';
+      isExplicit = norm.endsWith(' E') ||
+          norm.endsWith('• E') ||
+          norm.endsWith(' • E') ||
+          norm == 'E';
     }
 
     return Track(
@@ -83,8 +86,10 @@ class BrowseFormatter {
     bool isExplicit = p.extractIsExplicitFromBadges(badges);
     if (!isExplicit && subtitle.isNotEmpty) {
       final norm = subtitle.trim();
-      isExplicit = norm.endsWith(' E') || norm.endsWith('• E') ||
-          norm.endsWith(' • E') || norm == 'E';
+      isExplicit = norm.endsWith(' E') ||
+          norm.endsWith('• E') ||
+          norm.endsWith(' • E') ||
+          norm == 'E';
     }
 
     return Track(
@@ -96,7 +101,8 @@ class BrowseFormatter {
       albumName: metadata['albumName'],
       albumBrowseId: metadata['albumBrowseId'],
       thumbnailUrl: thumbnail,
-      duration: ParserConstants.defaultTrackDuration, // TwoRow items generally don't show durations.
+      duration: ParserConstants
+          .defaultTrackDuration, // TwoRow items generally don't show durations.
       isExplicit: isExplicit,
     );
   }
@@ -146,13 +152,14 @@ class BrowseFormatter {
     walk(browseData);
     return tracks;
   }
+
   /// Parses the entire browse data into a unified `RelatedHomeFeed` payload.
   static RelatedHomeFeed parseRelatedFeed(
     Map<String, dynamic> browseData, {
     int maxTracks = 30,
     int maxPlaylists = 12,
     int maxArtists = 12,
-    int maxMoodItems = 32,
+    int maxMoodItems = 100,
   }) {
     final trackShelves = <RelatedTrackShelf>[];
     final playlistShelves = <RelatedPlaylistShelf>[];
@@ -242,7 +249,8 @@ class BrowseFormatter {
       if (items.length >= maxItems) return;
       if (node is Map<String, dynamic>) {
         if (node.containsKey('chipCloudChipRenderer')) {
-          final mood = _parseMoodFromChip(node['chipCloudChipRenderer']!, sectionTitle, seenKeys);
+          final mood = _parseMoodFromChip(
+              node['chipCloudChipRenderer']!, sectionTitle, seenKeys);
           if (mood != null) items.add(mood);
         }
         if (node.containsKey('musicNavigationButtonRenderer')) {
@@ -281,7 +289,8 @@ class BrowseFormatter {
     if (title.isEmpty) return null;
 
     // Chips with FEmusic_home + params are mood filters (Energize, Relax, Workout, etc.)
-    final key = params != null && params.isNotEmpty ? '$browseId|$params' : title;
+    final key =
+        params != null && params.isNotEmpty ? '$browseId|$params' : title;
     if (!seenKeys.add(key)) return null;
 
     return RelatedMoodItem(
@@ -297,16 +306,19 @@ class BrowseFormatter {
     String sectionTitle,
     Set<String> seenIds,
   ) {
-    final navButton = item['musicNavigationButtonRenderer'] as Map<String, dynamic>?;
+    final navButton =
+        item['musicNavigationButtonRenderer'] as Map<String, dynamic>?;
     if (navButton == null) return null;
 
-    final nav = (navButton['navigationEndpoint'] ?? navButton['clickCommand']) as Map<String, dynamic>?;
+    final nav = (navButton['navigationEndpoint'] ?? navButton['clickCommand'])
+        as Map<String, dynamic>?;
     final browse = nav?['browseEndpoint'] as Map<String, dynamic>?;
     final browseId = browse?['browseId'] as String?;
     if (browseId == null || browseId.isEmpty) return null;
 
     final params = browse?['params'] as String?;
-    final dedupKey = params != null && params.isNotEmpty ? '$browseId|$params' : browseId;
+    final dedupKey =
+        params != null && params.isNotEmpty ? '$browseId|$params' : browseId;
     if (!seenIds.add(dedupKey)) return null;
 
     // Skip main nav when no params (home/explore/library tabs)
@@ -319,7 +331,8 @@ class BrowseFormatter {
       }
     }
 
-    final title = p.extractRunsText(navButton['title'] ?? navButton['buttonText']) ?? '';
+    final title =
+        p.extractRunsText(navButton['title'] ?? navButton['buttonText']) ?? '';
     if (title.isEmpty) return null;
 
     // Never treat artist/playlist browse as mood/genre
@@ -339,7 +352,8 @@ class BrowseFormatter {
   }
 
   /// Parses a mood detail browse response into sub-categories (mood chips) and playlists.
-  static MoodDetailResult parseMoodDetailResponse(Map<String, dynamic> browseData) {
+  static MoodDetailResult parseMoodDetailResponse(
+      Map<String, dynamic> browseData) {
     final subCategories = extractMoodItems(browseData, maxItems: 64);
     final playlists = extractPlaylistsFromBrowseData(browseData, maxItems: 50);
     return MoodDetailResult(subCategories: subCategories, playlists: playlists);
@@ -402,10 +416,12 @@ class BrowseFormatter {
 
     void addShelf(dynamic shelf) {
       if (shelf is Map<String, dynamic>) {
-        final title = p.extractRunsText(shelf['title']) ?? 
-                     p.extractRunsText(shelf['header']?['musicCarouselShelfBasicHeaderRenderer']?['title']) ?? 
-                     p.extractRunsText(shelf['header']?['musicShelfHeaderRenderer']?['title']) ?? 
-                     '';
+        final title = p.extractRunsText(shelf['title']) ??
+            p.extractRunsText(shelf['header']
+                ?['musicCarouselShelfBasicHeaderRenderer']?['title']) ??
+            p.extractRunsText(
+                shelf['header']?['musicShelfHeaderRenderer']?['title']) ??
+            '';
         final key = '$title|${(shelf['contents'] as List?)?.length ?? 0}';
         if (title.isNotEmpty && seen.add(key)) {
           shelves.add(shelf);
@@ -415,10 +431,18 @@ class BrowseFormatter {
 
     void walk(dynamic node) {
       if (node is Map<String, dynamic>) {
-        if (node.containsKey('musicCarouselShelfRenderer')) addShelf(node['musicCarouselShelfRenderer']);
-        if (node.containsKey('musicShelfRenderer')) addShelf(node['musicShelfRenderer']);
-        if (node.containsKey('musicImmersiveCarouselShelfRenderer')) addShelf(node['musicImmersiveCarouselShelfRenderer']);
-        if (node.containsKey('musicTastebuilderShelfRenderer')) addShelf(node['musicTastebuilderShelfRenderer']);
+        if (node.containsKey('musicCarouselShelfRenderer')) {
+          addShelf(node['musicCarouselShelfRenderer']);
+        }
+        if (node.containsKey('musicShelfRenderer')) {
+          addShelf(node['musicShelfRenderer']);
+        }
+        if (node.containsKey('musicImmersiveCarouselShelfRenderer')) {
+          addShelf(node['musicImmersiveCarouselShelfRenderer']);
+        }
+        if (node.containsKey('musicTastebuilderShelfRenderer')) {
+          addShelf(node['musicTastebuilderShelfRenderer']);
+        }
 
         node.forEach((key, value) {
           if (value is Map || value is List) walk(value);
@@ -446,7 +470,8 @@ class BrowseFormatter {
     required List<RelatedArtist> currentShelfArtists,
   }) {
     // 1. Check for Track (Responsive Item)
-    final responsive = item['musicResponsiveListItemRenderer'] as Map<String, dynamic>?;
+    final responsive =
+        item['musicResponsiveListItemRenderer'] as Map<String, dynamic>?;
     if (responsive != null) {
       final track = parseTrackFromResponsiveItem(responsive);
       if (track != null) {
@@ -497,7 +522,8 @@ class BrowseFormatter {
     }
 
     // 3. Check for Navigation Button (e.g., Moods)
-    final navButton = item['musicNavigationButtonRenderer'] as Map<String, dynamic>?;
+    final navButton =
+        item['musicNavigationButtonRenderer'] as Map<String, dynamic>?;
     if (navButton != null) {
       final collection = _parseCollectionItem(navButton, shelfTitleLower);
       if (collection != null) {
@@ -517,21 +543,23 @@ class BrowseFormatter {
     Map<String, dynamic> item,
     String shelfTitleLower,
   ) {
-    final nav = (item['navigationEndpoint'] ?? item['clickCommand']) as Map<String, dynamic>?;
+    final nav = (item['navigationEndpoint'] ?? item['clickCommand'])
+        as Map<String, dynamic>?;
     final browse = nav?['browseEndpoint'] as Map<String, dynamic>?;
     final browseId = browse?['browseId'] as String?;
     if (browseId == null || browseId.isEmpty) return null;
 
-    final title = p.extractRunsText(item['title'] ?? item['buttonText']) ?? 
-                 p.extractColumnRunsText(item['flexColumns'] as List?, 0) ?? 
-                 'Unknown';
-    final subtitle = p.extractRunsText(item['subtitle'] ?? item['secondaryText']) ?? 
-                    p.extractColumnRunsText(item['flexColumns'] as List?, 1);
-    
+    final title = p.extractRunsText(item['title'] ?? item['buttonText']) ??
+        p.extractColumnRunsText(item['flexColumns'] as List?, 0) ??
+        'Unknown';
+    final subtitle =
+        p.extractRunsText(item['subtitle'] ?? item['secondaryText']) ??
+            p.extractColumnRunsText(item['flexColumns'] as List?, 1);
+
     final thumb = item['thumbnail'] as Map<String, dynamic>?;
-    final rawThumb = p.extractThumbnailUrl(thumb) ?? 
-                    p.extractThumbnailFromTwoRow(item) ??
-                    'https://i.ytimg.com/vi/$browseId/hqdefault.jpg';
+    final rawThumb = p.extractThumbnailUrl(thumb) ??
+        p.extractThumbnailFromTwoRow(item) ??
+        'https://i.ytimg.com/vi/$browseId/hqdefault.jpg';
     final thumbnail = p.upgradeThumbResolution(rawThumb, browseId);
 
     final pageType = p.extractBrowsePageType(browse);
@@ -540,7 +568,8 @@ class BrowseFormatter {
     // "Albums for you" shelf: every item is an album (top-level nav = MPREb_). Artist links (UC)
     // only appear in subtitle.runs for the album's artists — we must not treat those as artist items.
     // So when the shelf title is album-only, treat every item as playlist/album.
-    final shelfIsAlbumOnly = shelfTitleLower.contains('album') && !shelfTitleLower.contains('artist');
+    final shelfIsAlbumOnly = shelfTitleLower.contains('album') &&
+        !shelfTitleLower.contains('artist');
 
     final bool isArtist;
     final bool isPlaylist;
@@ -605,24 +634,29 @@ class BrowseFormatter {
     }
   }
 
-  static (String, String?) _extractShelfTitleAndSubtitle(Map<String, dynamic> shelf) {
+  static (String, String?) _extractShelfTitleAndSubtitle(
+      Map<String, dynamic> shelf) {
     final header = shelf['header'] as Map<String, dynamic>?;
 
-    final basic = header?['musicCarouselShelfBasicHeaderRenderer'] as Map<String, dynamic>?;
+    final basic = header?['musicCarouselShelfBasicHeaderRenderer']
+        as Map<String, dynamic>?;
     final basicTitle = p.extractRunsText(basic?['title']);
     final basicSubtitle = p.extractRunsText(basic?['strapline']);
     if (basicTitle != null && basicTitle.isNotEmpty) {
       return (basicTitle, basicSubtitle);
     }
 
-    final shelfHeader = header?['musicShelfHeaderRenderer'] as Map<String, dynamic>?;
+    final shelfHeader =
+        header?['musicShelfHeaderRenderer'] as Map<String, dynamic>?;
     final shelfHeaderTitle = p.extractRunsText(shelfHeader?['title']) ??
         p.extractRunsText(shelf['title']);
     final shelfHeaderSubtitle = p.extractRunsText(shelfHeader?['subtitle']) ??
         p.extractRunsText(shelf['subtitle']);
 
     return (
-      (shelfHeaderTitle == null || shelfHeaderTitle.isEmpty) ? 'Related' : shelfHeaderTitle,
+      (shelfHeaderTitle == null || shelfHeaderTitle.isEmpty)
+          ? 'Related'
+          : shelfHeaderTitle,
       shelfHeaderSubtitle
     );
   }

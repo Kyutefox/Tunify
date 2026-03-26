@@ -4,5 +4,5 @@ class ParserConstants {
 
   /// Fallback duration to use when a track does not expose an explicit
   /// duration value in the source payload.
-  static const Duration defaultTrackDuration = Duration(minutes: 3);
+  static const Duration defaultTrackDuration = Duration.zero;
 }

@@ -1,5 +1,3 @@
-import 'dart:io' show Platform;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,10 +15,8 @@ import 'package:tunify/ui/widgets/auth/auth_shared.dart';
 import 'package:tunify/ui/widgets/auth/desktop_auth_layout.dart';
 import 'package:tunify/ui/widgets/auth/guest_profile_setup_form.dart';
 import 'package:tunify/ui/screens/mobile/auth/auth_screen.dart' as mobile_auth;
+import 'package:tunify/ui/shell/shell_context.dart';
 import 'guest_profile_setup_screen.dart';
-
-bool get _isDesktop =>
-    Platform.isMacOS || Platform.isWindows || Platform.isLinux;
 
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
@@ -36,7 +32,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isDesktop) {
+    if (ShellContext.isDesktopPlatform) {
       return DesktopAuthLayout(
         rightContent: AnimatedSwitcher(
           duration: const Duration(milliseconds: 240),
@@ -290,7 +286,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   Widget _buildGuestLink() {
     return GestureDetector(
       onTap: () async {
-        if (_isDesktop) {
+        if (ShellContext.isDesktopPlatform) {
           setState(() {
             _showGuestSetup = true;
           });

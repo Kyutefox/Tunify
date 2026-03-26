@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+
+import 'package:tunify/core/utils/platform_utils.dart';
 import 'dart:math' as math;
 
 import 'package:audio_session/audio_session.dart';
@@ -122,7 +124,7 @@ class AudioPlayerService {
     if (items.isEmpty) return;
     // Audio session must be configured before activating the native platform.
     await _audioSessionReady;
-    if (Platform.isIOS || Platform.isMacOS) {
+    if (isApplePlatform) {
       // Apple platforms (iOS, macOS): ConcatenatingAudioSource (AVQueuePlayer)
       // hangs even with a single item because AVQueuePlayer preloads adjacent
       // URLs concurrently. Use a plain setAudioSource (single AVPlayer) instead.
@@ -179,7 +181,7 @@ class AudioPlayerService {
 
     // On Apple platforms (iOS, macOS), no custom headers — AVURLAsset hangs
     // with Origin/Referer set. Signed YouTube URLs are self-authenticating.
-    final audioSource = (Platform.isIOS || Platform.isMacOS)
+    final audioSource = (isApplePlatform)
         ? AudioSource.uri(Uri.parse(url))
         // ignore: experimental_member_use
         : LockCachingAudioSource(Uri.parse(url), headers: requestHeaders);
@@ -296,7 +298,7 @@ class AudioPlayerService {
   Future<void> _applyNormalizationGain(double gainDb) async {
     if (Platform.isAndroid && _loudnessEnhancer != null) {
       await _loudnessEnhancer!.setTargetGain(gainDb);
-    } else if (Platform.isIOS || Platform.isMacOS) {
+    } else if (isApplePlatform) {
       await _player.setVolume(
           (_dbToLinearVolume(gainDb) * _crossfadeVol).clamp(0.05, 1.0));
     }
@@ -314,7 +316,7 @@ class AudioPlayerService {
     if (Platform.isAndroid && _loudnessEnhancer != null) {
       await _loudnessEnhancer!.setEnabled(enabled);
       if (enabled) await _applyNormalizationGain(_normalizationGainDb);
-    } else if (Platform.isIOS || Platform.isMacOS) {
+    } else if (isApplePlatform) {
       await _applyNormalizationGain(enabled ? _normalizationGainDb : 0.0);
     }
     logInfo(
@@ -330,7 +332,7 @@ class AudioPlayerService {
     _crossfadeVol = vol.clamp(0.0, 1.0);
     if (Platform.isAndroid) {
       await _player.setVolume(_crossfadeVol);
-    } else if (Platform.isIOS || Platform.isMacOS) {
+    } else if (isApplePlatform) {
       final normVol = _normalizationEnabled
           ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
           : 1.0;
@@ -349,7 +351,7 @@ class AudioPlayerService {
     _crossfadeVol = 1.0;
     if (Platform.isAndroid) {
       await _player.setVolume(1.0);
-    } else if (Platform.isIOS || Platform.isMacOS) {
+    } else if (isApplePlatform) {
       final normVol = _normalizationEnabled
           ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
           : 1.0;

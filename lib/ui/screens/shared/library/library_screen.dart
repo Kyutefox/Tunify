@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -1034,9 +1033,7 @@ void showLibraryPlaylistOptionsSheet(
   LibraryPlaylist playlist, {
   Rect? anchorRect,
 }) {
-  final isDesktop = defaultTargetPlatform == TargetPlatform.macOS ||
-      defaultTargetPlatform == TargetPlatform.windows ||
-      defaultTargetPlatform == TargetPlatform.linux;
+  final isDesktop = ShellContext.isDesktopPlatform;
 
   if (isDesktop) {
     final folders = ref.read(libraryFoldersProvider);
@@ -1139,9 +1136,7 @@ void showLibraryFolderOptionsSheet(
   LibraryFolder folder, {
   Rect? anchorRect,
 }) {
-  final isDesktop = defaultTargetPlatform == TargetPlatform.macOS ||
-      defaultTargetPlatform == TargetPlatform.windows ||
-      defaultTargetPlatform == TargetPlatform.linux;
+  final isDesktop = ShellContext.isDesktopPlatform;
 
   if (isDesktop) {
     showAdaptiveMenu(

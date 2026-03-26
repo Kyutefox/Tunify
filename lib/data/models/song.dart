@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import 'package:tunify/core/utils/json_string_mixin.dart';
 import 'package:tunify/data/models/track.dart';
 import 'package:tunify/core/utils/duration_format.dart';
 
@@ -53,14 +54,7 @@ abstract class Song with _$Song {
 
   String toJsonString() => jsonEncode(toJson());
 
-  static Song? fromJsonString(String? jsonStr) {
-    if (jsonStr == null || jsonStr.isEmpty) return null;
-    try {
-      return Song.fromJson(jsonDecode(jsonStr) as Map<String, dynamic>);
-    } catch (_) {
-      return null;
-    }
-  }
+  static Song? fromJsonString(String? s) => parseJsonString(s, Song.fromJson);
 
   factory Song.fromTrack(Track track) => Song(
         id: track.id,

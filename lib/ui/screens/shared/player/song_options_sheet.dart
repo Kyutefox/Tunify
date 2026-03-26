@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -47,7 +46,7 @@ void showSongOptionsSheet(
   bool isDownloads = false,
   bool isLocalFiles = false,
 }) {
-  if (_isDesktop()) {
+  if (ShellContext.isDesktopPlatform) {
     _showDesktopSongMenu(
       context,
       ref: ref,
@@ -245,11 +244,6 @@ void _showDesktopSongMenu(
   );
 }
 
-bool _isDesktop() {
-  return defaultTargetPlatform == TargetPlatform.macOS ||
-      defaultTargetPlatform == TargetPlatform.windows ||
-      defaultTargetPlatform == TargetPlatform.linux;
-}
 
 Rect? _rectFromContext(BuildContext context) {
   final obj = context.findRenderObject();

@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:tunify/core/utils/platform_utils.dart';
+
 import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -138,7 +140,7 @@ class StreamCacheService {
   Future<String?> getCacheFilePath(String songId) async {
     if (songId.isEmpty) return null;
     final dir = await _getCacheDir();
-    final extensions = (Platform.isIOS || Platform.isMacOS)
+    final extensions = isApplePlatform
         ? ['m4a']
         : ['audio', 'opus', 'webm', 'm4a'];
     for (final ext in extensions) {

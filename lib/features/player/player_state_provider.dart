@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:tunify/core/utils/platform_utils.dart';
+
 import 'package:flutter/foundation.dart' show listEquals;
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -933,7 +935,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // are appended lazily by _extendPlaylistTo when playNext() is called.
     final List<Song> effectiveQueue;
     final int effectiveIndex;
-    if (((Platform.isIOS || Platform.isMacOS) ||
+    if (((isApplePlatform) ||
             state.crossfadeDurationSeconds > 0) &&
         index > 0) {
       // Apple platforms (iOS, macOS): AVQueuePlayer single-source mode always
@@ -965,7 +967,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       // any auto-advance; ProcessingState.completed at song end is blocked by
       // the isCrossfading guard, and _extendPlaylistTo / _handleCompletion
       // provide the correct fallback if the crossfade itself fails.
-      final maxItems = ((Platform.isIOS || Platform.isMacOS) ||
+      final maxItems = ((isApplePlatform) ||
               state.crossfadeDurationSeconds > 0)
           ? 1
           : 5;
@@ -1423,8 +1425,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
           // current + next song, breaking the seek bar. Queue advance is
           // handled by _syncPlaylistToQueue reloading per song on those platforms.
           if (state.crossfadeDurationSeconds == 0 &&
-              !Platform.isIOS &&
-              !Platform.isMacOS) {
+              !isApplePlatform) {
             // Gapless mode (Android only): append upcoming songs directly to
             // avoid the brief audio gap that setPlaylist() would cause.
             const maxTotal = 5;
@@ -1578,8 +1579,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // handled by _syncPlaylistToQueue reloading per song on those platforms.
     if (_usingPlaylist &&
         _hasLoadedSource &&
-        !Platform.isIOS &&
-        !Platform.isMacOS) {
+        !isApplePlatform) {
       try {
         final source = await _audioRepository
             .resolveToAudioSource(song)
@@ -1788,7 +1788,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _crossfadeInFlight = false;
     final nextIndex = state.currentIndex + 1;
     if (_usingPlaylist) {
-      if (Platform.isIOS || Platform.isMacOS) {
+      if (isApplePlatform) {
         // Apple platforms (iOS, macOS): single-source mode (no ConcatenatingAudioSource).
         // Update the current index first so _syncPlaylistToQueue loads the right song.
         _hasLoadedSource = false;
@@ -1880,7 +1880,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _resetCrossfadeIndices();
     _crossfadeInFlight = false;
     if (_usingPlaylist) {
-      if (Platform.isIOS || Platform.isMacOS) {
+      if (isApplePlatform) {
         // Apple platforms (iOS, macOS): single-source mode. Update index then reload.
         final prevIndex = state.currentIndex - 1;
         _hasLoadedSource = false;

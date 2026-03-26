@@ -72,10 +72,6 @@ abstract final class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  static const LinearGradient accentGradient = primaryGradient;
-  static const LinearGradient warmGradient = primaryGradient;
-  static const LinearGradient coolGradient = primaryGradient;
-
   /// gradient_downloads — teal-to-blue for the Downloads fixed playlist
   static const LinearGradient downloadGradient = LinearGradient(
     colors: [Color(0xFF0EA5E9), Color(0xFF6366F1)],
@@ -112,7 +108,7 @@ abstract final class AppColors {
 
   static const List<LinearGradient> moodGradients = [
     LinearGradient(colors: [PrimaryPalette.primary, PrimaryPalette.primaryLight]),
-    LinearGradient(colors: [Color(0xFF1DB954), Color(0xFF1ED760)]),
+    primaryGradient,
     LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFFF2D78)]),
     LinearGradient(colors: [Color(0xFF00D2FF), Color(0xFF3A7BD5)]),
     LinearGradient(colors: [Color(0xFFFFD60A), PrimaryPalette.primary]),

@@ -1,5 +1,4 @@
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +28,7 @@ import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/screens/shared/player/player_controls.dart';
 import 'package:tunify/ui/screens/shared/player/player_progress_bar.dart';
 import 'package:tunify/ui/screens/shared/player/player_shared.dart';
+import 'package:tunify/ui/shell/shell_context.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   const PlayerScreen({super.key});
@@ -400,7 +400,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 // ── Public sheet launchers — shared by PlayerScreen and DesktopPlayerBar ──────
 
 void showQueueSheet(BuildContext context, {BuildContext? buttonContext}) {
-  if (_isDesktopPlatform()) {
+  if (ShellContext.isDesktopPlatform) {
     _showDesktopQueuePanel(context, buttonContext: buttonContext);
     return;
   }
@@ -414,11 +414,6 @@ void showQueueSheet(BuildContext context, {BuildContext? buttonContext}) {
   );
 }
 
-bool _isDesktopPlatform() {
-  return defaultTargetPlatform == TargetPlatform.macOS ||
-      defaultTargetPlatform == TargetPlatform.windows ||
-      defaultTargetPlatform == TargetPlatform.linux;
-}
 
 void _showDesktopQueuePanel(BuildContext context,
     {BuildContext? buttonContext}) {

@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:io';
+
+import 'package:tunify/core/utils/platform_utils.dart';
 
 import 'package:just_audio/just_audio.dart';
 
@@ -220,7 +221,7 @@ class AudioRepository {
       return AudioSource.file(r.path);
     }
     final s = r as ResolvedAudioSourceStream;
-    return (Platform.isIOS || Platform.isMacOS)
+    return isApplePlatform
         ? AudioSource.uri(Uri.parse(s.url))
         : LockCachingAudioSource(Uri.parse(s.url), headers: s.headers ?? {});
   }

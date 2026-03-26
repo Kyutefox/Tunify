@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,6 +19,13 @@ class ShellContext extends InheritedWidget {
   final bool isDesktop;
   final void Function(Widget page)? onPushDetail;
   final VoidCallback? onOpenBrowse;
+
+  /// True when the app is running on a desktop OS (macOS, Windows, or Linux).
+  /// Use this where [BuildContext] is unavailable; otherwise prefer [isDesktopOf].
+  static bool get isDesktopPlatform =>
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.linux;
 
   static bool isDesktopOf(BuildContext context) {
     return context

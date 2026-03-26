@@ -1,11 +1,11 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -58,7 +58,7 @@ void showAdaptiveMenu(
   Rect? anchorRect,
   bool? forceDesktop,
 }) {
-  final isDesktop = forceDesktop ?? _isDesktopPlatform(context);
+  final isDesktop = forceDesktop ?? ShellContext.isDesktopPlatform;
   if (isDesktop) {
     _showDesktopDropdown(
       context,
@@ -767,11 +767,3 @@ class AdaptiveMenuAnchor extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// Platform helper
-// ═══════════════════════════════════════════════════════════════════════════════
-
-bool _isDesktopPlatform(BuildContext context) {
-  return defaultTargetPlatform == TargetPlatform.macOS ||
-      defaultTargetPlatform == TargetPlatform.windows ||
-      defaultTargetPlatform == TargetPlatform.linux;
-}

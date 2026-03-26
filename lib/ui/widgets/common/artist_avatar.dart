@@ -112,6 +112,11 @@ class _ArtistAvatarState extends State<ArtistAvatar>
         .scale(begin: const Offset(0.8, 0.8), curve: Curves.easeOutBack);
   }
 
+  Widget get _avatarFallback => Container(
+        color: AppColors.surfaceHighlight,
+        child: AppIcon(icon: AppIcons.person, color: AppColors.textMuted),
+      );
+
   Widget _buildAvatar() {
     if (widget.compact) {
       // Compact: simple circle with border, no pulse
@@ -181,14 +186,8 @@ class _ArtistAvatarState extends State<ArtistAvatar>
             child: CachedNetworkImage(
               imageUrl: widget.artist.avatarUrl,
               fit: BoxFit.cover,
-              placeholder: (context, url) => Container(
-                color: AppColors.surfaceHighlight,
-                child: AppIcon(icon: AppIcons.person, color: AppColors.textMuted),
-              ),
-              errorWidget: (context, url, error) => Container(
-                color: AppColors.surfaceHighlight,
-                child: AppIcon(icon: AppIcons.person, color: AppColors.textMuted),
-              ),
+              placeholder: (_, __) => _avatarFallback,
+              errorWidget: (_, __, ___) => _avatarFallback,
             ),
           ),
         ),

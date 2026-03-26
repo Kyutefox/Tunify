@@ -1,5 +1,4 @@
-import 'dart:convert';
-
+import 'package:tunify/core/utils/json_string_mixin.dart';
 import 'package:tunify/data/models/song.dart';
 
 /// Sort order applied to the track list inside a [LibraryPlaylist].
@@ -185,14 +184,8 @@ class LibraryPlaylist {
     );
   }
 
-  static LibraryPlaylist? fromJsonString(String? s) {
-    if (s == null || s.isEmpty) return null;
-    try {
-      return LibraryPlaylist.fromJson(jsonDecode(s) as Map<String, dynamic>);
-    } catch (_) {
-      return null;
-    }
-  }
+  static LibraryPlaylist? fromJsonString(String? s) =>
+      parseJsonString(s, LibraryPlaylist.fromJson);
 
   @override
   bool operator ==(Object other) =>

@@ -1,6 +1,5 @@
-import 'dart:io';
-
 import 'package:flutter/foundation.dart';
+import 'package:tunify/core/utils/platform_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:scrapper/scrapper.dart' as scrapper;
@@ -390,7 +389,7 @@ class MusicStreamManager {
       final fetchT0 = apiSw.elapsedMilliseconds;
       final ytStream = await _ytDirect.streams.fetchBestAudioStream(
         videoId,
-        preferAac: Platform.isIOS || Platform.isMacOS,
+        preferAac: isApplePlatform,
       );
       log('PlayFlow: getStreamUrl fetchBestAudioStream (youtube_explode_dart getManifest) done in ${apiSw.elapsedMilliseconds - fetchT0}ms',
           tag: 'PlayFlow');

@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tunify/data/models/song.dart';
@@ -11,17 +10,20 @@ import 'package:tunify/data/repositories/database_repository.dart';
 
 /// Shared base for boolean settings backed by SQLite + SharedPreferences.
 /// Subclasses supply [settingKey] and their public setter name.
-abstract class _BoolSettingNotifier extends StateNotifier<bool> {
-  _BoolSettingNotifier(Ref ref, {required this.settingKey})
-      : _ref = ref,
-        super(true);
+abstract class _BoolSettingNotifier extends Notifier<bool> {
+  _BoolSettingNotifier({required this.settingKey});
 
-  final Ref _ref;
   final String settingKey;
+
+  @override
+  bool build() {
+    load();
+    return true;
+  }
 
   Future<void> load() async {
     try {
-      final repo = _ref.read(databaseRepositoryProvider);
+      final repo = ref.read(databaseRepositoryProvider);
       final local = await repo.getSetting(settingKey);
       if (local != null) {
         state = local == 'true';
@@ -37,7 +39,7 @@ abstract class _BoolSettingNotifier extends StateNotifier<bool> {
     state = value;
     try {
       await (await SharedPreferences.getInstance()).setBool(settingKey, value);
-      await _ref.read(databaseRepositoryProvider).savePlaybackSetting(settingKey, value);
+      await ref.read(databaseRepositoryProvider).savePlaybackSetting(settingKey, value);
     } catch (e) {
       logWarning('ContentSettings: persist $settingKey failed: $e', tag: 'ContentSettings');
     }
@@ -48,14 +50,14 @@ abstract class _BoolSettingNotifier extends StateNotifier<bool> {
 
 /// Whether explicit tracks are visible in search results, quick picks, and the queue.
 final showExplicitContentProvider =
-    StateNotifierProvider<ShowExplicitContentNotifier, bool>(
-  (ref) => ShowExplicitContentNotifier(ref)..load(),
+    NotifierProvider<ShowExplicitContentNotifier, bool>(
+  ShowExplicitContentNotifier.new,
 );
 
 /// Persists the explicit-content filter setting to SQLite + SharedPreferences,
 /// syncing with Supabase via [DatabaseRepository] on auth changes.
 class ShowExplicitContentNotifier extends _BoolSettingNotifier {
-  ShowExplicitContentNotifier(super.ref)
+  ShowExplicitContentNotifier()
       : super(settingKey: PlaybackSettingKeys.showExplicitContent);
 
   Future<void> setShowExplicit(bool value) => _persist(value);
@@ -64,14 +66,14 @@ class ShowExplicitContentNotifier extends _BoolSettingNotifier {
 /// Whether the home feed randomizes recommended track order rather than using
 /// the default relevance ranking from YouTube Music.
 final smartRecommendationShuffleProvider =
-    StateNotifierProvider<SmartRecommendationShuffleNotifier, bool>(
-  (ref) => SmartRecommendationShuffleNotifier(ref)..load(),
+    NotifierProvider<SmartRecommendationShuffleNotifier, bool>(
+  SmartRecommendationShuffleNotifier.new,
 );
 
 /// Persists the smart-recommendation shuffle setting to SQLite + SharedPreferences,
 /// syncing with Supabase via [DatabaseRepository] on auth changes.
 class SmartRecommendationShuffleNotifier extends _BoolSettingNotifier {
-  SmartRecommendationShuffleNotifier(super.ref)
+  SmartRecommendationShuffleNotifier()
       : super(settingKey: PlaybackSettingKeys.smartRecommendationShuffle);
 
   Future<void> setSmartRecommendationShuffle(bool value) => _persist(value);

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -52,8 +51,9 @@ final currentUserProvider = Provider<User?>((ref) {
 /// Handles sign-in, sign-up, and sign-out against Supabase Auth.
 ///
 /// Exposes [AuthActionState] for the UI to drive loading indicators and error messages.
-class AuthNotifier extends StateNotifier<AuthActionState> {
-  AuthNotifier() : super(const AuthActionState());
+class AuthNotifier extends Notifier<AuthActionState> {
+  @override
+  AuthActionState build() => const AuthActionState();
 
   Future<bool> signIn({
     required String email,
@@ -141,20 +141,20 @@ class AuthNotifier extends StateNotifier<AuthActionState> {
 }
 
 final authNotifierProvider =
-    StateNotifierProvider<AuthNotifier, AuthActionState>(
-  (_) => AuthNotifier(),
-);
+    NotifierProvider<AuthNotifier, AuthActionState>(AuthNotifier.new);
 
 /// Manages guest-mode state, persisted to [SharedPreferences] across launches.
 ///
 /// Guest mode allows access to the app without a Supabase account;
 /// library features that require authentication are hidden.
-class GuestModeNotifier extends StateNotifier<bool> {
-  GuestModeNotifier() : super(false) {
-    _restore();
-  }
-
+class GuestModeNotifier extends Notifier<bool> {
   static const String _guestModeKey = 'guest_mode_enabled';
+
+  @override
+  bool build() {
+    _restore();
+    return false;
+  }
 
   Future<void> _restore() async {
     try {
@@ -185,6 +185,4 @@ class GuestModeNotifier extends StateNotifier<bool> {
   }
 }
 
-final guestModeProvider = StateNotifierProvider<GuestModeNotifier, bool>(
-  (_) => GuestModeNotifier(),
-);
+final guestModeProvider = NotifierProvider<GuestModeNotifier, bool>(GuestModeNotifier.new);

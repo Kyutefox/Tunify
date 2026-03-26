@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/features/player/player_state_provider.dart';
 
@@ -25,14 +25,19 @@ class SleepTimerState {
 
 /// Controls the sleep timer: either a fixed-duration countdown or end-of-track mode.
 ///
-/// Pauses the player by calling [_onTimerEnd] when the countdown expires or
-/// when [checkEndOfTrack] detects that the current track is within 1 second of ending.
-class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
-  SleepTimerNotifier(this._onTimerEnd) : super(const SleepTimerState());
-
-  final void Function() _onTimerEnd;
+/// Pauses the player when the countdown expires or when [checkEndOfTrack]
+/// detects that the current track is within 1 second of ending.
+class SleepTimerNotifier extends Notifier<SleepTimerState> {
   Timer? _sleepTimer;
   Timer? _tickTimer;
+
+  @override
+  SleepTimerState build() {
+    ref.listen<PlayerState>(playerProvider, (_, next) {
+      checkEndOfTrack(next);
+    });
+    return const SleepTimerState();
+  }
 
   void setTimer(Duration duration) {
     _cancelTimers();
@@ -53,7 +58,7 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
   void _onTimerFired() {
     _cancelTimers();
     state = const SleepTimerState();
-    _onTimerEnd();
+    ref.read(playerProvider.notifier).pause();
   }
 
   void cancel() {
@@ -69,7 +74,7 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
     final position = player.position;
     if (position >= duration - const Duration(seconds: 1)) {
       cancel();
-      _onTimerEnd();
+      ref.read(playerProvider.notifier).pause();
     }
   }
 
@@ -82,12 +87,4 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
 }
 
 final sleepTimerProvider =
-    StateNotifierProvider<SleepTimerNotifier, SleepTimerState>((ref) {
-  final notifier = SleepTimerNotifier(() {
-    ref.read(playerProvider.notifier).pause();
-  });
-  ref.listen<PlayerState>(playerProvider, (_, next) {
-    notifier.checkEndOfTrack(next);
-  });
-  return notifier;
-});
+    NotifierProvider<SleepTimerNotifier, SleepTimerState>(SleepTimerNotifier.new);

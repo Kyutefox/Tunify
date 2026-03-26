@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
@@ -18,7 +17,13 @@ import '../player/song_options_sheet.dart';
 import 'package:tunify/ui/widgets/common/empty_state_placeholder.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 
-final _rpShuffleProvider = StateProvider<bool>((ref) => false);
+class _RpShuffleNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  void toggle() => state = !state;
+}
+
+final _rpShuffleProvider = NotifierProvider<_RpShuffleNotifier, bool>(_RpShuffleNotifier.new);
 
 class RecentlyPlayedScreen extends ConsumerWidget {
   const RecentlyPlayedScreen({super.key});
@@ -71,8 +76,7 @@ class RecentlyPlayedScreen extends ConsumerWidget {
                               : AppColors.textMuted,
                         ),
                         onPressed: () {
-                          ref.read(_rpShuffleProvider.notifier).state =
-                              !shuffleEnabled;
+                          ref.read(_rpShuffleProvider.notifier).toggle();
                         },
                       ),
                       const Spacer(),

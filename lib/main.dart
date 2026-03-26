@@ -191,12 +191,11 @@ class _TunifyAppContent extends ConsumerWidget {
           if (next != null) {
             final bridge = ref.read(databaseBridgeProvider);
             final syncManager = ref.read(syncManagerProvider);
-            ref.read(databaseHydrationInProgressProvider.notifier).state = true;
+            ref.read(databaseHydrationInProgressProvider.notifier).set(true);
             // Await pull so SQLite is filled before providers reload; then start sync and notify.
             bridge.pullFromSupabase(next.id).then((_) async {
               if (ref.read(currentUserProvider)?.id != next.id) return;
-              ref.read(databaseHydrationInProgressProvider.notifier).state =
-                  false;
+              ref.read(databaseHydrationInProgressProvider.notifier).set(false);
               if (!ref.exists(homeProvider)) return;
               try {
                 await ref.read(homeProvider.notifier).prepareHomeForLogin();
@@ -218,8 +217,7 @@ class _TunifyAppContent extends ConsumerWidget {
                   'Auth: pullFromSupabase failed ($e), continuing with local data',
                   tag: 'Auth');
               if (ref.read(currentUserProvider)?.id != next.id) return;
-              ref.read(databaseHydrationInProgressProvider.notifier).state =
-                  false;
+              ref.read(databaseHydrationInProgressProvider.notifier).set(false);
               if (!ref.exists(homeProvider)) return;
               // Still let user in; start sync and reload with whatever is in SQLite
               syncManager.start(next.id);
@@ -233,8 +231,7 @@ class _TunifyAppContent extends ConsumerWidget {
             });
           } else {
             ref.read(syncManagerProvider).stop();
-            ref.read(databaseHydrationInProgressProvider.notifier).state =
-                false;
+            ref.read(databaseHydrationInProgressProvider.notifier).set(false);
             // Flush cached stream URLs on logout — they are tied to session
             // cookies and would fail or serve wrong content for the next user.
             ref.read(streamManagerProvider).clearCache();

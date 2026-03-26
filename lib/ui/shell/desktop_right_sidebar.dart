@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import '../screens/desktop/player/player_screen.dart';
@@ -36,8 +35,15 @@ extension _RightSidebarTabX on RightSidebarTab {
   }
 }
 
+class RightSidebarTabNotifier extends Notifier<RightSidebarTab?> {
+  @override
+  RightSidebarTab? build() => null;
+  void set(RightSidebarTab? tab) => state = tab;
+}
+
 /// Which tab is open in the right sidebar. `null` = sidebar is closed.
-final rightSidebarTabProvider = StateProvider<RightSidebarTab?>((ref) => null);
+final rightSidebarTabProvider =
+    NotifierProvider<RightSidebarTabNotifier, RightSidebarTab?>(RightSidebarTabNotifier.new);
 
 const double kDesktopRightSidebarWidth = 320.0;
 
@@ -152,13 +158,13 @@ class _SidebarTabBar extends ConsumerWidget {
                 tab: tab,
                 isActive: activeTab == tab,
                 onTap: () =>
-                    ref.read(rightSidebarTabProvider.notifier).state = tab,
+                    ref.read(rightSidebarTabProvider.notifier).set(tab),
               ),
             ),
           ),
           GestureDetector(
             onTap: () =>
-                ref.read(rightSidebarTabProvider.notifier).state = null,
+                ref.read(rightSidebarTabProvider.notifier).set(null),
             behavior: HitTestBehavior.opaque,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.md),

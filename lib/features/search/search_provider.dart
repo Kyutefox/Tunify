@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
@@ -35,9 +34,9 @@ class SearchState {
 
 /// Executes search queries through [PlayerNotifier], deduplicates identical
 /// refetch attempts, and records successful queries in [recentSearchProvider].
-class SearchNotifier extends StateNotifier<SearchState> {
-  final Ref ref;
-  SearchNotifier(this.ref) : super(const SearchState());
+class SearchNotifier extends Notifier<SearchState> {
+  @override
+  SearchState build() => const SearchState();
 
   Future<void> search(String query) async {
     final trimmed = query.trim();
@@ -62,5 +61,4 @@ class SearchNotifier extends StateNotifier<SearchState> {
   }
 }
 
-final searchProvider = StateNotifierProvider<SearchNotifier, SearchState>(
-    (ref) => SearchNotifier(ref));
+final searchProvider = NotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);

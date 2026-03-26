@@ -302,7 +302,7 @@ class _RightControlsState extends ConsumerState<_RightControls> {
 
     void toggleTab(RightSidebarTab tab) {
       final notifier = ref.read(rightSidebarTabProvider.notifier);
-      notifier.state = activeTab == tab ? null : tab;
+      notifier.set(activeTab == tab ? null : tab);
     }
 
     return Row(

@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 import 'package:tunify/data/models/library_album.dart';
 import 'package:tunify/data/models/library_artist.dart';
@@ -283,8 +282,15 @@ class DatabaseRepository {
 final databaseBridgeProvider =
     Provider<DatabaseBridge>((ref) => DatabaseBridge());
 
+class _HydrationProgressNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  void set(bool value) => state = value;
+}
+
 /// True while a Supabase → SQLite hydration pull is in progress after login.
-final databaseHydrationInProgressProvider = StateProvider<bool>((ref) => false);
+final databaseHydrationInProgressProvider =
+    NotifierProvider<_HydrationProgressNotifier, bool>(_HydrationProgressNotifier.new);
 
 final databaseRepositoryProvider = Provider<DatabaseRepository>((ref) {
   return DatabaseRepository(

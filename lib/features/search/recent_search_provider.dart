@@ -1,26 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 import 'package:tunify/data/repositories/database_repository.dart';
 
 /// Manages the capped list of recent search queries, persisted to [DatabaseRepository].
 ///
 /// The list is capped at [_maxRecent] entries; adding a duplicate query moves it to the front.
-class RecentSearchNotifier extends StateNotifier<List<String>> {
-  RecentSearchNotifier(this._ref) : super([]) {
-    load();
-  }
-
-  final Ref _ref;
-
+class RecentSearchNotifier extends Notifier<List<String>> {
   static const int _maxRecent = 20;
 
+  @override
+  List<String> build() {
+    load();
+    return [];
+  }
+
   Future<void> load() async {
-    state = await _ref.read(databaseRepositoryProvider).loadRecentSearches();
+    state = await ref.read(databaseRepositoryProvider).loadRecentSearches();
   }
 
   Future<void> save() async {
-    await _ref.read(databaseRepositoryProvider).saveRecentSearches(state);
+    await ref.read(databaseRepositoryProvider).saveRecentSearches(state);
   }
 
   Future<void> addQuery(String query) async {
@@ -40,6 +39,4 @@ class RecentSearchNotifier extends StateNotifier<List<String>> {
 }
 
 final recentSearchProvider =
-    StateNotifierProvider<RecentSearchNotifier, List<String>>((ref) {
-  return RecentSearchNotifier(ref);
-});
+    NotifierProvider<RecentSearchNotifier, List<String>>(RecentSearchNotifier.new);

@@ -28,7 +28,7 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final hPad = t.spacing.xl;
+    final hPad = t.isDesktop ? DesktopSpacing.lg : AppSpacing.base;
     final resolvedPadding = padding ?? EdgeInsets.fromLTRB(hPad, 0, hPad, t.spacing.md);
     final titleFontSize = useCompactStyle ? t.font.xxl : t.font.h3;
     final subtitleFontSize = useCompactStyle ? t.font.xs : t.font.sm;

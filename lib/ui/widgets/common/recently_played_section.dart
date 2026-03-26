@@ -12,7 +12,6 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import '../../../../ui/theme/app_routes.dart';
 import 'package:tunify/ui/widgets/common/section_header.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
-import 'package:tunify/ui/shell/desktop_right_sidebar.dart';
 
 class RecentlyPlayedSection extends ConsumerStatefulWidget {
   const RecentlyPlayedSection({super.key, required this.onPlay});
@@ -48,28 +47,13 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
     if (songs.isEmpty) return const SizedBox(height: AppSpacing.sm);
 
     final isDesktop = ShellContext.isDesktopOf(context);
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final layout = ContentLayout.of(context, ref, itemWidth: 200, maxCols: 6);
     const gap = AppSpacing.md;
 
-    final double maxWidth;
-    final int cols;
-    if (isDesktop) {
-      final rightOpen = ref.watch(rightSidebarTabProvider) != null;
-      final screenW = MediaQuery.sizeOf(context).width;
-      maxWidth = ShellContext.desktopContentInnerWidth(
-        screenWidth: screenW,
-        rightSidebarOpen: rightOpen,
-        hPad: hPad,
-      );
-      cols = (maxWidth / 160).floor().clamp(2, 5);
-    } else {
-      maxWidth = MediaQuery.sizeOf(context).width - hPad * 2;
-      cols = 2;
-    }
-
+    final cols = layout.cols;
     final hasOverflow = songs.length > cols;
-    final tileW = ((maxWidth - gap * (cols - 1)) / cols).floorToDouble();
-    final tileH = tileW + 40.0;
+    final tileW = ((layout.maxWidth - gap * (cols - 1)) / cols).floorToDouble();
+    final tileH = tileW + 48.0;
 
     final pageItems = songs.take(cols).toList();
     final overflowPage = hasOverflow
@@ -146,7 +130,7 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
           ),
         ),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: hPad),
+          padding: EdgeInsets.symmetric(horizontal: layout.hPad),
           child: hasOverflow
               ? _RecentlyPlayedPager(
                   height: tileH,
@@ -155,7 +139,7 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
                 )
               : buildRow(pageItems),
         ),
-        const SizedBox(height: AppSpacing.xxl),
+        SizedBox(height: isDesktop ? 48.0 : AppSpacing.xxl),
       ],
     );
   }

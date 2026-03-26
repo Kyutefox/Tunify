@@ -6,6 +6,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/player/now_playing_indicator.dart';
 
 /// Circular play button used in section headers and action rows.
@@ -14,13 +15,13 @@ class PlayCircleButton extends StatefulWidget {
   const PlayCircleButton({
     super.key,
     required this.onTap,
-    this.size = 34,
-    this.iconSize = 18,
+    this.size,
+    this.iconSize,
   });
 
   final VoidCallback onTap;
-  final double size;
-  final double iconSize;
+  final double? size;
+  final double? iconSize;
 
   @override
   State<PlayCircleButton> createState() => _PlayCircleButtonState();
@@ -31,6 +32,10 @@ class _PlayCircleButtonState extends State<PlayCircleButton> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    final size = widget.size ?? t.spacing.xxl;
+    final iconSize = widget.iconSize ?? t.icon.sm;
+
     return GestureDetector(
       onTap: widget.onTap,
       onTapDown: (_) => setState(() => _pressed = true),
@@ -41,8 +46,8 @@ class _PlayCircleButtonState extends State<PlayCircleButton> {
         duration: AppDuration.fast,
         curve: Curves.easeOut,
         child: Container(
-          width: widget.size,
-          height: widget.size,
+          width: size,
+          height: size,
           decoration: const BoxDecoration(
             color: AppColors.primary,
             shape: BoxShape.circle,
@@ -50,7 +55,7 @@ class _PlayCircleButtonState extends State<PlayCircleButton> {
           child: Center(
             child: AppIcon(
               icon: AppIcons.play,
-              size: widget.iconSize,
+              size: iconSize,
               color: Colors.white,
             ),
           ),

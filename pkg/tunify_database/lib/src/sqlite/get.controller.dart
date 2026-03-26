@@ -12,7 +12,8 @@ class SqliteGetController {
   Future<Map<String, dynamic>> loadLibraryData() async {
     final db = await _getDb();
     try {
-      final playlistRows = await db.query('playlists', where: 'is_saved = 1', orderBy: 'updated_at DESC');
+      final playlistRows = await db.query('playlists',
+          where: 'is_saved = 1', orderBy: 'updated_at DESC');
       final folderRows = await db.query('folders', orderBy: 'name');
       final junctionRows = await db.query('folder_playlists');
 
@@ -38,15 +39,28 @@ class SqliteGetController {
           'is_imported': (r['is_imported'] as int? ?? 0) == 1,
           'browse_id': r['browse_id'],
           'cached_palette_color': r['cached_palette_color'],
+          'remote_track_count': r['remote_track_count'] as int?,
         };
       }).toList();
 
-      final pinnedPlaylistsStr = (await _getSetting(db, 'pinned_playlist_ids')) ?? '[]';
-      final pinnedFoldersStr = (await _getSetting(db, 'pinned_folder_ids')) ?? '[]';
-      final pinnedPlaylistIds = (jsonDecode(pinnedPlaylistsStr) as List<dynamic>?)?.cast<String>().toSet() ?? <String>{};
-      final pinnedFolderIds = (jsonDecode(pinnedFoldersStr) as List<dynamic>?)?.cast<String>().toSet() ?? <String>{};
-      final playlistShufflesRaw = (await _getSetting(db, 'playlist_shuffles')) ?? '{}';
-      final playlistShuffles = (jsonDecode(playlistShufflesRaw) as Map<String, dynamic>?) ?? <String, dynamic>{};
+      final pinnedPlaylistsStr =
+          (await _getSetting(db, 'pinned_playlist_ids')) ?? '[]';
+      final pinnedFoldersStr =
+          (await _getSetting(db, 'pinned_folder_ids')) ?? '[]';
+      final pinnedPlaylistIds =
+          (jsonDecode(pinnedPlaylistsStr) as List<dynamic>?)
+                  ?.cast<String>()
+                  .toSet() ??
+              <String>{};
+      final pinnedFolderIds = (jsonDecode(pinnedFoldersStr) as List<dynamic>?)
+              ?.cast<String>()
+              .toSet() ??
+          <String>{};
+      final playlistShufflesRaw =
+          (await _getSetting(db, 'playlist_shuffles')) ?? '{}';
+      final playlistShuffles =
+          (jsonDecode(playlistShufflesRaw) as Map<String, dynamic>?) ??
+              <String, dynamic>{};
 
       for (final p in playlists) {
         p['is_pinned'] = pinnedPlaylistIds.contains(p['id']?.toString());
@@ -68,11 +82,16 @@ class SqliteGetController {
       final likedJson = (await _getSetting(db, 'liked_song_ids')) ?? '[]';
       final likedSongs = jsonDecode(likedJson) as List<dynamic>? ?? [];
       final likedShuffle = (await _getSetting(db, 'liked_shuffle')) == 'true';
-      final downloadedShuffle = (await _getSetting(db, 'downloaded_shuffle')) == 'true';
-      final followedArtistsJson = (await _getSetting(db, 'followed_artists')) ?? '[]';
-      final followedAlbumsJson = (await _getSetting(db, 'followed_albums')) ?? '[]';
-      final followedArtists = jsonDecode(followedArtistsJson) as List<dynamic>? ?? [];
-      final followedAlbums = jsonDecode(followedAlbumsJson) as List<dynamic>? ?? [];
+      final downloadedShuffle =
+          (await _getSetting(db, 'downloaded_shuffle')) == 'true';
+      final followedArtistsJson =
+          (await _getSetting(db, 'followed_artists')) ?? '[]';
+      final followedAlbumsJson =
+          (await _getSetting(db, 'followed_albums')) ?? '[]';
+      final followedArtists =
+          jsonDecode(followedArtistsJson) as List<dynamic>? ?? [];
+      final followedAlbums =
+          jsonDecode(followedAlbumsJson) as List<dynamic>? ?? [];
 
       return {
         'playlists': playlists,
@@ -140,7 +159,11 @@ class SqliteGetController {
     if (raw == null || raw.isEmpty) return [];
     try {
       final list = jsonDecode(raw) as List<dynamic>?;
-      return list?.map((e) => e.toString()).where((s) => s.trim().isNotEmpty).toList() ?? [];
+      return list
+              ?.map((e) => e.toString())
+              .where((s) => s.trim().isNotEmpty)
+              .toList() ??
+          [];
     } catch (_) {
       return [];
     }
@@ -152,7 +175,11 @@ class SqliteGetController {
     if (raw == null || raw.isEmpty) return [];
     try {
       final list = jsonDecode(raw) as List<dynamic>?;
-      return list?.map((e) => e.toString()).where((s) => s.isNotEmpty).toList() ?? [];
+      return list
+              ?.map((e) => e.toString())
+              .where((s) => s.isNotEmpty)
+              .toList() ??
+          [];
     } catch (_) {
       return [];
     }
@@ -188,7 +215,8 @@ class SqliteGetController {
   static const Duration _collectionTrackTtl = Duration(minutes: 30);
 
   /// Returns cached collection tracks for [browseId], or null if missing/expired.
-  Future<List<Map<String, dynamic>>?> getCollectionTracks(String browseId) async {
+  Future<List<Map<String, dynamic>>?> getCollectionTracks(
+      String browseId) async {
     try {
       final db = await _getDb();
       final rows = await db.query(
@@ -205,7 +233,8 @@ class SqliteGetController {
         return now.difference(cachedAt) > _collectionTrackTtl;
       });
       if (allExpired) {
-        await db.delete('collection_tracks', where: 'browse_id = ? AND is_saved = 0', whereArgs: [browseId]);
+        await db.delete('collection_tracks',
+            where: 'browse_id = ? AND is_saved = 0', whereArgs: [browseId]);
         return null;
       }
       return rows.map((r) {
@@ -222,12 +251,14 @@ class SqliteGetController {
   Future<Map<String, dynamic>?> getStreamUrlCache(String videoId) async {
     try {
       final db = await _getDb();
-      final rows = await db.query('stream_url_cache', where: 'video_id = ?', whereArgs: [videoId]);
+      final rows = await db.query('stream_url_cache',
+          where: 'video_id = ?', whereArgs: [videoId]);
       if (rows.isEmpty) return null;
       final row = rows.first;
       final expiresAt = DateTime.parse(row['expires_at'] as String);
       if (DateTime.now().toUtc().isAfter(expiresAt)) {
-        await db.delete('stream_url_cache', where: 'video_id = ?', whereArgs: [videoId]);
+        await db.delete('stream_url_cache',
+            where: 'video_id = ?', whereArgs: [videoId]);
         return null;
       }
       final headersJson = row['headers'] as String? ?? '{}';

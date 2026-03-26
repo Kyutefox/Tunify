@@ -14,7 +14,7 @@ import 'update.controller.dart';
 /// delegated to get/create/update/delete controllers.
 class PrimaryDatabase {
   static const String _dbName = 'tunify_primary.db';
-  static const int _version = 4;
+  static const int _version = 5;
 
   static final PrimaryDatabase _instance = PrimaryDatabase._internal();
   factory PrimaryDatabase() => _instance;
@@ -58,7 +58,8 @@ class PrimaryDatabase {
         is_imported integer not null default 0,
         browse_id text,
         cached_palette_color integer,
-        is_saved integer not null default 1
+        is_saved integer not null default 1,
+        remote_track_count integer
       )
     ''');
     await db.execute('''
@@ -108,16 +109,20 @@ class PrimaryDatabase {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      await db.execute('ALTER TABLE playlists ADD COLUMN custom_image_url TEXT');
+      await db
+          .execute('ALTER TABLE playlists ADD COLUMN custom_image_url TEXT');
       await _createController.runOnUpgrade(db, oldVersion, newVersion);
     }
     if (oldVersion < 3) {
-      await db.execute('ALTER TABLE playlists ADD COLUMN is_imported INTEGER NOT NULL DEFAULT 0');
+      await db.execute(
+          'ALTER TABLE playlists ADD COLUMN is_imported INTEGER NOT NULL DEFAULT 0');
       await db.execute('ALTER TABLE playlists ADD COLUMN browse_id TEXT');
-      await db.execute('ALTER TABLE playlists ADD COLUMN cached_palette_color INTEGER');
+      await db.execute(
+          'ALTER TABLE playlists ADD COLUMN cached_palette_color INTEGER');
     }
     if (oldVersion < 4) {
-      await db.execute('ALTER TABLE playlists ADD COLUMN is_saved INTEGER NOT NULL DEFAULT 1');
+      await db.execute(
+          'ALTER TABLE playlists ADD COLUMN is_saved INTEGER NOT NULL DEFAULT 1');
       await db.execute('''
         create table if not exists stream_url_cache (
           video_id   text primary key,
@@ -139,10 +144,15 @@ class PrimaryDatabase {
         )
       ''');
     }
+    if (oldVersion < 5) {
+      await db.execute(
+          'ALTER TABLE playlists ADD COLUMN remote_track_count INTEGER');
+    }
   }
 
   /// Loads full library (playlists, folders, liked songs, sort/view and shuffle settings).
-  Future<Map<String, dynamic>> loadLibraryData() async => _getController.loadLibraryData();
+  Future<Map<String, dynamic>> loadLibraryData() async =>
+      _getController.loadLibraryData();
 
   /// Persists library data in a single transaction (replaces playlists/folders not in [data]).
   Future<void> saveLibraryData(Map<String, dynamic> data) async {
@@ -152,8 +162,10 @@ class PrimaryDatabase {
     final likedSongs = data['likedSongs'] as List<dynamic>? ?? [];
 
     await db.transaction((txn) async {
-      final currentIds = playlists.map((p) => (p as Map)['id'] as String).toSet();
-      final currentFolderIds = folders.map((f) => (f as Map)['id'] as String).toSet();
+      final currentIds =
+          playlists.map((p) => (p as Map)['id'] as String).toSet();
+      final currentFolderIds =
+          folders.map((f) => (f as Map)['id'] as String).toSet();
 
       await _deleteController.deletePlaylistsNotIn(txn, currentIds);
       await _deleteController.deleteFoldersNotIn(txn, currentFolderIds);
@@ -163,25 +175,42 @@ class PrimaryDatabase {
       await _createController.insertFolders(txn, folders);
       await _createController.insertFolderPlaylists(txn, folders);
 
-      await _createController.setSettingInTransaction(txn, 'sort_order', data['sortOrder']?.toString() ?? 'recent');
-      await _createController.setSettingInTransaction(txn, 'view_mode', data['viewMode']?.toString() ?? 'list');
-      await _createController.setSettingInTransaction(txn, 'liked_song_ids', jsonEncode(likedSongs));
-      await _createController.setSettingInTransaction(txn, 'liked_shuffle', (data['likedShuffleEnabled'] == true).toString());
-      await _createController.setSettingInTransaction(txn, 'downloaded_shuffle', (data['downloadedShuffleEnabled'] == true).toString());
-      await _createController.setSettingInTransaction(txn, 'playlist_shuffles', jsonEncode(data['playlistShuffles'] ?? {}));
-      await _createController.setSettingInTransaction(txn, 'followed_artists', jsonEncode(data['followedArtists'] ?? []));
-      await _createController.setSettingInTransaction(txn, 'followed_albums', jsonEncode(data['followedAlbums'] ?? []));
-      final pinnedP = playlists.where((p) => (p as Map)['is_pinned'] == true).map((p) => (p as Map)['id'].toString()).toList();
-      final pinnedF = folders.where((f) => (f as Map)['is_pinned'] == true).map((f) => (f as Map)['id'].toString()).toList();
-      await _createController.setSettingInTransaction(txn, 'pinned_playlist_ids', jsonEncode(pinnedP));
-      await _createController.setSettingInTransaction(txn, 'pinned_folder_ids', jsonEncode(pinnedF));
+      await _createController.setSettingInTransaction(
+          txn, 'sort_order', data['sortOrder']?.toString() ?? 'recent');
+      await _createController.setSettingInTransaction(
+          txn, 'view_mode', data['viewMode']?.toString() ?? 'list');
+      await _createController.setSettingInTransaction(
+          txn, 'liked_song_ids', jsonEncode(likedSongs));
+      await _createController.setSettingInTransaction(txn, 'liked_shuffle',
+          (data['likedShuffleEnabled'] == true).toString());
+      await _createController.setSettingInTransaction(txn, 'downloaded_shuffle',
+          (data['downloadedShuffleEnabled'] == true).toString());
+      await _createController.setSettingInTransaction(
+          txn, 'playlist_shuffles', jsonEncode(data['playlistShuffles'] ?? {}));
+      await _createController.setSettingInTransaction(
+          txn, 'followed_artists', jsonEncode(data['followedArtists'] ?? []));
+      await _createController.setSettingInTransaction(
+          txn, 'followed_albums', jsonEncode(data['followedAlbums'] ?? []));
+      final pinnedP = playlists
+          .where((p) => (p as Map)['is_pinned'] == true)
+          .map((p) => (p as Map)['id'].toString())
+          .toList();
+      final pinnedF = folders
+          .where((f) => (f as Map)['is_pinned'] == true)
+          .map((f) => (f as Map)['id'].toString())
+          .toList();
+      await _createController.setSettingInTransaction(
+          txn, 'pinned_playlist_ids', jsonEncode(pinnedP));
+      await _createController.setSettingInTransaction(
+          txn, 'pinned_folder_ids', jsonEncode(pinnedF));
     });
   }
 
   static const int _maxRecentlyPlayed = 50;
 
   /// Loads recently played songs (up to [_maxRecentlyPlayed]).
-  Future<List<Map<String, dynamic>>> loadRecentlyPlayed() async => _getController.loadRecentlyPlayed();
+  Future<List<Map<String, dynamic>>> loadRecentlyPlayed() async =>
+      _getController.loadRecentlyPlayed();
 
   /// Saves recently played list (truncated to [_maxRecentlyPlayed]).
   Future<void> saveRecentlyPlayed(List<Map<String, dynamic>> songs) async {
@@ -190,7 +219,8 @@ class PrimaryDatabase {
   }
 
   /// Returns the value for [key] from the settings table, or null if missing.
-  Future<String?> getSetting(String key) async => _getController.getSetting(key);
+  Future<String?> getSetting(String key) async =>
+      _getController.getSetting(key);
 
   /// Persists a single setting [key] = [value].
   Future<void> setSetting(String key, String value) async {
@@ -198,7 +228,8 @@ class PrimaryDatabase {
   }
 
   /// Loads recent search queries (up to 20).
-  Future<List<String>> loadRecentSearches() async => _getController.loadRecentSearches();
+  Future<List<String>> loadRecentSearches() async =>
+      _getController.loadRecentSearches();
 
   /// Saves recent searches (truncated to 20).
   Future<void> saveRecentSearches(List<String> queries) async {
@@ -206,7 +237,8 @@ class PrimaryDatabase {
   }
 
   /// Loads the set of downloaded song IDs.
-  Future<List<String>> loadDownloadedSongIds() async => _getController.loadDownloadedSongIds();
+  Future<List<String>> loadDownloadedSongIds() async =>
+      _getController.loadDownloadedSongIds();
 
   /// Saves the list of downloaded song IDs.
   Future<void> saveDownloadedSongIds(List<String> ids) async {
@@ -214,13 +246,19 @@ class PrimaryDatabase {
   }
 
   /// Loads YT personalization (visitor_data, api_key, client_version).
-  Future<Map<String, dynamic>> loadYtPersonalization() async => _getController.loadYtPersonalization();
+  Future<Map<String, dynamic>> loadYtPersonalization() async =>
+      _getController.loadYtPersonalization();
 
   /// Saves YT personalization keys present in [data].
   Future<void> saveYtPersonalization(Map<String, dynamic> data) async {
-    if (data.containsKey('visitor_data')) await setSetting('yt_visitor_data', data['visitor_data']?.toString() ?? '');
-    if (data.containsKey('api_key')) await setSetting('yt_api_key', data['api_key']?.toString() ?? '');
-    if (data.containsKey('client_version')) await setSetting('yt_client_version', data['client_version']?.toString() ?? '');
+    if (data.containsKey('visitor_data'))
+      await setSetting(
+          'yt_visitor_data', data['visitor_data']?.toString() ?? '');
+    if (data.containsKey('api_key'))
+      await setSetting('yt_api_key', data['api_key']?.toString() ?? '');
+    if (data.containsKey('client_version'))
+      await setSetting(
+          'yt_client_version', data['client_version']?.toString() ?? '');
   }
 
   /// Closes the database connection.
@@ -245,7 +283,8 @@ class PrimaryDatabase {
     DateTime expiresAt,
   ) async {
     final db = await _getDb();
-    await _createController.upsertStreamUrlCache(db, videoId, url, headers, bitrate, quality, expiresAt);
+    await _createController.upsertStreamUrlCache(
+        db, videoId, url, headers, bitrate, quality, expiresAt);
   }
 
   Future<void> deleteStreamUrlCache(String videoId) async {
@@ -270,9 +309,11 @@ class PrimaryDatabase {
 
   // ── Playlist Cache ────────────────────────────────────────────────────────
 
-  Future<void> upsertPlaylistCache(String browseId, int? paletteColor, String? imageUrl) async {
+  Future<void> upsertPlaylistCache(
+      String browseId, int? paletteColor, String? imageUrl) async {
     final db = await _getDb();
-    await _createController.upsertPlaylistCache(db, browseId, paletteColor, imageUrl);
+    await _createController.upsertPlaylistCache(
+        db, browseId, paletteColor, imageUrl);
   }
 
   Future<int?> getPlaylistPaletteColor(String browseId) async =>
@@ -285,10 +326,12 @@ class PrimaryDatabase {
 
   // ── Collection Track Cache ────────────────────────────────────────────────
 
-  Future<List<Map<String, dynamic>>?> getCollectionTracks(String browseId) async =>
+  Future<List<Map<String, dynamic>>?> getCollectionTracks(
+          String browseId) async =>
       _getController.getCollectionTracks(browseId);
 
-  Future<void> upsertCollectionTracks(String browseId, List<Map<String, dynamic>> tracks) async {
+  Future<void> upsertCollectionTracks(
+      String browseId, List<Map<String, dynamic>> tracks) async {
     final db = await _getDb();
     await _createController.upsertCollectionTracks(db, browseId, tracks);
   }

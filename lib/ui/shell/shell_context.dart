@@ -77,7 +77,7 @@ class ContentLayout {
     int maxCols = 5,
   }) {
     final isDesktop = ShellContext.isDesktopOf(context);
-    final hPad = isDesktop ? 24.0 : 16.0; // AppSpacing.xl : AppSpacing.base
+    final hPad = isDesktop ? 28.0 : 16.0; // DesktopSpacing.lg : AppSpacing.base
     final screenW = MediaQuery.sizeOf(context).width;
 
     final double maxWidth;

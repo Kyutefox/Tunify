@@ -11,6 +11,7 @@ import '../../shared/home/home_content.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/settings/guest_profile_provider.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -81,7 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 // ── Desktop sticky greeting header ───────────────────────────────────────────
 
 class _DesktopGreetingDelegate extends SliverPersistentHeaderDelegate {
-  static const double _height = 48.0;
+  static const double _height = 72.0;
 
   @override
   double get minExtent => _height;
@@ -119,7 +120,7 @@ class _DesktopGreetingHeader extends ConsumerWidget {
             ? Border(bottom: BorderSide(color: AppColors.surfaceLight, width: 0.5))
             : null,
       ),
-      padding: const EdgeInsets.fromLTRB(AppSpacing.xl, 0, AppSpacing.xl, 0),
+      padding: const EdgeInsets.fromLTRB(DesktopSpacing.lg, 0, DesktopSpacing.lg, 0),
       alignment: Alignment.centerLeft,
       child: ShaderMask(
         shaderCallback: (bounds) =>
@@ -128,9 +129,9 @@ class _DesktopGreetingHeader extends ConsumerWidget {
           username.isNotEmpty ? '$greeting, $username' : greeting,
           style: const TextStyle(
             color: Colors.white,
-            fontSize: AppFontSize.base,
-            fontWeight: FontWeight.w600,
-            letterSpacing: AppLetterSpacing.normal,
+            fontSize: DesktopFontSize.h2,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
           ),
         ),
       ),

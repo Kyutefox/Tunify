@@ -153,7 +153,8 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection>
   Widget build(BuildContext context) {
     final isLoading = ref.watch(homeIsLoadingProvider);
     final quickPicks = ref.watch(quickPicksProvider);
-    final layout = ContentLayout.of(context, ref, itemWidth: 200);
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final layout = ContentLayout.of(context, ref, itemWidth: 240, minCols: 1, maxCols: 3);
     final hasOverflow = quickPicks.length > layout.cols * 4;
 
     return SectionAsyncSwap(
@@ -183,18 +184,18 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection>
             ),
           ),
           QuickPicksRow(songs: quickPicks, onPlay: widget.onPlay, pageController: pageCtrl),
-          const SizedBox(height: AppSpacing.xxl),
+          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
         ],
       ),
-      loadingChild: const Column(
+      loadingChild: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionSkeleton(
+          const SectionSkeleton(
             titleWidth: 120,
             subtitleWidth: 156,
             child: QuickPicksRowSkeleton(),
           ),
-          SizedBox(height: AppSpacing.xxl),
+          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
         ],
       ),
     );
@@ -211,10 +212,11 @@ class _DynamicSectionsSkeletonGate extends ConsumerWidget {
     final isLoading = ref.watch(homeIsLoadingProvider);
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
     if (!isLoading || dynamicSections.isNotEmpty) return const SizedBox.shrink();
-    return const Column(
+    final isDesktop = ShellContext.isDesktopOf(context);
+    return Column(
       children: [
-        DynamicSectionsSkeleton(),
-        SizedBox(height: AppSpacing.xxl),
+        const DynamicSectionsSkeleton(),
+        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
       ],
     );
   }
@@ -332,10 +334,10 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav>
 
   @override
   Widget build(BuildContext context) {
-    // Use itemWidth: 200 for songs to match QuickPicksRow's column calculation exactly.
+    // Use itemWidth: 240 for songs to match QuickPicksRow's column calculation exactly.
     final layout = widget.type == HomeSectionType.songs
-        ? ContentLayout.of(context, ref, itemWidth: 200)
-        : ContentLayout.of(context, ref);
+        ? ContentLayout.of(context, ref, itemWidth: 240, minCols: 1, maxCols: 3)
+        : ContentLayout.of(context, ref, itemWidth: 200, maxCols: 6);
     final showNav = _hasOverflow(layout);
 
     return Column(
@@ -369,7 +371,7 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav>
           PlaylistsRow(playlists: widget.playlists, pageController: _ctrl),
         if (widget.type == HomeSectionType.artists)
           ArtistsRow(artists: widget.artists, pageController: _ctrl),
-        const SizedBox(height: AppSpacing.xxl),
+        SizedBox(height: widget.isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
       ],
     );
   }
@@ -391,6 +393,7 @@ class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection>
     final isLoading = ref.watch(homeIsLoadingProvider);
     final playlists = ref.watch(homePlaylistsProvider);
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
+    final isDesktop = ShellContext.isDesktopOf(context);
     final layout = ContentLayout.of(context, ref);
     final hasDynamicPlaylists = dynamicSections.any((s) => s.type == HomeSectionType.playlists);
     final hasOverflow = playlists.length > layout.cols;
@@ -410,15 +413,15 @@ class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection>
                       : null,
                 ),
                 PlaylistsRow(playlists: playlists, pageController: pageCtrl),
-                const SizedBox(height: AppSpacing.xxl),
+                SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
               ],
             )
           : const SizedBox.shrink(),
-      loadingChild: const Column(
+      loadingChild: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionSkeleton(titleWidth: 120, child: PlaylistsRowSkeleton()),
-          SizedBox(height: AppSpacing.xxl),
+          const SectionSkeleton(titleWidth: 120, child: PlaylistsRowSkeleton()),
+          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
         ],
       ),
     );
@@ -441,6 +444,7 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection>
     final isLoading = ref.watch(homeIsLoadingProvider);
     final artists = ref.watch(homeArtistsProvider);
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
+    final isDesktop = ShellContext.isDesktopOf(context);
     final layout = ContentLayout.of(context, ref);
     final hasDynamicArtists = dynamicSections.any((s) => s.type == HomeSectionType.artists);
     final hasOverflow = artists.length > layout.cols;
@@ -460,15 +464,15 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection>
                       : null,
                 ),
                 ArtistsRow(artists: artists, pageController: pageCtrl),
-                const SizedBox(height: AppSpacing.xxl),
+                SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
               ],
             )
           : const SizedBox.shrink(),
-      loadingChild: const Column(
+      loadingChild: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionSkeleton(titleWidth: 120, child: ArtistsRowSkeleton()),
-          SizedBox(height: AppSpacing.xxl),
+          const SectionSkeleton(titleWidth: 120, child: ArtistsRowSkeleton()),
+          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
         ],
       ),
     );

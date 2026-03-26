@@ -34,7 +34,7 @@ class MoodSection extends ConsumerWidget {
     final visible = showAll ? moods : moods.take(_visibleCount).toList(growable: false);
     final hasSeeAll = !showAll && moods.length > _visibleCount;
     final isDesktop = ShellContext.isDesktopOf(context);
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final hPad = isDesktop ? 28.0 : AppSpacing.base;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -63,8 +63,8 @@ class _MoodGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = ShellContext.isDesktopOf(context);
-    final columns = isDesktop ? 5 : 2;
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final columns = isDesktop ? 4 : 2;
+    final hPad = isDesktop ? 28.0 : AppSpacing.base;
 
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: hPad),
@@ -75,7 +75,7 @@ class _MoodGrid extends StatelessWidget {
           crossAxisCount: columns,
           crossAxisSpacing: AppSpacing.sm,
           mainAxisSpacing: AppSpacing.sm,
-          childAspectRatio: 1.6,
+          childAspectRatio: isDesktop ? 2.2 : 1.6,
         ),
         itemCount: visibleMoods.length,
         itemBuilder: (_, i) {
@@ -125,8 +125,8 @@ class _MoodSectionSkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDesktop = ShellContext.isDesktopOf(context);
-    final columns = isDesktop ? 5 : 2;
-    final hPad = isDesktop ? AppSpacing.xl : AppSpacing.base;
+    final columns = isDesktop ? 4 : 2;
+    final hPad = isDesktop ? 28.0 : AppSpacing.base;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -145,7 +145,7 @@ class _MoodSectionSkeleton extends StatelessWidget {
               crossAxisCount: columns,
               crossAxisSpacing: AppSpacing.sm,
               mainAxisSpacing: AppSpacing.sm,
-              childAspectRatio: 1.6,
+              childAspectRatio: isDesktop ? 2.2 : 1.6,
             ),
             itemCount: 10,
             itemBuilder: (_, __) => Container(

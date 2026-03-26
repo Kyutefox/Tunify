@@ -179,6 +179,7 @@ class DatabaseRepository {
         isImported: m['is_imported'] as bool? ?? false,
         browseId: m['browse_id'] as String?,
         cachedPaletteColor: m['cached_palette_color'] as int?,
+        remoteTrackCount: m['remote_track_count'] as int?,
       );
     }).toList();
 
@@ -244,6 +245,7 @@ class DatabaseRepository {
                 'is_imported': p.isImported,
                 'browse_id': p.browseId,
                 'cached_palette_color': p.cachedPaletteColor,
+                'remote_track_count': p.remoteTrackCount,
               })
           .toList(),
       'folders': data.folders

@@ -11,11 +11,13 @@ class ShellContext extends InheritedWidget {
     super.key,
     required this.isDesktop,
     this.onPushDetail,
+    this.onOpenBrowse,
     required super.child,
   });
 
   final bool isDesktop;
   final void Function(Widget page)? onPushDetail;
+  final VoidCallback? onOpenBrowse;
 
   static bool isDesktopOf(BuildContext context) {
     return context
@@ -33,6 +35,15 @@ class ShellContext extends InheritedWidget {
     return true;
   }
 
+  static bool openBrowse(BuildContext context) {
+    final onOpenBrowse = context
+        .dependOnInheritedWidgetOfExactType<ShellContext>()
+        ?.onOpenBrowse;
+    if (onOpenBrowse == null) return false;
+    onOpenBrowse();
+    return true;
+  }
+
   /// Computes the exact inner content-panel width on desktop, accounting for
   /// shell gaps, left sidebar, right sidebar (if open), and horizontal padding.
   ///
@@ -45,13 +56,21 @@ class ShellContext extends InheritedWidget {
     required double hPad,
   }) {
     const gap = 8.0;
-    final sidebarSlot = rightSidebarOpen ? kDesktopRightSidebarWidth + gap : 0.0;
-    return screenWidth - gap * 2 - kDesktopSidebarWidth - gap - sidebarSlot - hPad * 2;
+    final sidebarSlot =
+        rightSidebarOpen ? kDesktopRightSidebarWidth + gap : 0.0;
+    return screenWidth -
+        gap * 2 -
+        kDesktopSidebarWidth -
+        gap -
+        sidebarSlot -
+        hPad * 2;
   }
 
   @override
   bool updateShouldNotify(ShellContext old) =>
-      isDesktop != old.isDesktop || onPushDetail != old.onPushDetail;
+      isDesktop != old.isDesktop ||
+      onPushDetail != old.onPushDetail ||
+      onOpenBrowse != old.onOpenBrowse;
 }
 
 /// Computes the responsive column count and max content width used by all

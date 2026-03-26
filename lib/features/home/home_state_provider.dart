@@ -64,6 +64,7 @@ class HomeState {
   final Color? dominantColor;
   final String? featuredArtworkUrl;
   final List<DateTime> recentlyPlayedTimestamps;
+
   /// Incremented when feed content is replaced (used for smooth UI transition).
   final int feedVersion;
 
@@ -139,33 +140,95 @@ class HomeNotifier extends Notifier<HomeState> {
   MusicStreamManager get _streamManager => ref.read(streamManagerProvider);
   DatabaseRepository get _repository => ref.read(databaseRepositoryProvider);
   static const String _defaultSeedVideoId = 'J7p4bzqLvCw';
+
   /// Gradient palette mirroring [_mapMoods] order, used when deserializing moods from the disk cache.
   /// Gradient palette mirroring [_mapMoods] order, used when deserializing moods from the disk cache.
   /// Stored by index rather than by color value so gradient objects don't need to be serialized.
   static const List<LinearGradient> _cacheMoodGradients = [
-    LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [Color(0xFF06B6D4), Color(0xFF0EA5E9)], begin: Alignment.topRight, end: Alignment.bottomLeft),
-    LinearGradient(colors: [Color(0xFFEF4444), Color(0xFFF97316)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [Color(0xFFEC4899), Color(0xFFA855F7)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-    LinearGradient(colors: [Color(0xFF10B981), Color(0xFF059669)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [Color(0xFFF59E0B), Color(0xFFEF4444)], begin: Alignment.topRight, end: Alignment.bottomLeft),
-    LinearGradient(colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [Color(0xFF0EA5E9), Color(0xFF6366F1)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-    LinearGradient(colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [Color(0xFFF97316), Color(0xFFFBBF24)], begin: Alignment.topRight, end: Alignment.bottomLeft),
-    LinearGradient(colors: [Color(0xFFE11D48), Color(0xFFEC4899)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-    LinearGradient(colors: [Color(0xFF059669), Color(0xFF0D9488)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [Color(0xFFDB2777), Color(0xFF9333EA)], begin: Alignment.topRight, end: Alignment.bottomLeft),
-    LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF7C3AED)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [Color(0xFFDC2626), Color(0xFF9F1239)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
-    LinearGradient(colors: [Color(0xFF0891B2), Color(0xFF6366F1)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [Color(0xFF65A30D), Color(0xFF16A34A)], begin: Alignment.topRight, end: Alignment.bottomLeft),
-    LinearGradient(colors: [Color(0xFFC026D3), Color(0xFF7C3AED)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-    LinearGradient(colors: [Color(0xFFEA580C), Color(0xFFD97706)], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+    LinearGradient(
+        colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight),
+    LinearGradient(
+        colors: [Color(0xFF06B6D4), Color(0xFF0EA5E9)],
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft),
+    LinearGradient(
+        colors: [Color(0xFFEF4444), Color(0xFFF97316)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight),
+    LinearGradient(
+        colors: [Color(0xFFEC4899), Color(0xFFA855F7)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter),
+    LinearGradient(
+        colors: [Color(0xFF10B981), Color(0xFF059669)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight),
+    LinearGradient(
+        colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft),
+    LinearGradient(
+        colors: [Color(0xFF8B5CF6), Color(0xFFEC4899)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight),
+    LinearGradient(
+        colors: [Color(0xFF0EA5E9), Color(0xFF6366F1)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter),
+    LinearGradient(
+        colors: [Color(0xFF14B8A6), Color(0xFF06B6D4)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight),
+    LinearGradient(
+        colors: [Color(0xFFF97316), Color(0xFFFBBF24)],
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft),
+    LinearGradient(
+        colors: [Color(0xFFE11D48), Color(0xFFEC4899)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight),
+    LinearGradient(
+        colors: [Color(0xFF7C3AED), Color(0xFF4F46E5)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter),
+    LinearGradient(
+        colors: [Color(0xFF059669), Color(0xFF0D9488)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight),
+    LinearGradient(
+        colors: [Color(0xFFDB2777), Color(0xFF9333EA)],
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft),
+    LinearGradient(
+        colors: [Color(0xFF2563EB), Color(0xFF7C3AED)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight),
+    LinearGradient(
+        colors: [Color(0xFFDC2626), Color(0xFF9F1239)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter),
+    LinearGradient(
+        colors: [Color(0xFF0891B2), Color(0xFF6366F1)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight),
+    LinearGradient(
+        colors: [Color(0xFF65A30D), Color(0xFF16A34A)],
+        begin: Alignment.topRight,
+        end: Alignment.bottomLeft),
+    LinearGradient(
+        colors: [Color(0xFFC026D3), Color(0xFF7C3AED)],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight),
+    LinearGradient(
+        colors: [Color(0xFFEA580C), Color(0xFFD97706)],
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter),
   ];
   bool _backgroundFetchInProgress = false;
   bool _preparedForLogin = false;
+
   /// In-memory copy of the last successful feed state.
   /// Shown immediately on [loadContent] while a background refresh runs, avoiding a skeleton flash.
   HomeState? _cache;
@@ -285,7 +348,8 @@ class HomeNotifier extends Notifier<HomeState> {
   /// Fetches home feed and updates state. Assumes [_restoreVisitorData] has
   /// already run (YT config from SQLite applied to stream manager).
   /// When [isBackgroundRefresh] is true, does not set loading and updates in place for a smooth transition.
-  Future<void> _loadFeedAndUpdateState({bool isBackgroundRefresh = false}) async {
+  Future<void> _loadFeedAndUpdateState(
+      {bool isBackgroundRefresh = false}) async {
     if (!isBackgroundRefresh) {
       state = state.copyWith(isLoading: true, isLoaded: false, error: null);
     }
@@ -313,7 +377,27 @@ class HomeNotifier extends Notifier<HomeState> {
         maxPlaylists: 40,
         maxArtists: 12,
       );
-      _applyFeedToState(homeFeed);
+
+      // Also fetch the full moods list from the dedicated endpoint
+      final moodsFeed = await _streamManager.getMoodsAndGenresFeed();
+
+      // Merge moods from both feeds, avoiding duplicates by browseId
+      final mergedMoods = <String, RelatedMoodItem>{};
+      for (final mood in [...homeFeed.moodItems, ...moodsFeed.moodItems]) {
+        final key = '${mood.browseId}|${mood.params ?? ''}';
+        if (!mergedMoods.containsKey(key)) {
+          mergedMoods[key] = mood;
+        }
+      }
+      final combinedFeed = RelatedHomeFeed(
+        trackShelves: homeFeed.trackShelves,
+        playlistShelves: homeFeed.playlistShelves,
+        artistShelves: homeFeed.artistShelves,
+        shelves: homeFeed.shelves,
+        moodItems: mergedMoods.values.toList(),
+      );
+
+      _applyFeedToState(combinedFeed);
     } catch (e) {
       rethrow;
     }
@@ -329,10 +413,13 @@ class HomeNotifier extends Notifier<HomeState> {
       await _streamManager.initFromSwJsData();
       final newVd = _streamManager.visitorData;
       if (newVd == null || newVd.isEmpty) {
-        logWarning('HomeFeed: sw.js_data fetch returned no visitorData', tag: 'HomeFeed');
+        logWarning('HomeFeed: sw.js_data fetch returned no visitorData',
+            tag: 'HomeFeed');
         return;
       }
-      logInfo('HomeFeed: got visitorData length=${newVd.length} – persisting and refreshing', tag: 'HomeFeed');
+      logInfo(
+          'HomeFeed: got visitorData length=${newVd.length} – persisting and refreshing',
+          tag: 'HomeFeed');
 
       // Persist locally.
       final prefs = await SharedPreferences.getInstance();
@@ -346,10 +433,32 @@ class HomeNotifier extends Notifier<HomeState> {
         maxPlaylists: 40,
         maxArtists: 12,
       );
-      _applyFeedToState(homeFeed);
+
+      // Also fetch the full moods list from the dedicated endpoint
+      final moodsFeed = await _streamManager.getMoodsAndGenresFeed();
+
+      // Merge moods from both feeds, avoiding duplicates by browseId
+      final mergedMoods = <String, RelatedMoodItem>{};
+      for (final mood in [...homeFeed.moodItems, ...moodsFeed.moodItems]) {
+        final key = '${mood.browseId}|${mood.params ?? ''}';
+        if (!mergedMoods.containsKey(key)) {
+          mergedMoods[key] = mood;
+        }
+      }
+      final combinedFeed = RelatedHomeFeed(
+        trackShelves: homeFeed.trackShelves,
+        playlistShelves: homeFeed.playlistShelves,
+        artistShelves: homeFeed.artistShelves,
+        shelves: homeFeed.shelves,
+        moodItems: mergedMoods.values.toList(),
+      );
+
+      _applyFeedToState(combinedFeed);
     } catch (e) {
-      logWarning('HomeFeed: _fetchSwJsDataAndRefresh failed: $e', tag: 'HomeFeed');
-      if (state.isLoading) state = state.copyWith(isLoading: false, isLoaded: false);
+      logWarning('HomeFeed: _fetchSwJsDataAndRefresh failed: $e',
+          tag: 'HomeFeed');
+      if (state.isLoading)
+        state = state.copyWith(isLoading: false, isLoaded: false);
     } finally {
       _backgroundFetchInProgress = false;
     }
@@ -393,7 +502,8 @@ class HomeNotifier extends Notifier<HomeState> {
     // Restore cached apiKey/clientVersion first so that the YoutubeMusic
     // instance rebuilt by setVisitorData() below already has them baked in.
     final cachedApiKey = prefs.getString(StorageKeys.prefsYtApiKey);
-    final cachedClientVersion = prefs.getString(StorageKeys.prefsYtClientVersion);
+    final cachedClientVersion =
+        prefs.getString(StorageKeys.prefsYtClientVersion);
     _streamManager.applyCachedApiConfig(cachedApiKey, cachedClientVersion);
 
     // Only restore if the stored token is in the valid short-token range.
@@ -414,23 +524,31 @@ class HomeNotifier extends Notifier<HomeState> {
     // Stale or absent local token — clear it so the length check triggers a fetch.
     if (localData != null && localData.isNotEmpty) {
       await prefs.remove(kYtVisitorDataKey);
-      logInfo('Home: cleared stale long visitorData token (len=${localData.length})', tag: 'Home');
+      logInfo(
+          'Home: cleared stale long visitorData token (len=${localData.length})',
+          tag: 'Home');
     }
 
     // No valid local token — use SQLite (filled on login via pullFromSupabase).
     try {
-      final yt = await ref.read(databaseRepositoryProvider).loadYtPersonalization();
+      final yt =
+          await ref.read(databaseRepositoryProvider).loadYtPersonalization();
       final cloudData = yt['visitor_data'] as String?;
       final cloudApiKey = yt['api_key'] as String?;
       final cloudClientVersion = yt['client_version'] as String?;
 
       if (cloudApiKey != null && cloudApiKey.toString().isNotEmpty) {
-        await prefs.setString(StorageKeys.prefsYtApiKey, cloudApiKey.toString());
-        _streamManager.applyCachedApiConfig(cloudApiKey.toString(), cloudClientVersion?.toString());
+        await prefs.setString(
+            StorageKeys.prefsYtApiKey, cloudApiKey.toString());
+        _streamManager.applyCachedApiConfig(
+            cloudApiKey.toString(), cloudClientVersion?.toString());
       }
-      if (cloudClientVersion != null && cloudClientVersion.toString().isNotEmpty) {
-        await prefs.setString(StorageKeys.prefsYtClientVersion, cloudClientVersion.toString());
-        _streamManager.applyCachedApiConfig(cloudApiKey?.toString(), cloudClientVersion.toString());
+      if (cloudClientVersion != null &&
+          cloudClientVersion.toString().isNotEmpty) {
+        await prefs.setString(
+            StorageKeys.prefsYtClientVersion, cloudClientVersion.toString());
+        _streamManager.applyCachedApiConfig(
+            cloudApiKey?.toString(), cloudClientVersion.toString());
       }
       if (cloudData != null &&
           cloudData.isNotEmpty &&
@@ -457,7 +575,8 @@ class HomeNotifier extends Notifier<HomeState> {
             'title': s.title,
             'subtitle': s.subtitle,
             'songs': s.songs.map((e) => e.toJson()).toList(),
-            'playlists': s.playlists.map((p) => _playlistToCacheJson(p)).toList(),
+            'playlists':
+                s.playlists.map((p) => _playlistToCacheJson(p)).toList(),
             'artists': s.artists.map((a) => _artistToCacheJson(a)).toList(),
           };
         }).toList(),
@@ -517,7 +636,8 @@ class HomeNotifier extends Notifier<HomeState> {
       final playlistsList = map['playlists'] as List<dynamic>?;
       final artistsList = map['artists'] as List<dynamic>?;
       final moodsList = map['moods'] as List<dynamic>?;
-      if (quickPicksList == null && (dynamicSectionsList == null || dynamicSectionsList.isEmpty)) {
+      if (quickPicksList == null &&
+          (dynamicSectionsList == null || dynamicSectionsList.isEmpty)) {
         return false;
       }
       final quickPicks = quickPicksList != null
@@ -529,7 +649,8 @@ class HomeNotifier extends Notifier<HomeState> {
           ? dynamicSectionsList.map((e) {
               final m = e as Map<String, dynamic>;
               final typeIndex = m['type'] as int? ?? 0;
-              final type = HomeSectionType.values[typeIndex.clamp(0, HomeSectionType.values.length - 1)];
+              final type = HomeSectionType.values[
+                  typeIndex.clamp(0, HomeSectionType.values.length - 1)];
               return HomeSongSection(
                 type: type,
                 title: m['title'] as String? ?? '',
@@ -538,17 +659,29 @@ class HomeNotifier extends Notifier<HomeState> {
                         ?.map((s) => Song.fromJson(s as Map<String, dynamic>))
                         .toList(growable: false) ??
                     const [],
-                playlists: (m['playlists'] as List<dynamic>?)?.map((p) => _playlistFromCacheJson(p as Map<String, dynamic>)).toList() ?? const [],
-                artists: (m['artists'] as List<dynamic>?)?.map((a) => _artistFromCacheJson(a as Map<String, dynamic>)).toList() ?? const [],
+                playlists: (m['playlists'] as List<dynamic>?)
+                        ?.map((p) =>
+                            _playlistFromCacheJson(p as Map<String, dynamic>))
+                        .toList() ??
+                    const [],
+                artists: (m['artists'] as List<dynamic>?)
+                        ?.map((a) =>
+                            _artistFromCacheJson(a as Map<String, dynamic>))
+                        .toList() ??
+                    const [],
               );
             }).toList(growable: false)
           : <HomeSongSection>[];
       if (quickPicks.isEmpty && dynamicSections.isEmpty) return false;
       final playlists = playlistsList != null
-          ? playlistsList.map((p) => _playlistFromCacheJson(p as Map<String, dynamic>)).toList(growable: false)
+          ? playlistsList
+              .map((p) => _playlistFromCacheJson(p as Map<String, dynamic>))
+              .toList(growable: false)
           : <Playlist>[];
       final artists = artistsList != null
-          ? artistsList.map((a) => _artistFromCacheJson(a as Map<String, dynamic>)).toList(growable: false)
+          ? artistsList
+              .map((a) => _artistFromCacheJson(a as Map<String, dynamic>))
+              .toList(growable: false)
           : <Artist>[];
       final moods = moodsList != null
           ? moodsList.asMap().entries.map((e) {
@@ -623,10 +756,9 @@ class HomeNotifier extends Notifier<HomeState> {
     }
 
     for (final shelf in feed.playlistShelves) {
-      final playlists =
-          uniqueById(_mapPlaylists(shelf.playlists), (p) => p.id)
-              .take(12)
-              .toList();
+      final playlists = uniqueById(_mapPlaylists(shelf.playlists), (p) => p.id)
+          .take(12)
+          .toList();
       if (playlists.isEmpty) continue;
       sections.add(
         HomeSongSection(
@@ -640,9 +772,7 @@ class HomeNotifier extends Notifier<HomeState> {
 
     for (final shelf in feed.artistShelves) {
       final artists =
-          uniqueById(_mapArtists(shelf.artists), (a) => a.id)
-              .take(12)
-              .toList();
+          uniqueById(_mapArtists(shelf.artists), (a) => a.id).take(12).toList();
       if (artists.isEmpty) continue;
       sections.add(
         HomeSongSection(
@@ -667,10 +797,12 @@ class HomeNotifier extends Notifier<HomeState> {
       await ref.read(databaseRepositoryProvider).saveYtPersonalization({
         'visitor_data': visitorData,
         if (apiKey != null && apiKey.isNotEmpty) 'api_key': apiKey,
-        if (clientVersion != null && clientVersion.isNotEmpty) 'client_version': clientVersion,
+        if (clientVersion != null && clientVersion.isNotEmpty)
+          'client_version': clientVersion,
       });
     } catch (e) {
-      logWarning('Home: _syncVisitorDataToSupabaseIfNeeded failed: $e', tag: 'Home');
+      logWarning('Home: _syncVisitorDataToSupabaseIfNeeded failed: $e',
+          tag: 'Home');
     }
   }
 
@@ -786,9 +918,30 @@ class HomeNotifier extends Notifier<HomeState> {
   }
 
   static const List<String> _moodEmojis = [
-    '🎵', '🎸', '🎹', '🎺', '🥁', '🎻', '🎤', '🎧',
-    '🎶', '🎷', '🪗', '🪘', '🎼', '🎙️', '🎚️', '🎛️',
-    '🌟', '🔥', '💫', '🌈', '⚡', '🌙', '☀️', '🌊',
+    '🎵',
+    '🎸',
+    '🎹',
+    '🎺',
+    '🥁',
+    '🎻',
+    '🎤',
+    '🎧',
+    '🎶',
+    '🎷',
+    '🪗',
+    '🪘',
+    '🎼',
+    '🎙️',
+    '🎚️',
+    '🎛️',
+    '🌟',
+    '🔥',
+    '💫',
+    '🌈',
+    '⚡',
+    '🌙',
+    '☀️',
+    '🌊',
   ];
 
   List<Mood> _mapMoods(List<RelatedMoodItem> moodItems) {
@@ -807,7 +960,6 @@ class HomeNotifier extends Notifier<HomeState> {
       );
     }).toList(growable: false);
   }
-
 }
 
 final homeProvider =
@@ -850,7 +1002,8 @@ final greetingProvider = Provider.autoDispose<String>((ref) {
   final hour = now.hour;
   // Invalidate at the next hour boundary so greeting updates automatically.
   final minutesUntilNextHour = 60 - now.minute;
-  final timer = Timer(Duration(minutes: minutesUntilNextHour), ref.invalidateSelf);
+  final timer =
+      Timer(Duration(minutes: minutesUntilNextHour), ref.invalidateSelf);
   ref.onDispose(timer.cancel);
   if (hour < 6) return 'Good Night';
   if (hour < 12) return 'Good Morning';

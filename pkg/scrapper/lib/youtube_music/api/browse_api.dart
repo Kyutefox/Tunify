@@ -14,7 +14,7 @@ class BrowseApi {
 
   /// Fetches the personalised YouTube Music home feed.
   ///
-  /// The [maxTracks], [maxPlaylists] and [maxArtists] parameters cap how many
+  /// The [maxTracks], [maxPlaylists], [maxArtists] and [maxMoodItems] parameters cap how many
   /// items of each type are included in the returned [RelatedHomeFeed].
   ///
   /// This method follows section list continuations (when present) so that all
@@ -23,6 +23,7 @@ class BrowseApi {
     int maxTracks = 30,
     int maxPlaylists = 12,
     int maxArtists = 12,
+    int maxMoodItems = 100,
   }) async {
     try {
       // Initial home browse call.
@@ -36,6 +37,7 @@ class BrowseApi {
         maxTracks: maxTracks,
         maxPlaylists: maxPlaylists,
         maxArtists: maxArtists,
+        maxMoodItems: maxMoodItems,
       );
 
       // Follow sectionListRenderer continuations for additional shelves.
@@ -53,6 +55,7 @@ class BrowseApi {
           maxTracks: maxTracks,
           maxPlaylists: maxPlaylists,
           maxArtists: maxArtists,
+          maxMoodItems: maxMoodItems,
         );
 
         aggregate = RelatedHomeFeed(
@@ -130,7 +133,24 @@ class BrowseApi {
         'browseId': 'FEmusic_explore',
       });
 
-      return BrowseFormatter.parseRelatedFeed(exploreData);
+      return BrowseFormatter.parseRelatedFeed(exploreData, maxMoodItems: 100);
+    } catch (e) {
+      return const RelatedHomeFeed();
+    }
+  }
+
+  /// Fetches the full moods and genres list from YouTube Music.
+  ///
+  /// This uses the `FEmusic_moods_and_genres` browse ID which returns all
+  /// available mood and genre categories.
+  Future<RelatedHomeFeed> fetchMoodsAndGenresFeed() async {
+    try {
+      final data = await _client.post('browse', {
+        'context': _client.context(),
+        'browseId': 'FEmusic_moods_and_genres',
+      });
+
+      return BrowseFormatter.parseRelatedFeed(data, maxMoodItems: 200);
     } catch (e) {
       return const RelatedHomeFeed();
     }
@@ -211,7 +231,7 @@ class BrowseApi {
   }
 
   Future<Map<String, dynamic>?> _fetchLyricsWithAndroidClient(
-      String browseId, {
+    String browseId, {
     int retryCount = 0,
   }) async {
     try {
@@ -235,7 +255,7 @@ class BrowseApi {
           'Content-Type': 'application/json',
           'User-Agent':
               'com.google.android.apps.youtube.music/$_androidClientVersion'
-              ' (Linux; U; Android 11; en_US) gzip',
+                  ' (Linux; U; Android 11; en_US) gzip',
           'X-YouTube-Client-Name': '21',
           'X-YouTube-Client-Version': _androidClientVersion,
         },
@@ -243,8 +263,8 @@ class BrowseApi {
       );
       if (response.statusCode != 200) {
         // Retry once on transient server errors (5xx) or rate-limiting (429).
-        final isTransient = response.statusCode == 429 ||
-            response.statusCode >= 500;
+        final isTransient =
+            response.statusCode == 429 || response.statusCode >= 500;
         if (isTransient && retryCount == 0) {
           await Future<void>.delayed(const Duration(milliseconds: 600));
           return _fetchLyricsWithAndroidClient(browseId, retryCount: 1);
@@ -267,7 +287,7 @@ class BrowseApi {
       Map<String, dynamic> data) {
     try {
       final lyricsData = data['contents']?['elementRenderer']?['newElement']
-          ?['type']?['componentType']?['model']?['timedLyricsModel']
+              ?['type']?['componentType']?['model']?['timedLyricsModel']
           ?['lyricsData'] as Map<String, dynamic>?;
       if (lyricsData == null) return null;
 
@@ -301,8 +321,7 @@ class BrowseApi {
 
   static Map<String, dynamic>? _parseLyricsResponse(Map<String, dynamic> data) {
     try {
-      final contents =
-          data['contents']?['sectionListRenderer']?['contents'];
+      final contents = data['contents']?['sectionListRenderer']?['contents'];
       if (contents is! List || contents.isEmpty) return null;
 
       for (final section in contents) {
@@ -316,8 +335,11 @@ class BrowseApi {
             for (final entry in timedData) {
               if (entry is! Map<String, dynamic>) continue;
               final text = entry['lyric'] as String? ?? '';
-              final rawMs = entry['startTimeMilliseconds'] ?? entry['startTimeMillis'];
-              final startMs = rawMs is int ? rawMs : int.tryParse(rawMs?.toString() ?? '') ?? 0;
+              final rawMs =
+                  entry['startTimeMilliseconds'] ?? entry['startTimeMillis'];
+              final startMs = rawMs is int
+                  ? rawMs
+                  : int.tryParse(rawMs?.toString() ?? '') ?? 0;
               lines.add({'text': text, 'startTimeMs': startMs});
               if (fullText.isNotEmpty) fullText += '\n';
               fullText += text;
@@ -378,5 +400,4 @@ class BrowseApi {
       return null;
     }
   }
-
 }

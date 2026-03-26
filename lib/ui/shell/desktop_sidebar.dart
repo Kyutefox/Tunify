@@ -22,6 +22,8 @@ import 'package:tunify/ui/screens/shared/library/library_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/widgets/player/download_queue_progress_icon.dart';
+import 'package:tunify/ui/widgets/player/download_queue_sheet.dart';
 
 const double kDesktopSidebarWidth = 340.0;
 
@@ -234,6 +236,17 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                       ),
                     ),
                   ),
+                  AppIconButton(
+                    icon: const DownloadQueueProgressIcon(
+                      iconSize: 20,
+                      baseColor: AppColors.textSecondary,
+                    ),
+                    onPressed: () => showDownloadQueueSheet(context),
+                    tooltip: 'Download queue',
+                    size: 36,
+                    iconSize: 20,
+                  ),
+                  const SizedBox(width: 4),
                   _CreateMenuButton(
                     onCreatePlaylist: widget.onCreatePlaylist,
                     onCreateFolder: widget.onCreateFolder,

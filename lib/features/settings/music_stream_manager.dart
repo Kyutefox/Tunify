@@ -146,23 +146,29 @@ class _CachedStream {
 /// A generation counter ([_ytMusicGen]) silences callbacks from stale instances.
 class MusicStreamManager {
   String? _visitorData;
+
   /// InnerTube API key — fetched live from music.youtube.com HTML and cached
   /// in SharedPreferences. Falls back to YtConstants hardcoded value only when
   /// both the cache and live fetch have not yet provided a value.
   String? _apiKey;
+
   /// InnerTube client version — same lifecycle as [_apiKey].
   String? _clientVersion;
+
   /// Session cookies (VISITOR_INFO1_LIVE + YSC) forwarded with all InnerTube
   /// and tracking calls so YouTube can link watchtime to the browse session.
   String? _sessionCookies;
+
   /// Geographic locale fetched live from YouTube (e.g. 'NP'). Null until the
   /// first successful VisitorDataFetcher call — never hardcoded.
   String? _gl;
+
   /// Language locale fetched live from YouTube (e.g. 'en'). Null until the
   /// first successful VisitorDataFetcher call — never hardcoded.
   String? _hl;
   final scrapper.YTMusicAuth? _auth;
   late scrapper.YoutubeMusic _ytMusic;
+
   /// Monotonic generation counter incremented each time [_ytMusic] is replaced.
   /// Callbacks capture the generation at creation time and are discarded when they no longer match,
   /// preventing stale visitor-data responses from overwriting a more recent token.
@@ -170,6 +176,7 @@ class MusicStreamManager {
   late scrapper.YoutubeDirect _ytDirect;
   final ValueNotifier<StreamQuality> _qualityNotifier =
       ValueNotifier(StreamQuality.auto);
+
   /// LRU stream URL cache. Dart's default [Map] preserves insertion order (LinkedHashMap),
   /// so the first key is always the least-recently-used entry.
   final Map<String, _CachedStream> _streamCache = {};
@@ -196,7 +203,9 @@ class MusicStreamManager {
       clientVersion: _clientVersion,
       sessionCookies: _sessionCookies,
       auth: auth,
-      onVisitorDataReceived: (vd) { if (gen == _ytMusicGen) _onVisitorDataChanged(vd); },
+      onVisitorDataReceived: (vd) {
+        if (gen == _ytMusicGen) _onVisitorDataChanged(vd);
+      },
     );
     _ytDirect = scrapper.YoutubeDirect();
     // Skip persistence when no initial token was provided; writing null would erase
@@ -241,7 +250,9 @@ class MusicStreamManager {
       gl: _gl,
       hl: _hl,
       auth: _auth,
-      onVisitorDataReceived: (vd) { if (gen == _ytMusicGen) _onVisitorDataChanged(vd); },
+      onVisitorDataReceived: (vd) {
+        if (gen == _ytMusicGen) _onVisitorDataChanged(vd);
+      },
     );
   }
 
@@ -263,8 +274,8 @@ class MusicStreamManager {
     }
     if (swData.clientVersion?.isNotEmpty == true) {
       _clientVersion = swData.clientVersion;
-      SharedPreferences.getInstance()
-          .then((p) => p.setString(StorageKeys.prefsYtClientVersion, _clientVersion!));
+      SharedPreferences.getInstance().then((p) =>
+          p.setString(StorageKeys.prefsYtClientVersion, _clientVersion!));
     }
     final gen = ++_ytMusicGen;
     _ytMusic = scrapper.YoutubeMusic(
@@ -275,7 +286,9 @@ class MusicStreamManager {
       gl: _gl,
       hl: _hl,
       auth: _auth,
-      onVisitorDataReceived: (vd) { if (gen == _ytMusicGen) _onVisitorDataChanged(vd); },
+      onVisitorDataReceived: (vd) {
+        if (gen == _ytMusicGen) _onVisitorDataChanged(vd);
+      },
     );
   }
 
@@ -319,7 +332,8 @@ class MusicStreamManager {
           // Re-insert to mark as most-recently-used for LRU ordering.
           _streamCache.remove(videoId);
           _streamCache[videoId] = cached;
-          log('PlayFlow: getStreamUrl CACHE HIT videoId=$videoId (${apiSw.elapsedMilliseconds}ms)', tag: 'PlayFlow');
+          log('PlayFlow: getStreamUrl CACHE HIT videoId=$videoId (${apiSw.elapsedMilliseconds}ms)',
+              tag: 'PlayFlow');
           return {
             'stream_url': stream.url,
             'bitrate': stream.bitrate,
@@ -332,17 +346,23 @@ class MusicStreamManager {
         _streamCache.remove(videoId);
       }
       _misses++;
-      log('PlayFlow: getStreamUrl CACHE MISS videoId=$videoId calling youtube_direct.fetchBestAudioStream', tag: 'PlayFlow');
+      log('PlayFlow: getStreamUrl CACHE MISS videoId=$videoId calling youtube_direct.fetchBestAudioStream',
+          tag: 'PlayFlow');
       // L2: SQLite cache check
       final sqliteCached = await _db?.getStreamUrlCache(videoId);
       if (sqliteCached != null) {
-        log('PlayFlow: getStreamUrl SQLITE HIT videoId=$videoId', tag: 'PlayFlow');
+        log('PlayFlow: getStreamUrl SQLITE HIT videoId=$videoId',
+            tag: 'PlayFlow');
         final url = sqliteCached['url'] as String;
         final headers = sqliteCached['headers'] as Map<String, String>? ?? {};
         final bitrate = sqliteCached['bitrate'] as int? ?? 0;
         final quality = sqliteCached['quality'] as String? ?? '';
         // Populate L1 from L2
-        final audioQuality = bitrate >= 160 ? AudioQuality.high : bitrate >= 80 ? AudioQuality.medium : AudioQuality.low;
+        final audioQuality = bitrate >= 160
+            ? AudioQuality.high
+            : bitrate >= 80
+                ? AudioQuality.medium
+                : AudioQuality.low;
         final stream = AudioStream(
           url: url,
           bitrate: bitrate,
@@ -372,7 +392,8 @@ class MusicStreamManager {
         videoId,
         preferAac: Platform.isIOS || Platform.isMacOS,
       );
-      log('PlayFlow: getStreamUrl fetchBestAudioStream (youtube_explode_dart getManifest) done in ${apiSw.elapsedMilliseconds - fetchT0}ms', tag: 'PlayFlow');
+      log('PlayFlow: getStreamUrl fetchBestAudioStream (youtube_explode_dart getManifest) done in ${apiSw.elapsedMilliseconds - fetchT0}ms',
+          tag: 'PlayFlow');
       if (ytStream == null) {
         throw Exception('No audio stream available for $videoId');
       }
@@ -405,19 +426,22 @@ class MusicStreamManager {
       final expiresAt = DateTime.now().toUtc().add(_kStreamUrlTtl);
       final db = _db;
       if (db != null) {
-        db.trimStreamUrlCacheIfNeeded().then((_) =>
-          db.upsertStreamUrlCache(
-            videoId,
-            ytStream.url,
-            Map<String, String>.from(scrapper.streamHeaders),
-            bitrate,
-            quality.label,
-            expiresAt,
-          )
-        ).ignore();
+        db
+            .trimStreamUrlCacheIfNeeded()
+            .then((_) => db.upsertStreamUrlCache(
+                  videoId,
+                  ytStream.url,
+                  Map<String, String>.from(scrapper.streamHeaders),
+                  bitrate,
+                  quality.label,
+                  expiresAt,
+                ))
+            .ignore();
       }
-      log('PlayFlow: getStreamUrl total (fetch+cache) ${apiSw.elapsedMilliseconds}ms', tag: 'PlayFlow');
-      log('PlayFlow: getStreamUrl mimeType=${ytStream.mimeType} bitrate=${bitrate}kbps', tag: 'PlayFlow');
+      log('PlayFlow: getStreamUrl total (fetch+cache) ${apiSw.elapsedMilliseconds}ms',
+          tag: 'PlayFlow');
+      log('PlayFlow: getStreamUrl mimeType=${ytStream.mimeType} bitrate=${bitrate}kbps',
+          tag: 'PlayFlow');
       return {
         'stream_url': ytStream.url,
         'bitrate': bitrate,
@@ -425,7 +449,8 @@ class MusicStreamManager {
         'headers': Map<String, String>.from(scrapper.streamHeaders),
       };
     } catch (e) {
-      log('PlayFlow: getStreamUrl FAILED after ${apiSw.elapsedMilliseconds}ms', tag: 'PlayFlow');
+      log('PlayFlow: getStreamUrl FAILED after ${apiSw.elapsedMilliseconds}ms',
+          tag: 'PlayFlow');
       rethrow;
     }
   }
@@ -443,7 +468,8 @@ class MusicStreamManager {
 
   /// Full player response (track, metadata, playbackTracking) for e.g. playback tracking.
   /// Pass [cpn] so YouTube links this player call to subsequent watchtime reports.
-  Future<Map<String, dynamic>> getPlayerResponseForTracking(String videoId, {String? cpn}) async {
+  Future<Map<String, dynamic>> getPlayerResponseForTracking(String videoId,
+      {String? cpn}) async {
     return _ytMusic.player.fetchPlayer(videoId, cpn: cpn);
   }
 
@@ -483,7 +509,8 @@ class MusicStreamManager {
   Future<double?> getLoudnessDbForVideo(String videoId) async {
     try {
       final data = await _ytMusic.player.fetchPlayer(videoId);
-      final loudness = data['metadata']?['loudnessDb'] ?? data['metadata']?['perceptualLoudnessDb'];
+      final loudness = data['metadata']?['loudnessDb'] ??
+          data['metadata']?['perceptualLoudnessDb'];
       if (loudness is num) return loudness.toDouble();
       return null;
     } catch (_) {
@@ -521,7 +548,8 @@ class MusicStreamManager {
 
   Future<List<Track>> searchTracks(String query, {int maxResults = 20}) async {
     try {
-      final list = await _ytMusic.search.searchMusic(query, maxResults: maxResults);
+      final list =
+          await _ytMusic.search.searchMusic(query, maxResults: maxResults);
       return list.map(_scrapperTrackToApp).toList();
     } catch (_) {
       return [];
@@ -544,7 +572,8 @@ class MusicStreamManager {
         playlistId: playlistId,
       );
       if (list.isEmpty) {
-        log('getRecommendedQueue: first fetchNext returned 0 tracks, retrying once', tag: 'Queue');
+        log('getRecommendedQueue: first fetchNext returned 0 tracks, retrying once',
+            tag: 'Queue');
         await Future<void>.delayed(const Duration(milliseconds: 400));
         list = await _ytMusic.next.fetchNext(
           videoId: videoId,
@@ -552,7 +581,8 @@ class MusicStreamManager {
         );
       }
       if (list.isEmpty) {
-        log('getRecommendedQueue: next.fetchNext returned 0 tracks for videoId=$videoId', tag: 'Queue');
+        log('getRecommendedQueue: next.fetchNext returned 0 tracks for videoId=$videoId',
+            tag: 'Queue');
       }
       return list.take(maxResults).map(_scrapperTrackToApp).toList();
     } catch (e, st) {
@@ -619,12 +649,20 @@ class MusicStreamManager {
     int maxTracks = 30,
     int maxPlaylists = 12,
     int maxArtists = 12,
+    int maxMoodItems = 100,
   }) async {
     final feed = await _ytMusic.browse.fetchHomeFeed(
       maxTracks: maxTracks,
       maxPlaylists: maxPlaylists,
       maxArtists: maxArtists,
+      maxMoodItems: maxMoodItems,
     );
+    return _scrapperFeedToApp(feed);
+  }
+
+  /// Fetches the full moods and genres list from YouTube Music.
+  Future<RelatedHomeFeed> getMoodsAndGenresFeed() async {
+    final feed = await _ytMusic.browse.fetchMoodsAndGenresFeed();
     return _scrapperFeedToApp(feed);
   }
 

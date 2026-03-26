@@ -242,6 +242,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
     return ShellContext(
       isDesktop: true,
       onPushDetail: _pushDetail,
+      onOpenBrowse: _openBrowse,
       child: Scaffold(
         // True-black canvas — visible in the gaps between floating panels.
         backgroundColor: const Color(0xFF0A0A0A),
@@ -299,14 +300,37 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
                                 onGenerateRoute: (_) => MaterialPageRoute<void>(
                                   builder: (_) => ValueListenableBuilder<int>(
                                     valueListenable: _tabIndexNotifier,
-                                    builder: (_, idx, __) => IndexedStack(
-                                      index: idx,
-                                      children: const [
-                                        HomeScreen(),
-                                        SearchScreen(),
-                                        LibraryScreen(),
-                                        _BrowsePage(),
-                                      ],
+                                    builder: (_, idx, __) => AnimatedSwitcher(
+                                      duration:
+                                          const Duration(milliseconds: 240),
+                                      switchInCurve: Curves.easeOutCubic,
+                                      switchOutCurve: Curves.easeOutCubic,
+                                      transitionBuilder: (child, animation) {
+                                        final curved = CurvedAnimation(
+                                          parent: animation,
+                                          curve: Curves.easeOutCubic,
+                                        );
+                                        return FadeTransition(
+                                          opacity: curved,
+                                          child: SlideTransition(
+                                            position: Tween<Offset>(
+                                              begin: const Offset(0, 0.03),
+                                              end: Offset.zero,
+                                            ).animate(curved),
+                                            child: child,
+                                          ),
+                                        );
+                                      },
+                                      child: KeyedSubtree(
+                                        key: ValueKey(idx),
+                                        child: idx == 0
+                                            ? const HomeScreen()
+                                            : idx == 1
+                                                ? const SearchScreen()
+                                                : idx == 2
+                                                    ? const LibraryScreen()
+                                                    : const _BrowsePage(),
+                                      ),
                                     ),
                                   ),
                                 ),

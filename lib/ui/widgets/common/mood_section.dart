@@ -31,10 +31,19 @@ class MoodSection extends ConsumerWidget {
     }
     if (moods.isEmpty) return const SizedBox.shrink();
 
-    final visible = showAll ? moods : moods.take(_visibleCount).toList(growable: false);
+    final visible =
+        showAll ? moods : moods.take(_visibleCount).toList(growable: false);
     final hasSeeAll = !showAll && moods.length > _visibleCount;
     final isDesktop = ShellContext.isDesktopOf(context);
     final hPad = isDesktop ? 28.0 : AppSpacing.base;
+
+    void onSeeAll() {
+      if (isDesktop) {
+        ShellContext.openBrowse(context);
+      } else {
+        showMoodBrowseSheet(context, moods: moods);
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,9 +51,7 @@ class MoodSection extends ConsumerWidget {
         SectionHeader(
           title: showAll ? 'Browse All' : 'Browse By Mood',
           seeAllLabel: hasSeeAll ? 'See all' : null,
-          onSeeAll: hasSeeAll
-              ? () => showMoodBrowseSheet(context, moods: moods)
-              : null,
+          onSeeAll: hasSeeAll ? onSeeAll : null,
           useCompactStyle: true,
           padding: EdgeInsets.fromLTRB(hPad, 0, hPad, AppSpacing.md),
         ),

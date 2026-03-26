@@ -1784,12 +1784,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
         _lastRealDurationFetchedForSongId = null;
         _transitionGeneration++;
         _isTransitioning = false;
+        final nextSong = state.queue[nextIndex];
         state = state.copyWith(
           currentIndex: nextIndex,
-          currentSong: state.queue[nextIndex],
+          currentSong: nextSong,
           position: Duration.zero,
           status: PlayerStatus.loading,
         );
+        ref.read(homeProvider.notifier).addToRecentlyPlayed(nextSong);
         await _syncPlaylistToQueue(shouldPlay: true);
         return;
       }

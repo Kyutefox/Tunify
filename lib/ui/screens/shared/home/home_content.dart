@@ -231,8 +231,9 @@ class _DynamicSectionsSkeletonGate extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isLoading = ref.watch(homeIsLoadingProvider);
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
-    if (!isLoading || dynamicSections.isNotEmpty)
+    if (!isLoading || dynamicSections.isNotEmpty) {
       return const SizedBox.shrink();
+    }
     final isDesktop = ShellContext.isDesktopOf(context);
     return Column(
       children: [
@@ -348,12 +349,15 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav>
   }
 
   bool _hasOverflow(ContentLayout layout) {
-    if (widget.type == HomeSectionType.songs)
+    if (widget.type == HomeSectionType.songs) {
       return widget.songs.length > layout.cols * 4;
-    if (widget.type == HomeSectionType.playlists)
+    }
+    if (widget.type == HomeSectionType.playlists) {
       return widget.playlists.length > layout.cols;
-    if (widget.type == HomeSectionType.artists)
+    }
+    if (widget.type == HomeSectionType.artists) {
       return widget.artists.length > layout.cols;
+    }
     return false;
   }
 

@@ -1,9 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -140,13 +140,18 @@ class HomeState {
   }
 }
 
-/// Top-level function for use with [compute] — encodes the home feed cache map.
-/// Must be top-level (not a closure) to be sendable across isolates.
-String _encodeHomeCacheMap(Map<String, dynamic> map) => jsonEncode(map);
+/// Recursively converts a [Map] with dynamic keys (as returned by Hive) to
+/// [Map<String, dynamic>] so the rest of the restore logic can use typed casts.
+Map<String, dynamic> _deepCastMap(Map m) => m.map(
+      (k, v) => MapEntry(
+        k.toString(),
+        v is Map ? _deepCastMap(v) : (v is List ? _deepCastList(v) : v),
+      ),
+    );
 
-/// Top-level function for use with [compute] — decodes the home feed cache JSON.
-Map<String, dynamic> _decodeHomeCacheJson(String raw) =>
-    jsonDecode(raw) as Map<String, dynamic>;
+List<dynamic> _deepCastList(List l) => l
+    .map((v) => v is Map ? _deepCastMap(v) : (v is List ? _deepCastList(v) : v))
+    .toList();
 
 /// Drives the home screen feed lifecycle: initial load, cache restore, background refresh,
 /// and recently-played tracking.
@@ -718,7 +723,6 @@ class HomeNotifier extends Notifier<HomeState> {
       return;
     }
     try {
-      final prefs = await SharedPreferences.getInstance();
       final map = <String, dynamic>{
         'quickPicks': state.quickPicks.map((s) => s.toJson()).toList(),
         'dynamicSections': state.dynamicSections.map((s) {
@@ -748,10 +752,8 @@ class HomeNotifier extends Notifier<HomeState> {
         'featuredArtworkUrl': state.featuredArtworkUrl,
         'feedVersion': state.feedVersion,
       };
-      final encoded = map.length > 20
-          ? await compute(_encodeHomeCacheMap, map)
-          : _encodeHomeCacheMap(map);
-      await prefs.setString(StorageKeys.prefsHomeFeedCache, encoded);
+      final box = await Hive.openBox<dynamic>('home_feed');
+      await box.put('feed', map);
     } catch (e) {
       logWarning('Home: _persistCache failed: $e', tag: 'Home');
     }
@@ -776,12 +778,24 @@ class HomeNotifier extends Notifier<HomeState> {
   /// Restores feed from disk on app start. Returns true if restored and state/cache were set.
   Future<bool> _restoreFromPersistedCache() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final raw = prefs.getString(StorageKeys.prefsHomeFeedCache);
-      if (raw == null || raw.isEmpty) return false;
-      final map = raw.length > 10000
-          ? await compute(_decodeHomeCacheJson, raw)
-          : _decodeHomeCacheJson(raw);
+      final box = await Hive.openBox<dynamic>('home_feed');
+      Object? rawEntry = box.get('feed');
+
+      // One-time migration: move existing SharedPreferences JSON into Hive.
+      if (rawEntry == null) {
+        final prefs = await SharedPreferences.getInstance();
+        final json = prefs.getString(StorageKeys.prefsHomeFeedCache);
+        if (json != null && json.isNotEmpty) {
+          try {
+            rawEntry = jsonDecode(json) as Map;
+            await box.put('feed', rawEntry);
+          } catch (_) {}
+          await prefs.remove(StorageKeys.prefsHomeFeedCache);
+        }
+      }
+
+      if (rawEntry == null) return false;
+      final map = _deepCastMap(rawEntry as Map);
       final quickPicksList = map['quickPicks'] as List<dynamic>?;
       final dynamicSectionsList = map['dynamicSections'] as List<dynamic>?;
       final playlistsList = map['playlists'] as List<dynamic>?;

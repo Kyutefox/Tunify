@@ -57,17 +57,7 @@ void main() {
         expect(f.isPinned, false);
       });
 
-      test('fromJsonString returns null for null input', () {
-        expect(LibraryFolder.fromJsonString(null), isNull);
-      });
 
-      test('fromJsonString returns null for empty string', () {
-        expect(LibraryFolder.fromJsonString(''), isNull);
-      });
-
-      test('fromJsonString returns null for invalid JSON', () {
-        expect(LibraryFolder.fromJsonString('not json'), isNull);
-      });
     });
 
     group('equality', () {

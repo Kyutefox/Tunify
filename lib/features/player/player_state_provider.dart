@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tunify/core/utils/platform_utils.dart';
 
 import 'package:flutter/foundation.dart' show listEquals;
@@ -470,9 +471,24 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   Future<void> _restoreLastSong() async {
     try {
+      final box = await Hive.openBox<dynamic>('player_state');
       final prefs = await SharedPreferences.getInstance();
-      final song =
-          Song.fromJsonString(prefs.getString(StorageKeys.prefsLastPlayedSong));
+      Object? songEntry = box.get('song');
+
+      // One-time migration: move SharedPreferences JSON into Hive.
+      if (songEntry == null) {
+        final migrated =
+            Song.fromJsonString(prefs.getString(StorageKeys.prefsLastPlayedSong));
+        if (migrated != null) {
+          songEntry = migrated.toJson();
+          await box.put('song', songEntry);
+        }
+        await prefs.remove(StorageKeys.prefsLastPlayedSong);
+      }
+
+      final song = songEntry is Map
+          ? Song.fromJson(Map<String, dynamic>.from(songEntry))
+          : null;
       if (song != null && state.currentSong == null) {
         final posMs = prefs.getInt(StorageKeys.prefsLastPlayedPositionMs) ?? 0;
         final durMs = prefs.getInt(StorageKeys.prefsLastPlayedDurationMs) ?? 0;
@@ -538,9 +554,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
       final posMs = state.position.inMilliseconds;
       final durMs = state.duration?.inMilliseconds ?? 0;
       if (posMs == 0 && durMs == 0) return;
+      final box = await Hive.openBox<dynamic>('player_state');
       final prefs = await SharedPreferences.getInstance();
       final futures = <Future>[
-        prefs.setString(StorageKeys.prefsLastPlayedSong, song.toJsonString()),
+        box.put('song', song.toJson()),
         prefs.setInt(StorageKeys.prefsLastPlayedPositionMs, posMs),
         prefs.setInt(StorageKeys.prefsLastPlayedDurationMs, durMs),
       ];
@@ -1706,10 +1723,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
       try {
         final song = state.currentSong;
         if (song != null) {
+          final box = await Hive.openBox<dynamic>('player_state');
           final prefs = await SharedPreferences.getInstance();
           await Future.wait([
-            prefs.setString(
-                StorageKeys.prefsLastPlayedSong, song.toJsonString()),
+            box.put('song', song.toJson()),
             prefs.setInt(StorageKeys.prefsLastPlayedPositionMs,
                 _audioPlayer.position.inMilliseconds),
             prefs.setInt(

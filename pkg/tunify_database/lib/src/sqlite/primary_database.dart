@@ -251,14 +251,17 @@ class PrimaryDatabase {
 
   /// Saves YT personalization keys present in [data].
   Future<void> saveYtPersonalization(Map<String, dynamic> data) async {
-    if (data.containsKey('visitor_data'))
+    if (data.containsKey('visitor_data')) {
       await setSetting(
           'yt_visitor_data', data['visitor_data']?.toString() ?? '');
-    if (data.containsKey('api_key'))
+    }
+    if (data.containsKey('api_key')) {
       await setSetting('yt_api_key', data['api_key']?.toString() ?? '');
-    if (data.containsKey('client_version'))
+    }
+    if (data.containsKey('client_version')) {
       await setSetting(
           'yt_client_version', data['client_version']?.toString() ?? '');
+    }
   }
 
   /// Closes the database connection.

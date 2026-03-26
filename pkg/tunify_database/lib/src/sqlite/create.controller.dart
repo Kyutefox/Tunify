@@ -20,13 +20,15 @@ class SqliteCreateController {
     if (oldVersion < 2) {
       final r = await db
           .query('settings', where: 'key = ?', whereArgs: ['recent_searches']);
-      if (r.isEmpty)
+      if (r.isEmpty) {
         await db.insert('settings', {'key': 'recent_searches', 'value': '[]'});
+      }
       final d = await db.query('settings',
           where: 'key = ?', whereArgs: ['downloaded_song_ids']);
-      if (d.isEmpty)
+      if (d.isEmpty) {
         await db
             .insert('settings', {'key': 'downloaded_song_ids', 'value': '[]'});
+      }
     }
   }
 

@@ -23,8 +23,9 @@ class CacheStats {
   });
 
   String get formattedSize {
-    if (totalBytes < 1024 * 1024)
+    if (totalBytes < 1024 * 1024) {
       return '${(totalBytes / 1024).toStringAsFixed(1)} KB';
+    }
     return '${(totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB';
   }
 }
@@ -709,8 +710,9 @@ class StreamCacheService {
       int deletedSize = 0;
       int deletedCount = 0;
       for (final entry in fileEntries) {
-        if (totalSize - deletedSize <= (_maxCacheSizeBytes * 0.8).toInt())
+        if (totalSize - deletedSize <= (_maxCacheSizeBytes * 0.8).toInt()) {
           break;
+        }
 
         try {
           final fileSize = entry.value.size;

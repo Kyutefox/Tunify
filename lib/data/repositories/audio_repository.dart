@@ -223,7 +223,7 @@ class AudioRepository {
     final s = r as ResolvedAudioSourceStream;
     return isApplePlatform
         ? AudioSource.uri(Uri.parse(s.url))
-        : LockCachingAudioSource(Uri.parse(s.url), headers: s.headers ?? {});
+        : LockCachingAudioSource(Uri.parse(s.url), headers: s.headers ?? {}); // ignore: experimental_member_use
   }
 
   AudioSource toAudioSource(ResolvedAudioSource r) => _toJustAudioSource(r);

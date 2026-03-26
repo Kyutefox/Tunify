@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tunify/core/utils/platform_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -129,6 +130,7 @@ class _CachedStream {
   final DateTime expiresAt;
 
   _CachedStream(this.result) : expiresAt = DateTime.now().add(_kStreamUrlTtl);
+  _CachedStream.withExpiry(this.result, this.expiresAt);
 
   bool get isExpired => DateTime.now().isAfter(expiresAt);
 }
@@ -182,6 +184,7 @@ class MusicStreamManager {
   int _hits = 0;
   int _misses = 0;
   final DatabaseBridge? _db;
+  Box<dynamic>? _hiveBox;
 
   MusicStreamManager({
     String? visitorData,
@@ -293,9 +296,67 @@ class MusicStreamManager {
 
   String? get visitorData => _visitorData;
 
-  /// Clears expired stream URL cache entries from SQLite. Call once after construction.
+  /// Opens the Hive stream-URL box, restores non-expired entries into the
+  /// in-memory LRU cache, and clears expired SQLite entries. Call once after construction.
   Future<void> init() async {
-    await _db?.clearExpiredStreamUrlCache();
+    await Future.wait([
+      _restoreStreamUrlsFromHive(),
+      _db?.clearExpiredStreamUrlCache() ?? Future.value(),
+    ]);
+  }
+
+  Future<void> _restoreStreamUrlsFromHive() async {
+    try {
+      _hiveBox = await Hive.openBox<dynamic>('stream_urls');
+      final box = _hiveBox!;
+      final now = DateTime.now();
+      final toDelete = <dynamic>[];
+      for (final key in box.keys) {
+        final entry = box.get(key);
+        if (entry is! Map) continue;
+        final expiresAtMs = entry['expiresAt'] as int?;
+        if (expiresAtMs == null) {
+          toDelete.add(key);
+          continue;
+        }
+        final expiresAt = DateTime.fromMillisecondsSinceEpoch(expiresAtMs);
+        if (now.isAfter(expiresAt)) {
+          toDelete.add(key);
+          continue;
+        }
+        final url = entry['url'] as String?;
+        final bitrate = entry['bitrate'] as int? ?? 128;
+        if (url == null || url.isEmpty) {
+          toDelete.add(key);
+          continue;
+        }
+        final audioQuality = bitrate >= 160
+            ? AudioQuality.high
+            : bitrate >= 80
+                ? AudioQuality.medium
+                : AudioQuality.low;
+        final stream = AudioStream(
+          url: url,
+          bitrate: bitrate,
+          quality: audioQuality,
+          codec: 'opus',
+          headers: Map<String, String>.from(scrapper.streamHeaders),
+        );
+        final result = StreamResult(
+          trackId: key as String,
+          highQuality: audioQuality == AudioQuality.high ? stream : null,
+          mediumQuality: audioQuality == AudioQuality.medium ? stream : null,
+          lowQuality: audioQuality == AudioQuality.low ? stream : null,
+        );
+        if (_streamCache.length < _kMaxCacheEntries) {
+          _streamCache[key] = _CachedStream.withExpiry(result, expiresAt);
+        }
+      }
+      if (toDelete.isNotEmpty) await box.deleteAll(toDelete);
+    } catch (e) {
+      logWarning('StreamManager: _restoreStreamUrlsFromHive failed: $e',
+          tag: 'PlayFlow');
+    }
   }
 
   /// True once a live apiKey + clientVersion have been loaded from cache or
@@ -421,8 +482,14 @@ class MusicStreamManager {
         _streamCache.remove(_streamCache.keys.first);
       }
       _streamCache[videoId] = _CachedStream(result);
-      // Persist to L2 SQLite cache
+      // Persist to L2: Hive (fast, survives restarts) + SQLite (shared with other layers).
       final expiresAt = DateTime.now().toUtc().add(_kStreamUrlTtl);
+      _hiveBox?.put(videoId, {
+        'url': ytStream.url,
+        'bitrate': bitrate,
+        'quality': quality.label,
+        'expiresAt': expiresAt.millisecondsSinceEpoch,
+      }).ignore();
       final db = _db;
       if (db != null) {
         db
@@ -527,6 +594,7 @@ class MusicStreamManager {
   void clearCacheFor(String videoId) {
     _streamCache.remove(videoId);
     _db?.deleteStreamUrlCache(videoId).ignore();
+    _hiveBox?.delete(videoId).ignore();
   }
 
   Future<void> prefetch(List<String> videoIds) async {
@@ -746,6 +814,7 @@ class MusicStreamManager {
   void clearCache() {
     _streamCache.clear();
     _db?.clearAllStreamUrlCache().ignore();
+    _hiveBox?.clear().ignore();
   }
 
   Map<String, int> getStats() => {

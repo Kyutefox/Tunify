@@ -431,14 +431,18 @@ class BrowseFormatter {
 
     void walk(dynamic node) {
       if (node is Map<String, dynamic>) {
-        if (node.containsKey('musicCarouselShelfRenderer'))
+        if (node.containsKey('musicCarouselShelfRenderer')) {
           addShelf(node['musicCarouselShelfRenderer']);
-        if (node.containsKey('musicShelfRenderer'))
+        }
+        if (node.containsKey('musicShelfRenderer')) {
           addShelf(node['musicShelfRenderer']);
-        if (node.containsKey('musicImmersiveCarouselShelfRenderer'))
+        }
+        if (node.containsKey('musicImmersiveCarouselShelfRenderer')) {
           addShelf(node['musicImmersiveCarouselShelfRenderer']);
-        if (node.containsKey('musicTastebuilderShelfRenderer'))
+        }
+        if (node.containsKey('musicTastebuilderShelfRenderer')) {
           addShelf(node['musicTastebuilderShelfRenderer']);
+        }
 
         node.forEach((key, value) {
           if (value is Map || value is List) walk(value);

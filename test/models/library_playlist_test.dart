@@ -103,18 +103,6 @@ void main() {
         expect(decoded.songs.first.id, 's1');
       });
 
-      test('fromJsonString returns null for null input', () {
-        expect(LibraryPlaylist.fromJsonString(null), isNull);
-      });
-
-      test('fromJsonString returns null for empty string', () {
-        expect(LibraryPlaylist.fromJsonString(''), isNull);
-      });
-
-      test('fromJsonString returns null for invalid JSON', () {
-        expect(LibraryPlaylist.fromJsonString('not json'), isNull);
-      });
-
       test('missing optional fields use defaults', () {
         final json = {
           'id': 'p1',

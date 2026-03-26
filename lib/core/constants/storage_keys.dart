@@ -8,13 +8,15 @@ abstract final class StorageKeys {
   static const String prefsYtClientVersion = 'yt_client_version';
 
   // ——— SharedPreferences: player ———
-  static const String prefsLastPlayedSong = 'last_played_song';
   static const String prefsLastPlayedPositionMs = 'last_played_position_ms';
   static const String prefsLastPlayedDurationMs = 'last_played_duration_ms';
   static const String prefsLastQueueSource = 'last_queue_source';
   static const String prefsLastPlaylistId = 'last_playlist_id';
   static const String prefsVolumeNormalization = 'volume_normalization_enabled';
 
-  // ——— SharedPreferences: home feed cache (on-disk for app start) ———
+  // ——— SharedPreferences: migration keys (read-once then deleted) ———
+  /// Legacy home feed cache — read during Hive migration, then removed from SharedPreferences.
   static const String prefsHomeFeedCache = 'home_feed_cache';
+  /// Legacy last-played song JSON — read during Hive migration, then removed from SharedPreferences.
+  static const String prefsLastPlayedSong = 'last_played_song';
 }

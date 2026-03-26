@@ -242,6 +242,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
   /// via the YouTube player API, to avoid duplicate network calls.
   String? _lastRealDurationFetchedForSongId;
 
+  /// Tracks which song id has already triggered silent home refresh.
+  String? _silentRefreshTriggeredForSongId;
+
   String? _lastQueueSource;
   String? _lastPlaylistId;
 
@@ -685,6 +688,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
             state = state.copyWith(status: PlayerStatus.playing);
           }
           state = state.copyWith(position: position);
+
+          // ── Trigger silent home refresh after 15 seconds of playback ──
+          if (state.isPlaying &&
+              _silentRefreshTriggeredForSongId != state.currentSong?.id &&
+              position.inSeconds >= 15) {
+            _silentRefreshTriggeredForSongId = state.currentSong?.id;
+            ref.read(homeProvider.notifier).triggerSilentRefresh();
+          }
 
           // ── macOS: trigger completion when position reaches state.duration ──
           // AVPlayer continues playing silence after the real audio ends because
@@ -1316,6 +1327,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _hasLoadedSource = false;
     _macosLastPositionMs = null;
     _lastRealDurationFetchedForSongId = null;
+    _silentRefreshTriggeredForSongId = null;
     state = state.copyWith(
       status: PlayerStatus.loading,
       position: Duration.zero,
@@ -1782,6 +1794,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
         _hasLoadedSource = false;
         _macosLastPositionMs = null;
         _lastRealDurationFetchedForSongId = null;
+        _silentRefreshTriggeredForSongId = null;
         _transitionGeneration++;
         _isTransitioning = false;
         final nextSong = state.queue[nextIndex];
@@ -1873,6 +1886,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
         _hasLoadedSource = false;
         _macosLastPositionMs = null;
         _lastRealDurationFetchedForSongId = null;
+        _silentRefreshTriggeredForSongId = null;
         _transitionGeneration++;
         _isTransitioning = false;
         state = state.copyWith(
@@ -2100,6 +2114,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // New song — clear the macOS real-duration lock so it gets re-fetched.
     _macosLastPositionMs = null;
     _lastRealDurationFetchedForSongId = null;
+    _silentRefreshTriggeredForSongId = null;
 
     state = state.copyWith(
       currentIndex: nextIndex,

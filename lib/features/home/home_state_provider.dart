@@ -68,6 +68,16 @@ class HomeState {
   /// Incremented when feed content is replaced (used for smooth UI transition).
   final int feedVersion;
 
+  /// True when a new feed has been fetched in background and is waiting to be applied.
+  /// When true, UI should show skeleton and then apply the pending content.
+  final bool hasPendingUpdate;
+
+  /// The pending feed content to be applied when user visits homepage.
+  final HomeState? pendingFeed;
+
+  /// True only during initial app load. Used to show full LoadingScreen vs skeleton.
+  final bool isInitialLoading;
+
   const HomeState({
     this.isLoading = false,
     this.isLoaded = false,
@@ -82,6 +92,9 @@ class HomeState {
     this.featuredArtworkUrl,
     this.recentlyPlayedTimestamps = const [],
     this.feedVersion = 0,
+    this.hasPendingUpdate = false,
+    this.pendingFeed,
+    this.isInitialLoading = false,
   });
 
   /// NOTE: [error] is applied directly — not merged with null-coalescing.
@@ -101,6 +114,9 @@ class HomeState {
     String? featuredArtworkUrl,
     List<DateTime>? recentlyPlayedTimestamps,
     int? feedVersion,
+    bool? hasPendingUpdate,
+    HomeState? pendingFeed,
+    bool? isInitialLoading,
   }) {
     return HomeState(
       isLoading: isLoading ?? this.isLoading,
@@ -117,6 +133,9 @@ class HomeState {
       recentlyPlayedTimestamps:
           recentlyPlayedTimestamps ?? this.recentlyPlayedTimestamps,
       feedVersion: feedVersion ?? this.feedVersion,
+      hasPendingUpdate: hasPendingUpdate ?? this.hasPendingUpdate,
+      pendingFeed: pendingFeed,
+      isInitialLoading: isInitialLoading ?? this.isInitialLoading,
     );
   }
 }
@@ -301,7 +320,10 @@ class HomeNotifier extends Notifier<HomeState> {
   static const int _kMaxVisitorDataLength = 600;
 
   /// If cache exists (in-memory or persisted on app start), show it and optionally refetch in background; otherwise full fetch with skeleton.
+  /// Background refresh now stores pending content instead of updating UI.
   Future<void> loadContent() async {
+    // Don't reload if content is already loaded
+    if (state.isLoaded && _hasUsableCache) return;
     if (state.isLoading && !_hasUsableCache) return;
     final hasCache = _hasUsableCache;
     if (hasCache) {
@@ -313,30 +335,123 @@ class HomeNotifier extends Notifier<HomeState> {
         recentlyPlayed: state.recentlyPlayed,
         recentlyPlayedTimestamps: state.recentlyPlayedTimestamps,
       );
-      unawaited(_restoreVisitorData().then((_) async {
-        try {
-          await _loadFeedAndUpdateState(isBackgroundRefresh: true);
-        } catch (_) {}
-      }));
+      // Trigger silent background fetch - stores pending content instead of updating UI
+      unawaited(_silentBackgroundFetch());
       return;
     }
     // App start: try restore from persisted cache so we show content immediately instead of skeleton.
     final restored = await _restoreFromPersistedCache();
     if (restored) {
-      unawaited(_restoreVisitorData().then((_) async {
-        try {
-          await _loadFeedAndUpdateState(isBackgroundRefresh: true);
-        } catch (_) {}
-      }));
+      // Trigger silent background fetch - stores pending content instead of updating UI
+      unawaited(_silentBackgroundFetch());
       return;
     }
-    state = state.copyWith(isLoading: true, isLoaded: false, error: null);
+    // No cache: show skeleton and fetch foreground
+    state = state.copyWith(
+        isLoading: true, isLoaded: false, error: null, isInitialLoading: true);
     try {
       await _restoreVisitorData();
       await _loadFeedAndUpdateState(isBackgroundRefresh: false);
     } catch (e) {
       logError('loadContent failed: $e', tag: 'HomeNotifier');
-      state = state.copyWith(isLoading: false, isLoaded: false);
+      state = state.copyWith(
+          isLoading: false, isLoaded: false, isInitialLoading: false);
+    }
+  }
+
+  /// Silently fetches home feed in background and stores as pending update.
+  /// Does not update UI - pending content will be applied when user visits homepage.
+  Future<void> _silentBackgroundFetch() async {
+    try {
+      await _restoreVisitorData();
+
+      // Check if we have API config
+      if (!_streamManager.hasApiConfig) {
+        await _streamManager.initFromSwJsData();
+      }
+
+      final homeFeed = await _streamManager.getRelatedHomeFeed(
+        _defaultSeedVideoId,
+        maxTracks: 150,
+        maxPlaylists: 40,
+        maxArtists: 12,
+      );
+
+      // Also fetch the full moods list from the dedicated endpoint
+      final moodsFeed = await _streamManager.getMoodsAndGenresFeed();
+
+      // Merge moods from both feeds, avoiding duplicates by browseId
+      final mergedMoods = <String, RelatedMoodItem>{};
+      for (final mood in [...homeFeed.moodItems, ...moodsFeed.moodItems]) {
+        final key = '${mood.browseId}|${mood.params ?? ''}';
+        if (!mergedMoods.containsKey(key)) {
+          mergedMoods[key] = mood;
+        }
+      }
+      final combinedFeed = RelatedHomeFeed(
+        trackShelves: homeFeed.trackShelves,
+        playlistShelves: homeFeed.playlistShelves,
+        artistShelves: homeFeed.artistShelves,
+        shelves: homeFeed.shelves,
+        moodItems: mergedMoods.values.toList(),
+      );
+
+      // Apply as pending update (doesn't change UI)
+      _applyFeedToState(combinedFeed, isForeground: false);
+    } catch (e) {
+      logWarning('HomeFeed: _silentBackgroundFetch failed: $e',
+          tag: 'HomeFeed');
+    }
+  }
+
+  /// Called when user visits the homepage. Applies pending update with skeleton animation if available.
+  void applyPendingUpdateIfOnHomepage() {
+    if (state.hasPendingUpdate && state.pendingFeed != null) {
+      state = state.copyWith(
+        isLoading: true,
+        isLoaded: false,
+      );
+      // Apply the pending content after a brief delay to show skeleton
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (state.pendingFeed != null) {
+          state = state.pendingFeed!.copyWith(
+            hasPendingUpdate: false,
+            pendingFeed: null,
+            recentlyPlayed: state.recentlyPlayed,
+            recentlyPlayedTimestamps: state.recentlyPlayedTimestamps,
+          );
+          _cache = state;
+          unawaited(_persistCache());
+        }
+      });
+    }
+  }
+
+  /// Public method to trigger silent background fetch.
+  /// Can be called after app restart or song played > 15 seconds.
+  void triggerSilentRefresh() {
+    if (!_backgroundFetchInProgress && !state.hasPendingUpdate) {
+      unawaited(_silentBackgroundFetch());
+    }
+  }
+
+  /// Called when user visits the homepage. Checks for pending updates and applies them.
+  /// If there's a pending update, applies the new content directly.
+  void visitHomepage() {
+    if (state.hasPendingUpdate && state.pendingFeed != null) {
+      final pendingFeed = state.pendingFeed;
+      state = state.copyWith(
+        hasPendingUpdate: false,
+        pendingFeed: null,
+      );
+      if (pendingFeed != null) {
+        state = pendingFeed.copyWith(
+          recentlyPlayed: state.recentlyPlayed,
+          recentlyPlayedTimestamps: state.recentlyPlayedTimestamps,
+        );
+        _cache = state;
+        unawaited(_persistCache());
+      }
     }
   }
 
@@ -363,10 +478,26 @@ class HomeNotifier extends Notifier<HomeState> {
         'HomeFeed: loadContent visitorData length=$vdLen needsFetch=$needsFetch',
         tag: 'HomeFeed',
       );
-      if (!_streamManager.hasApiConfig && !_backgroundFetchInProgress) {
-        await _fetchSwJsDataAndRefresh();
+
+      // Initialize API config if needed
+      if (!_streamManager.hasApiConfig) {
+        await _streamManager.initFromSwJsData();
+        final newVd = _streamManager.visitorData;
+        if (newVd != null && newVd.isNotEmpty) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(kYtVisitorDataKey, newVd);
+        }
+      }
+
+      // If we still don't have API config after trying, clear loading state
+      if (!_streamManager.hasApiConfig) {
+        if (!isBackgroundRefresh) {
+          state = state.copyWith(isLoading: false, isLoaded: false);
+        }
         return;
       }
+
+      // Trigger background refresh for future use if needed
       if (needsFetch && !_backgroundFetchInProgress) {
         unawaited(_fetchSwJsDataAndRefresh());
       }
@@ -397,7 +528,7 @@ class HomeNotifier extends Notifier<HomeState> {
         moodItems: mergedMoods.values.toList(),
       );
 
-      _applyFeedToState(combinedFeed);
+      _applyFeedToState(combinedFeed, isForeground: !isBackgroundRefresh);
     } catch (e) {
       rethrow;
     }
@@ -453,12 +584,13 @@ class HomeNotifier extends Notifier<HomeState> {
         moodItems: mergedMoods.values.toList(),
       );
 
-      _applyFeedToState(combinedFeed);
+      _applyFeedToState(combinedFeed, isForeground: false);
     } catch (e) {
       logWarning('HomeFeed: _fetchSwJsDataAndRefresh failed: $e',
           tag: 'HomeFeed');
-      if (state.isLoading)
+      if (state.isLoading) {
         state = state.copyWith(isLoading: false, isLoaded: false);
+      }
     } finally {
       _backgroundFetchInProgress = false;
     }
@@ -467,12 +599,17 @@ class HomeNotifier extends Notifier<HomeState> {
   /// Builds state from [homeFeed], sets [state] and [_cache], and kicks off
   /// background persist + Supabase sync. Called from both
   /// [_loadFeedAndUpdateState] and [_fetchSwJsDataAndRefresh] to avoid duplication.
-  void _applyFeedToState(RelatedHomeFeed homeFeed) {
+  ///
+  /// [isForeground] indicates if this is a user-initiated fetch (pull-to-refresh)
+  /// or a silent background fetch. Background fetches store pending content instead
+  /// of applying immediately.
+  void _applyFeedToState(RelatedHomeFeed homeFeed, {bool isForeground = true}) {
     final sections = _buildSections(homeFeed);
     final quickPicks = _quickPicksFromFeed(sections, homeFeed);
-    final nextState = state.copyWith(
+    final newFeedState = HomeState(
       isLoaded: true,
       isLoading: false,
+      isInitialLoading: false,
       quickPicks: quickPicks,
       dynamicSections: sections,
       playlists: uniqueById(_mapPlaylists(homeFeed.playlists), (p) => p.id)
@@ -489,10 +626,25 @@ class HomeNotifier extends Notifier<HomeState> {
               : null),
       feedVersion: state.feedVersion + 1,
     );
-    state = nextState;
-    _cache = nextState;
-    unawaited(_persistCache());
-    unawaited(_syncVisitorDataToSupabaseIfNeeded());
+
+    if (isForeground) {
+      // User-initiated fetch: apply immediately, preserving recentlyPlayed
+      state = newFeedState.copyWith(
+        recentlyPlayed: state.recentlyPlayed,
+        recentlyPlayedTimestamps: state.recentlyPlayedTimestamps,
+      );
+      _cache = state;
+      unawaited(_persistCache());
+      unawaited(_syncVisitorDataToSupabaseIfNeeded());
+    } else {
+      // Silent background fetch: store as pending, don't update UI
+      state = state.copyWith(
+        hasPendingUpdate: true,
+        pendingFeed: newFeedState,
+      );
+      _cache = newFeedState;
+      unawaited(_persistCache());
+    }
   }
 
   Future<void> _restoreVisitorData() async {
@@ -807,7 +959,15 @@ class HomeNotifier extends Notifier<HomeState> {
   }
 
   Future<void> refresh() async {
-    await loadContent();
+    // User-initiated refresh: show skeleton and fetch foreground
+    state = state.copyWith(isLoading: true, isLoaded: false, error: null);
+    try {
+      await _restoreVisitorData();
+      await _loadFeedAndUpdateState(isBackgroundRefresh: false);
+    } catch (e) {
+      logError('refresh failed: $e', tag: 'HomeNotifier');
+      state = state.copyWith(isLoading: false, isLoaded: false);
+    }
   }
 
   void addToRecentlyPlayed(Song song) {
@@ -1018,4 +1178,12 @@ final moodsProvider = Provider<List<Mood>>((ref) {
 
 final recentlyPlayedTimestampsProvider = Provider<List<DateTime>>((ref) {
   return ref.watch(homeProvider.select((s) => s.recentlyPlayedTimestamps));
+});
+
+final homeHasPendingUpdateProvider = Provider<bool>((ref) {
+  return ref.watch(homeProvider.select((s) => s.hasPendingUpdate));
+});
+
+final homeIsInitialLoadingProvider = Provider<bool>((ref) {
+  return ref.watch(homeProvider.select((s) => s.isInitialLoading));
 });

@@ -40,12 +40,12 @@ class _MobileShellState extends ConsumerState<MobileShell> {
   @override
   Widget build(BuildContext context) {
     final isGuest = ref.watch(guestModeProvider);
-    final homeIsLoading = ref.watch(homeIsLoadingProvider);
     final homeIsLoaded = ref.watch(homeIsLoadedProvider);
+    final homeIsInitialLoading = ref.watch(homeIsInitialLoadingProvider);
     final hasSong = ref.watch(currentSongProvider) != null;
 
     final showGuestHomeFullScreenLoading =
-        isGuest && _selectedIndex == 0 && homeIsLoading && !homeIsLoaded;
+        isGuest && _selectedIndex == 0 && homeIsInitialLoading && !homeIsLoaded;
 
     if (showGuestHomeFullScreenLoading) {
       return ShellContext(
@@ -125,7 +125,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
                   final wasOnHome = _selectedIndex == 0;
                   setState(() => _selectedIndex = i);
                   if (i == 0 && !wasOnHome) {
-                    ref.read(homeProvider.notifier).refresh();
+                    ref.read(homeProvider.notifier).visitHomepage();
                   }
                 },
               ),
@@ -166,13 +166,16 @@ class _OfflineBanner extends ConsumerWidget {
               color: Colors.orangeAccent.withValues(alpha: 0.12),
               child: Row(
                 children: [
-                  AppIcon(icon: AppIcons.wifiOff, size: 18, color: Colors.orangeAccent),
+                  AppIcon(
+                      icon: AppIcons.wifiOff,
+                      size: 18,
+                      color: Colors.orangeAccent),
                   SizedBox(width: AppSpacing.sm),
                   Expanded(
                     child: Text(
                       "You're offline — some features may be limited",
-                      style:
-                          TextStyle(color: Colors.orangeAccent, fontSize: AppFontSize.md),
+                      style: TextStyle(
+                          color: Colors.orangeAccent, fontSize: AppFontSize.md),
                     ),
                   ),
                 ],

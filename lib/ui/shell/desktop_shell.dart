@@ -159,7 +159,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
     _tabIndexNotifier.value = index;
 
     if (index == 0 && !wasOnHome) {
-      ref.read(homeProvider.notifier).refresh();
+      ref.read(homeProvider.notifier).visitHomepage();
     }
   }
 

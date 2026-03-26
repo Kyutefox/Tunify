@@ -105,8 +105,6 @@ class StreamCacheService {
   static const String _metadataDir = 'cache_metadata';
   static const int _maxCacheSizeBytes = 500 * 1024 * 1024;
   static const int _cacheExpirationDays = 7;
-  static const int _initialChunkSize = 256 * 1024;
-  static const int _chunkSize = 512 * 1024;
 
   String? _cacheDirPath;
   String? _metadataDirPath;

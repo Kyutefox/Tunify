@@ -193,7 +193,6 @@ class LibraryPlaylistsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
     final contentEntries = entries;
     final showCreateFirstEmptyState =
         showCreateFirstPlaylistEmptyState && contentEntries.isEmpty;
@@ -325,7 +324,6 @@ class _LibrarySectionGrid extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.symmetric(horizontal: 6),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.85,

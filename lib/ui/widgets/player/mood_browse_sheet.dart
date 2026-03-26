@@ -106,7 +106,6 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                 query: e.value.title,
                 browseId: e.value.browseId,
                 browseParams: e.value.params,
-                emoji: '',
                 subtitle: e.value.sectionTitle,
                 gradient: AppColors
                     .moodGradients[e.key % AppColors.moodGradients.length],

@@ -11,20 +11,6 @@ enum AudioQuality {
 }
 
 extension AudioQualityExtension on AudioQuality {
-  /// Minimum acceptable bitrate in kbps for this quality tier.
-  int get minBitrate {
-    switch (this) {
-      case AudioQuality.low:
-        return 0;
-      case AudioQuality.medium:
-        return 80;
-      case AudioQuality.high:
-        return 160;
-      case AudioQuality.auto:
-        return 0;
-    }
-  }
-
   /// Human-readable label shown in the quality picker UI.
   String get label {
     switch (this) {
@@ -39,19 +25,6 @@ extension AudioQualityExtension on AudioQuality {
     }
   }
 
-  /// Estimated bandwidth in Mbps required for smooth playback at this quality.
-  double get requiredBandwidth {
-    switch (this) {
-      case AudioQuality.low:
-        return 0.1;
-      case AudioQuality.medium:
-        return 0.2;
-      case AudioQuality.high:
-        return 0.4;
-      case AudioQuality.auto:
-        return 0.1;
-    }
-  }
 }
 
 /// A resolved audio stream URL with its codec, bitrate, and request headers.
@@ -105,17 +78,10 @@ class StreamResult {
     }
   }
 
-  /// Preferred stream for fast cold-start: medium quality reduces buffering risk.
-  AudioStream? get quickStart => mediumQuality ?? lowQuality ?? highQuality;
-
   /// Highest quality available regardless of user preference.
   AudioStream? get best => highQuality ?? mediumQuality ?? lowQuality;
 
   /// True when the stream URLs are older than 3 hours and likely expired on YouTube's CDN.
   bool get isExpired =>
       DateTime.now().difference(extractedAt) > const Duration(hours: 3);
-
-  /// True when at least one quality variant is available.
-  bool get hasStreams =>
-      lowQuality != null || mediumQuality != null || highQuality != null;
 }

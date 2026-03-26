@@ -741,7 +741,6 @@ class HomeNotifier extends Notifier<HomeState> {
             'query': e.value.query,
             'browseId': e.value.browseId,
             'browseParams': e.value.browseParams,
-            'emoji': e.value.emoji,
             'subtitle': e.value.subtitle,
             'gradientIndex': e.key % _cacheMoodGradients.length,
           };
@@ -845,7 +844,6 @@ class HomeNotifier extends Notifier<HomeState> {
                 query: m['query'] as String? ?? '',
                 browseId: m['browseId'] as String?,
                 browseParams: m['browseParams'] as String?,
-                emoji: m['emoji'] as String? ?? '',
                 subtitle: m['subtitle'] as String?,
                 gradient: _cacheMoodGradients[gi % _cacheMoodGradients.length],
               );
@@ -1077,33 +1075,6 @@ class HomeNotifier extends Notifier<HomeState> {
         .toList(growable: false);
   }
 
-  static const List<String> _moodEmojis = [
-    '🎵',
-    '🎸',
-    '🎹',
-    '🎺',
-    '🥁',
-    '🎻',
-    '🎤',
-    '🎧',
-    '🎶',
-    '🎷',
-    '🪗',
-    '🪘',
-    '🎼',
-    '🎙️',
-    '🎚️',
-    '🎛️',
-    '🌟',
-    '🔥',
-    '💫',
-    '🌈',
-    '⚡',
-    '🌙',
-    '☀️',
-    '🌊',
-  ];
-
   List<Mood> _mapMoods(List<RelatedMoodItem> moodItems) {
     return moodItems.asMap().entries.map((entry) {
       final index = entry.key;
@@ -1114,7 +1085,6 @@ class HomeNotifier extends Notifier<HomeState> {
         query: mood.title,
         browseId: mood.browseId,
         browseParams: mood.params,
-        emoji: _moodEmojis[index % _moodEmojis.length],
         subtitle: mood.sectionTitle,
         gradient: _cacheMoodGradients[index % _cacheMoodGradients.length],
       );

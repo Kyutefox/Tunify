@@ -277,7 +277,14 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     }
 
     // Local playlist (user-created or imported) — never show loading screen.
-    // ref is not available in initState so we defer data loading to postFrameCallback,
+    // Local playlist — pre-load cached palette synchronously so first frame has correct gradient.
+    final local = _readLibraryState()
+        ?.playlists
+        .where((p) => p.id == widget.playlistId)
+        .firstOrNull;
+    if (local?.cachedPaletteColor != null) {
+      _paletteColor = Color(local!.cachedPaletteColor!);
+    }
   }
 
   /// Safe read of library state — only callable after ref is available (post-initState).
@@ -343,10 +350,12 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           }
           return;
         }
-        // User-created playlist — just extract palette after transition
+        // User-created playlist — extract palette after transition and persist it
         if (_paletteColor == null) {
           _scheduleAfterTransition(() => _extractPalette(
-              local.customImageUrl ?? local.songs.firstOrNull?.thumbnailUrl));
+              local.customImageUrl ?? local.songs.firstOrNull?.thumbnailUrl,
+              persistId: local.id,
+              persistKind: _PersistKind.playlist));
         }
       }
       return;
@@ -1116,6 +1125,32 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
     final isImported = _isRemote || playlist.isImported;
     final songs = playlist.sortedSongs;
+
+    // For user-created playlists: re-extract palette when the source URL changes
+    // (song added/removed/replaced) or when we have songs but no palette yet.
+    if (!_isRemote && !isImported) {
+      final paletteSource =
+          playlist.customImageUrl ?? songs.firstOrNull?.thumbnailUrl;
+      // sourceChanged: we've extracted before but the cover source is different now
+      final sourceChanged =
+          _lastPaletteUrl != null && paletteSource != _lastPaletteUrl;
+      // needsExtraction: no palette yet and there's a source to extract from
+      final needsExtraction = _paletteColor == null && paletteSource != null;
+      if (sourceChanged || needsExtraction) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() {
+            _paletteColor = null;
+            _lastPaletteUrl = null; // clear dedup guard so extraction always runs
+          });
+          if (paletteSource != null) {
+            _extractPalette(paletteSource,
+                persistId: widget.playlistId,
+                persistKind: _PersistKind.playlist);
+          }
+        });
+      }
+    }
     final hasSong = ref.watch(currentSongProvider) != null;
     final filteredSongs =
         filterByExplicitSetting(songs, ref.watch(showExplicitContentProvider));

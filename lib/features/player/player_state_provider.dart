@@ -170,13 +170,18 @@ class PlayerState {
   }
 
   @override
+  // PERF: Replaced Object.hashAll(queue) (O(n) traversal per equality check)
+  // with a fast discriminator: queue length + boundary element IDs. This
+  // reduces hashCode cost from O(50) to O(1) for the common case where the
+  // queue size didn't change. Full equality is still checked correctly via ==.
   int get hashCode => Object.hash(
         status,
         currentSong,
-        Object.hashAll(queue),
+        queue.length,
+        queue.isEmpty ? null : queue.first.id,
+        queue.isEmpty ? null : queue.last.id,
         currentIndex,
         duration,
-        error,
         isShuffleEnabled,
         repeatMode,
         volume,
@@ -185,7 +190,7 @@ class PlayerState {
         isNormalizationEnabled,
         isGaplessEnabled,
         crossfadeDurationSeconds,
-        Object.hashAll(smartShuffleSongIds),
+        smartShuffleSongIds.length,
         activeShuffleMode,
       );
 }
@@ -509,18 +514,13 @@ class PlayerNotifier extends Notifier<PlayerState> {
   void _maybeUpdateLibrarySongDuration(Song song, Duration realDuration) {
     if (song.duration.inMilliseconds > 0) return; // already has a real duration
     if (realDuration.inMilliseconds <= 0) return;
-    final library = ref.read(libraryProvider);
-    // Update duration in all playlists (including 'liked')
-    for (final playlist in library.playlists) {
-      final songIdx = playlist.songs.indexWhere((s) => s.id == song.id);
-      if (songIdx != -1) {
-        final updatedSongs = List<Song>.from(playlist.songs);
-        updatedSongs[songIdx] = song.copyWith(duration: realDuration);
-        ref
-            .read(libraryProvider.notifier)
-            .setPlaylistSongs(playlist.id, updatedSongs);
-      }
-    }
+    // PERF: Replaced N separate setPlaylistSongs() calls (one per matching
+    // playlist) with a single patchSongDuration() that emits ONE state update.
+    // Previously each call triggered a full libraryProvider rebuild cascade,
+    // causing all library-subscribed widgets to rebuild N times.
+    ref
+        .read(libraryProvider.notifier)
+        .patchSongDuration(song.id, realDuration);
   }
 
   void _maybeFetchAndApplyNormalizationGain(Song song) {

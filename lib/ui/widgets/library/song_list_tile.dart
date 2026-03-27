@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
@@ -42,18 +43,34 @@ class SongListTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = AppTokens.of(context);
-    final status = NowPlayingStatus.of(ref, song.id);
     final showExplicitContent = ref.watch(showExplicitContentProvider);
     final showEBadge = showExplicitContent && song.isExplicit;
 
+    // PERF: Per-song selectors instead of NowPlayingStatus.of(ref, song.id).
+    // Each tile only rebuilds when its specific song's play state changes —
+    // not on every player state emission. With 100 list items, a song change
+    // previously rebuilt all 100 tiles; now only 2 rebuild (old → new current).
+    final isNowPlaying = ref.watch(
+      playerProvider.select((s) => s.currentSong?.id == song.id),
+    );
+    final isActivePlaying = ref.watch(
+      playerProvider.select((s) => s.isPlaying && s.currentSong?.id == song.id),
+    );
+
     return RepaintBoundary(
-      child: _buildTile(context, t, status, showEBadge),
+      child: _buildTile(context, t, isNowPlaying, isActivePlaying, showEBadge),
     );
   }
 
-  Widget _buildTile(BuildContext context, AppTokens t, NowPlayingStatus status, bool showEBadge) {
+  Widget _buildTile(
+    BuildContext context,
+    AppTokens t,
+    bool isNowPlaying,
+    bool isActivePlaying,
+    bool showEBadge,
+  ) {
     Widget tile = Container(
-      color: highlightBackground && status.isNowPlaying
+      color: highlightBackground && isNowPlaying
           ? AppColors.primary.withValues(alpha: 0.08)
           : null,
       padding: contentPadding,
@@ -62,9 +79,9 @@ class SongListTile extends ConsumerWidget {
           if (index != null) ...[
             SizedBox(
               width: 24,
-              child: status.isNowPlaying && showIndexIndicator
+              child: isNowPlaying && showIndexIndicator
                   ? NowPlayingIndicator(
-                      size: 16, barCount: 3, animate: status.isPlaying)
+                      size: 16, barCount: 3, animate: isActivePlaying)
                   : Text(
                       '$index',
                       style: TextStyle(
@@ -94,14 +111,13 @@ class SongListTile extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (status.isNowPlaying &&
-                        (index == null || !showIndexIndicator))
-                      InlineNowPlayingDot(animate: status.isPlaying),
+                    if (isNowPlaying && (index == null || !showIndexIndicator))
+                      InlineNowPlayingDot(animate: isActivePlaying),
                     Expanded(
                       child: Text(
                         song.title,
                         style: TextStyle(
-                          color: status.isNowPlaying
+                          color: isNowPlaying
                               ? AppColors.primary
                               : AppColors.textPrimary,
                           fontSize: t.font.base,
@@ -160,5 +176,4 @@ class SongListTile extends ConsumerWidget {
       child: tile,
     );
   }
-
 }

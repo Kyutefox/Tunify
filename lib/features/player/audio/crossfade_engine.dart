@@ -306,26 +306,29 @@ class CrossfadeEngine {
     }
 
     final totalMs = crossfadeSecs * 1000;
-    final startTime = DateTime.now();
+    // PERF: Stopwatch.elapsedMilliseconds is cheaper than DateTime.now()
+    // (avoids a syscall + object allocation on every tick).
+    final sw = Stopwatch()..start();
 
     _fadeTimer?.cancel();
-    _fadeTimer =
-        Timer.periodic(const Duration(milliseconds: 16), (timer) {
+    // PERF: 50 ms tick (20fps) vs original 16 ms (60fps).
+    // Volume fading at 20fps is perceptually identical to 60fps for audio,
+    // and cuts platform-channel setVolume() calls from 60/s to 20/s during
+    // the crossfade window, reducing method-channel pressure on the UI thread.
+    _fadeTimer = Timer.periodic(const Duration(milliseconds: 50), (timer) {
       try {
         if (_disposed) {
           timer.cancel();
           return;
         }
-        final elapsed = DateTime.now().difference(startTime).inMilliseconds;
-        final t = (elapsed / totalMs).clamp(0.0, 1.0);
+        final t = (sw.elapsedMilliseconds / totalMs).clamp(0.0, 1.0);
 
-        // Apply volume changes synchronously to avoid async overhead
-        // This is safe because applyCrossfadeVolume is fast (just setVolume)
         _primary.applyCrossfadeVolume(1.0 - t);
         _secondary?.applyCrossfadeVolume(t);
 
         if (t >= 1.0) {
           timer.cancel();
+          sw.stop();
           if (!_disposed) {
             // Schedule the swap on the event loop — not inside the timer callback —
             // so async work in _completeSwap doesn't block the microtask queue.
@@ -334,6 +337,7 @@ class CrossfadeEngine {
         }
       } catch (e) {
         timer.cancel();
+        sw.stop();
         logWarning(
           'CrossfadeEngine: ramp timer error — aborting crossfade. $e',
           tag: 'Crossfade',

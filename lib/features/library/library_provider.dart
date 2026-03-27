@@ -47,8 +47,11 @@ extension LibraryViewModeX on LibraryViewMode {
 /// Immutable snapshot of the user's library.
 ///
 /// Liked songs live in [playlists] as the reserved playlist with id `'liked'`.
+// PERF: LibraryState no longer has a const constructor because late final fields
+// (likedSongIds) are incompatible with const. The heap cost of LibraryState()
+// is negligible compared to the Set allocation savings from late final.
 class LibraryState {
-  const LibraryState({
+  LibraryState({
     this.playlists = const [],
     this.folders = const [],
     this.sortOrder = LibrarySortOrder.recent,
@@ -83,16 +86,29 @@ class LibraryState {
   List<Song> get likedSongs => likedPlaylist.songs;
 
   /// O(1) membership test used by like-buttons throughout the app.
-  Set<String> get likedSongIds => likedSongs.map((s) => s.id).toSet();
+  ///
+  /// PERF: `late final` computes and caches the Set once per [LibraryState]
+  /// instance. Since the state is immutable, the Set is valid for the lifetime
+  /// of this snapshot. Previously, every call (e.g. each song-list tile's
+  /// select callback) created a new Set — O(n_liked) allocation per access.
+  late final Set<String> likedSongIds =
+      likedPlaylist.songs.map((s) => s.id).toSet();
 
   // ── Sorted views ────────────────────────────────────────────────────────────
 
   List<LibraryPlaylist> get sortedPlaylists {
-    var list = playlists.where((p) => p.id != 'liked').toList();
-    if (searchQuery.trim().isNotEmpty) {
-      final q = searchQuery.trim().toLowerCase();
-      list = list.where((p) => p.name.toLowerCase().contains(q)).toList();
-    }
+    // PERF: Single-pass filter (replaces two chained .where().toList() calls).
+    // toLowerCase() called once before the loop instead of per element.
+    final query = searchQuery.trim();
+    final hasQuery = query.isNotEmpty;
+    final lowerQuery = hasQuery ? query.toLowerCase() : '';
+
+    final list = playlists.where((p) {
+      if (p.id == 'liked') return false;
+      if (hasQuery && !p.name.toLowerCase().contains(lowerQuery)) return false;
+      return true;
+    }).toList();
+
     switch (sortOrder) {
       case LibrarySortOrder.recent:
         list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
@@ -101,7 +117,15 @@ class LibraryState {
       case LibrarySortOrder.alphabetical:
         list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     }
-    return [...list.where((p) => p.isPinned), ...list.where((p) => !p.isPinned)];
+
+    // PERF: Single-pass partition (replaces two .where() traversals for
+    // pinned/unpinned split that each iterated the sorted list again).
+    final pinned = <LibraryPlaylist>[];
+    final unpinned = <LibraryPlaylist>[];
+    for (final p in list) {
+      if (p.isPinned) pinned.add(p); else unpinned.add(p);
+    }
+    return [...pinned, ...unpinned];
   }
 
   List<LibraryFolder> get sortedFolders {
@@ -148,7 +172,7 @@ class LibraryNotifier extends Notifier<LibraryState> {
   @override
   LibraryState build() {
     load();
-    return const LibraryState();
+    return LibraryState();
   }
 
   Future<void> onAuthChanged(User? user) => load();
@@ -292,6 +316,27 @@ class LibraryNotifier extends Notifier<LibraryState> {
     state = state.copyWith(playlists: state.playlists.map((p) => p.id != playlistId ? p :
         p.copyWith(songs: songs, updatedAt: DateTime.now())).toList());
     await _replaceSongs(playlistId, songs);
+  }
+
+  /// Updates [songId]'s duration across ALL playlists in a single state emit.
+  ///
+  /// PERF: Called by [PlayerNotifier._maybeUpdateLibrarySongDuration] instead
+  /// of looping setPlaylistSongs() — reduces N libraryProvider state emissions
+  /// (one per matching playlist) to exactly one, preventing widget rebuild
+  /// cascades when a song appears in multiple playlists.
+  void patchSongDuration(String songId, Duration realDuration) {
+    bool anyChanged = false;
+    final updatedPlaylists = state.playlists.map((playlist) {
+      final idx = playlist.songs.indexWhere((s) => s.id == songId);
+      if (idx == -1) return playlist;
+      anyChanged = true;
+      final updatedSongs = List<Song>.from(playlist.songs);
+      updatedSongs[idx] = updatedSongs[idx].copyWith(duration: realDuration);
+      return playlist.copyWith(songs: updatedSongs);
+    }).toList();
+    if (anyChanged) {
+      state = state.copyWith(playlists: updatedPlaylists);
+    }
   }
 
   Future<void> setPlaylistSortOrder(String playlistId, PlaylistTrackSortOrder order) async {

@@ -231,11 +231,13 @@ class NowPlayingStatus {
   final bool isPlaying;
 
   static NowPlayingStatus of(WidgetRef ref, String songId) {
-    final isNowPlaying = ref.watch(
-      playerProvider.select((s) => s.currentSong?.id == songId),
-    );
-    final isPlaying = ref.watch(
-      playerProvider.select((s) => s.isPlaying),
+    // PERF: single select — scopes isPlaying to this songId, one equality check
+    // instead of two broad subscriptions (was: all tiles rebuilt on play/pause).
+    final (isNowPlaying, isPlaying) = ref.watch(
+      playerProvider.select((s) {
+        final isCurrent = s.currentSong?.id == songId;
+        return (isCurrent, isCurrent && s.isPlaying);
+      }),
     );
     return NowPlayingStatus(isNowPlaying: isNowPlaying, isPlaying: isPlaying);
   }
@@ -263,29 +265,27 @@ class DpiAwareThumbnail extends StatelessWidget {
     final dpr = MediaQuery.devicePixelRatioOf(context);
     final cacheSize = (size * dpr).round();
     
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(borderRadius: BorderRadius.circular(radius)),
-      clipBehavior: Clip.hardEdge,
-      child: url.isNotEmpty
-          ? CachedNetworkImage(
-              imageUrl: url,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              memCacheWidth: cacheSize,
-              memCacheHeight: cacheSize,
-              fadeInDuration: Duration.zero,
-              fadeOutDuration: Duration.zero,
-              errorWidget: (_, __, ___) => _placeholderIcon(size),
-            )
-          : _placeholderIcon(size),
+    // PERF: ClipRRect (1 render object) replaces Container+BoxDecoration+clipBehavior (3+).
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(radius),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: url.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: url,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                memCacheWidth: cacheSize,
+                memCacheHeight: cacheSize,
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                errorWidget: (_, __, ___) => PlaceholderArt(size: size),
+              )
+            : PlaceholderArt(size: size),
+      ),
     );
-  }
-
-  Widget _placeholderIcon(double size) {
-    return PlaceholderArt(size: size);
   }
 }
 

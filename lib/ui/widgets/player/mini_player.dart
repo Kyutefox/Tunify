@@ -69,12 +69,12 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
 
     final isPlaying = ref.watch(playerProvider.select((s) => s.isPlaying));
     final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
-    final position = ref.watch(playbackPositionProvider);
-    final duration = ref.watch(playerProvider.select((s) => s.duration));
-    final progress = duration != null && duration.inMilliseconds > 0
-        ? position.inMilliseconds / duration.inMilliseconds
-        : 0.0;
     final dominantColor = ref.watch(dominantColorProvider);
+
+    // PERF: playbackPositionProvider is intentionally NOT watched here.
+    // _MiniPlayerSeekBar is wrapped in RepaintBoundary and subscribes to
+    // position itself — position ticks no longer rebuild MiniPlayer's
+    // AnimatedContainer (boxShadow + Color.lerp) or the Hero widget.
 
     return GestureDetector(
       onTap: _openFullPlayer,
@@ -211,15 +211,15 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                   ),
                 ),
               ),
-              Positioned(
+              // PERF: const — allocated once globally as a compile-time constant.
+              // The seek bar reads its own providers inside the RepaintBoundary,
+              // so only this layer repaints on position ticks.
+              const Positioned(
                 left: AppSpacing.md,
                 right: AppSpacing.md,
                 bottom: 0,
                 child: RepaintBoundary(
-                  child: _MiniPlayerSeekBar(
-                    progress: progress,
-                    dominantColor: dominantColor,
-                  ),
+                  child: _MiniPlayerSeekBar(),
                 ),
               ),
             ],
@@ -236,7 +236,7 @@ class _AlbumThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cachePx = (44 * MediaQuery.of(context).devicePixelRatio).round();
+    final cachePx = (44 * MediaQuery.devicePixelRatioOf(context)).round();
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.md),
       child: url.isEmpty
@@ -275,30 +275,36 @@ class _AlbumThumb extends StatelessWidget {
   }
 }
 
-/// Tappable seek bar at the bottom of the mini player.
-/// Tapping a position seeks to that point; the bar also shows playback progress.
+/// Self-contained seek bar that subscribes to position, duration, and color
+/// internally. Wrapped in a [RepaintBoundary] by its parent so position ticks
+/// only repaint this small layer — never the [AnimatedContainer] above.
 class _MiniPlayerSeekBar extends ConsumerWidget {
-  const _MiniPlayerSeekBar({
-    required this.progress,
-    required this.dominantColor,
-  });
-
-  final double progress;
-  final Color dominantColor;
+  // PERF: const constructor — this widget node is a compile-time constant.
+  const _MiniPlayerSeekBar();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // These three watches are isolated inside the RepaintBoundary.
+    // Only this widget rebuilds on position tick — NOT MiniPlayer.
+    final position = ref.watch(playbackPositionProvider);
+    final duration = ref.watch(playerProvider.select((s) => s.duration));
+    final dominantColor = ref.watch(dominantColorProvider);
+
+    final progress = (duration != null && duration.inMilliseconds > 0)
+        ? (position.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0)
+        : 0.0;
+
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTapUp: (d) {
         final box = context.findRenderObject() as RenderBox?;
         if (box == null) return;
         final fraction = (d.localPosition.dx / box.size.width).clamp(0.0, 1.0);
-        final duration = ref.read(playerProvider).duration;
-        if (duration != null && duration.inMilliseconds > 0) {
+        final dur = ref.read(playerProvider).duration;
+        if (dur != null && dur.inMilliseconds > 0) {
           ref.read(playerProvider.notifier).seekTo(
                 Duration(
-                    milliseconds: (fraction * duration.inMilliseconds).round()),
+                    milliseconds: (fraction * dur.inMilliseconds).round()),
               );
         }
       },
@@ -307,7 +313,7 @@ class _MiniPlayerSeekBar extends ConsumerWidget {
           bottom: Radius.circular(AppRadius.xl),
         ),
         child: LinearProgressIndicator(
-          value: progress.clamp(0.0, 1.0),
+          value: progress,
           minHeight: 3,
           backgroundColor: Colors.white.withValues(alpha: 0.06),
           valueColor: AlwaysStoppedAnimation<Color>(dominantColor),

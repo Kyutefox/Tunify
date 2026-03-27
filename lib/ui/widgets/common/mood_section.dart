@@ -1,3 +1,5 @@
+import 'dart:math' show min;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,55 +83,88 @@ class _MoodGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final (:columns, :hPad, :aspectRatio) = _moodGridLayout(context);
 
+    // PERF: Replaced GridView.builder(shrinkWrap: true) with a Column/Row
+    // layout. shrinkWrap forces layout of all items to measure intrinsic height,
+    // defeating GridView's lazy-loading purpose entirely. Since mood count is
+    // bounded (≤8 visible, ≤~30 showAll), a manual Column/Row has no downside
+    // and eliminates the GridView scroll controller + relayout overhead.
+    final rowCount = (visibleMoods.length / columns).ceil();
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: hPad),
-      child: GridView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        cacheExtent: 1000,
-        addAutomaticKeepAlives: true,
-        addRepaintBoundaries: true,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: columns,
-          crossAxisSpacing: AppSpacing.sm,
-          mainAxisSpacing: AppSpacing.sm,
-          childAspectRatio: aspectRatio,
-        ),
-        itemCount: visibleMoods.length,
-        itemBuilder: (_, i) {
-          final mood = visibleMoods[i];
-          return GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              showMoodBrowseSheet(context, initialMood: mood, moods: allMoods);
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: mood.gradient,
-                ),
-                padding: const EdgeInsets.all(AppSpacing.md),
-                child: Align(
-                  alignment: Alignment.bottomLeft,
-                  child: Text(
-                    mood.label,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: AppFontSize.md,
-                      fontWeight: FontWeight.w700,
-                      shadows: [
-                        Shadow(color: Colors.black38, blurRadius: 6),
-                      ],
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int r = 0; r < rowCount; r++) ...[
+            if (r > 0) const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                for (int c = 0; c < columns; c++) ...[
+                  if (c > 0) const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: () {
+                      final i = r * columns + c;
+                      if (i >= visibleMoods.length) {
+                        // Fill remainder of last row with transparent spacer
+                        return AspectRatio(aspectRatio: aspectRatio);
+                      }
+                      return AspectRatio(
+                        aspectRatio: aspectRatio,
+                        child: _MoodTile(
+                          mood: visibleMoods[i],
+                          allMoods: allMoods,
+                        ),
+                      );
+                    }(),
                   ),
-                ),
-              ),
+                ],
+              ],
             ),
-          );
-        },
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Individual mood tile extracted to a const-constructible widget so Flutter
+/// can reuse the element during reconciliation.
+class _MoodTile extends StatelessWidget {
+  const _MoodTile({required this.mood, required this.allMoods});
+  final Mood mood;
+  final List<Mood> allMoods;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.lightImpact();
+        showMoodBrowseSheet(context, initialMood: mood, moods: allMoods);
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: mood.gradient,
+          ),
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Align(
+            alignment: Alignment.bottomLeft,
+            child: Text(
+              mood.label,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: AppFontSize.md,
+                fontWeight: FontWeight.w700,
+                shadows: [
+                  Shadow(color: Colors.black38, blurRadius: 6),
+                ],
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -140,9 +175,12 @@ class _MoodSectionSkeleton extends StatelessWidget {
 
   final bool showAll;
 
+  static const int _skeletonCount = 10;
+
   @override
   Widget build(BuildContext context) {
     final (:columns, :hPad, :aspectRatio) = _moodGridLayout(context);
+    final rowCount = (_skeletonCount / columns).ceil();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -154,25 +192,38 @@ class _MoodSectionSkeleton extends StatelessWidget {
         ),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: hPad),
-          child: GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            cacheExtent: 1000,
-            addAutomaticKeepAlives: true,
-            addRepaintBoundaries: true,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: columns,
-              crossAxisSpacing: AppSpacing.sm,
-              mainAxisSpacing: AppSpacing.sm,
-              childAspectRatio: aspectRatio,
-            ),
-            itemCount: 10,
-            itemBuilder: (_, __) => Container(
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (int r = 0; r < rowCount; r++) ...[
+                if (r > 0) const SizedBox(height: AppSpacing.sm),
+                Row(
+                  children: [
+                    for (int c = 0; c < columns; c++) ...[
+                      if (c > 0) const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: AspectRatio(
+                          aspectRatio: aspectRatio,
+                          child: () {
+                            final i = r * columns + c;
+                            if (i >= _skeletonCount) {
+                              return const SizedBox.shrink();
+                            }
+                            return Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.surfaceLight,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.md),
+                              ),
+                            );
+                          }(),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ],
           ),
         ),
         const SizedBox(height: AppSpacing.xxl),

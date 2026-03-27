@@ -31,7 +31,9 @@ class _SearchBarPlaceholder extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final moods = ref.watch(moodsProvider);
+    // PERF: Removed ref.watch(moodsProvider) — moods are only needed inside
+    // the tap callback. ref.read() is called at tap time so this widget is no
+    // longer subscribed to mood list changes.
     return Container(
       height: 50,
       decoration: BoxDecoration(
@@ -77,7 +79,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
               color: AppColors.textMuted.withValues(alpha: 0.3),
             ),
             GestureDetector(
-              onTap: () => showMoodBrowseSheet(context, moods: moods),
+              onTap: () => showMoodBrowseSheet(context, moods: ref.read(moodsProvider)),
               behavior: HitTestBehavior.opaque,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),

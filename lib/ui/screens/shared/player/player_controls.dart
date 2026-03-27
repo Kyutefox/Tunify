@@ -4,7 +4,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/features/player/player_state_provider.dart';
-import 'package:tunify/ui/theme/app_colors.dart';import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/design_tokens.dart';
+
+// PERF: hoisted as file-level consts — no allocation per build.
+const Color _kIconInactive = Color(0xCCFFFFFF); // white @ 80%
+const Color _kExtraIconColor = Color(0xBFFFFFFF); // white @ 75%
+const TextStyle _kExtraLabelStyle = TextStyle(
+  color: Color(0xBFFFFFFF),
+  fontSize: AppFontSize.micro,
+  fontWeight: FontWeight.w500,
+);
 
 class PlayerControls extends ConsumerWidget {
   const PlayerControls({super.key, required this.dominantColor});
@@ -79,7 +89,7 @@ class _ShuffleControlIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     const size = 26.0;
     final padding = ((44.0 - size) / 2).clamp(8.0, 16.0);
-    final color = isActive ? AppColors.primary : Colors.white.withValues(alpha: 0.8);
+    final color = isActive ? AppColors.primary : _kIconInactive;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
@@ -132,7 +142,7 @@ class PlayerControlIcon extends StatelessWidget {
         child: AppIcon(
           icon: icon,
           size: size,
-          color: isActive ? AppColors.primary : Colors.white.withValues(alpha: 0.8),
+          color: isActive ? AppColors.primary : _kIconInactive,
         ),
       ),
     );
@@ -258,16 +268,9 @@ class PlayerExtraButton extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppIcon(icon: icon, color: Colors.white.withValues(alpha: 0.75), size: 22),
+            AppIcon(icon: icon, color: _kExtraIconColor, size: 22),
             const SizedBox(height: AppSpacing.xs + 2),
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.75),
-                fontSize: AppFontSize.micro,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
+            Text(label, style: _kExtraLabelStyle),
           ],
         ),
       ),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+
 class PlayerBlurredBackground extends StatelessWidget {
   const PlayerBlurredBackground({
     super.key,
@@ -23,6 +24,10 @@ class PlayerBlurredBackground extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         if (hasArt)
+          // PERF: ValueKey ensures this layer is reused across song changes when
+          // the URL stays the same. The blur (sigmaX: 40) is expensive; the
+          // RepaintBoundary ensures it only repaints when the image URL changes,
+          // not on every dominantColor animation tick.
           RepaintBoundary(
             key: ValueKey('blur_$url'),
             child: ColorFiltered(
@@ -48,11 +53,17 @@ class PlayerBlurredBackground extends StatelessWidget {
         else
           Container(color: AppColors.background),
         if (hasArt)
-          AnimatedContainer(
-            duration: AppDuration.medium,
-            curve: AppCurves.decelerate,
-            decoration: BoxDecoration(
-              gradient: PaletteTheme.playerGradient(dominantColor),
+          // PERF: RepaintBoundary isolates the gradient overlay's implicit
+          // animation repaints (60–120fps) from the blur layer above it.
+          // Without this boundary, every gradient animation tick would
+          // invalidate the full background stack.
+          RepaintBoundary(
+            child: AnimatedContainer(
+              duration: AppDuration.medium,
+              curve: AppCurves.decelerate,
+              decoration: BoxDecoration(
+                gradient: PaletteTheme.playerGradient(dominantColor),
+              ),
             ),
           ),
       ],

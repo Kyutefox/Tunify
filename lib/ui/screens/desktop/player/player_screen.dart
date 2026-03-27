@@ -180,18 +180,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           onTap: _close,
         ),
         Expanded(
-          child: Column(
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xA6FFFFFF),
-                  fontSize: AppFontSize.xs,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: AppLetterSpacing.label,
-                ),
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: Color(0xA6FFFFFF),
+                fontSize: AppFontSize.xs,
+                fontWeight: FontWeight.w600,
+                letterSpacing: AppLetterSpacing.label,
               ),
-            ],
+            ),
           ),
         ),
         PlayerGlassButton(

@@ -7,6 +7,15 @@ import 'package:tunify/features/player/playback_position_provider.dart';
 import 'package:tunify/core/utils/duration_format.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 
+// PERF: Hoisted as a file-level const to avoid allocation inside build().
+// FontFeature('tnum') is the const equivalent of FontFeature.tabularFigures().
+const TextStyle _kTimeStyle = TextStyle(
+  color: Color(0x80FFFFFF), // 50% white — intentional for player time labels
+  fontSize: AppFontSize.sm,
+  fontWeight: FontWeight.w500,
+  fontFeatures: [FontFeature('tnum')],
+);
+
 class PlayerProgressBar extends ConsumerStatefulWidget {
   const PlayerProgressBar({super.key, this.compact = false});
 
@@ -37,7 +46,6 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
     // Listen outside build so animation side-effects never run during a build pass.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      // Listen to position changes to update progress
       ref.listenManual(
         playbackPositionProvider,
         (_, position) {
@@ -57,10 +65,8 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
     super.dispose();
   }
 
-  /// Called whenever the provider emits a new progress value.
   void _onProgressUpdate(double newProgress) {
     if (_isDragging) return;
-    // Snap immediately on large jumps (seek, track change).
     if ((newProgress - _toProgress).abs() > 0.02) {
       _anim.stop();
       _fromProgress = newProgress;
@@ -78,55 +84,55 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
 
   @override
   Widget build(BuildContext context) {
-    final position = ref.watch(playbackPositionProvider);
+    // PERF: playbackPositionProvider is NOT watched here.
+    // Position updates are handled exclusively by listenManual → _anim.
+    // This widget only rebuilds on duration change (track change) or color
+    // change (palette extraction) — both are infrequent events.
     final duration = ref.watch(playerProvider.select((s) => s.duration));
     final dominantColor = ref.watch(dominantColorProvider);
 
     final safeDuration = duration ?? Duration.zero;
     final durationKnown = duration != null && duration.inMilliseconds > 0;
-
-    final positionText = _isDragging
-        ? Duration(
-            milliseconds: (_dragValue * safeDuration.inMilliseconds).round())
-            .formattedMmSS
-        : position.formattedMmSS;
     final durationText = durationKnown ? safeDuration.formattedMmSS : '--:--';
 
-    const timeStyle = TextStyle(
-      color: Color(0x80FFFFFF), // 50% white — intentional for player time labels
-      fontSize: AppFontSize.sm,
-      fontWeight: FontWeight.w500,
-      fontFeatures: [FontFeature.tabularFigures()],
+    // PERF: SliderThemeData computed ONCE per build, not per animation frame.
+    // Moving this out of AnimatedBuilder.builder eliminates 120 object
+    // allocations/second during scrubbing at 120fps.
+    final sliderTheme = SliderTheme.of(context).copyWith(
+      activeTrackColor: dominantColor,
+      inactiveTrackColor: dominantColor.withValues(alpha: 0.25),
+      thumbColor: dominantColor,
+      overlayColor: dominantColor.withValues(alpha: 0.15),
+      trackHeight: widget.compact ? 3 : 4,
+      thumbShape:
+          RoundSliderThumbShape(enabledThumbRadius: widget.compact ? 6 : 7),
+      overlayShape:
+          RoundSliderOverlayShape(overlayRadius: widget.compact ? 12 : 16),
     );
-
-    final compact = widget.compact;
 
     return Row(
       children: [
-        // Start time — tabular figures keep width stable
-        Text(positionText, style: timeStyle),
+        // PERF: Isolated ConsumerWidget — only this leaf rebuilds on position
+        // tick, not the whole PlayerProgressBar.
+        _PlaybackTimeText(
+          isDragging: _isDragging,
+          dragFraction: _dragValue,
+          safeDuration: safeDuration,
+        ),
         const SizedBox(width: 8),
 
-        // Seek bar — animated
+        // Seek bar — SliderTheme wraps AnimatedBuilder; data allocated once above.
         Expanded(
-          child: AnimatedBuilder(
-            animation: _anim,
-            builder: (context, _) {
-              final displayProgress =
-                  _isDragging ? _dragValue : _currentAnimatedProgress;
-              return SliderTheme(
-                data: SliderTheme.of(context).copyWith(
-                  activeTrackColor: dominantColor,
-                  inactiveTrackColor: dominantColor.withValues(alpha: 0.25),
-                  thumbColor: dominantColor,
-                  overlayColor: dominantColor.withValues(alpha: 0.15),
-                  trackHeight: compact ? 3 : 4,
-                  thumbShape: RoundSliderThumbShape(
-                      enabledThumbRadius: compact ? 6 : 7),
-                  overlayShape: RoundSliderOverlayShape(
-                      overlayRadius: compact ? 12 : 16),
-                ),
-                child: Slider(
+          child: SliderTheme(
+            data: sliderTheme,
+            child: AnimatedBuilder(
+              animation: _anim,
+              builder: (context, _) {
+                final displayProgress =
+                    _isDragging ? _dragValue : _currentAnimatedProgress;
+                // PERF: No SliderTheme.of().copyWith() here — uses the parent
+                // SliderTheme inherited from the widget above.
+                return Slider(
                   value: displayProgress.clamp(0.0, 1.0),
                   onChangeStart: (v) {
                     _anim.stop();
@@ -148,16 +154,47 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
                       _toProgress = v;
                     });
                   },
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
         ),
 
         const SizedBox(width: 8),
-        // End time — tabular figures keep width stable
-        Text(durationText, style: timeStyle),
+        // Duration text — infrequent rebuild (only on track change).
+        Text(durationText, style: _kTimeStyle),
       ],
     );
+  }
+}
+
+/// Isolated leaf widget that watches [playbackPositionProvider] directly.
+///
+/// Only this widget (a single [Text] node) rebuilds on every position tick.
+/// [PlayerProgressBar] itself is shielded from position-driven rebuilds,
+/// eliminating its [SliderTheme] allocation and full Row reconstruction
+/// at playback frequency.
+class _PlaybackTimeText extends ConsumerWidget {
+  const _PlaybackTimeText({
+    required this.isDragging,
+    required this.dragFraction,
+    required this.safeDuration,
+  });
+
+  final bool isDragging;
+  final double dragFraction;
+  final Duration safeDuration;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Always watch so the subscription is stable (no conditional watch).
+    final position = ref.watch(playbackPositionProvider);
+    final text = isDragging
+        ? Duration(
+                milliseconds:
+                    (dragFraction * safeDuration.inMilliseconds).round())
+            .formattedMmSS
+        : position.formattedMmSS;
+    return Text(text, style: _kTimeStyle);
   }
 }

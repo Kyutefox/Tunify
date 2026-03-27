@@ -348,24 +348,22 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
           thumb,
           const SizedBox(width: AppSpacing.md),
           textContent,
-          AnimatedOpacity(
-            opacity: 1.0,
-            duration: const Duration(milliseconds: 150),
-            child: AppIconButton(
-              icon: AppIcon(
-                icon: AppIcons.moreVert,
-                color: AppColors.textMuted,
-                size: 18,
-              ),
-              onPressedWithContext: (btnCtx) => showSongOptionsSheet(
-                context,
-                song: widget.song,
-                ref: ref,
-                buttonContext: btnCtx,
-              ),
-              size: 32,
-              iconSize: 18,
+          // PERF: Removed AnimatedOpacity(opacity: 1.0) — opacity never
+          // changed so the animation controller was live but inert overhead.
+          AppIconButton(
+            icon: AppIcon(
+              icon: AppIcons.moreVert,
+              color: AppColors.textMuted,
+              size: 18,
             ),
+            onPressedWithContext: (btnCtx) => showSongOptionsSheet(
+              context,
+              song: widget.song,
+              ref: ref,
+              buttonContext: btnCtx,
+            ),
+            size: 32,
+            iconSize: 18,
           ),
         ],
       ),

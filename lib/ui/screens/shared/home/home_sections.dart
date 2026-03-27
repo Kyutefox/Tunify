@@ -9,6 +9,7 @@ import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/ui/widgets/common/artist_avatar.dart';
 import 'package:tunify/ui/widgets/player/mood_browse_sheet.dart';
+import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
@@ -497,7 +498,13 @@ class BrowsePlaylistCard extends ConsumerStatefulWidget {
 
 class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
   void _onTap() {
-    final page = LibraryPlaylistScreen.remote(playlist: widget.playlist);
+    final saved = ref
+        .read(libraryProvider)
+        .playlists
+        .any((p) => p.id == widget.playlist.id);
+    final page = saved
+        ? LibraryPlaylistScreen(playlistId: widget.playlist.id)
+        : LibraryPlaylistScreen.remote(playlist: widget.playlist);
     if (!ShellContext.pushDetail(context, page)) {
       Navigator.of(context).push(appPageRoute<void>(builder: (_) => page));
     }

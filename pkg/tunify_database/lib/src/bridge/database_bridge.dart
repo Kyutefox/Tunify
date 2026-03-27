@@ -148,6 +148,47 @@ class DatabaseBridge {
   /// Closes the primary database.
   Future<void> close() async => _db.close();
 
+  // ── Playlist surgical ops ─────────────────────────────────────────────────
+
+  Future<void> createPlaylist(Map<String, dynamic> data) =>
+      _db.createPlaylist(data);
+
+  Future<void> deletePlaylist(String id) => _db.deletePlaylist(id);
+
+  Future<void> updatePlaylistMeta(String id, Map<String, dynamic> fields) =>
+      _db.updatePlaylistMeta(id, fields);
+
+  Future<void> replacePlaylistSongs(
+    String playlistId,
+    List<Map<String, dynamic>> songs,
+    String updatedAt,
+  ) =>
+      _db.replacePlaylistSongs(playlistId, songs, updatedAt);
+
+  // ── Folder surgical ops ───────────────────────────────────────────────────
+
+  Future<void> createFolder(Map<String, dynamic> data) =>
+      _db.createFolder(data);
+
+  Future<void> deleteFolder(String id) => _db.deleteFolder(id);
+
+  Future<void> renameFolder(String id, String name) =>
+      _db.renameFolder(id, name);
+
+  Future<void> addPlaylistToFolder(String folderId, String playlistId) =>
+      _db.addPlaylistToFolder(folderId, playlistId);
+
+  Future<void> removePlaylistFromFolder(String folderId, String playlistId) =>
+      _db.removePlaylistFromFolder(folderId, playlistId);
+
+  // ── Artist / Album surgical ops ───────────────────────────────────────────
+
+  Future<void> insertArtist(Map<String, dynamic> map) => _db.insertArtist(map);
+
+  Future<void> insertAlbum(Map<String, dynamic> map) => _db.insertAlbum(map);
+
+  Future<void> deleteArtistOrAlbum(String id) => _db.deleteArtistOrAlbum(id);
+
   // ── Stream URL Cache ──────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>?> getStreamUrlCache(String videoId) =>
@@ -182,23 +223,9 @@ class DatabaseBridge {
 
   Future<void> clearCacheOnlyPlaylists() => _db.clearCacheOnlyPlaylists();
 
-  // ── Collection Track Cache ────────────────────────────────────────────────
-
-  Future<List<Map<String, dynamic>>?> getCollectionTracks(String browseId) =>
-      _db.getCollectionTracks(browseId);
-
-  Future<void> upsertCollectionTracks(String browseId, List<Map<String, dynamic>> tracks) =>
-      _db.upsertCollectionTracks(browseId, tracks);
-
-  Future<void> deleteCollectionTracks(String browseId) =>
-      _db.deleteCollectionTracks(browseId);
-
-  Future<void> clearCacheOnlyCollectionTracks() => _db.clearCacheOnlyCollectionTracks();
-
   /// Clears all cache-only data. Call on logout.
   Future<void> clearCacheData() async {
     await _db.clearCacheOnlyPlaylists();
-    await _db.clearCacheOnlyCollectionTracks();
     await _db.clearAllStreamUrlCache();
   }
 }

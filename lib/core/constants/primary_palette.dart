@@ -10,9 +10,6 @@ abstract final class PrimaryPalette {
   /// Lightened brand green — active icon states on dark surfaces, hover states and gradient end stop.
   static const Color primaryLight = Color(0xFF1ED760);
 
-  /// Alias for [primaryLight]; retained for compatibility.
-  static const Color primaryMid = Color(0xFF1ED760);
-
   /// Darkened brand green — pressed states and container fills.
   static const Color primaryDark = Color(0xFF169C46);
 

@@ -6,6 +6,4 @@ export 'src/log_service.dart' show
     logDebug,
     logInfo,
     logWarning,
-    logError,
-    getLogFilePath,
-    readLogTail;
+    logError;

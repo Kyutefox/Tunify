@@ -25,10 +25,6 @@ class CollectionTrackCache {
     return _box!;
   }
 
-  /// Always returns null — no in-memory layer. Use [getEntryFromCache] for async access.
-  /// Kept for call-site compatibility; callers that receive null trigger the async path.
-  CacheEntry? getEntry(String id) => null;
-
   /// Reads the full entry (songs + imageUrl) from Hive.
   /// Returns null if missing or TTL expired — caller should fetch from API.
   Future<CacheEntry?> getEntryFromCache(String id) async {
@@ -60,10 +56,6 @@ class CollectionTrackCache {
   Future<List<Song>?> getSongs(String id) async {
     return (await getEntryFromCache(id))?.songs;
   }
-
-  /// Palette color is stored in SQLite via the library provider (updatePlaylistMeta).
-  /// Returns null — callers fall back to the library state color.
-  Future<Color?> getPaletteColor(String id) async => null;
 
   /// Stores [songs], [imageUrl], and [paletteColor] for [id] in Hive.
   void put(String id, List<Song> songs, {Color? paletteColor, String? imageUrl}) {
@@ -101,7 +93,6 @@ class CollectionTrackCache {
   }
 }
 
-/// Kept for call-site compatibility. Always null when returned from [getEntry].
 class CacheEntry {
   const CacheEntry({
     required this.songs,

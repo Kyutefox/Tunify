@@ -597,18 +597,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     try {
       final box = await Hive.openBox<dynamic>('player_state');
       final prefs = await SharedPreferences.getInstance();
-      Object? songEntry = box.get('song');
-
-      // One-time migration: move SharedPreferences JSON into Hive.
-      if (songEntry == null) {
-        final migrated =
-            Song.fromJsonString(prefs.getString(StorageKeys.prefsLastPlayedSong));
-        if (migrated != null) {
-          songEntry = migrated.toJson();
-          await box.put('song', songEntry);
-        }
-        await prefs.remove(StorageKeys.prefsLastPlayedSong);
-      }
+      final Object? songEntry = box.get('song');
 
       final song = songEntry is Map
           ? Song.fromJson(Map<String, dynamic>.from(songEntry))

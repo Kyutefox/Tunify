@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -14,7 +12,7 @@ import 'update.controller.dart';
 /// delegated to get/create/update/delete controllers.
 class PrimaryDatabase {
   static const String _dbName = 'tunify_primary.db';
-  static const int _version = 8;
+  static const int _version = 1;
 
   static final PrimaryDatabase _instance = PrimaryDatabase._internal();
   factory PrimaryDatabase() => _instance;
@@ -40,7 +38,6 @@ class PrimaryDatabase {
       version: _version,
       onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
     );
     return _db!;
   }
@@ -90,7 +87,29 @@ class PrimaryDatabase {
       CREATE TABLE IF NOT EXISTS folders (
         id         TEXT PRIMARY KEY,
         name       TEXT NOT NULL,
+        is_pinned  INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS recently_played (
+        song_id          TEXT PRIMARY KEY,
+        title            TEXT NOT NULL,
+        artist           TEXT NOT NULL,
+        thumbnail_url    TEXT NOT NULL DEFAULT '',
+        duration_seconds INTEGER NOT NULL DEFAULT 0,
+        last_played_at   TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS recent_searches (
+        query      TEXT PRIMARY KEY,
+        created_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS downloaded_song_ids (
+        song_id TEXT PRIMARY KEY
       )
     ''');
     await db.execute('''
@@ -121,18 +140,6 @@ class PrimaryDatabase {
     await _createController.runOnCreate(db);
   }
 
-  /// Drops all tables and recreates from scratch (no data migration).
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    await db.execute('DROP TABLE IF EXISTS folder_playlists');
-    await db.execute('DROP TABLE IF EXISTS playlist_songs');
-    await db.execute('DROP TABLE IF EXISTS playlist_info');
-    await db.execute('DROP TABLE IF EXISTS playlists');
-    await db.execute('DROP TABLE IF EXISTS folders');
-    await db.execute('DROP TABLE IF EXISTS settings');
-    await db.execute('DROP TABLE IF EXISTS stream_url_cache');
-    await db.execute('DROP TABLE IF EXISTS collection_tracks');
-    await _onCreate(db, newVersion);
-  }
 
   /// Loads full library (playlists, folders, settings).
   Future<Map<String, dynamic>> loadLibraryData() async =>
@@ -220,12 +227,6 @@ class PrimaryDatabase {
       await _createController.setSettingInTransaction(txn,
           'downloads_sort_order', data['downloadsSortOrder']?.toString() ?? 'customOrder');
 
-      final pinnedFolderIds = folders
-          .where((f) => (f as Map)['is_pinned'] == true)
-          .map((f) => (f as Map)['id'].toString())
-          .toList();
-      await _createController.setSettingInTransaction(
-          txn, 'pinned_folder_ids', jsonEncode(pinnedFolderIds));
     });
   }
 
@@ -330,8 +331,9 @@ class PrimaryDatabase {
       _getController.loadRecentlyPlayed();
 
   Future<void> saveRecentlyPlayed(List<Map<String, dynamic>> songs) async {
+    final db = await _getDb();
     final limited = songs.take(_maxRecentlyPlayed).toList();
-    await setSetting('recently_played', jsonEncode(limited));
+    await _createController.replaceRecentlyPlayed(db, limited);
   }
 
   Future<String?> getSetting(String key) async =>
@@ -343,14 +345,23 @@ class PrimaryDatabase {
   Future<List<String>> loadRecentSearches() async =>
       _getController.loadRecentSearches();
 
-  Future<void> saveRecentSearches(List<String> queries) async =>
-      setSetting('recent_searches', jsonEncode(queries.take(20).toList()));
+  Future<void> saveRecentSearches(List<String> queries) async {
+    final db = await _getDb();
+    await _createController.replaceRecentSearches(db, queries.take(20).toList());
+  }
 
   Future<List<String>> loadDownloadedSongIds() async =>
       _getController.loadDownloadedSongIds();
 
-  Future<void> saveDownloadedSongIds(List<String> ids) async =>
-      setSetting('downloaded_song_ids', jsonEncode(ids));
+  Future<void> saveDownloadedSongIds(List<String> ids) async {
+    final db = await _getDb();
+    await _createController.replaceDownloadedSongIds(db, ids);
+  }
+
+  Future<void> updatePinnedFolderIds(List<String> ids) async {
+    final db = await _getDb();
+    await _updateController.updatePinnedFolderIds(db, ids);
+  }
 
   Future<Map<String, dynamic>> loadYtPersonalization() async =>
       _getController.loadYtPersonalization();

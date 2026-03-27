@@ -50,18 +50,6 @@ void main() {
       expect(restored.isExplicit, song.isExplicit);
     });
 
-    test('toJsonString and fromJsonString round-trip', () {
-      final str = song.toJsonString();
-      final restored = Song.fromJsonString(str);
-      expect(restored?.id, song.id);
-      expect(restored?.title, song.title);
-    });
-
-    test('fromJsonString returns null for null or empty', () {
-      expect(Song.fromJsonString(null), isNull);
-      expect(Song.fromJsonString(''), isNull);
-    });
-
     test('fromTrack maps Track to Song', () {
       final track = Track(
         id: 'tid',

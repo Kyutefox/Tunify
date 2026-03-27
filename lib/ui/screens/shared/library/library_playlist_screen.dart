@@ -318,21 +318,13 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           final browseId = local.browseId ?? local.id;
           final cached = await CollectionTrackCache.instance.getSongs(browseId);
           if (cached != null && _remoteAsLocal == null) {
-            final cachedPalette =
-                await CollectionTrackCache.instance.getPaletteColor(browseId);
-            if (cachedPalette != null) {
-              setState(() => _paletteColor = cachedPalette);
-            }
             setState(() {
               _remoteAsLocal = _makePlaylist(
                 id: local.id,
                 name: local.name,
                 description: local.description,
                 songs: cached,
-                imageUrl: CollectionTrackCache.instance
-                        .getEntry(browseId)
-                        ?.imageUrl ??
-                    local.customImageUrl,
+                imageUrl: local.customImageUrl,
                 browseId: browseId,
                 createdAt: local.createdAt,
               );
@@ -661,11 +653,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final cached = await CollectionTrackCache.instance.getSongs(browseId);
     if (cached != null) {
       if (!mounted) return;
-      final cachedPalette =
-          await CollectionTrackCache.instance.getPaletteColor(browseId);
-      if (cachedPalette != null && _paletteColor == null) {
-        setState(() => _paletteColor = cachedPalette);
-      }
       if (_remoteAsLocal == null) {
         setState(() {
           _remoteAsLocal = _makePlaylist(
@@ -673,20 +660,16 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             name: local.name,
             description: local.description,
             songs: cached,
-            imageUrl:
-                CollectionTrackCache.instance.getEntry(browseId)?.imageUrl ??
-                    local.customImageUrl,
+            imageUrl: local.customImageUrl,
             browseId: browseId,
             createdAt: local.createdAt,
           );
         });
       }
-      if (cachedPalette == null) {
-        _extractPalette(
-            local.customImageUrl ?? cached.firstOrNull?.thumbnailUrl,
-            persistId: local.id,
-            persistKind: _PersistKind.playlist);
-      }
+      _extractPalette(
+          local.customImageUrl ?? cached.firstOrNull?.thumbnailUrl,
+          persistId: local.id,
+          persistKind: _PersistKind.playlist);
       return;
     }
 

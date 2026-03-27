@@ -527,7 +527,7 @@ class _SleepTimerSheetContentState
     final sleepState = ref.watch(sleepTimerProvider);
     final notifier = ref.read(sleepTimerProvider.notifier);
     final remaining = sleepState.remaining;
-    final isEndOfTrack = sleepState.endOfTrack == true;
+    final isEndOfTrack = sleepState.endOfTrack;
     final isActive = sleepState.isActive;
 
     return Column(

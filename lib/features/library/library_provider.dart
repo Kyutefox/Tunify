@@ -9,7 +9,6 @@ import 'package:tunify/data/models/song.dart';
 import 'package:tunify/data/repositories/database_repository.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 import 'package:tunify/core/utils/result.dart';
-import 'package:tunify/features/auth/auth_provider.dart';
 
 // ── Sort / view enums ─────────────────────────────────────────────────────────
 
@@ -145,7 +144,6 @@ class LibraryState {
 /// [SyncManager] handles Supabase sync.
 class LibraryNotifier extends Notifier<LibraryState> {
   DatabaseRepository get _repo => ref.read(databaseRepositoryProvider);
-  User? get _user => ref.read(currentUserProvider);
 
   @override
   LibraryState build() {
@@ -156,7 +154,7 @@ class LibraryNotifier extends Notifier<LibraryState> {
   Future<void> onAuthChanged(User? user) => load();
 
   Future<void> load() async {
-    final result = await Result.guard(() => _repo.loadAll(userId: _user?.id));
+    final result = await Result.guard(() => _repo.loadAll());
     result.when(
       ok: (data) => state = state.copyWith(
         playlists: data.playlists,

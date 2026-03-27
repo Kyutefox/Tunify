@@ -181,6 +181,9 @@ class DatabaseBridge {
   Future<void> removePlaylistFromFolder(String folderId, String playlistId) =>
       _db.removePlaylistFromFolder(folderId, playlistId);
 
+  Future<void> updatePinnedFolderIds(List<String> ids) =>
+      _db.updatePinnedFolderIds(ids);
+
   // ── Artist / Album surgical ops ───────────────────────────────────────────
 
   Future<void> insertArtist(Map<String, dynamic> map) => _db.insertArtist(map);

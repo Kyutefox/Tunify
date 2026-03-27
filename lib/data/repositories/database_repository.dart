@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/data/models/library_album.dart';
@@ -29,17 +27,17 @@ class DatabaseRepository {
   final DatabaseBridge _bridge;
   final SyncManager _syncManager;
 
-  Future<LibraryData> loadAll({String? userId}) async {
+  Future<LibraryData> loadAll() async {
     final raw = await _bridge.loadLibraryData();
     return _rawToLibraryData(raw);
   }
 
-  Future<void> saveAll({required LibraryData data, String? userId}) async {
+  Future<void> saveAll({required LibraryData data}) async {
     await _bridge.saveLibraryData(_libraryDataToRaw(data));
     _syncManager.requestSync();
   }
 
-  Future<List<RecentlyPlayedSong>> loadRecentlyPlayed({String? userId}) async {
+  Future<List<RecentlyPlayedSong>> loadRecentlyPlayed() async {
     final list = await _bridge.loadRecentlyPlayed();
     return list
         .map((m) => RecentlyPlayedSong(
@@ -58,8 +56,7 @@ class DatabaseRepository {
         .toList();
   }
 
-  Future<void> saveRecentlyPlayed(List<RecentlyPlayedSong> songs,
-      {String? userId}) async {
+  Future<void> saveRecentlyPlayed(List<RecentlyPlayedSong> songs) async {
     await _bridge.saveRecentlyPlayed(songs.map((s) => s.toJson()).toList());
     _syncManager.requestSync();
   }
@@ -191,9 +188,9 @@ class DatabaseRepository {
     _syncManager.requestSync();
   }
 
-  /// Saves the pinned folder IDs list to settings.
+  /// Saves the pinned folder IDs by updating the folders table.
   Future<void> savePinnedFolderIds(List<String> ids) async {
-    await _bridge.setSetting('pinned_folder_ids', jsonEncode(ids));
+    await _bridge.updatePinnedFolderIds(ids);
     _syncManager.requestSync();
   }
 

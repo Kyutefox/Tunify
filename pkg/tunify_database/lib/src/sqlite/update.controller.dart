@@ -32,4 +32,19 @@ class SqliteUpdateController {
     await db.update('folders', {'name': name},
         where: 'id = ?', whereArgs: [id]);
   }
+
+  /// Updates the is_pinned column for all folders based on [pinnedIds].
+  Future<void> updatePinnedFolderIds(Database db, List<String> pinnedIds) async {
+    final pinnedSet = pinnedIds.toSet();
+    final rows = await db.query('folders', columns: ['id']);
+    for (final row in rows) {
+      final id = row['id'] as String;
+      await db.update(
+        'folders',
+        {'is_pinned': pinnedSet.contains(id) ? 1 : 0},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    }
+  }
 }

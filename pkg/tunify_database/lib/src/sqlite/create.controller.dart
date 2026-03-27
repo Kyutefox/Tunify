@@ -10,8 +10,6 @@ class SqliteCreateController {
   Future<void> runOnCreate(Database db) async {
     await db.insert('settings', {'key': 'sort_order', 'value': 'recent'});
     await db.insert('settings', {'key': 'view_mode', 'value': 'list'});
-    await db.insert('settings', {'key': 'recent_searches', 'value': '[]'});
-    await db.insert('settings', {'key': 'downloaded_song_ids', 'value': '[]'});
     await db.insert('settings', {'key': 'downloads_sort_order', 'value': 'customOrder'});
   }
 
@@ -86,6 +84,7 @@ class SqliteCreateController {
         {
           'id': map['id'],
           'name': map['name'],
+          'is_pinned': (map['is_pinned'] == true) ? 1 : 0,
           'created_at': map['created_at'],
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
@@ -224,10 +223,58 @@ class SqliteCreateController {
       {
         'id': map['id'],
         'name': map['name'],
+        'is_pinned': (map['is_pinned'] == true) ? 1 : 0,
         'created_at': map['created_at'],
       },
       conflictAlgorithm: ConflictAlgorithm.ignore,
     );
+  }
+
+  /// Replaces all recently_played rows with [songs].
+  Future<void> replaceRecentlyPlayed(
+      Database db, List<Map<String, dynamic>> songs) async {
+    await db.delete('recently_played');
+    for (final s in songs) {
+      await db.insert(
+        'recently_played',
+        {
+          'song_id': s['id'],
+          'title': s['title'] ?? '',
+          'artist': s['artist'] ?? '',
+          'thumbnail_url': s['thumbnailUrl'] ?? '',
+          'duration_seconds': s['durationSeconds'] ?? 0,
+          'last_played_at': s['lastPlayed'] ?? DateTime.now().toUtc().toIso8601String(),
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+  }
+
+  /// Replaces all recent_searches rows with [queries].
+  Future<void> replaceRecentSearches(Database db, List<String> queries) async {
+    await db.delete('recent_searches');
+    final now = DateTime.now().toUtc().toIso8601String();
+    for (final q in queries) {
+      if (q.trim().isEmpty) continue;
+      await db.insert(
+        'recent_searches',
+        {'query': q, 'created_at': now},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+  }
+
+  /// Replaces all downloaded_song_ids rows with [ids].
+  Future<void> replaceDownloadedSongIds(Database db, List<String> ids) async {
+    await db.delete('downloaded_song_ids');
+    for (final id in ids) {
+      if (id.isEmpty) continue;
+      await db.insert(
+        'downloaded_song_ids',
+        {'song_id': id},
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
   }
 
   /// Inserts a single folder–playlist junction row.

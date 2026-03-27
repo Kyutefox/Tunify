@@ -10,10 +10,9 @@ class SleepTimerState {
   const SleepTimerState({this.endTime, this.endOfTrack = false});
 
   final DateTime? endTime;
-  /// End-of-track mode; nullable for backwards compatibility (e.g. after hot reload).
-  final bool? endOfTrack;
+  final bool endOfTrack;
 
-  bool get isActive => endTime != null || (endOfTrack == true);
+  bool get isActive => endTime != null || endOfTrack;
 
   /// Remaining time; null if no timer, end-of-track mode, or already expired.
   Duration? get remaining {
@@ -68,7 +67,7 @@ class SleepTimerNotifier extends Notifier<SleepTimerState> {
 
   /// Called when player state changes; pauses at end of current track if endOfTrack is set.
   void checkEndOfTrack(PlayerState player) {
-    if (state.endOfTrack != true) return;
+    if (!state.endOfTrack) return;
     final duration = player.duration;
     if (duration == null || duration.inMilliseconds <= 0) return;
     final position = player.position;

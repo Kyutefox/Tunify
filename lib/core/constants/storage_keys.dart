@@ -14,9 +14,4 @@ abstract final class StorageKeys {
   static const String prefsLastPlaylistId = 'last_playlist_id';
   static const String prefsVolumeNormalization = 'volume_normalization_enabled';
 
-  // ——— SharedPreferences: migration keys (read-once then deleted) ———
-  /// Legacy home feed cache — read during Hive migration, then removed from SharedPreferences.
-  static const String prefsHomeFeedCache = 'home_feed_cache';
-  /// Legacy last-played song JSON — read during Hive migration, then removed from SharedPreferences.
-  static const String prefsLastPlayedSong = 'last_played_song';
 }

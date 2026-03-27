@@ -72,20 +72,13 @@ class SqliteGetController {
         };
       }).toList();
 
-      final pinnedFoldersStr =
-          (await _getSetting(db, 'pinned_folder_ids')) ?? '[]';
-      final pinnedFolderIds = (jsonDecode(pinnedFoldersStr) as List<dynamic>?)
-              ?.cast<String>()
-              .toSet() ??
-          <String>{};
-
       final folders = folderRows.map((r) {
         final id = r['id'] as String;
         return <String, dynamic>{
           'id': id,
           'name': r['name'],
           'created_at': r['created_at'],
-          'is_pinned': pinnedFolderIds.contains(id),
+          'is_pinned': (r['is_pinned'] as int? ?? 0) == 1,
           'playlistIds': folderToPlaylists[id] ?? [],
         };
       }).toList();
@@ -147,15 +140,19 @@ class SqliteGetController {
         'followedAlbums': <Map>[],
       };
 
-  /// Loads recently played from settings (recently_played key).
+  /// Loads recently played from the recently_played table.
   Future<List<Map<String, dynamic>>> loadRecentlyPlayed() async {
     try {
       final db = await _getDb();
-      final json = await _getSetting(db, 'recently_played');
-      if (json == null || json.isEmpty) return [];
-      final list = jsonDecode(json) as List<dynamic>?;
-      if (list == null) return [];
-      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final rows = await db.query('recently_played', orderBy: 'last_played_at DESC');
+      return rows.map((r) => <String, dynamic>{
+        'id': r['song_id'],
+        'title': r['title'],
+        'artist': r['artist'],
+        'thumbnailUrl': r['thumbnail_url'],
+        'durationSeconds': r['duration_seconds'],
+        'lastPlayed': r['last_played_at'],
+      }).toList();
     } catch (_) {
       return [];
     }
@@ -176,33 +173,23 @@ class SqliteGetController {
     return rows.firstOrNull?['value'] as String?;
   }
 
-  /// Loads recent search queries from settings (recent_searches key).
+  /// Loads recent search queries from the recent_searches table.
   Future<List<String>> loadRecentSearches() async {
-    final raw = await getSetting('recent_searches');
-    if (raw == null || raw.isEmpty) return [];
     try {
-      final list = jsonDecode(raw) as List<dynamic>?;
-      return list
-              ?.map((e) => e.toString())
-              .where((s) => s.trim().isNotEmpty)
-              .toList() ??
-          [];
+      final db = await _getDb();
+      final rows = await db.query('recent_searches', orderBy: 'created_at DESC');
+      return rows.map((r) => r['query'] as String).toList();
     } catch (_) {
       return [];
     }
   }
 
-  /// Loads downloaded song IDs from settings (downloaded_song_ids key).
+  /// Loads downloaded song IDs from the downloaded_song_ids table.
   Future<List<String>> loadDownloadedSongIds() async {
-    final raw = await getSetting('downloaded_song_ids');
-    if (raw == null || raw.isEmpty) return [];
     try {
-      final list = jsonDecode(raw) as List<dynamic>?;
-      return list
-              ?.map((e) => e.toString())
-              .where((s) => s.isNotEmpty)
-              .toList() ??
-          [];
+      final db = await _getDb();
+      final rows = await db.query('downloaded_song_ids');
+      return rows.map((r) => r['song_id'] as String).toList();
     } catch (_) {
       return [];
     }

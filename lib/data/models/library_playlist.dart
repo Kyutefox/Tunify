@@ -7,14 +7,9 @@ enum ShuffleMode { none, regular, smart }
 
 /// Serialization helpers for [ShuffleMode].
 extension ShuffleModeX on ShuffleMode {
-  /// Converts any stored value to a [ShuffleMode].
-  ///
-  /// Accepts int 0/1/2 (new format) or bool true/false (legacy format).
-  static ShuffleMode fromInt(dynamic v) {
-    if (v == true) return ShuffleMode.regular;
-    if (v == false || v == null) return ShuffleMode.none;
-    final i = v is int ? v : (int.tryParse(v.toString()) ?? 0);
-    return switch (i) {
+  /// Converts a stored INTEGER (0/1/2) to a [ShuffleMode].
+  static ShuffleMode fromInt(int? v) {
+    return switch (v) {
       1 => ShuffleMode.regular,
       2 => ShuffleMode.smart,
       _ => ShuffleMode.none,

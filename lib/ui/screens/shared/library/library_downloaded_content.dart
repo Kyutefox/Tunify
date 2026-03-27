@@ -200,6 +200,9 @@ class _LibraryDownloadedList extends ConsumerWidget {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            cacheExtent: 1000,
+            addAutomaticKeepAlives: true,
+            addRepaintBoundaries: true,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -529,6 +532,9 @@ class _DeviceMusicList extends ConsumerWidget {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            cacheExtent: 1000,
+            addAutomaticKeepAlives: true,
+            addRepaintBoundaries: true,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -873,6 +879,7 @@ class _EditDownloadedSheetState extends ConsumerState<_EditDownloadedSheet> {
       ),
       body: ReorderableListView.builder(
         buildDefaultDragHandles: false,
+        cacheExtent: 1000,
         itemCount: _items.length,
         onReorder: _onReorder,
         itemBuilder: (context, index) {

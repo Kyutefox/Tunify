@@ -430,6 +430,7 @@ class _BrowsePage extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.desktopSurface,
       body: CustomScrollView(
+        cacheExtent: 1000,
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverPadding(

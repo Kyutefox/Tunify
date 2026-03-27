@@ -190,6 +190,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
             onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
             behavior: HitTestBehavior.translucent,
             child: CustomScrollView(
+              cacheExtent: 1000,
               controller: _useNewLayout ? _scrollController : null,
               physics: const BouncingScrollPhysics(),
               slivers: _useNewLayout

@@ -86,6 +86,9 @@ class _MoodGrid extends StatelessWidget {
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
+        cacheExtent: 1000,
+        addAutomaticKeepAlives: true,
+        addRepaintBoundaries: true,
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: columns,
           crossAxisSpacing: AppSpacing.sm,
@@ -154,6 +157,9 @@ class _MoodSectionSkeleton extends StatelessWidget {
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            cacheExtent: 1000,
+            addAutomaticKeepAlives: true,
+            addRepaintBoundaries: true,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: columns,
               crossAxisSpacing: AppSpacing.sm,

@@ -167,6 +167,8 @@ class _AddToPlaylistSheetContentState
             constraints: BoxConstraints(maxHeight: maxListHeight),
             child: ListView.builder(
               shrinkWrap: true,
+              cacheExtent: 500,
+              addAutomaticKeepAlives: true,
               itemCount: playlists.length,
               itemBuilder: (context, index) {
                 final p = playlists[index];

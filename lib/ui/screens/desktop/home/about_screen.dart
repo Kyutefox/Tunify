@@ -64,6 +64,7 @@ class _AboutScreenState extends State<AboutScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
+        cacheExtent: 1000,
         slivers: [
           SliverToBoxAdapter(
             child: _HeroHeader(

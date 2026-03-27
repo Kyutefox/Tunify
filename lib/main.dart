@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/core/constants/app_strings.dart';
+import 'package:tunify/core/services/hive_service.dart';
+import 'package:tunify/core/services/shared_prefs_service.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
@@ -51,7 +52,11 @@ final supabaseInitProvider = FutureProvider<void>((ref) async {
 Future<void> main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    await Hive.initFlutter();
+    
+    await Future.wait([
+      HiveService.instance.init(),
+      SharedPrefsService.instance.init(),
+    ]);
 
     final crossfadeEngine = CrossfadeEngine(AudioPlayerService());
 

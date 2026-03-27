@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/features/player/playback_position_provider.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/screens/desktop/player/player_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
@@ -68,7 +69,11 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
 
     final isPlaying = ref.watch(playerProvider.select((s) => s.isPlaying));
     final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
-    final progress = ref.watch(playerProvider.select((s) => s.progress));
+    final position = ref.watch(playbackPositionProvider);
+    final duration = ref.watch(playerProvider.select((s) => s.duration));
+    final progress = duration != null && duration.inMilliseconds > 0
+        ? position.inMilliseconds / duration.inMilliseconds
+        : 0.0;
     final dominantColor = ref.watch(dominantColorProvider);
 
     return GestureDetector(

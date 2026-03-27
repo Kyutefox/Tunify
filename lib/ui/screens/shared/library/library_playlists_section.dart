@@ -324,6 +324,9 @@ class _LibrarySectionGrid extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      cacheExtent: 1000,
+      addAutomaticKeepAlives: true,
+      addRepaintBoundaries: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.85,

@@ -277,6 +277,9 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
+                        cacheExtent: 1000,
+                        addAutomaticKeepAlives: true,
+                        addRepaintBoundaries: true,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,

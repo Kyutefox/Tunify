@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/features/player/playback_position_provider.dart';
 
 /// End time (UTC) when the sleep timer will stop playback, or end-of-track mode.
 /// UI can compute remaining as endTime.difference(DateTime.now()).
@@ -70,7 +71,7 @@ class SleepTimerNotifier extends Notifier<SleepTimerState> {
     if (!state.endOfTrack) return;
     final duration = player.duration;
     if (duration == null || duration.inMilliseconds <= 0) return;
-    final position = player.position;
+    final position = ref.read(playbackPositionProvider);
     if (position >= duration - const Duration(seconds: 1)) {
       cancel();
       ref.read(playerProvider.notifier).pause();

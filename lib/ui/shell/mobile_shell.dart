@@ -65,10 +65,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
           children: [
             const _OfflineBanner(),
             Expanded(
-              child: IndexedStack(
-                index: _selectedIndex,
-                children: const [HomeScreen(), SearchScreen(), LibraryScreen()],
-              ),
+              child: _buildCurrentScreen(),
             ),
           ],
         ),
@@ -94,6 +91,20 @@ class _MobileShellState extends ConsumerState<MobileShell> {
         ),
       ),
     );
+  }
+
+  Widget _buildCurrentScreen() {
+    // Only build the active screen to save memory
+    switch (_selectedIndex) {
+      case 0:
+        return const HomeScreen();
+      case 1:
+        return const SearchScreen();
+      case 2:
+        return const LibraryScreen();
+      default:
+        return const HomeScreen();
+    }
   }
 
   Widget _buildNavBar() {

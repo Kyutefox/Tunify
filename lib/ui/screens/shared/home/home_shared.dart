@@ -252,35 +252,40 @@ class DpiAwareThumbnail extends StatelessWidget {
     required this.url,
     required this.size,
     this.radius = AppRadius.sm,
-    this.placeholder,
   });
 
   final String url;
   final double size;
   final double radius;
-  final Widget? placeholder;
 
   @override
   Widget build(BuildContext context) {
-    final px = cachePx(context, size);
-    final fallback = placeholder ?? PlaceholderArt(size: size);
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(radius),
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheSize = (size * dpr).round();
+    
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(radius)),
       clipBehavior: Clip.hardEdge,
       child: url.isNotEmpty
           ? CachedNetworkImage(
               imageUrl: url,
               width: size,
               height: size,
-              memCacheWidth: px,
-              memCacheHeight: px,
               fit: BoxFit.cover,
+              memCacheWidth: cacheSize,
+              memCacheHeight: cacheSize,
               fadeInDuration: Duration.zero,
               fadeOutDuration: Duration.zero,
-              errorWidget: (_, __, ___) => fallback,
+              errorWidget: (_, __, ___) => _placeholderIcon(size),
             )
-          : fallback,
+          : _placeholderIcon(size),
     );
+  }
+
+  Widget _placeholderIcon(double size) {
+    return PlaceholderArt(size: size);
   }
 }
 

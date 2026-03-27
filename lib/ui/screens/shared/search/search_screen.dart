@@ -402,6 +402,9 @@ class SearchResultsBody extends ConsumerWidget {
 
     return ListView.builder(
       key: ValueKey('search_${state.query}_${suggestionCount}_$contentCount'),
+      cacheExtent: 1000,
+      addAutomaticKeepAlives: true,
+      addRepaintBoundaries: true,
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.only(
         left: AppSpacing.base,
@@ -412,47 +415,49 @@ class SearchResultsBody extends ConsumerWidget {
       itemBuilder: (context, index) {
         if (index < suggestionCount) {
           final s = inlineSuggestions[index];
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => onSuggestionTap?.call(s),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.base,
-                  vertical: AppSpacing.xs,
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: 54,
-                      height: 54,
-                      child: Center(
-                        child: AppIcon(
-                          icon: AppIcons.search,
-                          color: AppColors.textMuted,
-                          size: 24,
+          return RepaintBoundary(
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onSuggestionTap?.call(s),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.base,
+                    vertical: AppSpacing.xs,
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 54,
+                        height: 54,
+                        child: Center(
+                          child: AppIcon(
+                            icon: AppIcons.search,
+                            color: AppColors.textMuted,
+                            size: 24,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        s,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: AppFontSize.base,
-                          fontWeight: FontWeight.w500,
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Text(
+                          s,
+                          style: const TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: AppFontSize.base,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                    AppIcon(
-                      icon: AppIcons.arrowUpLeft,
-                      color: AppColors.textMuted,
-                      size: 20,
-                    ),
-                  ],
+                      AppIcon(
+                        icon: AppIcons.arrowUpLeft,
+                        color: AppColors.textMuted,
+                        size: 20,
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -466,32 +471,34 @@ class SearchResultsBody extends ConsumerWidget {
           );
         }
         final song = displayResults[resultIndex];
-        return SongListTile(
-          song: song,
-          thumbnailSize: 54,
-          onTap: () => onOpenPlayer(song),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                song.durationFormatted,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: AppFontSize.md,
+        return RepaintBoundary(
+          child: SongListTile(
+            song: song,
+            thumbnailSize: 54,
+            onTap: () => onOpenPlayer(song),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  song.durationFormatted,
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: AppFontSize.md,
+                  ),
                 ),
-              ),
-              AppIconButton(
-                icon: AppIcon(
-                  icon: AppIcons.moreVert,
-                  color: AppColors.textMuted,
-                  size: 20,
+                AppIconButton(
+                  icon: AppIcon(
+                    icon: AppIcons.moreVert,
+                    color: AppColors.textMuted,
+                    size: 20,
+                  ),
+                  onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
+                      song: song, ref: ref, buttonContext: btnCtx),
+                  iconSize: 20,
+                  size: 40,
                 ),
-                onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
-                    song: song, ref: ref, buttonContext: btnCtx),
-                iconSize: 20,
-                size: 40,
-              ),
-            ],
+              ],
+            ),
           ),
         );
       },

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/features/player/playback_position_provider.dart';
 import 'package:tunify/core/utils/duration_format.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 
@@ -36,9 +37,15 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
     // Listen outside build so animation side-effects never run during a build pass.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Listen to position changes to update progress
       ref.listenManual(
-        playerProvider.select((s) => s.progress),
-        (_, newProgress) => _onProgressUpdate(newProgress.clamp(0.0, 1.0)),
+        playbackPositionProvider,
+        (_, position) {
+          final duration = ref.read(playerProvider.select((s) => s.duration));
+          if (duration == null || duration.inMilliseconds == 0) return;
+          final progress = position.inMilliseconds / duration.inMilliseconds;
+          _onProgressUpdate(progress.clamp(0.0, 1.0));
+        },
         fireImmediately: true,
       );
     });
@@ -71,7 +78,7 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
 
   @override
   Widget build(BuildContext context) {
-    final position = ref.watch(playerProvider.select((s) => s.position));
+    final position = ref.watch(playbackPositionProvider);
     final duration = ref.watch(playerProvider.select((s) => s.duration));
     final dominantColor = ref.watch(dominantColorProvider);
 

@@ -200,6 +200,18 @@ class LibraryNotifier extends Notifier<LibraryState> {
     final songs = List<Song>.from(state.likedPlaylist.songs);
     final idx = songs.indexWhere((s) => s.id == song.id);
     if (idx >= 0) { songs.removeAt(idx); } else { songs.add(song); }
+    
+    // Update state immediately so UI refreshes - optimized to avoid rebuilding entire list
+    final likedIdx = state.playlists.indexWhere((p) => p.id == 'liked');
+    if (likedIdx >= 0) {
+      final updatedPlaylists = List<LibraryPlaylist>.from(state.playlists);
+      updatedPlaylists[likedIdx] = updatedPlaylists[likedIdx].copyWith(
+        songs: songs,
+        updatedAt: DateTime.now(),
+      );
+      state = state.copyWith(playlists: updatedPlaylists);
+    }
+    
     await _replaceSongs('liked', songs);
   }
 

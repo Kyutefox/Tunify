@@ -183,6 +183,9 @@ class _DateGroupedSongList extends ConsumerWidget {
 
     if (timestamps.isEmpty) {
       return ListView.builder(
+        cacheExtent: 1000,
+        addAutomaticKeepAlives: true,
+        itemExtent: 70,
         padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
         itemCount: songs.length,
         itemBuilder: (context, index) => SongListTile(
@@ -239,6 +242,8 @@ class _DateGroupedSongList extends ConsumerWidget {
     }
 
     return ListView.builder(
+      cacheExtent: 1000,
+      addAutomaticKeepAlives: true,
       padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
       itemCount: _itemCount(groups),
       itemBuilder: (context, index) {

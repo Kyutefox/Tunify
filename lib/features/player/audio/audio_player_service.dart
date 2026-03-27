@@ -328,10 +328,10 @@ class AudioPlayerService {
   /// Applies a crossfade volume multiplier (0.0–1.0) without affecting normalization.
   /// Android: sets player volume directly (normalization uses LoudnessEnhancer, not volume).
   /// Apple (iOS/macOS): multiplies with the current normalization scalar so both work together.
-  Future<void> applyCrossfadeVolume(double vol) async {
+  void applyCrossfadeVolume(double vol) {
     _crossfadeVol = vol.clamp(0.0, 1.0);
     if (Platform.isAndroid) {
-      await _player.setVolume(_crossfadeVol);
+      _player.setVolume(_crossfadeVol);
     } else if (isApplePlatform) {
       final normVol = _normalizationEnabled
           ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
@@ -341,7 +341,7 @@ class AudioPlayerService {
       // scalar is non-zero — it prevents near-inaudible normalization gains from
       // disappearing entirely, not from silencing a deliberate fade.
       final effective = _crossfadeVol * normVol;
-      await _player
+      _player
           .setVolume(_crossfadeVol == 0.0 ? 0.0 : effective.clamp(0.05, 1.0));
     }
   }

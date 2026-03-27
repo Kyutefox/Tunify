@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
@@ -47,6 +46,12 @@ class SongListTile extends ConsumerWidget {
     final showExplicitContent = ref.watch(showExplicitContentProvider);
     final showEBadge = showExplicitContent && song.isExplicit;
 
+    return RepaintBoundary(
+      child: _buildTile(context, t, status, showEBadge),
+    );
+  }
+
+  Widget _buildTile(BuildContext context, AppTokens t, NowPlayingStatus status, bool showEBadge) {
     Widget tile = Container(
       color: highlightBackground && status.isNowPlaying
           ? AppColors.primary.withValues(alpha: 0.08)
@@ -77,7 +82,7 @@ class SongListTile extends ConsumerWidget {
                 DpiAwareThumbnail(
                   url: song.thumbnailUrl,
                   size: thumbnailSize,
-                  placeholder: _thumbPlaceholder(),
+                  radius: AppRadius.sm,
                 ),
           ),
           SizedBox(width: t.spacing.md),
@@ -156,18 +161,4 @@ class SongListTile extends ConsumerWidget {
     );
   }
 
-  Widget _thumbPlaceholder() {
-    return Container(
-      width: thumbnailSize,
-      height: thumbnailSize,
-      color: AppColors.surfaceLight,
-      child: Center(
-        child: AppIcon(
-          icon: AppIcons.musicNote,
-          color: AppColors.textMuted,
-          size: thumbnailSize > 50 ? 24 : 22,
-        ),
-      ),
-    );
-  }
 }

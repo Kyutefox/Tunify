@@ -113,11 +113,9 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
           body: Stack(
             fit: StackFit.expand,
             children: [
-              RepaintBoundary(
-                child: PlayerBlurredBackground(
-                  url: song.thumbnailUrl,
-                  dominantColor: dominantColor,
-                ),
+              PlayerBlurredBackground(
+                url: song.thumbnailUrl,
+                dominantColor: dominantColor,
               ),
               SafeArea(
                 child: Padding(
@@ -214,26 +212,28 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
         },
         child: Hero(
           tag: 'player-album-art',
-          child: Container(
-            width: artSize,
-            height: artSize,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              boxShadow: [
-                BoxShadow(
-                  color: dominantColor.withValues(
-                      alpha: PaletteTheme.playerArtGlowAlpha),
-                  blurRadius: 50,
-                  spreadRadius: 5,
-                  offset: const Offset(0, 12),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
+          child: RepaintBoundary(
+            key: ValueKey('album_art_${song.id}'),
+            child: Container(
+              width: artSize,
+              height: artSize,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppRadius.xl),
+                boxShadow: [
+                  BoxShadow(
+                    color: dominantColor.withValues(
+                        alpha: PaletteTheme.playerArtGlowAlpha),
+                    blurRadius: 50,
+                    spreadRadius: 5,
+                    offset: const Offset(0, 12),
+                  ),
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(AppRadius.xl),
               child: song.thumbnailUrl.isEmpty
@@ -255,6 +255,8 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
                         memCacheWidth: cachePx,
                         memCacheHeight: cachePx,
                         fit: BoxFit.contain,
+                        fadeInDuration: Duration.zero,
+                        fadeOutDuration: Duration.zero,
                         errorWidget: (_, __, ___) => Container(
                           width: artSize,
                           height: artSize,
@@ -266,6 +268,7 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
                         ),
                       ),
                     ),
+              ),
             ),
           ),
         ),

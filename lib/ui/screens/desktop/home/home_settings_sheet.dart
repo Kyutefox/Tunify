@@ -534,8 +534,9 @@ class PlaybackSettingsBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerProvider);
-    final normEnabled = playerState.isNormalizationEnabled;
+    final normEnabled = ref.watch(playerProvider.select((s) => s.isNormalizationEnabled));
+    final isGaplessEnabled = ref.watch(playerProvider.select((s) => s.isGaplessEnabled));
+    final crossfadeDuration = ref.watch(playerProvider.select((s) => s.crossfadeDurationSeconds));
     final showExplicit = ref.watch(showExplicitContentProvider);
 
     return ListView(
@@ -562,12 +563,12 @@ class PlaybackSettingsBody extends ConsumerWidget {
           icon: AppIcons.musicNote,
           label: 'Gapless Playback',
           subtitle: 'Remove silence between tracks',
-          value: playerState.isGaplessEnabled,
+          value: isGaplessEnabled,
           onChanged: (v) =>
               ref.read(playerProvider.notifier).setGaplessPlayback(v),
         ),
         _CrossfadeTile(
-          value: playerState.crossfadeDurationSeconds,
+          value: crossfadeDuration,
           onChanged: (v) =>
               ref.read(playerProvider.notifier).setCrossfadeDuration(v),
         ),

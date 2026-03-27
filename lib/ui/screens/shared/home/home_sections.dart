@@ -74,7 +74,8 @@ class SquareSongCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final status = NowPlayingStatus.of(ref, song.id);
 
-    return PressScale(
+    return RepaintBoundary(
+      child: PressScale(
       onTap: onTap,
       scale: 0.93,
       child: SizedBox(
@@ -119,6 +120,7 @@ class SquareSongCard extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

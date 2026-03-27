@@ -23,20 +23,25 @@ class PlayerBlurredBackground extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         if (hasArt)
-          ColorFiltered(
-            colorFilter: ColorFilter.mode(
-              Colors.black.withValues(alpha: PaletteTheme.playerDarkOverlayAlpha),
-              BlendMode.darken,
-            ),
-            child: ImageFiltered(
-              imageFilter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
-              child: CachedNetworkImage(
-                imageUrl: url,
-                fit: BoxFit.cover,
-                memCacheWidth: 100,
-                memCacheHeight: 100,
-                errorWidget: (_, __, ___) =>
-                    Container(color: AppColors.background),
+          RepaintBoundary(
+            key: ValueKey('blur_$url'),
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                Colors.black.withValues(alpha: PaletteTheme.playerDarkOverlayAlpha),
+                BlendMode.darken,
+              ),
+              child: ImageFiltered(
+                imageFilter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                child: CachedNetworkImage(
+                  imageUrl: url,
+                  fit: BoxFit.cover,
+                  memCacheWidth: 100,
+                  memCacheHeight: 100,
+                  fadeInDuration: Duration.zero,
+                  fadeOutDuration: Duration.zero,
+                  errorWidget: (_, __, ___) =>
+                      Container(color: AppColors.background),
+                ),
               ),
             ),
           )

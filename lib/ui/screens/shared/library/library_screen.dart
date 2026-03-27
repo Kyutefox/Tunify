@@ -38,7 +38,11 @@ class LibraryScreen extends ConsumerStatefulWidget {
   ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
 }
 
-class _LibraryScreenState extends ConsumerState<LibraryScreen> {
+class _LibraryScreenState extends ConsumerState<LibraryScreen>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   /// Drives the chip row.
   LibraryFilter? _filter;
 
@@ -162,6 +166,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final sortOrder = ref.watch(libraryProvider.select((s) => s.sortOrder));
     final viewMode = ref.watch(libraryProvider.select((s) => s.viewMode));
     final playlists = ref.watch(libraryPlaylistsProvider);
@@ -224,6 +229,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen> {
     Widget buildScrollView(bool withRefresh) {
       final scrollView = CustomScrollView(
         key: contentKey,
+        cacheExtent: 1000,
         physics: withRefresh
             ? const AlwaysScrollableScrollPhysics(
                 parent: BouncingScrollPhysics())
@@ -543,6 +549,9 @@ class _FollowedArtistsGrid extends ConsumerWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      cacheExtent: 1000,
+      addAutomaticKeepAlives: true,
+      addRepaintBoundaries: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.85,
@@ -724,6 +733,9 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      cacheExtent: 1000,
+      addAutomaticKeepAlives: true,
+      addRepaintBoundaries: true,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         childAspectRatio: 0.85,
@@ -976,6 +988,8 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                   child: EmptyListMessage(emptyLabel: 'folders', query: _query),
                 )
               : ListView.builder(
+                  cacheExtent: 1000,
+                  addAutomaticKeepAlives: true,
                   controller: widget.scrollController,
                   padding: EdgeInsets.only(
                     left: kSheetHorizontalPadding,

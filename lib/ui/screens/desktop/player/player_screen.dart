@@ -15,6 +15,7 @@ import 'package:tunify/data/models/lyrics_result.dart';
 import 'package:tunify/features/player/lyrics_provider.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/features/player/playback_position_provider.dart';
 import 'package:tunify/features/player/sleep_timer_provider.dart';
 import 'package:tunify/features/device/device_discovery_service.dart';
 import 'package:tunify/features/device/device_discovery_service_extensions.dart';
@@ -1615,6 +1616,7 @@ class QueuePanelContent extends ConsumerWidget {
             child: ReorderableListView.builder(
               scrollController: scrollController,
               buildDefaultDragHandles: false,
+              cacheExtent: 1000,
               padding: const EdgeInsets.only(
                 left: kSheetHorizontalPadding,
                 right: kSheetHorizontalPadding,
@@ -1898,7 +1900,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
   void initState() {
     super.initState();
     _positionSubscription = ref.listenManual(
-      playerProvider.select((s) => s.position),
+      playbackPositionProvider,
       (_, position) => _updateActiveIndex(position),
       fireImmediately: true,
     );

@@ -227,8 +227,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   /// Reads cache + DB to pre-populate _remoteAsLocal and _paletteColor
   /// so the first frame renders the full UI with no loading flash.
   void _initSync() {
-    // Liked songs — always local, never needs loading
+    // Liked songs — pre-load its fixed pink color for smooth transition
     if (widget.playlistId == 'liked') {
+      _paletteColor = const Color(0xFFE91E8C);
       return;
     }
 
@@ -774,12 +775,18 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final playlist = _remoteAsLocal;
     if (playlist == null) return;
     setState(() => _addingToLibrary = true);
+    
+    // Extract and cache palette immediately so it's available on next open
+    final imageUrl = playlist.customImageUrl ?? 
+                     playlist.songs.firstOrNull?.thumbnailUrl;
+    
     if (widget._isAlbum) {
+      final albumId = _resolvedBrowseId ??
+                      widget.albumBrowseId ??
+                      widget.albumName ??
+                      '';
       await ref.read(libraryProvider.notifier).toggleFollowAlbum(LibraryAlbum(
-            id: _resolvedBrowseId ??
-                widget.albumBrowseId ??
-                widget.albumName ??
-                '',
+            id: albumId,
             title: playlist.name,
             artistName: _albumSubtitle ?? widget.albumArtistName ?? '',
             thumbnailUrl:
@@ -787,21 +794,49 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             browseId: _resolvedBrowseId ?? widget.albumBrowseId,
             followedAt: DateTime.now(),
           ));
+      // Persist current palette or extract and persist for smooth next open
+      if (_paletteColor != null) {
+        // Already have palette - just persist it
+        _persistPalette(_paletteColor!, albumId, _PersistKind.album);
+      } else if (imageUrl != null) {
+        // Don't have palette yet - extract and persist
+        await _extractPalette(imageUrl,
+            persistId: albumId, persistKind: _PersistKind.album);
+      }
     } else if (widget._isArtist) {
+      final artistId = _resolvedBrowseId ??
+                       widget.albumBrowseId ??
+                       widget.albumName ??
+                       '';
       await ref.read(libraryProvider.notifier).toggleFollowArtist(LibraryArtist(
-            id: _resolvedBrowseId ??
-                widget.albumBrowseId ??
-                widget.albumName ??
-                '',
+            id: artistId,
             name: playlist.name,
             thumbnailUrl:
                 playlist.customImageUrl ?? widget.albumThumbnailUrl ?? '',
             browseId: _resolvedBrowseId ?? widget.albumBrowseId,
             followedAt: DateTime.now(),
           ));
+      // Persist current palette or extract and persist for smooth next open
+      if (_paletteColor != null) {
+        // Already have palette - just persist it
+        _persistPalette(_paletteColor!, artistId, _PersistKind.artist);
+      } else if (imageUrl != null) {
+        // Don't have palette yet - extract and persist
+        await _extractPalette(imageUrl,
+            persistId: artistId, persistKind: _PersistKind.artist);
+      }
     } else {
-      await ref.read(libraryProvider.notifier).addPlaylistToLibrary(
-          playlist.copyWith(browseId: playlist.browseId ?? playlist.id));
+      final playlistToAdd = playlist.copyWith(browseId: playlist.browseId ?? playlist.id);
+      await ref.read(libraryProvider.notifier).addPlaylistToLibrary(playlistToAdd);
+      // Persist current palette or extract and persist for smooth next open
+      if (_paletteColor != null) {
+        // Already have palette - just persist it
+        _persistPalette(_paletteColor!, playlistToAdd.id, _PersistKind.playlist);
+      } else if (imageUrl != null) {
+        // Don't have palette yet - extract and persist
+        await _extractPalette(imageUrl,
+            persistId: playlistToAdd.id, persistKind: _PersistKind.playlist);
+      }
     }
     if (mounted) setState(() => _addingToLibrary = false);
   }
@@ -2234,6 +2269,9 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                             style: const TextStyle(color: AppColors.textMuted),
                             textAlign: TextAlign.center)))
                 : ListView.builder(
+                    cacheExtent: 1000,
+                    addAutomaticKeepAlives: true,
+                    itemExtent: 70,
                     itemCount: list.length,
                     itemBuilder: (context, i) {
                       final song = list[i];
@@ -2425,6 +2463,9 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
                     fontSize: AppFontSize.lg,
                     fontWeight: FontWeight.w600))
             : ListView.builder(
+                cacheExtent: 1000,
+                addAutomaticKeepAlives: true,
+                itemExtent: 70,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: AppSpacing.max),
                 itemCount: filtered.length,
@@ -2598,6 +2639,7 @@ class _EditSongsSheetState extends ConsumerState<_EditSongsSheet> {
       ),
       body: ReorderableListView.builder(
         buildDefaultDragHandles: false,
+        cacheExtent: 1000,
         itemCount: _items.length,
         onReorder: _onReorder,
         itemBuilder: (context, index) {

@@ -29,6 +29,10 @@ import 'package:tunify_database/tunify_database.dart' show PlaybackSettingKeys;
 import 'package:tunify/data/repositories/database_repository.dart';
 import 'package:tunify/features/settings/playback_tracker.dart';
 import 'package:tunify/features/settings/stream_cache_service.dart';
+import 'package:tunify/features/player/playback_position_provider.dart';
+
+/// Maximum queue size to prevent unbounded growth and O(n) equality checks
+const int _kMaxQueueSize = 50;
 
 enum PlayerStatus {
   idle,
@@ -44,7 +48,6 @@ class PlayerState {
   final Song? currentSong;
   final List<Song> queue;
   final int currentIndex;
-  final Duration position;
   final Duration? duration;
   final String? error;
   final bool isShuffleEnabled;
@@ -73,7 +76,6 @@ class PlayerState {
     this.currentSong,
     this.queue = const [],
     this.currentIndex = -1,
-    this.position = Duration.zero,
     this.duration,
     this.error,
     this.isShuffleEnabled = false,
@@ -97,17 +99,14 @@ class PlayerState {
   bool get canPlayNext => currentIndex < queue.length - 1;
   bool get canPlayPrevious => currentIndex > 0;
 
-  double get progress {
-    if (duration == null || duration!.inMilliseconds == 0) return 0;
-    return position.inMilliseconds / duration!.inMilliseconds;
-  }
+  // Progress calculation moved to UI layer using playbackPositionProvider
+  // This prevents rebuilds on every position update
 
   PlayerState copyWith({
     PlayerStatus? status,
     Song? currentSong,
     List<Song>? queue,
     int? currentIndex,
-    Duration? position,
     Duration? duration,
     String? error,
     bool? isShuffleEnabled,
@@ -130,7 +129,6 @@ class PlayerState {
       currentSong: clearSong ? null : (currentSong ?? this.currentSong),
       queue: queue ?? this.queue,
       currentIndex: currentIndex ?? this.currentIndex,
-      position: position ?? this.position,
       duration: clearDuration ? null : (duration ?? this.duration),
       error: clearError ? null : (error ?? this.error),
       isShuffleEnabled: isShuffleEnabled ?? this.isShuffleEnabled,
@@ -157,7 +155,6 @@ class PlayerState {
         currentSong == other.currentSong &&
         listEquals(queue, other.queue) &&
         currentIndex == other.currentIndex &&
-        position == other.position &&
         duration == other.duration &&
         error == other.error &&
         isShuffleEnabled == other.isShuffleEnabled &&
@@ -178,7 +175,6 @@ class PlayerState {
         currentSong,
         Object.hashAll(queue),
         currentIndex,
-        position,
         duration,
         error,
         isShuffleEnabled,
@@ -402,11 +398,18 @@ class PlayerNotifier extends Notifier<PlayerState> {
           .map((s) => s.id)
           .toSet();
 
+      final newQueue = [
+        ...freshQueue.sublist(0, freshIdx + 1),
+        ...interleaved,
+      ];
+
+      // Trim queue to prevent unbounded growth
+      final trimmedQueue = newQueue.length > _kMaxQueueSize
+          ? newQueue.sublist(0, _kMaxQueueSize)
+          : newQueue;
+
       state = state.copyWith(
-        queue: [
-          ...freshQueue.sublist(0, freshIdx + 1),
-          ...interleaved,
-        ],
+        queue: trimmedQueue,
         smartShuffleSongIds: {...state.smartShuffleSongIds, ...newSmartIds},
       );
       _applyQueueInvariant();
@@ -605,32 +608,23 @@ class PlayerNotifier extends Notifier<PlayerState> {
       if (song != null && state.currentSong == null) {
         final posMs = prefs.getInt(StorageKeys.prefsLastPlayedPositionMs) ?? 0;
         final durMs = prefs.getInt(StorageKeys.prefsLastPlayedDurationMs) ?? 0;
-        _lastQueueSource = prefs.getString(StorageKeys.prefsLastQueueSource);
-        _lastPlaylistId = prefs.getString(StorageKeys.prefsLastPlaylistId);
+        
+        // Restore position to dedicated provider
+        if (posMs > 0) {
+          ref.read(playbackPositionProvider.notifier).update(Duration(milliseconds: posMs));
+        }
+        
         state = state.copyWith(
-          currentSong: song,
           queue: [song],
           currentIndex: 0,
           status: PlayerStatus.paused,
-          position: Duration(milliseconds: posMs),
           duration: durMs > 0 ? Duration(milliseconds: durMs) : null,
         );
         _applyQueueInvariant();
-        _syncMediaNotification(song);
-        unawaited(_maybeFillQueueAfterRestore());
       }
     } catch (e) {
       logWarning('Player: _restoreLastSong failed: $e', tag: 'Player');
     }
-  }
-
-  Future<void> _maybeFillQueueAfterRestore() async {
-    if (state.queue.length > 1) return;
-    final song = state.currentSong;
-    if (song == null) return;
-    final should = await _shouldFillQueue(_lastQueueSource, _lastPlaylistId);
-    if (!should) return;
-    await _loadQueueInBackground(song, playlistId: _lastPlaylistId);
   }
 
   /// Keeps currentIndex in range and currentSong in sync with queue[currentIndex].
@@ -664,7 +658,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     try {
       final song = state.currentSong;
       if (song == null) return;
-      final posMs = state.position.inMilliseconds;
+      final posMs = ref.read(playbackPositionProvider).inMilliseconds;
       final durMs = state.duration?.inMilliseconds ?? 0;
       if (posMs == 0 && durMs == 0) return;
       final box = await Hive.openBox<dynamic>('player_state');
@@ -780,11 +774,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
         );
         if (reachedEnd ||
             (_usingPlaylist && state.canPlayNext && hadRealDuration)) {
-          // Show position at end so UI displays e.g. 2:10/2:10 (not 00:00/2:10) until next track loads.
-          final displayPosition = dur;
           state = state.copyWith(
             status: PlayerStatus.paused,
-            position: displayPosition,
             duration: dur,
           );
           _handleCompletion();
@@ -819,7 +810,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
               _audioPlayer.isPlaying) {
             state = state.copyWith(status: PlayerStatus.playing);
           }
-          state = state.copyWith(position: position);
+          ref.read(playbackPositionProvider.notifier).update(position);
 
           // ── Trigger silent home refresh after 15 seconds of playback ──
           if (state.isPlaying &&
@@ -854,9 +845,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
                 'pos=${position.inMilliseconds}ms dur=${dur?.inMilliseconds}ms',
                 tag: 'Player',
               );
-              final endPos = dur ?? position;
               state =
-                  state.copyWith(status: PlayerStatus.paused, position: endPos);
+                  state.copyWith(status: PlayerStatus.paused);
               _macosLastPositionMs = null;
               _handleCompletion();
               return;
@@ -987,7 +977,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
       state = state.copyWith(
         currentIndex: idx,
         currentSong: song,
-        position: Duration.zero,
         clearDuration: true,
       );
       _syncMediaNotification(song);
@@ -1052,7 +1041,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       return;
     }
     final index = state.currentIndex.clamp(0, queue.length - 1);
-    final position = state.position;
+    final position = ref.read(playbackPositionProvider);
 
     // If we're already using a playlist for this exact queue and we are not
     // explicitly asked to play, there is nothing to do.
@@ -1204,7 +1193,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
       await _audioPlayer.setPlaylist(
         sources,
         initialIndex: initialIndex,
-        initialPosition: position > Duration.zero ? position : null,
       );
 
       // Bail if preempted during setPlaylist (which can block for several seconds on iOS).
@@ -1221,10 +1209,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
       state = state.copyWith(
         currentIndex: initialIndex,
         currentSong: loadedSong,
-        position: position > Duration.zero ? position : Duration.zero,
-        // When shouldPlay is true, don't immediately flip UI to "playing".
-        // We wait for just_audio to actually report playing=true; otherwise
-        // cold-start races show a pause icon while audio never starts.
         status: shouldPlay ? PlayerStatus.loading : PlayerStatus.paused,
       );
       unawaited(_cacheSongMetadata(loadedSong));
@@ -1274,11 +1258,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _playbackRecoveryTimer = Timer(const Duration(milliseconds: 450), () async {
       // Only recover if the app still believes we should be playing.
       if (_disposed) return;
-      if (_disposed) return;
-      final pendingPlay = _playRequestedAt != null &&
-          DateTime.now().difference(_playRequestedAt!) <
-              const Duration(seconds: 2);
-      if (!pendingPlay) return;
       if (!_hasLoadedSource) return;
 
       try {
@@ -1396,22 +1375,18 @@ class PlayerNotifier extends Notifier<PlayerState> {
     try {
       final pos = _audioPlayer.position;
       final dur = _audioPlayer.duration;
-      // The UI should primarily follow `positionStream` for smooth progress.
-      // This timer is a fallback for cases where streams stall, but it must not
-      // reset the slider to 0:00 due to transient player positions.
-      final prev = state.position;
-      final shouldUpdatePosition = pos >= prev || prev == Duration.zero;
+      ref.read(playbackPositionProvider.notifier).update(pos);
 
-      state = state.copyWith(
-        position: shouldUpdatePosition ? pos : prev,
-        // On macOS, AVPlayer reports a bogus container duration. Block it entirely
-        // and let _maybeFetchRealDurationOnMacOS own the duration field.
-        duration: Platform.isMacOS
-            ? state.duration
-            : (dur != null && dur.inMilliseconds > 0)
-                ? dur
-                : state.duration,
-      );
+      // Update duration if available (macOS blocks container duration)
+      final newDuration = Platform.isMacOS
+          ? state.duration
+          : (dur != null && dur.inMilliseconds > 0)
+              ? dur
+              : state.duration;
+      
+      if (newDuration != state.duration) {
+        state = state.copyWith(duration: newDuration);
+      }
     } catch (e) {
       logWarning('Player: _syncPositionAndDurationFromPlayer failed: $e',
           tag: 'Player');
@@ -1469,9 +1444,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _lastRealDurationFetchedForSongId = null;
     _silentRefreshTriggeredForSongId = null;
     state = state.copyWith(
-      status: PlayerStatus.loading,
-      position: Duration.zero,
-      clearDuration: true,
       currentSong: song,
       queue: queue != null && queue.length > 1 ? queue : [song],
       currentIndex: queue != null && queue.length > 1
@@ -1807,7 +1779,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }
 
     if (state.hasSong) {
-      final resumePos = state.position;
+      final resumePos = ref.read(playbackPositionProvider);
       final pos = resumePos > Duration.zero ? resumePos : null;
 
       final localPath = _resolveLocalPath(state.currentSong!.id);
@@ -1949,7 +1921,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }
 
     await _audioPlayer.seek(position);
-    state = state.copyWith(position: position);
+    ref.read(playbackPositionProvider.notifier).update(position);
   }
 
   Future<void> _reloadCurrentSongFromUrl([Duration? seekPosition]) async {
@@ -1995,7 +1967,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
         state = state.copyWith(
           currentIndex: nextIndex,
           currentSong: nextSong,
-          position: Duration.zero,
           status: PlayerStatus.loading,
         );
         ref.read(homeProvider.notifier).addToRecentlyPlayed(nextSong);
@@ -2065,7 +2036,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
   }
 
   Future<void> playPrevious() async {
-    if (state.position.inSeconds > 3) {
+    if (ref.read(playbackPositionProvider).inSeconds > 3) {
       await seekTo(Duration.zero);
       return;
     }
@@ -2086,7 +2057,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
         state = state.copyWith(
           currentIndex: prevIndex,
           currentSong: state.queue[prevIndex],
-          position: Duration.zero,
           status: PlayerStatus.loading,
         );
         await _syncPlaylistToQueue(shouldPlay: true);
@@ -2313,7 +2283,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
     state = state.copyWith(
       currentIndex: nextIndex,
       currentSong: nextSong,
-      position: Duration.zero,
       // Never seed duration from song.duration (the 3:00 placeholder).
       // durationStream (Android/iOS) and _maybeFetchRealDurationOnMacOS (macOS)
       // will set the correct value once available.

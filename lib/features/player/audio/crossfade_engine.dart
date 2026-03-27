@@ -204,7 +204,7 @@ class CrossfadeEngine {
 
     try {
       if (normalizationEnabled) await secondary.setNormalization(true);
-      await secondary.applyCrossfadeVolume(0.0);
+      secondary.applyCrossfadeVolume(0.0);
     } catch (e) {
       logWarning('CrossfadeEngine: preload init failed — $e', tag: 'Crossfade');
       secondary.dispose();
@@ -270,7 +270,7 @@ class CrossfadeEngine {
 
       try {
         if (normalizationEnabled) await secondary.setNormalization(true);
-        await secondary.applyCrossfadeVolume(0.0);
+        secondary.applyCrossfadeVolume(0.0);
       } catch (e) {
         logWarning(
             'CrossfadeEngine: secondary init failed — $e', tag: 'Crossfade');
@@ -310,7 +310,7 @@ class CrossfadeEngine {
 
     _fadeTimer?.cancel();
     _fadeTimer =
-        Timer.periodic(const Duration(milliseconds: 50), (timer) async {
+        Timer.periodic(const Duration(milliseconds: 16), (timer) {
       try {
         if (_disposed) {
           timer.cancel();
@@ -319,11 +319,10 @@ class CrossfadeEngine {
         final elapsed = DateTime.now().difference(startTime).inMilliseconds;
         final t = (elapsed / totalMs).clamp(0.0, 1.0);
 
-        // Drive both ramps in parallel for minimal latency skew.
-        await Future.wait([
-          _primary.applyCrossfadeVolume(1.0 - t),
-          _secondary?.applyCrossfadeVolume(t) ?? Future.value(),
-        ]);
+        // Apply volume changes synchronously to avoid async overhead
+        // This is safe because applyCrossfadeVolume is fast (just setVolume)
+        _primary.applyCrossfadeVolume(1.0 - t);
+        _secondary?.applyCrossfadeVolume(t);
 
         if (t >= 1.0) {
           timer.cancel();

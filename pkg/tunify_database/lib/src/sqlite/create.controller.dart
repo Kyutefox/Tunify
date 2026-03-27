@@ -39,7 +39,7 @@ class SqliteCreateController {
           'palette_color': map['palette_color'],
           'is_saved': 1,
           'total_track_count_remote': map['total_track_count_remote'],
-          'shuffle_enabled': (map['shuffle_enabled'] == true) ? 1 : 0,
+          'shuffle_enabled': map['shuffle_enabled'] is int ? map['shuffle_enabled'] as int : ((map['shuffle_enabled'] == true) ? 1 : 0),
           'is_pinned': (map['is_pinned'] == true) ? 1 : 0,
           'is_artist': (map['is_artist'] == true) ? 1 : 0,
           'is_album': (map['is_album'] == true) ? 1 : 0,

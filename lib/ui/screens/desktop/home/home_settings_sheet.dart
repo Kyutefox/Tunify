@@ -537,7 +537,6 @@ class PlaybackSettingsBody extends ConsumerWidget {
     final playerState = ref.watch(playerProvider);
     final normEnabled = playerState.isNormalizationEnabled;
     final showExplicit = ref.watch(showExplicitContentProvider);
-    final smartRecShuffle = ref.watch(smartRecommendationShuffleProvider);
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -558,16 +557,6 @@ class PlaybackSettingsBody extends ConsumerWidget {
           value: showExplicit,
           onChanged: (v) =>
               ref.read(showExplicitContentProvider.notifier).setShowExplicit(v),
-        ),
-        _PlaybackToggleTile(
-          icon: AppIcons.shuffle,
-          label: 'Smart Recommendation Shuffle',
-          subtitle:
-              'When queue has one song from a playlist or library, fill with recommendations only if shuffle is on',
-          value: smartRecShuffle,
-          onChanged: (v) => ref
-              .read(smartRecommendationShuffleProvider.notifier)
-              .setSmartRecommendationShuffle(v),
         ),
         _PlaybackToggleTile(
           icon: AppIcons.musicNote,

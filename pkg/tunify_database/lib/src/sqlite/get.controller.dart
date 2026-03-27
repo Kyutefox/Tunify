@@ -67,7 +67,7 @@ class SqliteGetController {
           'browse_id': r['browse_id'],
           'palette_color': r['palette_color'],
           'total_track_count_remote': r['total_track_count_remote'] as int?,
-          'shuffle_enabled': (r['shuffle_enabled'] as int? ?? 0) == 1,
+          'shuffle_enabled': r['shuffle_enabled'] as int? ?? 0,
           'is_pinned': (r['is_pinned'] as int? ?? 0) == 1,
         };
       }).toList();
@@ -92,8 +92,10 @@ class SqliteGetController {
 
       final sortOrder = (await _getSetting(db, 'sort_order')) ?? 'recent';
       final viewMode = (await _getSetting(db, 'view_mode')) ?? 'list';
-      final downloadedShuffle =
-          (await _getSetting(db, 'downloaded_shuffle')) == 'true';
+      final downloadedShuffleStr = await _getSetting(db, 'downloaded_shuffle');
+      final downloadedShuffleMode = downloadedShuffleStr == 'true' ? 1
+          : (downloadedShuffleStr == null || downloadedShuffleStr == 'false') ? 0
+          : int.tryParse(downloadedShuffleStr) ?? 0;
       final downloadsSortOrder =
           (await _getSetting(db, 'downloads_sort_order')) ?? 'customOrder';
 
@@ -123,7 +125,7 @@ class SqliteGetController {
         'folders': folders,
         'sortOrder': sortOrder,
         'viewMode': viewMode,
-        'downloadedShuffleEnabled': downloadedShuffle,
+        'downloadedShuffleMode': downloadedShuffleMode,
         'downloadsSortOrder': downloadsSortOrder,
         'followedArtists': followedArtists,
         'followedAlbums': followedAlbums,
@@ -139,7 +141,7 @@ class SqliteGetController {
         'folders': <Map>[],
         'sortOrder': 'recent',
         'viewMode': 'list',
-        'downloadedShuffleEnabled': false,
+        'downloadedShuffleMode': 0,
         'downloadsSortOrder': 'customOrder',
         'followedArtists': <Map>[],
         'followedAlbums': <Map>[],

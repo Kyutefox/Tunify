@@ -1577,18 +1577,31 @@ class _ActionRow extends ConsumerWidget {
       isLocalFiles;
   final VoidCallback? onAddToLibrary;
 
+  void _showShuffleModeSheet(
+      BuildContext context, WidgetRef ref, ShuffleMode current) {
+    showAppSheet(
+      context,
+      child: _ShuffleModeSheet(
+        current: current,
+        playlistId: playlistId,
+        isDownloads: isDownloads || isLocalFiles,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final shuffleEnabled = disableShuffle
-        ? false
+    final shuffleMode = disableShuffle
+        ? ShuffleMode.none
         : isDownloads || isLocalFiles
-            ? ref.watch(downloadedShuffleProvider)
+            ? ref.watch(libraryProvider.select((s) => s.downloadedShuffleMode))
             : ref.watch(libraryProvider.select((s) =>
                 s.playlists
                     .where((p) => p.id == playlistId)
                     .firstOrNull
-                    ?.shuffleEnabled ??
-                false));
+                    ?.shuffleMode ??
+                ShuffleMode.none));
+    final shuffleEnabled = shuffleMode != ShuffleMode.none;
 
     return SizedBox(
       height: kCollectionActionRowHeight,
@@ -1597,19 +1610,36 @@ class _ActionRow extends ConsumerWidget {
             const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
           AppIconButton(
-            icon: AppIcon(
-                icon: AppIcons.shuffle,
-                size: 24,
-                color:
-                    shuffleEnabled ? AppColors.primary : AppColors.textPrimary),
+            icon: SizedBox(
+              width: 24,
+              height: 24,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AppIcon(
+                    icon: AppIcons.shuffle,
+                    size: 24,
+                    color: shuffleEnabled
+                        ? AppColors.primary
+                        : AppColors.textPrimary,
+                  ),
+                  if (shuffleMode == ShuffleMode.smart)
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: Icon(
+                        Icons.auto_awesome,
+                        size: 13,
+                        color: shuffleEnabled
+                            ? AppColors.primary
+                            : AppColors.textPrimary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
             onPressed: filteredSongs.isNotEmpty && !disableShuffle
-                ? () => isDownloads || isLocalFiles
-                    ? ref
-                        .read(libraryProvider.notifier)
-                        .toggleDownloadedShuffle()
-                    : ref
-                        .read(libraryProvider.notifier)
-                        .togglePlaylistShuffle(playlistId)
+                ? () => _showShuffleModeSheet(context, ref, shuffleMode)
                 : null,
             size: 40,
             iconSize: 24,
@@ -1672,7 +1702,7 @@ class _CollectionPlayButton extends ConsumerWidget {
                 s.playlists
                     .where((p) => p.id == playlistId)
                     .firstOrNull
-                    ?.shuffleEnabled ??
+                    ?.shuffleEnabled ??  // true for regular and smart modes
                 false));
     return PlayCircleButton(
       onTap: filteredSongs.isNotEmpty
@@ -1688,6 +1718,120 @@ class _CollectionPlayButton extends ConsumerWidget {
           : () {},
       size: 56,
       iconSize: 28,
+    );
+  }
+}
+
+// ─── Shuffle Mode Sheet ───────────────────────────────────────────────────────
+
+class _ShuffleModeSheet extends ConsumerWidget {
+  const _ShuffleModeSheet({
+    required this.current,
+    required this.playlistId,
+    required this.isDownloads,
+  });
+
+  final ShuffleMode current;
+  final String playlistId;
+  final bool isDownloads;
+
+  void _set(BuildContext context, WidgetRef ref, ShuffleMode mode) {
+    if (isDownloads) {
+      ref.read(libraryProvider.notifier).setDownloadedShuffleMode(mode);
+    } else {
+      ref.read(libraryProvider.notifier).setPlaylistShuffleMode(playlistId, mode);
+    }
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+            kSheetHorizontalPadding, AppSpacing.lg, kSheetHorizontalPadding, AppSpacing.md),
+        child: const Text('Shuffle',
+            style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: AppFontSize.xl,
+                fontWeight: FontWeight.w700)),
+      ),
+      _ShuffleModeTile(
+        icon: AppIcons.shuffle,
+        label: 'Shuffle off',
+        selected: current == ShuffleMode.none,
+        onTap: () => _set(context, ref, ShuffleMode.none),
+      ),
+      _ShuffleModeTile(
+        icon: AppIcons.shuffle,
+        label: 'Regular Shuffle',
+        subtitle: 'Shuffle songs in this playlist',
+        selected: current == ShuffleMode.regular,
+        onTap: () => _set(context, ref, ShuffleMode.regular),
+      ),
+      _ShuffleModeTile(
+        icon: AppIcons.shuffle,
+        label: 'Smart Shuffle',
+        subtitle: 'Shuffle + mix in recommended songs',
+        selected: current == ShuffleMode.smart,
+        isSmart: true,
+        onTap: () => _set(context, ref, ShuffleMode.smart),
+      ),
+      const SizedBox(height: AppSpacing.xl),
+    ]);
+  }
+}
+
+class _ShuffleModeTile extends StatelessWidget {
+  const _ShuffleModeTile({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.subtitle,
+    this.isSmart = false,
+  });
+
+  final List<List<dynamic>> icon;
+  final String label;
+  final String? subtitle;
+  final bool selected;
+  final bool isSmart;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppColors.primary : AppColors.textSecondary;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+          horizontal: kSheetHorizontalPadding, vertical: 4),
+      leading: isSmart
+          ? SizedBox(
+              width: 24,
+              height: 24,
+              child: Stack(children: [
+                AppIcon(icon: icon, size: 24, color: color),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Icon(Icons.auto_awesome, size: 10, color: color),
+                ),
+              ]),
+            )
+          : AppIcon(icon: icon, size: 24, color: color),
+      title: Text(label,
+          style: TextStyle(
+              color: selected ? AppColors.primary : AppColors.textPrimary,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
+      subtitle: subtitle != null
+          ? Text(subtitle!,
+              style: const TextStyle(
+                  color: AppColors.textMuted, fontSize: AppFontSize.sm))
+          : null,
+      trailing: selected
+          ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)
+          : null,
+      onTap: onTap,
     );
   }
 }

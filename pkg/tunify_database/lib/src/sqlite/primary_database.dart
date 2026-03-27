@@ -216,7 +216,7 @@ class PrimaryDatabase {
       await _createController.setSettingInTransaction(
           txn, 'view_mode', data['viewMode']?.toString() ?? 'list');
       await _createController.setSettingInTransaction(txn,
-          'downloaded_shuffle', (data['downloadedShuffleEnabled'] == true).toString());
+          'downloaded_shuffle', (data['downloadedShuffleMode'] as int? ?? 0).toString());
       await _createController.setSettingInTransaction(txn,
           'downloads_sort_order', data['downloadsSortOrder']?.toString() ?? 'customOrder');
 

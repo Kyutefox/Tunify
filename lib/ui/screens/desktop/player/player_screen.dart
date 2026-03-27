@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart'
     show showAppDraggableSheet, showAppSheet, kSheetHorizontalPadding;
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/downloads/download_service.dart';
@@ -1467,6 +1468,8 @@ class QueuePanelContent extends ConsumerWidget {
     final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
     final isShuffleEnabled =
         ref.watch(playerProvider.select((s) => s.isShuffleEnabled));
+    final activeShuffleMode =
+        ref.watch(playerProvider.select((s) => s.activeShuffleMode));
     final currentSong = (currentIndex >= 0 && currentIndex < queue.length)
         ? queue[currentIndex]
         : null;
@@ -1564,21 +1567,42 @@ class QueuePanelContent extends ConsumerWidget {
                 ],
               ),
             ),
-          if (isShuffleEnabled)
+          if (isShuffleEnabled || activeShuffleMode != ShuffleMode.none)
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 8),
               child: Row(
                 children: [
-                  AppIcon(
-                    icon: AppIcons.shuffle,
-                    color: AppColors.textSecondary,
-                    size: 18,
+                  SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        AppIcon(
+                          icon: AppIcons.shuffle,
+                          color: AppColors.textSecondary,
+                          size: 18,
+                        ),
+                        if (activeShuffleMode == ShuffleMode.smart)
+                          const Positioned(
+                            right: -3,
+                            bottom: -3,
+                            child: Icon(
+                              Icons.auto_awesome,
+                              size: 9,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                   const SizedBox(width: AppSpacing.sm),
-                  const Text(
-                    'Shuffling from',
-                    style: TextStyle(
+                  Text(
+                    activeShuffleMode == ShuffleMode.smart
+                        ? 'Smart Shuffling'
+                        : 'Shuffling',
+                    style: const TextStyle(
                       color: AppColors.textSecondary,
                       fontSize: AppFontSize.md,
                       fontWeight: FontWeight.w500,
@@ -1624,10 +1648,13 @@ class QueuePanelContent extends ConsumerWidget {
                   actualIndex = i;
                 }
                 final song = queue[actualIndex];
+                final smartIds = ref.watch(
+                    playerProvider.select((s) => s.smartShuffleSongIds));
                 return _QueueItem(
                   key: ValueKey(song.id),
                   song: song,
                   queueIndex: actualIndex,
+                  isSmartShuffle: smartIds.contains(song.id),
                   onTap: () {
                     ref
                         .read(playerProvider.notifier)
@@ -1774,11 +1801,13 @@ class _QueueItem extends ConsumerWidget {
     required this.onTap,
     required this.queueIndex,
     this.dragHandle,
+    this.isSmartShuffle = false,
   });
   final Song song;
   final VoidCallback onTap;
   final int queueIndex;
   final Widget? dragHandle;
+  final bool isSmartShuffle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1807,6 +1836,15 @@ class _QueueItem extends ConsumerWidget {
                       fontSize: AppFontSize.md,
                     ),
                   ),
+                  if (isSmartShuffle)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4),
+                      child: Icon(
+                        Icons.auto_awesome,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   AppIconButton(
                     icon: AppIcon(
                       icon: AppIcons.moreVert,

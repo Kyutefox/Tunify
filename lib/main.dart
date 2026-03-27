@@ -209,9 +209,6 @@ class _TunifyAppContent extends ConsumerWidget {
               ref.read(libraryProvider.notifier).onAuthChanged(next);
               ref.read(recentSearchProvider.notifier).onAuthChanged();
               ref.read(showExplicitContentProvider.notifier).onAuthChanged();
-              ref
-                  .read(smartRecommendationShuffleProvider.notifier)
-                  .onAuthChanged();
             }).catchError((e, st) {
               logWarning(
                   'Auth: pullFromSupabase failed ($e), continuing with local data',
@@ -225,9 +222,6 @@ class _TunifyAppContent extends ConsumerWidget {
               ref.read(libraryProvider.notifier).onAuthChanged(next);
               ref.read(recentSearchProvider.notifier).onAuthChanged();
               ref.read(showExplicitContentProvider.notifier).onAuthChanged();
-              ref
-                  .read(smartRecommendationShuffleProvider.notifier)
-                  .onAuthChanged();
             });
           } else {
             ref.read(syncManagerProvider).stop();
@@ -240,9 +234,6 @@ class _TunifyAppContent extends ConsumerWidget {
             ref.read(libraryProvider.notifier).onAuthChanged(next);
             ref.read(recentSearchProvider.notifier).onAuthChanged();
             ref.read(showExplicitContentProvider.notifier).onAuthChanged();
-            ref
-                .read(smartRecommendationShuffleProvider.notifier)
-                .onAuthChanged();
           }
         }
       },

@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tunify/core/utils/platform_utils.dart';
 
-import 'package:flutter/foundation.dart' show listEquals;
+import 'package:flutter/foundation.dart' show listEquals, setEquals;
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio/just_audio.dart' as ja;
@@ -19,7 +19,7 @@ import 'package:tunify/features/player/audio/crossfade_engine.dart';
 import 'package:tunify/features/player/audio/audio_handler.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 
-import 'package:tunify/features/settings/content_settings_provider.dart';
+import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/features/device/device_music_provider.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
@@ -53,6 +53,13 @@ class PlayerState {
   final StreamQuality quality;
   final int bitrate;
   final bool isNormalizationEnabled;
+  /// IDs of songs appended to the queue by Smart Shuffle recommendations.
+  final Set<String> smartShuffleSongIds;
+
+  /// The shuffle mode of the source that is currently playing (playlist,
+  /// downloads, etc.). [ShuffleMode.none] when nothing is active.
+  final ShuffleMode activeShuffleMode;
+
   // Stored as nullable so Shorebird-patched builds that pre-date these fields
   // still get the correct safe default instead of a null-dereference crash.
   final bool? _isGaplessEnabled;
@@ -77,6 +84,8 @@ class PlayerState {
     this.isNormalizationEnabled = false,
     bool isGaplessEnabled = true,
     int crossfadeDurationSeconds = 0,
+    this.smartShuffleSongIds = const {},
+    this.activeShuffleMode = ShuffleMode.none,
   })  : _isGaplessEnabled = isGaplessEnabled,
         _crossfadeDurationSeconds = crossfadeDurationSeconds;
 
@@ -109,9 +118,12 @@ class PlayerState {
     bool? isNormalizationEnabled,
     bool? isGaplessEnabled,
     int? crossfadeDurationSeconds,
+    Set<String>? smartShuffleSongIds,
+    ShuffleMode? activeShuffleMode,
     bool clearSong = false,
     bool clearError = false,
     bool clearDuration = false,
+    bool clearSmartShuffleIds = false,
   }) {
     return PlayerState(
       status: status ?? this.status,
@@ -131,6 +143,9 @@ class PlayerState {
       isGaplessEnabled: isGaplessEnabled ?? this.isGaplessEnabled,
       crossfadeDurationSeconds:
           crossfadeDurationSeconds ?? this.crossfadeDurationSeconds,
+      smartShuffleSongIds:
+          clearSmartShuffleIds ? const {} : (smartShuffleSongIds ?? this.smartShuffleSongIds),
+      activeShuffleMode: activeShuffleMode ?? this.activeShuffleMode,
     );
   }
 
@@ -152,7 +167,9 @@ class PlayerState {
         bitrate == other.bitrate &&
         isNormalizationEnabled == other.isNormalizationEnabled &&
         isGaplessEnabled == other.isGaplessEnabled &&
-        crossfadeDurationSeconds == other.crossfadeDurationSeconds;
+        crossfadeDurationSeconds == other.crossfadeDurationSeconds &&
+        setEquals(smartShuffleSongIds, other.smartShuffleSongIds) &&
+        activeShuffleMode == other.activeShuffleMode;
   }
 
   @override
@@ -172,6 +189,8 @@ class PlayerState {
         isNormalizationEnabled,
         isGaplessEnabled,
         crossfadeDurationSeconds,
+        Object.hashAll(smartShuffleSongIds),
+        activeShuffleMode,
       );
 }
 
@@ -193,6 +212,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
   final List<StreamSubscription<dynamic>> _subscriptions = [];
 
   List<Song> _originalQueue = [];
+
+  /// Original (pre-interleave) playlist songs kept for smart shuffle seed rotation.
+  List<Song> _smartShufflePlaylistSongs = [];
+  int _smartSeedIndex = 0;
+  bool _smartShuffleRefilling = false;
 
   bool _disposed = false;
   bool _isTransitioning = false;
@@ -303,20 +327,120 @@ class PlayerNotifier extends Notifier<PlayerState> {
   }
 
   /// Determines if auto-fill queue should run for the given [source]/[playlistId].
+  ///
+  /// Always true for a single song (source == null or 'autoqueue').
+  /// For playlists/liked/downloads: only true when shuffle mode is [ShuffleMode.smart].
+  /// Interleaves [recs] into [playlistSongs]: inserts one recommended song after
+  /// every [interval] playlist songs. Tracks that don't fit are dropped
+  /// (the refill mechanism will add more later).
+  List<Song> _interleaveSmartRecs(List<Song> playlistSongs, List<Song> recs,
+      {int interval = 2}) {
+    final result = <Song>[];
+    int recIndex = 0;
+    int playlistCount = 0;
+    for (final song in playlistSongs) {
+      result.add(song);
+      playlistCount++;
+      if (playlistCount % interval == 0 && recIndex < recs.length) {
+        result.add(recs[recIndex++]);
+      }
+    }
+    return result;
+  }
+
+  /// Triggered on each song advance when smart shuffle is active.
+  /// If fewer than 2 ✨ recommended songs remain ahead in the queue, fetches a
+  /// fresh batch (seeded from a rotating playlist song) and interleaves them in.
+  Future<void> _maybeRefillSmartShuffle() async {
+    if (_smartShuffleRefilling) return;
+    if (state.activeShuffleMode != ShuffleMode.smart) return;
+
+    final currentIdx = state.currentIndex;
+    final queue = state.queue;
+    final smartIds = state.smartShuffleSongIds;
+
+    // Count unplayed ✨ songs still ahead.
+    final unplayedSmart = currentIdx + 1 < queue.length
+        ? queue.sublist(currentIdx + 1).where((s) => smartIds.contains(s.id)).length
+        : 0;
+    if (unplayedSmart >= 2) return;
+
+    if (_smartShufflePlaylistSongs.isEmpty) return;
+
+    _smartShuffleRefilling = true;
+    try {
+      // Rotate seed through original playlist songs for varied recommendations.
+      final seed =
+          _smartShufflePlaylistSongs[_smartSeedIndex % _smartShufflePlaylistSongs.length];
+      _smartSeedIndex++;
+
+      final tracks = await _streamManager.getRecommendedQueue(
+        seed.id,
+        maxResults: 8,
+      );
+      if (tracks.isEmpty) return;
+
+      // Re-check state — song may have changed while we were awaiting.
+      if (state.activeShuffleMode != ShuffleMode.smart) return;
+      final freshQueue = state.queue;
+      final freshIdx = state.currentIndex;
+      final existingIds = freshQueue.map((s) => s.id).toSet();
+
+      final freshRecs = tracks
+          .map(Song.fromTrack)
+          .where((s) => !existingIds.contains(s.id))
+          .toList();
+      if (freshRecs.isEmpty) return;
+
+      final songsAhead = freshIdx + 1 < freshQueue.length
+          ? freshQueue.sublist(freshIdx + 1)
+          : <Song>[];
+      final interleaved = _interleaveSmartRecs(songsAhead, freshRecs);
+
+      final newSmartIds = interleaved
+          .where((s) => !existingIds.contains(s.id))
+          .map((s) => s.id)
+          .toSet();
+
+      state = state.copyWith(
+        queue: [
+          ...freshQueue.sublist(0, freshIdx + 1),
+          ...interleaved,
+        ],
+        smartShuffleSongIds: {...state.smartShuffleSongIds, ...newSmartIds},
+      );
+      _applyQueueInvariant();
+    } catch (e) {
+      logWarning('Player: _maybeRefillSmartShuffle failed: $e', tag: 'Player');
+    } finally {
+      _smartShuffleRefilling = false;
+    }
+  }
+
+  ShuffleMode _readActiveShuffleMode(String? source, String? playlistId) {
+    final lib = ref.read(libraryProvider);
+    return switch (source) {
+      'playlist' =>
+        lib.playlists.where((p) => p.id == playlistId).firstOrNull?.shuffleMode ??
+            ShuffleMode.none,
+      'downloads' || 'device' => lib.downloadedShuffleMode,
+      'liked' => lib.likedPlaylist.shuffleMode,
+      _ => ShuffleMode.none,
+    };
+  }
+
   Future<bool> _shouldFillQueue(String? source, String? playlistId) async {
     if (source == null || source == 'autoqueue') return true;
-    final smartOn = ref.read(smartRecommendationShuffleProvider);
-    if (!smartOn) return false;
     final lib = ref.read(libraryProvider);
     switch (source) {
       case 'playlist':
         final p = lib.playlists.where((p) => p.id == playlistId).firstOrNull;
-        return p?.shuffleEnabled ?? false;
+        return p?.shuffleMode == ShuffleMode.smart;
       case 'downloads':
       case 'device':
-        return lib.downloadedShuffleEnabled;
+        return lib.downloadedShuffleMode == ShuffleMode.smart;
       case 'liked':
-        return lib.likedPlaylist.shuffleEnabled;
+        return lib.likedPlaylist.shuffleMode == ShuffleMode.smart;
       default:
         return false;
     }
@@ -887,6 +1011,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
       // Reset gapless pre-extend flag for the new track.
       _didPreExtend = false;
+
+      // Progressively refill smart shuffle recs when running low.
+      if (state.activeShuffleMode == ShuffleMode.smart) {
+        unawaited(_maybeRefillSmartShuffle());
+      }
     }));
   }
 
@@ -1339,6 +1468,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _lastQueueSource = queueSource;
     _lastPlaylistId = playlistId;
     _originalQueue = [];
+    _smartShufflePlaylistSongs = [];
+    _smartSeedIndex = 0;
+    _smartShuffleRefilling = false;
     // Guard position timer before the await below — without this, the 1-second
     // timer fires during _shouldFillQueue() and reads the old song's position
     // from _audioPlayer (which hasn't been reset yet), then _syncPlaylistToQueue
@@ -1358,16 +1490,17 @@ class PlayerNotifier extends Notifier<PlayerState> {
           : 0,
       isShuffleEnabled: false,
       clearError: true,
+      clearSmartShuffleIds: true,
+      activeShuffleMode: _readActiveShuffleMode(queueSource, playlistId),
     );
     _applyQueueInvariant();
 
-    // Fill queue with recommendations in background when single song; start playback
-    // immediately so "Up next" updates when the queue load completes.
-    if (queue == null || queue.length <= 1) {
-      final shouldFill = await _shouldFillQueue(queueSource, playlistId);
-      if (shouldFill) {
-        unawaited(_loadQueueInBackground(song, playlistId: playlistId));
-      }
+    // Fill queue with recommendations in background; start playback immediately.
+    // Single song: replace queue with recommendations.
+    // Smart shuffle (full playlist queue): append recommendations after existing songs.
+    final shouldFill = await _shouldFillQueue(queueSource, playlistId);
+    if (shouldFill) {
+      unawaited(_loadQueueInBackground(song, playlistId: playlistId));
     }
 
     // Record as recently played immediately. The currentIndexStream listener
@@ -1386,9 +1519,14 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   Future<void> _loadQueueInBackground(Song song, {String? playlistId}) async {
     try {
+      // Always pass null for smart shuffle: local playlist IDs (lib_xxx) are
+      // not recognised by the YouTube Music API and produce empty results.
+      final isSmartShuffleAppend = state.queue.length > 1;
+      final isSmart = state.activeShuffleMode == ShuffleMode.smart;
       var tracks = await _streamManager.getRecommendedQueue(
         song.id,
-        playlistId: playlistId,
+        playlistId: (isSmartShuffleAppend || isSmart) ? null : playlistId,
+        maxResults: 10,
       );
 
       if (tracks.isEmpty) return;
@@ -1396,7 +1534,43 @@ class PlayerNotifier extends Notifier<PlayerState> {
       final newQueue = tracks.map(Song.fromTrack).toList();
 
       if (state.currentSong?.id != song.id) return;
-      if (state.queue.length > 1) return;
+
+      // Smart shuffle with a full playlist queue: interleave recommendations
+      // inline (1 rec per every 2 playlist songs, Spotify-style).
+      if (state.queue.length > 1) {
+        // Capture original playlist songs once for later seed rotation in refills.
+        if (_smartShufflePlaylistSongs.isEmpty) {
+          _smartShufflePlaylistSongs = List<Song>.from(state.queue);
+        }
+
+        final existingIds = state.queue.map((s) => s.id).toSet();
+        final freshRecs =
+            newQueue.where((s) => !existingIds.contains(s.id)).toList();
+        if (freshRecs.isEmpty) return;
+
+        // Interleave into songs ahead of the currently playing track.
+        final currentIdx = state.currentIndex;
+        final songsAhead = state.queue.sublist(currentIdx + 1);
+        final interleaved = _interleaveSmartRecs(songsAhead, freshRecs);
+
+        final newSmartIds = interleaved
+            .where((s) => !existingIds.contains(s.id))
+            .map((s) => s.id)
+            .toSet();
+
+        state = state.copyWith(
+          queue: [
+            ...state.queue.sublist(0, currentIdx + 1),
+            ...interleaved,
+          ],
+          smartShuffleSongIds: {
+            ...state.smartShuffleSongIds,
+            ...newSmartIds,
+          },
+        );
+        _applyQueueInvariant();
+        return;
+      }
 
       var index = newQueue.indexWhere((s) => s.id == song.id);
       if (index < 0) {
@@ -1420,10 +1594,24 @@ class PlayerNotifier extends Notifier<PlayerState> {
         newQueue[index] = queueSong;
       }
 
+      // For smart shuffle single-song: mark all non-seed songs as ✨.
+      final smartIdsForSingleSong = isSmart
+          ? newQueue
+              .where((s) => s.id != song.id)
+              .map((s) => s.id)
+              .toSet()
+          : state.smartShuffleSongIds;
+
+      // For single-song smart shuffle seed rotation, store the seed song.
+      if (isSmart && _smartShufflePlaylistSongs.isEmpty) {
+        _smartShufflePlaylistSongs = [song];
+      }
+
       state = state.copyWith(
         queue: newQueue,
         currentIndex: index,
         currentSong: queueSong,
+        smartShuffleSongIds: smartIdsForSingleSong,
       );
       _applyQueueInvariant();
       // Only sync the just_audio playlist when we already have an active

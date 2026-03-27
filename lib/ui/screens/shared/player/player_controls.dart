@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';import 'package:tunify/ui/theme/design_tokens.dart';
 
@@ -18,17 +19,23 @@ class PlayerControls extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isShuffleEnabled =
         ref.watch(playerProvider.select((s) => s.isShuffleEnabled));
+    final activeShuffleMode =
+        ref.watch(playerProvider.select((s) => s.activeShuffleMode));
     final repeatMode = ref.watch(playerProvider.select((s) => s.repeatMode));
     final isPlaying = ref.watch(playerProvider.select((s) => s.isPlaying));
     final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
     final notifier = ref.read(playerProvider.notifier);
 
+    final isAnyShuffleActive =
+        isShuffleEnabled || activeShuffleMode != ShuffleMode.none;
+    final isSmartShuffleActive = activeShuffleMode == ShuffleMode.smart;
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        PlayerControlIcon(
-          icon: AppIcons.shuffle,
-          isActive: isShuffleEnabled,
+        _ShuffleControlIcon(
+          isActive: isAnyShuffleActive,
+          isSmart: isSmartShuffleActive,
           onTap: notifier.toggleShuffle,
         ),
         PlayerControlIcon(
@@ -53,6 +60,48 @@ class PlayerControls extends ConsumerWidget {
           onTap: notifier.cycleRepeatMode,
         ),
       ],
+    );
+  }
+}
+
+class _ShuffleControlIcon extends StatelessWidget {
+  const _ShuffleControlIcon({
+    required this.isActive,
+    required this.isSmart,
+    required this.onTap,
+  });
+
+  final bool isActive;
+  final bool isSmart;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 26.0;
+    final padding = ((44.0 - size) / 2).clamp(8.0, 16.0);
+    final color = isActive ? AppColors.primary : Colors.white.withValues(alpha: 0.8);
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: EdgeInsets.all(padding),
+        child: SizedBox(
+          width: size,
+          height: size,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              AppIcon(icon: AppIcons.shuffle, size: size, color: color),
+              if (isSmart)
+                Positioned(
+                  right: -6,
+                  top: -6,
+                  child: Icon(Icons.auto_awesome, size: 13, color: color),
+                ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

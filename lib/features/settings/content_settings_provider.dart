@@ -63,22 +63,6 @@ class ShowExplicitContentNotifier extends _BoolSettingNotifier {
   Future<void> setShowExplicit(bool value) => _persist(value);
 }
 
-/// Whether the home feed randomizes recommended track order rather than using
-/// the default relevance ranking from YouTube Music.
-final smartRecommendationShuffleProvider =
-    NotifierProvider<SmartRecommendationShuffleNotifier, bool>(
-  SmartRecommendationShuffleNotifier.new,
-);
-
-/// Persists the smart-recommendation shuffle setting to SQLite + SharedPreferences,
-/// syncing with Supabase via [DatabaseRepository] on auth changes.
-class SmartRecommendationShuffleNotifier extends _BoolSettingNotifier {
-  SmartRecommendationShuffleNotifier()
-      : super(settingKey: PlaybackSettingKeys.smartRecommendationShuffle);
-
-  Future<void> setSmartRecommendationShuffle(bool value) => _persist(value);
-}
-
 /// Filters [songs] based on the explicit-content setting.
 /// Returns [songs] unmodified when [showExplicit] is true;
 /// otherwise removes tracks where [Song.isExplicit] is true.

@@ -15,7 +15,7 @@ typedef LibraryData = ({
   List<LibraryFolder> folders,
   String sortOrder,
   String viewMode,
-  bool downloadedShuffleEnabled,
+  ShuffleMode downloadedShuffleMode,
   String downloadsSortOrder,
   List<LibraryArtist> followedArtists,
   List<LibraryAlbum> followedAlbums,
@@ -129,7 +129,7 @@ class DatabaseRepository {
     String? name,
     String? description,
     PlaylistTrackSortOrder? sortOrder,
-    bool? shuffleEnabled,
+    ShuffleMode? shuffleMode,
     bool? isPinned,
     String? coverUrl,
     int? paletteColor,
@@ -140,7 +140,7 @@ class DatabaseRepository {
     if (name != null) fields['name'] = name;
     if (description != null) fields['description'] = description;
     if (sortOrder != null) fields['sort_order'] = sortOrder.value;
-    if (shuffleEnabled != null) fields['shuffle_enabled'] = shuffleEnabled ? 1 : 0;
+    if (shuffleMode != null) fields['shuffle_enabled'] = shuffleMode.index;
     if (isPinned != null) fields['is_pinned'] = isPinned ? 1 : 0;
     if (coverUrl != null) fields['cover_url'] = coverUrl;
     if (paletteColor != null) fields['palette_color'] = paletteColor;
@@ -225,7 +225,7 @@ class DatabaseRepository {
       'folders': [],
       'sortOrder': 'dateAdded',
       'viewMode': 'grid',
-      'downloadedShuffleEnabled': false,
+      'downloadedShuffleMode': 0,
       'downloadsSortOrder': 'dateAdded',
       'followedArtists': [],
       'followedAlbums': [],
@@ -256,7 +256,7 @@ class DatabaseRepository {
             .toList(),
         sortOrder:
             PlaylistTrackSortOrderX.fromString(m['sort_order'] as String?),
-        shuffleEnabled: m['shuffle_enabled'] as bool? ?? false,
+        shuffleMode: ShuffleModeX.fromInt(m['shuffle_enabled']),
         isPinned: m['is_pinned'] as bool? ?? false,
         customImageUrl: m['cover_url'] as String?,
         isImported: m['is_imported'] as bool? ?? false,
@@ -291,8 +291,8 @@ class DatabaseRepository {
       folders: folders,
       sortOrder: raw['sortOrder'] as String? ?? 'recent',
       viewMode: raw['viewMode'] as String? ?? 'list',
-      downloadedShuffleEnabled:
-          raw['downloadedShuffleEnabled'] as bool? ?? false,
+      downloadedShuffleMode:
+          ShuffleModeX.fromInt(raw['downloadedShuffleMode'] as int?),
       downloadsSortOrder: raw['downloadsSortOrder'] as String? ?? 'customOrder',
       followedArtists: followedArtists,
       followedAlbums: followedAlbums,
@@ -310,7 +310,7 @@ class DatabaseRepository {
         'updated_at': p.updatedAt.toUtc().toIso8601String(),
         'cover_url': p.customImageUrl,
         'is_pinned': p.isPinned,
-        'shuffle_enabled': p.shuffleEnabled,
+        'shuffle_enabled': p.shuffleMode.index,
         'is_imported': p.isImported,
         'browse_id': p.browseId,
         'palette_color': p.cachedPaletteColor,
@@ -331,7 +331,7 @@ class DatabaseRepository {
           .toList(),
       'sortOrder': data.sortOrder,
       'viewMode': data.viewMode,
-      'downloadedShuffleEnabled': data.downloadedShuffleEnabled,
+      'downloadedShuffleMode': data.downloadedShuffleMode.index,
       'downloadsSortOrder': data.downloadsSortOrder,
       'followedArtists': data.followedArtists.map((a) => a.toJson()).toList(),
       'followedAlbums': data.followedAlbums.map((a) => a.toJson()).toList(),

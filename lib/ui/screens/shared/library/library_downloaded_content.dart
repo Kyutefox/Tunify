@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:on_audio_query_pluse/on_audio_query.dart';
 
+import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/common/confirm_dialog.dart';
+import 'package:tunify/ui/widgets/common/sheet.dart';
 import 'package:tunify/ui/widgets/library/song_list_tile.dart';
 import 'package:tunify/ui/widgets/player/now_playing_indicator.dart';
 import 'package:tunify/core/constants/app_icons.dart';
@@ -107,7 +109,8 @@ class _LibraryDownloadedList extends ConsumerWidget {
     final showExplicit = ref.watch(showExplicitContentProvider);
     final filtered = filterByExplicitSetting(songs, showExplicit);
     final displaySongs = _sortSongsByOrder(filtered, sortOrder);
-    final shuffleEnabled = ref.watch(downloadedShuffleProvider);
+    final shuffleMode = ref.watch(libraryProvider.select((s) => s.downloadedShuffleMode));
+    final shuffleEnabled = shuffleMode != ShuffleMode.none;
 
     if (displaySongs.isEmpty) {
       return SliverFillRemaining(
@@ -131,14 +134,33 @@ class _LibraryDownloadedList extends ConsumerWidget {
       child: Row(
         children: [
           AppIconButton(
-            icon: AppIcon(
-              icon: AppIcons.shuffle,
-              size: 22,
-              color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
+            icon: shuffleMode == ShuffleMode.smart
+                ? SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: Stack(children: [
+                      AppIcon(
+                          icon: AppIcons.shuffle,
+                          size: 22,
+                          color: AppColors.primary),
+                      const Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Icon(Icons.auto_awesome,
+                            size: 9, color: AppColors.primary),
+                      ),
+                    ]),
+                  )
+                : AppIcon(
+                    icon: AppIcons.shuffle,
+                    size: 22,
+                    color:
+                        shuffleEnabled ? AppColors.primary : AppColors.textMuted,
+                  ),
+            onPressed: () => showAppSheet(
+              context,
+              child: _DownloadsShuffleModeSheet(current: shuffleMode),
             ),
-            onPressed: () {
-              ref.read(libraryProvider.notifier).toggleDownloadedShuffle();
-            },
             size: 40,
             iconSize: 22,
           ),
@@ -920,6 +942,105 @@ class _EditDownloadedSheetState extends ConsumerState<_EditDownloadedSheet> {
           );
         },
       ),
+    );
+  }
+}
+
+// ─── Downloads Shuffle Mode Sheet ─────────────────────────────────────────────
+
+class _DownloadsShuffleModeSheet extends ConsumerWidget {
+  const _DownloadsShuffleModeSheet({required this.current});
+  final ShuffleMode current;
+
+  void _set(BuildContext context, WidgetRef ref, ShuffleMode mode) {
+    ref.read(libraryProvider.notifier).setDownloadedShuffleMode(mode);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base, AppSpacing.lg, AppSpacing.base, AppSpacing.md),
+        child: const Text('Shuffle',
+            style: TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: AppFontSize.xl,
+                fontWeight: FontWeight.w700)),
+      ),
+      _ShuffleTile(
+        label: 'Shuffle off',
+        selected: current == ShuffleMode.none,
+        isSmart: false,
+        onTap: () => _set(context, ref, ShuffleMode.none),
+      ),
+      _ShuffleTile(
+        label: 'Regular Shuffle',
+        subtitle: 'Shuffle downloaded songs',
+        selected: current == ShuffleMode.regular,
+        isSmart: false,
+        onTap: () => _set(context, ref, ShuffleMode.regular),
+      ),
+      _ShuffleTile(
+        label: 'Smart Shuffle',
+        subtitle: 'Shuffle + mix in recommended songs',
+        selected: current == ShuffleMode.smart,
+        isSmart: true,
+        onTap: () => _set(context, ref, ShuffleMode.smart),
+      ),
+      const SizedBox(height: AppSpacing.xl),
+    ]);
+  }
+}
+
+class _ShuffleTile extends StatelessWidget {
+  const _ShuffleTile({
+    required this.label,
+    required this.selected,
+    required this.isSmart,
+    required this.onTap,
+    this.subtitle,
+  });
+
+  final String label;
+  final String? subtitle;
+  final bool selected;
+  final bool isSmart;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = selected ? AppColors.primary : AppColors.textSecondary;
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.base, vertical: 4),
+      leading: SizedBox(
+        width: 24,
+        height: 24,
+        child: Stack(children: [
+          AppIcon(icon: AppIcons.shuffle, size: 24, color: iconColor),
+          if (isSmart)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Icon(Icons.auto_awesome, size: 10, color: iconColor),
+            ),
+        ]),
+      ),
+      title: Text(label,
+          style: TextStyle(
+              color: selected ? AppColors.primary : AppColors.textPrimary,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
+      subtitle: subtitle != null
+          ? Text(subtitle!,
+              style: const TextStyle(
+                  color: AppColors.textMuted, fontSize: AppFontSize.sm))
+          : null,
+      trailing: selected
+          ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)
+          : null,
+      onTap: onTap,
     );
   }
 }

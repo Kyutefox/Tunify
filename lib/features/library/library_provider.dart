@@ -55,7 +55,7 @@ class LibraryState {
     this.sortOrder = LibrarySortOrder.recent,
     this.viewMode = LibraryViewMode.list,
     this.searchQuery = '',
-    this.downloadedShuffleEnabled = false,
+    this.downloadedShuffleMode = ShuffleMode.none,
     this.downloadsSortOrder = PlaylistTrackSortOrder.customOrder,
     this.followedArtists = const [],
     this.followedAlbums = const [],
@@ -66,7 +66,9 @@ class LibraryState {
   final LibrarySortOrder sortOrder;
   final LibraryViewMode viewMode;
   final String searchQuery;
-  final bool downloadedShuffleEnabled;
+  final ShuffleMode downloadedShuffleMode;
+  /// Convenience getter — true when any downloaded shuffle is active.
+  bool get downloadedShuffleEnabled => downloadedShuffleMode != ShuffleMode.none;
   final PlaylistTrackSortOrder downloadsSortOrder;
   final List<LibraryArtist> followedArtists;
   final List<LibraryAlbum> followedAlbums;
@@ -119,7 +121,7 @@ class LibraryState {
     LibrarySortOrder? sortOrder,
     LibraryViewMode? viewMode,
     String? searchQuery,
-    bool? downloadedShuffleEnabled,
+    ShuffleMode? downloadedShuffleMode,
     PlaylistTrackSortOrder? downloadsSortOrder,
     List<LibraryArtist>? followedArtists,
     List<LibraryAlbum>? followedAlbums,
@@ -129,7 +131,7 @@ class LibraryState {
     sortOrder: sortOrder ?? this.sortOrder,
     viewMode: viewMode ?? this.viewMode,
     searchQuery: searchQuery ?? this.searchQuery,
-    downloadedShuffleEnabled: downloadedShuffleEnabled ?? this.downloadedShuffleEnabled,
+    downloadedShuffleMode: downloadedShuffleMode ?? this.downloadedShuffleMode,
     downloadsSortOrder: downloadsSortOrder ?? this.downloadsSortOrder,
     followedArtists: followedArtists ?? this.followedArtists,
     followedAlbums: followedAlbums ?? this.followedAlbums,
@@ -161,7 +163,7 @@ class LibraryNotifier extends Notifier<LibraryState> {
         folders: data.folders,
         sortOrder: LibrarySortOrderX.fromString(data.sortOrder),
         viewMode: LibraryViewModeX.fromString(data.viewMode),
-        downloadedShuffleEnabled: data.downloadedShuffleEnabled,
+        downloadedShuffleMode: data.downloadedShuffleMode,
         downloadsSortOrder: PlaylistTrackSortOrderX.fromString(data.downloadsSortOrder),
         followedArtists: data.followedArtists,
         followedAlbums: data.followedAlbums,
@@ -186,8 +188,6 @@ class LibraryNotifier extends Notifier<LibraryState> {
 
   // ── Liked songs ──────────────────────────────────────────────────────────────
 
-  void toggleLikedShuffle() => togglePlaylistShuffle('liked');
-
   Future<void> toggleLiked(Song song) async {
     // Ensure the 'liked' playlist exists in state before mutating.
     final hasLiked = state.playlists.any((p) => p.id == 'liked');
@@ -207,21 +207,16 @@ class LibraryNotifier extends Notifier<LibraryState> {
 
   // ── Shuffle ──────────────────────────────────────────────────────────────────
 
-  void toggleDownloadedShuffle() {
-    final newVal = !state.downloadedShuffleEnabled;
-    state = state.copyWith(downloadedShuffleEnabled: newVal);
-    _repo.setSetting('downloaded_shuffle', newVal.toString());
+  void setDownloadedShuffleMode(ShuffleMode mode) {
+    state = state.copyWith(downloadedShuffleMode: mode);
+    _repo.setSetting('downloaded_shuffle', mode.index.toString());
   }
 
-  Future<void> togglePlaylistShuffle(String playlistId) async {
-    final newVal = !state.playlists
-        .firstWhere((p) => p.id == playlistId,
-            orElse: () => state.likedPlaylist)
-        .shuffleEnabled;
+  Future<void> setPlaylistShuffleMode(String playlistId, ShuffleMode mode) async {
     state = state.copyWith(playlists: state.playlists.map((p) =>
-        p.id == playlistId ? p.copyWith(shuffleEnabled: newVal) : p).toList());
+        p.id == playlistId ? p.copyWith(shuffleMode: mode) : p).toList());
     await _repo.updatePlaylistMeta(playlistId,
-        shuffleEnabled: newVal, touchUpdatedAt: false);
+        shuffleMode: mode, touchUpdatedAt: false);
   }
 
   // ── Playlists ────────────────────────────────────────────────────────────────
@@ -513,3 +508,6 @@ final likedShuffleProvider = Provider<bool>((ref) =>
 
 final downloadedShuffleProvider = Provider<bool>((ref) =>
     ref.watch(libraryProvider).downloadedShuffleEnabled);
+
+final downloadedShuffleModeProvider = Provider<ShuffleMode>((ref) =>
+    ref.watch(libraryProvider).downloadedShuffleMode);

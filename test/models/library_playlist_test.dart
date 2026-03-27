@@ -87,7 +87,7 @@ void main() {
           updatedAt: DateTime.utc(2024, 6, 2),
           songs: songs,
           sortOrder: PlaylistTrackSortOrder.title,
-          shuffleEnabled: true,
+          shuffleMode: ShuffleMode.regular,
           isPinned: true,
           customImageUrl: 'https://example.com/cover.jpg',
         );

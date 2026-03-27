@@ -195,6 +195,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   String? _lastPaletteUrl;
   LibraryPlaylist? _localPlaylistCache;
   bool _importedFetchTriggered = false;
+  ShuffleMode _ephemeralShuffleMode = ShuffleMode.none;
 
   bool get _isRemote =>
       widget._isRemotePlaylist ||
@@ -1166,19 +1167,25 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         playlistId: playlist.id,
         songs: songs,
         filteredSongs: filteredSongs,
-        disableShuffle: _isRemote && !isInLibrary,
         showLibraryStatus: !isLiked && isImported,
         isInLibrary: isInLibrary,
         onAddToLibrary: _addToLibrary,
         addingToLibrary: _addingToLibrary,
+        externalShuffleMode:
+            (_isRemote && !isInLibrary) ? _ephemeralShuffleMode : null,
+        onShuffleModeChanged: (_isRemote && !isInLibrary)
+            ? (m) => setState(() => _ephemeralShuffleMode = m)
+            : null,
       ),
       playButton: _CollectionPlayButton(
         playlistId: playlist.id,
         songs: songs,
         filteredSongs: filteredSongs,
-        disableShuffle: _isRemote && !isInLibrary,
         queueSource:
             isLiked ? 'liked' : (widget._isAlbum ? 'album' : 'playlist'),
+        externalShuffleEnabled: (_isRemote && !isInLibrary)
+            ? (_ephemeralShuffleMode != ShuffleMode.none)
+            : null,
       ),
       pills: (widget._isAlbum || widget._isArtist || isImported)
           ? null
@@ -1541,24 +1548,26 @@ class _ActionRow extends ConsumerWidget {
     required this.playlistId,
     required this.songs,
     required this.filteredSongs,
-    this.disableShuffle = false,
     this.showLibraryStatus = false,
     this.isInLibrary = true,
     this.onAddToLibrary,
     this.addingToLibrary = false,
     this.isDownloads = false,
     this.isLocalFiles = false,
+    this.externalShuffleMode,
+    this.onShuffleModeChanged,
   });
 
   final String playlistId;
   final List<Song> songs, filteredSongs;
-  final bool disableShuffle,
-      showLibraryStatus,
+  final bool showLibraryStatus,
       isInLibrary,
       addingToLibrary,
       isDownloads,
       isLocalFiles;
   final VoidCallback? onAddToLibrary;
+  final ShuffleMode? externalShuffleMode;
+  final ValueChanged<ShuffleMode>? onShuffleModeChanged;
 
   void _showShuffleModeSheet(
       BuildContext context, WidgetRef ref, ShuffleMode current) {
@@ -1568,22 +1577,22 @@ class _ActionRow extends ConsumerWidget {
         current: current,
         playlistId: playlistId,
         isDownloads: isDownloads || isLocalFiles,
+        onSet: onShuffleModeChanged,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final shuffleMode = disableShuffle
-        ? ShuffleMode.none
-        : isDownloads || isLocalFiles
+    final ShuffleMode shuffleMode = externalShuffleMode ??
+        (isDownloads || isLocalFiles
             ? ref.watch(libraryProvider.select((s) => s.downloadedShuffleMode))
             : ref.watch(libraryProvider.select((s) =>
                 s.playlists
                     .where((p) => p.id == playlistId)
                     .firstOrNull
                     ?.shuffleMode ??
-                ShuffleMode.none));
+                ShuffleMode.none)));
     final shuffleEnabled = shuffleMode != ShuffleMode.none;
 
     return SizedBox(
@@ -1621,7 +1630,7 @@ class _ActionRow extends ConsumerWidget {
                 ],
               ),
             ),
-            onPressed: filteredSongs.isNotEmpty && !disableShuffle
+            onPressed: filteredSongs.isNotEmpty
                 ? () => _showShuffleModeSheet(context, ref, shuffleMode)
                 : null,
             size: 40,
@@ -1666,27 +1675,27 @@ class _CollectionPlayButton extends ConsumerWidget {
     required this.songs,
     required this.filteredSongs,
     required this.queueSource,
-    this.disableShuffle = false,
     this.isDownloads = false,
     this.isLocalFiles = false,
+    this.externalShuffleEnabled,
   });
 
   final String playlistId, queueSource;
   final List<Song> songs, filteredSongs;
-  final bool disableShuffle, isDownloads, isLocalFiles;
+  final bool isDownloads, isLocalFiles;
+  final bool? externalShuffleEnabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final shuffleEnabled = disableShuffle
-        ? false
-        : isDownloads || isLocalFiles
+    final bool shuffleEnabled = externalShuffleEnabled ??
+        (isDownloads || isLocalFiles
             ? ref.watch(downloadedShuffleProvider)
             : ref.watch(libraryProvider.select((s) =>
                 s.playlists
                     .where((p) => p.id == playlistId)
                     .firstOrNull
-                    ?.shuffleEnabled ??  // true for regular and smart modes
-                false));
+                    ?.shuffleEnabled ?? // true for regular and smart modes
+                false)));
     return PlayCircleButton(
       onTap: filteredSongs.isNotEmpty
           ? () {
@@ -1712,14 +1721,18 @@ class _ShuffleModeSheet extends ConsumerWidget {
     required this.current,
     required this.playlistId,
     required this.isDownloads,
+    this.onSet,
   });
 
   final ShuffleMode current;
   final String playlistId;
   final bool isDownloads;
+  final ValueChanged<ShuffleMode>? onSet;
 
   void _set(BuildContext context, WidgetRef ref, ShuffleMode mode) {
-    if (isDownloads) {
+    if (onSet != null) {
+      onSet!(mode);
+    } else if (isDownloads) {
       ref.read(libraryProvider.notifier).setDownloadedShuffleMode(mode);
     } else {
       ref.read(libraryProvider.notifier).setPlaylistShuffleMode(playlistId, mode);

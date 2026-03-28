@@ -13,5 +13,13 @@ abstract final class StorageKeys {
   static const String prefsLastQueueSource = 'last_queue_source';
   static const String prefsLastPlaylistId = 'last_playlist_id';
   static const String prefsVolumeNormalization = 'volume_normalization_enabled';
+  /// Hive box key: persisted queue as JSON list (max 50 items).
+  static const String hiveKeyQueue = 'queue';
+  /// Hive box key: current index within the persisted queue.
+  static const String hiveKeyQueueIndex = 'queue_index';
+  /// Hive box key: active shuffle mode int (0=none, 2=smart).
+  static const String hiveKeyActiveShuffleMode = 'active_shuffle_mode';
+  /// Hive box key: list of smart-shuffle song IDs (✨ recs).
+  static const String hiveKeySmartShuffleIds = 'smart_shuffle_ids';
 
 }

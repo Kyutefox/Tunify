@@ -1612,44 +1612,62 @@ class QueuePanelContent extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 8),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        AppIcon(
-                          icon: AppIcons.shuffle,
-                          color: AppColors.textSecondary,
-                          size: 18,
-                        ),
-                        if (activeShuffleMode == ShuffleMode.smart)
-                          const Positioned(
-                            right: -3,
-                            bottom: -3,
-                            child: Icon(
-                              Icons.auto_awesome,
-                              size: 9,
-                              color: AppColors.textSecondary,
-                            ),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  if (activeShuffleMode == ShuffleMode.smart) {
+                    ref.read(playerProvider.notifier).toggleSmartShuffle();
+                  } else {
+                    ref.read(playerProvider.notifier).toggleShuffle();
+                  }
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          AppIcon(
+                            icon: AppIcons.shuffle,
+                            color: AppColors.primary,
+                            size: 18,
                           ),
-                      ],
+                          if (activeShuffleMode == ShuffleMode.smart)
+                            const Positioned(
+                              right: -3,
+                              bottom: -3,
+                              child: Icon(
+                                Icons.auto_awesome,
+                                size: 9,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  Text(
-                    activeShuffleMode == ShuffleMode.smart
-                        ? 'Smart Shuffling'
-                        : 'Shuffling',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: AppFontSize.md,
-                      fontWeight: FontWeight.w500,
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      activeShuffleMode == ShuffleMode.smart
+                          ? 'Smart Shuffling'
+                          : 'Shuffling',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: AppFontSize.md,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: AppSpacing.xs),
+                    AppIcon(
+                      icon: AppIcons.close,
+                      color: AppColors.primary,
+                      size: 14,
+                    ),
+                  ],
+                ),
               ),
             ),
           Expanded(

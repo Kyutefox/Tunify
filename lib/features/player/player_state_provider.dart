@@ -19,7 +19,7 @@ import 'package:tunify/features/player/audio/crossfade_engine.dart';
 import 'package:tunify/features/player/audio/audio_handler.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 
-import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
+import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode, ShuffleModeX;
 import 'package:tunify/features/device/device_music_provider.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
@@ -608,19 +608,71 @@ class PlayerNotifier extends Notifier<PlayerState> {
       if (song != null && state.currentSong == null) {
         final posMs = prefs.getInt(StorageKeys.prefsLastPlayedPositionMs) ?? 0;
         final durMs = prefs.getInt(StorageKeys.prefsLastPlayedDurationMs) ?? 0;
-        
+
         // Restore position to dedicated provider
         if (posMs > 0) {
           ref.read(playbackPositionProvider.notifier).update(Duration(milliseconds: posMs));
         }
-        
+
+        // Restore full queue if available, otherwise fall back to single song.
+        final Object? queueEntry = box.get(StorageKeys.hiveKeyQueue);
+        List<Song> restoredQueue;
+        int restoredIndex;
+        ShuffleMode restoredShuffleMode;
+
+        if (queueEntry is List && queueEntry.isNotEmpty) {
+          restoredQueue = queueEntry
+              .whereType<Map>()
+              .map((m) => Song.fromJson(Map<String, dynamic>.from(m)))
+              .toList();
+          // Sanitise index — prefer the slot containing the persisted song.
+          final persistedIdx = box.get(StorageKeys.hiveKeyQueueIndex);
+          final rawIdx = persistedIdx is int ? persistedIdx : 0;
+          final songIdx = restoredQueue.indexWhere((s) => s.id == song.id);
+          restoredIndex = songIdx >= 0
+              ? songIdx
+              : rawIdx.clamp(0, restoredQueue.length - 1);
+          final shuffleModeRaw = box.get(StorageKeys.hiveKeyActiveShuffleMode);
+          restoredShuffleMode = shuffleModeRaw is int
+              ? ShuffleModeX.fromInt(shuffleModeRaw)
+              : ShuffleMode.none;
+        } else {
+          restoredQueue = [song];
+          restoredIndex = 0;
+          restoredShuffleMode = ShuffleMode.none;
+        }
+
+        // Restore the smart-shuffle IDs so ✨ badges render correctly.
+        Set<String> restoredSmartIds = const {};
+        if (restoredShuffleMode == ShuffleMode.smart) {
+          final Object? idsEntry = box.get(StorageKeys.hiveKeySmartShuffleIds);
+          if (idsEntry is List) {
+            restoredSmartIds = idsEntry.whereType<String>().toSet();
+          }
+          // Seed list = non-rec songs in the queue so refills vary correctly.
+          _smartShufflePlaylistSongs = restoredQueue
+              .where((s) => !restoredSmartIds.contains(s.id))
+              .toList();
+          if (_smartShufflePlaylistSongs.isEmpty) {
+            _smartShufflePlaylistSongs = [song];
+          }
+        }
+
         state = state.copyWith(
-          queue: [song],
-          currentIndex: 0,
+          queue: restoredQueue,
+          currentIndex: restoredIndex,
           status: PlayerStatus.paused,
           duration: durMs > 0 ? Duration(milliseconds: durMs) : null,
+          activeShuffleMode: restoredShuffleMode,
+          smartShuffleSongIds: restoredSmartIds,
         );
         _applyQueueInvariant();
+
+        // If smart shuffle was active, kick off a background refill so fresh
+        // ✨ recommendations appear without the user having to press play.
+        if (restoredShuffleMode == ShuffleMode.smart) {
+          unawaited(_maybeRefillSmartShuffle());
+        }
       }
     } catch (e) {
       logWarning('Player: _restoreLastSong failed: $e', tag: 'Player');
@@ -675,6 +727,21 @@ class PlayerNotifier extends Notifier<PlayerState> {
       if (_lastPlaylistId != null) {
         futures.add(
             prefs.setString(StorageKeys.prefsLastPlaylistId, _lastPlaylistId!));
+      }
+      // Persist the full queue (max 50 items), current index, active shuffle
+      // mode, and smart-shuffle IDs so the session resumes exactly where it
+      // left off — including which songs are ✨ recommendations.
+      final queue = state.queue;
+      if (queue.isNotEmpty) {
+        futures.addAll([
+          box.put(StorageKeys.hiveKeyQueue,
+              queue.map((s) => s.toJson()).toList()),
+          box.put(StorageKeys.hiveKeyQueueIndex, state.currentIndex),
+          box.put(StorageKeys.hiveKeyActiveShuffleMode,
+              state.activeShuffleMode.index),
+          box.put(StorageKeys.hiveKeySmartShuffleIds,
+              state.smartShuffleSongIds.toList()),
+        ]);
       }
       await Future.wait(futures);
     } catch (e) {
@@ -2479,6 +2546,83 @@ class PlayerNotifier extends Notifier<PlayerState> {
       );
       _originalQueue = [];
       _applyQueueInvariant();
+    }
+  }
+
+  /// Toggles smart shuffle on the **current session queue** without touching
+  /// the playlist's saved shuffle setting in the database.
+  ///
+  /// Turning ON:  sets [activeShuffleMode] to [ShuffleMode.smart] and
+  ///              immediately kicks off a background recommendation fill so ✨
+  ///              songs appear in the queue within seconds.
+  ///
+  /// Turning OFF: strips every ✨ recommended song ahead of the current index
+  ///              from the queue and clears [smartShuffleSongIds].  Songs
+  ///              already behind the current index are left as-is so the user
+  ///              can still go back to them.
+  void toggleSmartShuffle() {
+    final currentSong = state.currentSong;
+    if (currentSong == null) return;
+
+    if (state.activeShuffleMode != ShuffleMode.smart) {
+      // ── Turning smart shuffle ON ──────────────────────────────────────────
+      // Seed list = the non-smart songs currently in the queue (original songs).
+      // If the queue was already recommended-filled, use just the seed song.
+      final nonSmartSongs = state.queue
+          .where((s) => !state.smartShuffleSongIds.contains(s.id))
+          .toList();
+      _smartShufflePlaylistSongs =
+          nonSmartSongs.isNotEmpty ? nonSmartSongs : [currentSong];
+      _smartSeedIndex = 0;
+
+      state = state.copyWith(
+        activeShuffleMode: ShuffleMode.smart,
+      );
+      // Fill recs in background — same path as single-song smart shuffle.
+      unawaited(_loadQueueInBackground(currentSong, playlistId: _lastPlaylistId));
+    } else {
+      // ── Turning smart shuffle OFF ─────────────────────────────────────────
+      // Remove all ✨ songs that are still ahead of the current position.
+      final currentIdx = state.currentIndex;
+      final smartIds = state.smartShuffleSongIds;
+
+      final prunedQueue = [
+        // Keep everything up to and including the current song unchanged.
+        ...state.queue.sublist(0, currentIdx + 1),
+        // Drop ✨ songs ahead; keep manually-added / original playlist songs.
+        ...state.queue.sublist(currentIdx + 1).where((s) => !smartIds.contains(s.id)),
+      ];
+
+      _smartShufflePlaylistSongs = [];
+      _smartSeedIndex = 0;
+      _smartShuffleRefilling = false;
+
+      state = state.copyWith(
+        activeShuffleMode: ShuffleMode.none,
+        queue: prunedQueue,
+        clearSmartShuffleIds: true,
+      );
+      _applyQueueInvariant();
+    }
+  }
+
+  /// Cycles the shuffle state for the player controls button:
+  ///   off  →  regular shuffle  →  smart shuffle  →  off
+  ///
+  /// This is the single tap handler for the shuffle button in the player UI.
+  /// Each leg delegates to the existing [toggleShuffle] / [toggleSmartShuffle]
+  /// so all queue-pruning and seed logic stays in one place.
+  void cycleShuffleMode() {
+    if (!state.isShuffleEnabled && state.activeShuffleMode == ShuffleMode.none) {
+      // off → regular shuffle
+      toggleShuffle();
+    } else if (state.isShuffleEnabled && state.activeShuffleMode == ShuffleMode.none) {
+      // regular → smart shuffle: turn regular off first, then smart on
+      toggleShuffle();           // restores original queue order
+      toggleSmartShuffle();      // enables smart mode + triggers rec fill
+    } else {
+      // smart → off (or any other active state → off)
+      toggleSmartShuffle();      // prunes ✨ songs and clears smart mode
     }
   }
 

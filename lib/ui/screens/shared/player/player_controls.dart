@@ -49,7 +49,7 @@ class PlayerControls extends ConsumerWidget {
           isSmart: isSmartShuffleActive,
           onTap: () {
             HapticFeedback.selectionClick();
-            notifier.toggleShuffle();
+            notifier.cycleShuffleMode();
           },
         ),
         PlayerControlIcon(
@@ -268,6 +268,70 @@ class _PlayerBigPlayButtonState extends State<PlayerBigPlayButton>
                     ),
                   ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// ✨ Smart Shuffle toggle button for the player extra-controls row.
+/// Reads and writes [activeShuffleMode] on the current session queue.
+/// Does NOT persist to the playlist's database shuffle setting.
+class SmartShuffleExtraButton extends ConsumerWidget {
+  const SmartShuffleExtraButton({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeShuffleMode =
+        ref.watch(playerProvider.select((s) => s.activeShuffleMode));
+    final isSmartActive = activeShuffleMode == ShuffleMode.smart;
+    final color = isSmartActive ? AppColors.primary : _kExtraIconColor;
+
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        ref.read(playerProvider.notifier).toggleSmartShuffle();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TweenAnimationBuilder<Color?>(
+              tween: ColorTween(end: color),
+              duration: AppDuration.fast,
+              curve: Curves.easeOut,
+              builder: (_, c, __) {
+                final col = c ?? color;
+                return SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      AppIcon(icon: AppIcons.shuffle, size: 22, color: col),
+                      Positioned(
+                        right: -4,
+                        top: -4,
+                        child: Icon(Icons.auto_awesome, size: 11, color: col),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.xs + 2),
+            TweenAnimationBuilder<Color?>(
+              tween: ColorTween(end: color),
+              duration: AppDuration.fast,
+              curve: Curves.easeOut,
+              builder: (_, c, __) => Text(
+                'Smart',
+                style: _kExtraLabelStyle.copyWith(color: c ?? color),
+              ),
+            ),
+          ],
         ),
       ),
     );

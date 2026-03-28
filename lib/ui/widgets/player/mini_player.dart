@@ -10,6 +10,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/player/album_art_hero.dart';
 import '../player/../player/mini_player_play_button.dart';
+import 'package:tunify/core/constants/app_icons.dart';
 
 void openFullPlayerRoute(BuildContext context) {
   Navigator.of(context).push(
@@ -277,6 +278,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
+                              const _MiniPlayerUpNext(),
                             ],
                           ),
                         ),
@@ -425,6 +427,50 @@ class _MiniPlayerSeekBar extends ConsumerWidget {
           backgroundColor: Colors.white.withValues(alpha: 0.06),
           valueColor: AlwaysStoppedAnimation<Color>(dominantColor),
         ),
+      ),
+    );
+  }
+}
+
+/// Shows "Up next: [title]" below the artist name when the queue has a
+/// following track.  Isolated in its own widget so it rebuilds independently
+/// of the parent [MiniPlayer] — no position ticks trigger it.
+class _MiniPlayerUpNext extends ConsumerWidget {
+  const _MiniPlayerUpNext();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nextSong = ref.watch(playerProvider.select((s) {
+      final idx = s.currentIndex;
+      if (idx < 0 || idx + 1 >= s.queue.length) return null;
+      return s.queue[idx + 1];
+    }));
+
+    if (nextSong == null) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 2),
+      child: Row(
+        children: [
+          AppIcon(
+            icon: AppIcons.skipNext,
+            color: AppColors.textMuted.withValues(alpha: 0.6),
+            size: 10,
+          ),
+          const SizedBox(width: 3),
+          Expanded(
+            child: Text(
+              nextSong.title,
+              style: TextStyle(
+                color: AppColors.textMuted.withValues(alpha: 0.7),
+                fontSize: AppFontSize.micro,
+                fontWeight: FontWeight.w500,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

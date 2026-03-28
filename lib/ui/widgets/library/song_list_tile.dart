@@ -80,16 +80,23 @@ class SongListTile extends ConsumerWidget {
           if (index != null) ...[
             SizedBox(
               width: 24,
-              child: isNowPlaying && showIndexIndicator
-                  ? NowPlayingIndicator(
-                      size: 16, barCount: 3, animate: isActivePlaying)
-                  : Text(
-                      '$index',
-                      style: TextStyle(
-                        color: t.mutedColor,
-                        fontSize: t.font.base,
+              child: AnimatedSwitcher(
+                duration: AppDuration.fast,
+                transitionBuilder: (child, anim) =>
+                    FadeTransition(opacity: anim, child: child),
+                child: isNowPlaying && showIndexIndicator
+                    ? NowPlayingIndicator(
+                        key: const ValueKey('indicator'),
+                        size: 16, barCount: 3, animate: isActivePlaying)
+                    : Text(
+                        '$index',
+                        key: ValueKey('idx_$index'),
+                        style: TextStyle(
+                          color: t.mutedColor,
+                          fontSize: t.font.base,
+                        ),
                       ),
-                    ),
+              ),
             ),
             SizedBox(width: t.spacing.sm),
           ],
@@ -112,11 +119,17 @@ class SongListTile extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (isNowPlaying && (index == null || !showIndexIndicator))
-                      InlineNowPlayingDot(animate: isActivePlaying),
+                    AnimatedSize(
+                      duration: AppDuration.fast,
+                      curve: Curves.easeOut,
+                      child: isNowPlaying && (index == null || !showIndexIndicator)
+                          ? InlineNowPlayingDot(animate: isActivePlaying)
+                          : const SizedBox.shrink(),
+                    ),
                     Expanded(
-                      child: Text(
-                        song.title,
+                      child: AnimatedDefaultTextStyle(
+                        duration: AppDuration.fast,
+                        curve: Curves.easeOut,
                         style: TextStyle(
                           color: isNowPlaying
                               ? AppColors.primary
@@ -125,8 +138,11 @@ class SongListTile extends ConsumerWidget {
                           fontWeight: t.typography.titleWeight,
                           height: t.typography.bodyLineHeight,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        child: Text(
+                          song.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],

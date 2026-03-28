@@ -301,7 +301,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             child: Text(
               label,
               style: const TextStyle(
-                color: Color(0xA6FFFFFF),
+                color: AppColors.playerLabelSubtle,
                 fontSize: AppFontSize.xs,
                 fontWeight: FontWeight.w600,
                 letterSpacing: AppLetterSpacing.label,

@@ -227,7 +227,7 @@ class _NavItem extends StatelessWidget {
             height: _circleSize,
             child: Center(
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
+                duration: AppDuration.fast,
                 curve: Curves.easeOutCubic,
                 width: _circleSize,
                 height: _circleSize,

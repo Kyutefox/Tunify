@@ -38,7 +38,7 @@ class _PlayerBlurredBackgroundState extends State<PlayerBlurredBackground>
     super.initState();
     _ctrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 120),
+      duration: AppDuration.fast,
     );
     _opacity = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
     // One post-frame callback: Hero rasterizes first frame, then blur is added.
@@ -66,7 +66,7 @@ class _PlayerBlurredBackgroundState extends State<PlayerBlurredBackground>
         if (hasArt)
           RepaintBoundary(
             child: AnimatedContainer(
-              duration: AppDuration.medium,
+              duration: AppDuration.fast,
               curve: AppCurves.decelerate,
               decoration: BoxDecoration(
                 gradient: PaletteTheme.playerGradient(widget.dominantColor),

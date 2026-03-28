@@ -30,7 +30,9 @@ class MobilePlayerScreen extends ConsumerStatefulWidget {
 class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
     with SingleTickerProviderStateMixin {
   // ── Swipe-to-dismiss ──────────────────────────────────────────────────────
-  double _dismissOffset = 0;
+  // _dragOffset: live offset during user drag (drives setState once per pointer event)
+  // _snapFromOffset: offset at the moment snap-back starts (used by AnimatedBuilder)
+  double _dragOffset = 0;
   double _snapFromOffset = 0;
   double _dragDy = 0;
 
@@ -39,14 +41,9 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
   @override
   void initState() {
     super.initState();
+    // No addListener — AnimatedBuilder reads _snapBackCtrl.value directly,
+    // eliminating per-frame setState calls during the 300ms snap-back animation.
     _snapBackCtrl = AnimationController(vsync: this);
-    _snapBackCtrl.addListener(() {
-      if (mounted) {
-        setState(() {
-          _dismissOffset = _snapFromOffset * (1.0 - _snapBackCtrl.value);
-        });
-      }
-    });
     ref.listenManual(currentSongProvider, (_, next) {
       if (next != null) _fetchLyrics();
     });
@@ -87,24 +84,37 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
     }
 
     final screenHeight = MediaQuery.sizeOf(context).height;
-    // Scale factor: at 0 offset the player is full size; at screenHeight it
-    // has shrunk 8%. Clamped so it can never flip or go negative.
-    final dismissScale =
-        1.0 - (_dismissOffset / screenHeight).clamp(0.0, 1.0) * 0.08;
 
-    return Transform.translate(
-      offset: Offset(0, _dismissOffset),
-      child: Transform.scale(
-        scale: dismissScale,
-        child: AnnotatedRegion<SystemUiOverlayStyle>(
+    // AnimatedBuilder reads the controller value on every animation tick without
+    // calling setState — only the Transform widgets rebuild, not the full tree.
+    return AnimatedBuilder(
+      animation: _snapBackCtrl,
+      builder: (context, child) {
+        // During snap-back: derive offset from animation progress.
+        // During drag: _snapBackCtrl is stopped at 0, so snapOffset = _snapFromOffset.
+        final snapOffset = _snapFromOffset * (1.0 - _snapBackCtrl.value);
+        // Live drag offset is only non-zero while the user is actively dragging.
+        final totalOffset = _dragOffset + snapOffset;
+        final dismissScale =
+            1.0 - (totalOffset / screenHeight).clamp(0.0, 1.0) * 0.08;
+        return Transform.translate(
+          offset: Offset(0, totalOffset),
+          child: Transform.scale(
+            scale: dismissScale,
+            child: child,
+          ),
+        );
+      },
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: GestureDetector(
         onVerticalDragUpdate: (d) {
           if (d.delta.dy > 0) {
             _snapBackCtrl.stop();
+            _snapFromOffset = 0;
             setState(() {
               _dragDy += d.delta.dy;
-              _dismissOffset = _dragDy;
+              _dragOffset = _dragDy;
             });
           }
         },
@@ -112,10 +122,11 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
           final velocity = d.primaryVelocity ?? 0;
           if (velocity > 600 || _dragDy > 120) {
             _dragDy = 0;
-            _dismissOffset = 0;
+            _dragOffset = 0;
             _close();
           } else {
-            _snapFromOffset = _dismissOffset;
+            _snapFromOffset = _dragOffset;
+            _dragOffset = 0;
             _dragDy = 0;
             _snapBackCtrl.value = 0.0;
             _snapBackCtrl.animateTo(
@@ -126,7 +137,8 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
           }
         },
         onVerticalDragCancel: () {
-          _snapFromOffset = _dismissOffset;
+          _snapFromOffset = _dragOffset;
+          _dragOffset = 0;
           _dragDy = 0;
           _snapBackCtrl.value = 0.0;
           _snapBackCtrl.animateTo(
@@ -173,9 +185,8 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
           ),
         ),      // Scaffold
       ),        // GestureDetector
-        ),      // AnnotatedRegion
-      ),        // Transform.scale
-    );          // Transform.translate
+      ),        // AnnotatedRegion
+    );          // AnimatedBuilder
   }
 
   Widget _buildTopBar() {
@@ -199,7 +210,7 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
               Text(
                 label,
                 style: const TextStyle(
-                  color: Color(0xA6FFFFFF),
+                  color: AppColors.playerLabelSubtle,
                   fontSize: AppFontSize.xs,
                   fontWeight: FontWeight.w600,
                   letterSpacing: AppLetterSpacing.label,

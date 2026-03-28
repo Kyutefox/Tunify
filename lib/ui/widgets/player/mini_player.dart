@@ -45,11 +45,25 @@ class MiniPlayer extends ConsumerStatefulWidget {
   ConsumerState<MiniPlayer> createState() => _MiniPlayerState();
 }
 
+// Static shadow that never changes — hoisted to avoid allocation in build().
+const List<BoxShadow> _kMiniPlayerStaticShadow = [
+  BoxShadow(
+    color: Color(0x47000000), // black @ ~28%
+    blurRadius: 16,
+    offset: Offset(0, 4),
+  ),
+];
+
 class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   double _dragY = 0;
   double _dragX = 0;
   bool _isOpening = false;
   bool _isClosing = false;
+
+  // Cached dynamic shadow — rebuilt only when dominantColor changes,
+  // not on every AnimatedContainer animation frame.
+  Color? _cachedShadowColor;
+  late List<BoxShadow> _boxShadows = _kMiniPlayerStaticShadow;
 
   // Drives a subtle scale-up (max 3%) as the user drags upward, giving
   // immediate tactile feedback before the full player opens.
@@ -106,6 +120,20 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
     final isPlaying = ref.watch(playerProvider.select((s) => s.isPlaying));
     final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
     final dominantColor = ref.watch(dominantColorProvider);
+
+    // Rebuild box shadows only when dominantColor changes — not on every
+    // AnimatedContainer tick (which would allocate 2 BoxShadow objects per frame).
+    if (dominantColor != _cachedShadowColor) {
+      _cachedShadowColor = dominantColor;
+      _boxShadows = [
+        BoxShadow(
+          color: dominantColor.withValues(alpha: 0.18),
+          blurRadius: 20,
+          offset: const Offset(0, 4),
+        ),
+        ..._kMiniPlayerStaticShadow,
+      ];
+    }
 
     // PERF: playbackPositionProvider is intentionally NOT watched here.
     // _MiniPlayerSeekBar is wrapped in RepaintBoundary and subscribes to
@@ -222,18 +250,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                 color: dominantColor.withValues(alpha: 0.20),
                 width: 0.5,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: dominantColor.withValues(alpha: 0.18),
-                  blurRadius: 20,
-                  offset: const Offset(0, 4),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.28),
-                  blurRadius: 16,
-                  offset: const Offset(0, 4),
-                ),
-              ],
+              boxShadow: _boxShadows,
             ),
             child: Stack(
               clipBehavior: Clip.hardEdge,

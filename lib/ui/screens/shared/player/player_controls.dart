@@ -9,10 +9,10 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 
 // PERF: hoisted as file-level consts — no allocation per build.
-const Color _kIconInactive = Color(0xCCFFFFFF); // white @ 80%
-const Color _kExtraIconColor = Color(0xBFFFFFFF); // white @ 75%
+const Color _kIconInactive = AppColors.playerIconInactive;
+const Color _kExtraIconColor = AppColors.playerIconExtra;
 const TextStyle _kExtraLabelStyle = TextStyle(
-  color: Color(0xBFFFFFFF),
+  color: AppColors.playerIconExtra,
   fontSize: AppFontSize.micro,
   fontWeight: FontWeight.w500,
 );

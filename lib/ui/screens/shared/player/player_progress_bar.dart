@@ -5,13 +5,14 @@ import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/player/playback_position_provider.dart';
 import 'package:tunify/core/utils/duration_format.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 
 
 // PERF: Hoisted as a file-level const to avoid allocation inside build().
 // FontFeature('tnum') is the const equivalent of FontFeature.tabularFigures().
 const TextStyle _kTimeStyle = TextStyle(
-  color: Color(0x80FFFFFF), // 50% white — intentional for player time labels
+  color: AppColors.playerTimeMuted,
   fontSize: AppFontSize.sm,
   fontWeight: FontWeight.w500,
   fontFeatures: [FontFeature('tnum')],

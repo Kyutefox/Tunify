@@ -507,10 +507,10 @@ class StreamCacheService {
           tag: 'StreamCache');
     } else if (fileSize > 0) {
       cachedBytes = fileSize;
-      // When metadata is missing, we can't assume completion
-      // Use a reasonable estimate based on typical song sizes
-      // Most songs are 3-10MB, so treat <2MB as incomplete
-      isComplete = fileSize >= (2 * 1024 * 1024); // 2MB threshold
+      // When metadata is missing, use a minimal threshold to confirm the file
+      // isn't a broken stub. Opus at 128kbps is ~1MB/min, so even 200KB is
+      // enough real audio data for just_audio to start streaming from cache.
+      isComplete = fileSize >= (200 * 1024); // 200KB threshold
       log('StreamCache: getCacheInfo $songId - file:$fileSize bytes, NO METADATA (${isComplete ? 'assuming complete' : 'assuming incomplete'})',
           tag: 'StreamCache');
     } else {

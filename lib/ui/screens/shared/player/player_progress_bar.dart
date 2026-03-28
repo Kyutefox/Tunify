@@ -7,6 +7,7 @@ import 'package:tunify/features/player/playback_position_provider.dart';
 import 'package:tunify/core/utils/duration_format.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 
+
 // PERF: Hoisted as a file-level const to avoid allocation inside build().
 // FontFeature('tnum') is the const equivalent of FontFeature.tabularFigures().
 const TextStyle _kTimeStyle = TextStyle(
@@ -36,6 +37,12 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
   double _fromProgress = 0;
   double _toProgress = 0;
 
+  // ── Buffered progress ─────────────────────────────────────────────────────
+  // Updated via listenManual (never watch) — same isolation strategy as position.
+  // Written directly to the field during playback; AnimatedBuilder picks it up
+  // on its next tick. setState is called only when paused and change > 2%.
+  double _bufferedProgress = 0.0;
+
   // ── Drag state ────────────────────────────────────────────────────────────
   bool _isDragging = false;
   double _dragValue = 0;
@@ -46,6 +53,7 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
     // Listen outside build so animation side-effects never run during a build pass.
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+
       ref.listenManual(
         playbackPositionProvider,
         (_, position) {
@@ -56,6 +64,22 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
         },
         fireImmediately: true,
       );
+
+      // Buffered position: never watch, always listenManual.
+      // During active playback _anim is ticking, so we write the field directly
+      // and let AnimatedBuilder read it on its next tick — no setState cost.
+      // When paused (_anim stopped), setState is needed to trigger a repaint,
+      // but only when the change exceeds 2% to cap to ~50 repaints per song.
+      ref.listenManual(bufferedPositionProvider, (_, buffered) {
+        final duration = ref.read(playerProvider.select((s) => s.duration));
+        if (duration == null || duration.inMilliseconds == 0) return;
+        final progress =
+            (buffered.inMilliseconds / duration.inMilliseconds).clamp(0.0, 1.0);
+        if ((progress - _bufferedProgress).abs() > 0.02) {
+          _bufferedProgress = progress;
+          if (!_anim.isAnimating && mounted) setState(() {});
+        }
+      });
     });
   }
 
@@ -101,6 +125,10 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
     final sliderTheme = SliderTheme.of(context).copyWith(
       activeTrackColor: dominantColor,
       inactiveTrackColor: dominantColor.withValues(alpha: 0.25),
+      // Buffered section sits between played and unplayed tracks.
+      // 45% opacity strikes the balance: visible on dark backgrounds
+      // without competing with the played (100%) track color.
+      secondaryActiveTrackColor: dominantColor.withValues(alpha: 0.45),
       thumbColor: dominantColor,
       overlayColor: dominantColor.withValues(alpha: 0.15),
       trackHeight: widget.compact ? 3 : 4,
@@ -134,6 +162,10 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
                 // SliderTheme inherited from the widget above.
                 return Slider(
                   value: displayProgress.clamp(0.0, 1.0),
+                  // secondaryTrackValue renders the buffered range between the
+                  // played track and the unplayed track using
+                  // secondaryActiveTrackColor from SliderTheme above.
+                  secondaryTrackValue: _bufferedProgress.clamp(0.0, 1.0),
                   onChangeStart: (v) {
                     _anim.stop();
                     setState(() {

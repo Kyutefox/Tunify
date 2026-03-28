@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -31,6 +30,7 @@ import 'package:tunify/ui/screens/shared/player/player_controls.dart';
 import 'package:tunify/ui/screens/shared/player/player_progress_bar.dart';
 import 'package:tunify/ui/screens/shared/player/player_shared.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
+import 'package:tunify/ui/widgets/player/album_art_hero.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   const PlayerScreen({super.key});
@@ -40,11 +40,41 @@ class PlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   double _dragDy = 0;
 
   late AnimationController _artScaleCtrl;
   late Animation<double> _artScale;
+
+  // Deferred background: PlayerBlurredBackground applies
+  // ImageFilter.blur(sigmaX: 20) which creates an expensive GPU layer on its
+  // first paint. Keeping it false on frame 0 lets the Hero overlay start
+  // flying without competing for GPU budget. addPostFrameCallback sets this
+  // to true, triggering a rebuild on frame 1. By the time bgFade begins at
+  // 105ms (25% of 420ms), the blur is already computed and cached.
+  bool _bgVisible = false;
+
+  // ── Entry animations: staggered fade+slide for controls/progress ──────────
+  // _entryCtrl starts 80ms after push (see addPostFrameCallback) so the album
+  // art Hero completes its expensive overlay-insertion + first-rect phase
+  // before any additional composite layers are added to the GPU budget.
+  // Duration 300ms: 80 + 300 = 380ms — all content visible 40ms before route end.
+  //
+  // Absolute timeline from push (420ms route):
+  //   0ms   Hero flight begins (album art only)
+  //   80ms  _entryCtrl.forward() fires
+  //   80ms  song info fades in   (0–50% of 300ms = 0–150ms window)
+  //   116ms progress bar starts  (20–70% of 300ms = 60–210ms window)
+  //   134ms controls start       (30–80% of 300ms = 90–240ms window)
+  //   200ms extra controls start (55–100% of 300ms = 165–300ms window)
+  //   380ms all content at full opacity
+  late AnimationController _entryCtrl;
+  late Animation<double> _songInfoFade;
+  late Animation<double> _progressBarFade;
+  late Animation<Offset> _progressBarSlide;
+  late Animation<double> _controlsFade;
+  late Animation<Offset> _controlsSlide;
+  late Animation<double> _extraControlsFade;
 
   @override
   void initState() {
@@ -56,6 +86,41 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     );
     _artScale = Tween<double>(begin: 0.92, end: 1.0).animate(
       CurvedAnimation(parent: _artScaleCtrl, curve: Curves.easeOutCubic),
+    );
+
+    _entryCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _songInfoFade = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.0, 0.50, curve: Curves.easeOut),
+    );
+    _progressBarFade = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.20, 0.70, curve: Curves.easeOut),
+    );
+    _progressBarSlide = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.20, 0.70, curve: Curves.easeOutCubic),
+    ));
+    _controlsFade = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.30, 0.80, curve: Curves.easeOut),
+    );
+    _controlsSlide = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.30, 0.80, curve: Curves.easeOutCubic),
+    ));
+    _extraControlsFade = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.55, 1.0, curve: Curves.easeOut),
     );
 
     ref.listenManual(currentSongProvider, (_, next) {
@@ -71,6 +136,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _fetchLyrics();
+      // Trigger blur background on frame 1. This setState causes a single
+      // extra build (cheap — no expensive providers change) but moves the
+      // ImageFilter.blur GPU computation off frame 0.
+      setState(() => _bgVisible = true);
+      Future.delayed(const Duration(milliseconds: 80), () {
+        if (mounted) _entryCtrl.forward();
+      });
     });
   }
 
@@ -84,6 +156,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   @override
   void dispose() {
     _artScaleCtrl.dispose();
+    _entryCtrl.dispose();
     super.dispose();
   }
 
@@ -126,12 +199,14 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           body: Stack(
             fit: StackFit.expand,
             children: [
-              RepaintBoundary(
-                child: PlayerBlurredBackground(
-                  url: song.thumbnailUrl,
-                  dominantColor: dominantColor,
-                ),
-              ),
+              _bgVisible
+                  ? RepaintBoundary(
+                      child: PlayerBlurredBackground(
+                        url: song.thumbnailUrl,
+                        dominantColor: dominantColor,
+                      ),
+                    )
+                  : Container(color: AppColors.background),
               SafeArea(
                 child: Padding(
                   padding:
@@ -143,15 +218,37 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       const Spacer(flex: 2),
                       _buildAlbumArt(song, dominantColor),
                       const Spacer(flex: 2),
-                      _buildSongInfo(song),
-                      const SizedBox(height: AppSpacing.xxl),
-                      const RepaintBoundary(child: PlayerProgressBar()),
-                      const SizedBox(height: AppSpacing.lg),
-                      RepaintBoundary(
-                        child: PlayerControls(dominantColor: dominantColor),
+                      FadeTransition(
+                        opacity: _songInfoFade,
+                        child: _buildSongInfo(song),
                       ),
                       const SizedBox(height: AppSpacing.xxl),
-                      _buildExtraControls(dominantColor),
+                      FadeTransition(
+                        opacity: _progressBarFade,
+                        child: SlideTransition(
+                          position: _progressBarSlide,
+                          child: const RepaintBoundary(
+                              child: PlayerProgressBar()),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      FadeTransition(
+                        opacity: _controlsFade,
+                        child: SlideTransition(
+                          position: _controlsSlide,
+                          child: RepaintBoundary(
+                            child:
+                                PlayerControls(dominantColor: dominantColor),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      // Fade only — extra controls are small and at the
+                      // bottom; slide would compete with controls row above.
+                      FadeTransition(
+                        opacity: _extraControlsFade,
+                        child: _buildExtraControls(dominantColor),
+                      ),
                       const SizedBox(height: AppSpacing.base),
                     ],
                   ),
@@ -208,7 +305,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   Widget _buildAlbumArt(Song song, Color dominantColor) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final artSize = screenWidth - (AppSpacing.xl * 2) - 32;
-    final cachePx = (artSize * MediaQuery.devicePixelRatioOf(context)).round();
 
     return ScaleTransition(
       scale: _artScale,
@@ -223,92 +319,38 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             notifier.playPrevious();
           }
         },
-        child: Hero(
-          tag: 'player-album-art',
-          flightShuttleBuilder: (_, anim, direction, __, ___) {
-            final radius = Tween<double>(
-              begin: direction == HeroFlightDirection.push
-                  ? AppRadius.md
-                  : AppRadius.xl,
-              end: direction == HeroFlightDirection.push
-                  ? AppRadius.xl
-                  : AppRadius.md,
-            ).animate(CurvedAnimation(
-              parent: anim,
-              curve: Curves.easeOutCubic,
-            ));
-            return AnimatedBuilder(
-              animation: radius,
-              builder: (_, __) => ClipRRect(
-                borderRadius: BorderRadius.circular(radius.value),
-                child: song.thumbnailUrl.isEmpty
-                    ? Container(
-                        color: AppColors.surfaceLight,
-                        child: AppIcon(
-                            icon: AppIcons.musicNote,
-                            color: AppColors.textMuted,
-                            size: 80),
-                      )
-                    : CachedNetworkImage(
-                        imageUrl: song.thumbnailUrl,
-                        fit: BoxFit.contain,
-                      ),
+        // BoxShadow lives OUTSIDE the Hero so it never participates in the
+        // Hero flight. With it inside the Hero child, the shadow was absent
+        // during the shuttle and popped in at landing — visually read as the
+        // album art growing taller after the animation completed.
+        // BoxShadow lives OUTSIDE AlbumArtHero so it is never part of the Hero
+        // overlay. Shadow inside the Hero child is absent during the shuttle
+        // and pops in on landing — visually reads as the image growing taller.
+        child: Container(
+          width: artSize,
+          height: artSize,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            boxShadow: [
+              BoxShadow(
+                color: dominantColor.withValues(
+                    alpha: PaletteTheme.playerArtGlowAlpha),
+                blurRadius: 50,
+                spreadRadius: 5,
+                offset: const Offset(0, 12),
               ),
-            );
-          },
-          child: Container(
-            width: artSize,
-            height: artSize,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              boxShadow: [
-                BoxShadow(
-                  color: dominantColor.withValues(
-                      alpha: PaletteTheme.playerArtGlowAlpha),
-                  blurRadius: 50,
-                  spreadRadius: 5,
-                  offset: const Offset(0, 12),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              child: song.thumbnailUrl.isEmpty
-                  ? Container(
-                      width: artSize,
-                      height: artSize,
-                      color: AppColors.surfaceLight,
-                      child: AppIcon(
-                          icon: AppIcons.musicNote,
-                          color: AppColors.textMuted,
-                          size: 80),
-                    )
-                  : Container(
-                      color: Colors.black.withValues(alpha: 0.22),
-                      child: CachedNetworkImage(
-                        imageUrl: song.thumbnailUrl,
-                        width: artSize,
-                        height: artSize,
-                        memCacheWidth: cachePx,
-                        memCacheHeight: cachePx,
-                        fit: BoxFit.contain,
-                        errorWidget: (_, __, ___) => Container(
-                          width: artSize,
-                          height: artSize,
-                          color: AppColors.surfaceLight,
-                          child: AppIcon(
-                              icon: AppIcons.musicNote,
-                              color: AppColors.textMuted,
-                              size: 80),
-                        ),
-                      ),
-                    ),
-            ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: AlbumArtHero(
+            url: song.thumbnailUrl,
+            size: artSize,
+            borderRadius: AppRadius.xl,
+            placeholderIconSize: 80,
           ),
         ),
       ),

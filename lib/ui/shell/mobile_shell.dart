@@ -94,17 +94,19 @@ class _MobileShellState extends ConsumerState<MobileShell> {
   }
 
   Widget _buildCurrentScreen() {
-    // Only build the active screen to save memory
-    switch (_selectedIndex) {
-      case 0:
-        return const HomeScreen();
-      case 1:
-        return const SearchScreen();
-      case 2:
-        return const LibraryScreen();
-      default:
-        return const HomeScreen();
-    }
+    // IndexedStack keeps all three screens alive in the element tree so that
+    // scroll positions, loaded data, and local state survive tab switches.
+    // Off-screen children are Offstage: no painting, no hit-testing, but full
+    // widget state preserved. Memory cost (~3× widget tree) is the intentional
+    // trade-off for zero-flash, zero-rebuild tab navigation.
+    return IndexedStack(
+      index: _selectedIndex,
+      children: const [
+        HomeScreen(),
+        SearchScreen(),
+        LibraryScreen(),
+      ],
+    );
   }
 
   Widget _buildNavBar() {

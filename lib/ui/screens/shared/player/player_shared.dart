@@ -36,7 +36,9 @@ class PlayerBlurredBackground extends StatelessWidget {
                 BlendMode.darken,
               ),
               child: ImageFiltered(
-                imageFilter: ImageFilter.blur(sigmaX: 40, sigmaY: 40),
+                // sigmaX: 20 is visually identical to 40 on a 100×100 source
+              // image stretched to fill the screen, but ~2× faster GPU compute.
+              imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: CachedNetworkImage(
                   imageUrl: url,
                   fit: BoxFit.cover,

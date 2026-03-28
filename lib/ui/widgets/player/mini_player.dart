@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/player/playback_position_provider.dart';
@@ -9,6 +8,7 @@ import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/screens/desktop/player/player_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/player/album_art_hero.dart';
 import '../player/../player/mini_player_play_button.dart';
 
 void openFullPlayerRoute(BuildContext context) {
@@ -17,20 +17,48 @@ void openFullPlayerRoute(BuildContext context) {
       opaque: true,
       barrierColor: Colors.black,
       pageBuilder: (_, __, ___) => const PlayerScreen(),
-      transitionDuration: const Duration(milliseconds: 320),
-      reverseTransitionDuration: const Duration(milliseconds: 260),
-      transitionsBuilder: (_, anim, __, child) {
-        final curved = CurvedAnimation(
-            parent: anim,
-            curve: Curves.easeOutCubic,
-            reverseCurve: Curves.easeOutCubic);
+      // 420ms open: gives the two-phase stagger time to read clearly.
+      // 280ms close: slightly faster than open — snappy dismissal feels
+      // intentional; mirrors Spotify and Apple Music's close timing.
+      transitionDuration: const Duration(milliseconds: 420),
+      reverseTransitionDuration: const Duration(milliseconds: 280),
+      transitionsBuilder: (_, animation, __, child) {
+        // Phase 1 (0–25%): Only the album art Hero is visible, expanding from
+        // the mini player position. The shell (with the mini player in its
+        // correct position) is visible underneath — this is how Flutter renders
+        // during Hero flight with opaque:true+FadeTransition(opacity:0).
+        //
+        // Phase 2 (25–85%): Background fades in around the arriving Hero.
+        // Interval + easeOut: fast initial fill, graceful deceleration to opaque.
+        final bgFade = CurvedAnimation(
+          parent: animation,
+          curve: const Interval(0.25, 0.85, curve: Curves.easeOut),
+          // easeIn on close: player content fades slowly at first then
+          // accelerates away, matching the "Hero shrinking back" metaphor.
+          reverseCurve: Curves.easeIn,
+        );
+
+        // Phase 3 (30–100%): Controls and player text slide up into position.
+        // Starts 5% after bgFade so the background materialises first, then
+        // content arrives inside it. easeOutCubic: snaps to destination fast,
+        // ~88% complete at the midpoint of its interval — weighted and deliberate.
+        final contentSlide = CurvedAnimation(
+          parent: animation,
+          curve: const Interval(0.30, 1.0, curve: Curves.easeOutCubic),
+          // easeInCubic on close: content snaps away quickly, reinforcing the
+          // downward-swipe dismissal gesture.
+          reverseCurve: Curves.easeInCubic,
+        );
+
         return FadeTransition(
-          opacity: curved,
+          opacity: bgFade,
           child: SlideTransition(
             position: Tween<Offset>(
-              begin: const Offset(0, 0.04),
+              // 5.5% upward offset: subtle enough to not feel like a full slide,
+              // strong enough to give the player UI a sense of weight arriving.
+              begin: const Offset(0.0, 0.055),
               end: Offset.zero,
-            ).animate(curved),
+            ).animate(contentSlide),
             child: child,
           ),
         );
@@ -53,6 +81,17 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   void _openFullPlayer() {
     if (_isOpening) return;
     _isOpening = true;
+    // Precache the full-resolution image before pushing the route.
+    // The Hero flight is 420ms — sufficient for a disk-cache decode to
+    // complete. Without this, CachedNetworkImage decodes mid-flight at the
+    // full-player cache size (artSize × dpr), which is a different ImageCache
+    // key from the mini player's (44 × dpr) entry. That mid-flight decode
+    // triggers markNeedsBuild on the image widget, which the Hero framework
+    // detects as a layout change and pauses to remeasure — the visible stutter.
+    final song = ref.read(currentSongProvider);
+    if (song != null && song.thumbnailUrl.isNotEmpty) {
+      precacheImage(CachedNetworkImageProvider(song.thumbnailUrl), context);
+    }
     openFullPlayerRoute(context);
     Future<void>.delayed(const Duration(milliseconds: 400), () {
       _isOpening = false;
@@ -137,40 +176,11 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                   ),
                   child: Row(
                     children: [
-                      Hero(
-                        tag: 'player-album-art',
-                        flightShuttleBuilder: (_, anim, direction, __, ___) {
-                          final radius = Tween<double>(
-                            begin: direction == HeroFlightDirection.push
-                                ? AppRadius.md
-                                : AppRadius.xl,
-                            end: direction == HeroFlightDirection.push
-                                ? AppRadius.xl
-                                : AppRadius.md,
-                          ).animate(CurvedAnimation(
-                            parent: anim,
-                            curve: Curves.easeOutCubic,
-                          ));
-                          return AnimatedBuilder(
-                            animation: radius,
-                            builder: (_, __) => ClipRRect(
-                              borderRadius: BorderRadius.circular(radius.value),
-                              child: song.thumbnailUrl.isEmpty
-                                  ? Container(
-                                      color: AppColors.surfaceLight,
-                                      child: AppIcon(
-                                          icon: AppIcons.musicNote,
-                                          color: AppColors.textMuted,
-                                          size: 20),
-                                    )
-                                  : CachedNetworkImage(
-                                      imageUrl: song.thumbnailUrl,
-                                      fit: BoxFit.contain,
-                                    ),
-                            ),
-                          );
-                        },
-                        child: _AlbumThumb(url: song.thumbnailUrl),
+                      AlbumArtHero(
+                        url: song.thumbnailUrl,
+                        size: 44,
+                        borderRadius: AppRadius.md,
+                        placeholderIconSize: 20,
                       ),
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
@@ -230,50 +240,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   }
 }
 
-class _AlbumThumb extends StatelessWidget {
-  const _AlbumThumb({required this.url});
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    final cachePx = (44 * MediaQuery.devicePixelRatioOf(context)).round();
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.md),
-      child: url.isEmpty
-          ? Container(
-              width: 44,
-              height: 44,
-              color: AppColors.surface,
-              child: AppIcon(
-                icon: AppIcons.musicNote,
-                color: AppColors.textMuted,
-                size: 20,
-              ),
-            )
-          : Container(
-              color: Colors.black.withValues(alpha: 0.18),
-              child: CachedNetworkImage(
-                imageUrl: url,
-                width: 44,
-                height: 44,
-                memCacheWidth: cachePx,
-                memCacheHeight: cachePx,
-                fit: BoxFit.contain,
-                errorWidget: (_, __, ___) => Container(
-                  width: 44,
-                  height: 44,
-                  color: AppColors.surface,
-                  child: AppIcon(
-                    icon: AppIcons.musicNote,
-                    color: AppColors.textMuted,
-                    size: 20,
-                  ),
-                ),
-              ),
-            ),
-    );
-  }
-}
 
 /// Self-contained seek bar that subscribes to position, duration, and color
 /// internally. Wrapped in a [RepaintBoundary] by its parent so position ticks

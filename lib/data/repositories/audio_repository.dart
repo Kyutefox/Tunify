@@ -85,12 +85,19 @@ class AudioRepository {
 
     final cacheInfo = await _streamCache.getCacheInfo(song.id);
     if (cacheInfo.exists && cacheInfo.filePath != null) {
-      log('PlayFlow: resolveSource cache HIT (${stepSw.elapsedMilliseconds}ms) progress: ${(cacheInfo.progress * 100).toStringAsFixed(1)}%',
-          tag: 'PlayFlow');
-      return ResolvedAudioSourceFile(
-        cacheInfo.filePath!,
-        sourceKind: AudioSourceKind.streamCached,
-      );
+      // Use partial cache immediately if we have enough data buffered
+      final hasEnoughData = cacheInfo.cachedBytes >= (2 * 1024 * 1024) || // 2MB minimum
+                          cacheInfo.progress >= 0.30; // or 30% of expected size
+      
+      if (hasEnoughData || cacheInfo.isComplete) {
+        log('PlayFlow: resolveSource cache HIT (${stepSw.elapsedMilliseconds}ms) progress: ${(cacheInfo.progress * 100).toStringAsFixed(1)}% '
+            '(${hasEnoughData ? 'sufficient' : 'complete'})',
+            tag: 'PlayFlow');
+        return ResolvedAudioSourceFile(
+          cacheInfo.filePath!,
+          sourceKind: AudioSourceKind.streamCached,
+        );
+      }
     }
 
     log('PlayFlow: resolveSource cache MISS, fetching stream URL (${stepSw.elapsedMilliseconds}ms)',
@@ -123,16 +130,36 @@ class AudioRepository {
 
     final cacheInfo = await _streamCache.getCacheInfo(song.id);
 
+    log('PlayFlow: resolveForPlayback cache check: exists=${cacheInfo.exists} '
+        'bytes=${cacheInfo.cachedBytes} total=${cacheInfo.totalBytes} '
+        'progress=${(cacheInfo.progress * 100).toStringAsFixed(1)}% '
+        'complete=${cacheInfo.isComplete}',
+        tag: 'PlayFlow');
+
     if (cacheInfo.exists && cacheInfo.filePath != null) {
-      log('PlayFlow: resolveForPlayback cache HIT (${stepSw.elapsedMilliseconds}ms) cached: ${cacheInfo.cachedBytes} bytes',
+      // Use partial cache immediately if we have enough data buffered
+      // This eliminates the 1-2 second network fetch delay on next/prev
+      final hasEnoughData = cacheInfo.cachedBytes >= (2 * 1024 * 1024) || // 2MB minimum
+                          cacheInfo.progress >= 0.30; // or 30% of expected size
+      
+      log('PlayFlow: resolveForPlayback cache decision: hasEnoughData=$hasEnoughData '
+          '(bytes>=2MB: ${cacheInfo.cachedBytes >= 2 * 1024 * 1024}, '
+          'progress>=30%: ${cacheInfo.progress >= 0.30})',
           tag: 'PlayFlow');
-      return ResolvedAudioSourceFile(
-        cacheInfo.filePath!,
-        sourceKind: AudioSourceKind.streamCached,
-      );
+      
+      if (hasEnoughData || cacheInfo.isComplete) {
+        log('PlayFlow: resolveForPlayback cache HIT (${stepSw.elapsedMilliseconds}ms) '
+            'cached: ${cacheInfo.cachedBytes} bytes progress: ${(cacheInfo.progress * 100).toStringAsFixed(1)}% '
+            '(${hasEnoughData ? 'sufficient' : 'complete'})',
+            tag: 'PlayFlow');
+        return ResolvedAudioSourceFile(
+          cacheInfo.filePath!,
+          sourceKind: AudioSourceKind.streamCached,
+        );
+      }
     }
 
-    log('PlayFlow: resolveForPlayback cache MISS, fetching stream URL (${stepSw.elapsedMilliseconds}ms)',
+    log('PlayFlow: resolveForPlayback cache MISS/insufficient, fetching stream URL (${stepSw.elapsedMilliseconds}ms)',
         tag: 'PlayFlow');
     final streamData = await _streamManager.getStreamUrl(song.id);
     final url = streamData['stream_url'] as String;
@@ -221,9 +248,9 @@ class AudioRepository {
       return AudioSource.file(r.path);
     }
     final s = r as ResolvedAudioSourceStream;
-    return isApplePlatform
-        ? AudioSource.uri(Uri.parse(s.url))
-        : LockCachingAudioSource(Uri.parse(s.url), headers: s.headers ?? {}); // ignore: experimental_member_use
+    // Disable LockCachingAudioSource as it conflicts with our custom cache system
+    // Use regular AudioSource.uri and let our cache handle the optimization
+    return AudioSource.uri(Uri.parse(s.url), headers: s.headers);
   }
 
   AudioSource toAudioSource(ResolvedAudioSource r) => _toJustAudioSource(r);

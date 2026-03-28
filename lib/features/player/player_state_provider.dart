@@ -1973,6 +1973,76 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _syncPlaylistToQueue(shouldPlay: true);
         return;
       }
+      
+      // Universal cache-aware logic for all platforms
+      if (nextIndex < _loadedPlaylistLength) {
+        final nextSong = state.queue[nextIndex];
+        
+        // Check if we have SIGNIFICANT cache that would provide clear benefit
+        // Only rebuild if we have substantial cached data AND the current source is a stream
+        // (i.e., we're upgrading from stream to cached file, not just rebuilding for no reason)
+        final cacheInfo = await _audioRepository.getCacheInfo(nextSong.id);
+        final hasSubstantialCache = cacheInfo.exists && cacheInfo.filePath != null && 
+                                   (cacheInfo.isComplete || cacheInfo.cachedBytes >= (5 * 1024 * 1024)); // 5MB+ or complete
+        
+        // Additional check: only rebuild if we're confident the current source is a stream
+        // This prevents unnecessary rebuilds when cache might not provide clear benefit
+        var shouldRebuild = hasSubstantialCache;
+        
+        if (hasSubstantialCache) {
+          // Check if the current playlist source is likely a stream (not already a file)
+          // If we're in the first few songs and cache was recently added, it's likely upgrading
+          final isLikelyUpgrading = nextIndex < 5 && cacheInfo.cachedBytes > (3 * 1024 * 1024); // 3MB+ in first 5 songs
+          shouldRebuild = isLikelyUpgrading;
+          
+          logDebug('Player: playNext cache analysis for ${nextSong.id}: '
+              'substantial=$hasSubstantialCache, likelyUpgrading=$isLikelyUpgrading, '
+              'cachedBytes=${cacheInfo.cachedBytes}',
+              tag: 'Player');
+        }
+        
+        if (shouldRebuild) {
+          logDebug('Player: playNext rebuilding playlist to use cached file for ${nextSong.id}', tag: 'Player');
+          
+          // Update state immediately to prevent UI glitch
+          final oldState = state;
+          state = state.copyWith(
+            currentIndex: nextIndex,
+            currentSong: nextSong,
+            status: PlayerStatus.loading,
+          );
+          ref.read(homeProvider.notifier).addToRecentlyPlayed(nextSong);
+          
+          try {
+            // Force playlist rebuild to use cached file instead of original stream
+            _transitionGeneration++;
+            _isTransitioning = false;
+            _hasLoadedSource = false; // Force full re-resolution
+            
+            await _syncPlaylistToQueue(shouldPlay: true);
+            return;
+          } catch (e) {
+            // Fallback to normal transition if rebuild fails
+            logWarning('Player: Cache rebuild failed, using normal transition: $e', tag: 'Player');
+            state = oldState.copyWith(currentIndex: nextIndex, currentSong: nextSong);
+            await _audioPlayer.setPlaylistIndex(nextIndex);
+            await _audioPlayer.play();
+            state = state.copyWith(status: PlayerStatus.playing);
+            return;
+          }
+        }
+        
+        // No substantial cache or not worth rebuilding, use normal instant playlist transition
+        logDebug('Player: playNext using normal instant transition for ${nextSong.id}', tag: 'Player');
+        state = state.copyWith(
+          currentIndex: nextIndex,
+          currentSong: nextSong,
+        );
+        await _audioPlayer.setPlaylistIndex(nextIndex);
+        await _audioPlayer.play();
+        return;
+      }
+      
       // just_audio playlist is only loaded with first 5 items; extend if we're going past.
       if (nextIndex >= _loadedPlaylistLength) {
         await _extendPlaylistTo(nextIndex);
@@ -1995,7 +2065,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }
   }
 
-  /// Resolves and appends queue items so the just_audio playlist includes [targetIndex].
   Future<void> _extendPlaylistTo(int targetIndex) async {
     final queue = state.queue;
     if (targetIndex < 0 || targetIndex >= queue.length) return;
@@ -2062,6 +2131,76 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _syncPlaylistToQueue(shouldPlay: true);
         return;
       }
+      
+      // Universal cache-aware logic for all platforms
+      final prevIndex = state.currentIndex - 1;
+      if (prevIndex >= 0 && prevIndex < _loadedPlaylistLength) {
+        final prevSong = state.queue[prevIndex];
+        
+        // Check if we have SIGNIFICANT cache that would provide clear benefit
+        // Only rebuild if we have substantial cached data AND the current source is a stream
+        // (i.e., we're upgrading from stream to cached file, not just rebuilding for no reason)
+        final cacheInfo = await _audioRepository.getCacheInfo(prevSong.id);
+        final hasSubstantialCache = cacheInfo.exists && cacheInfo.filePath != null && 
+                                   (cacheInfo.isComplete || cacheInfo.cachedBytes >= (5 * 1024 * 1024)); // 5MB+ or complete
+        
+        // Additional check: only rebuild if we're confident the current source is a stream
+        // This prevents unnecessary rebuilds when cache might not provide clear benefit
+        var shouldRebuild = hasSubstantialCache;
+        
+        if (hasSubstantialCache) {
+          // Check if the current playlist source is likely a stream (not already a file)
+          // If we're in the first few songs and cache was recently added, it's likely upgrading
+          final isLikelyUpgrading = prevIndex < 5 && cacheInfo.cachedBytes > (3 * 1024 * 1024); // 3MB+ in first 5 songs
+          shouldRebuild = isLikelyUpgrading;
+          
+          logDebug('Player: playPrevious cache analysis for ${prevSong.id}: '
+              'substantial=$hasSubstantialCache, likelyUpgrading=$isLikelyUpgrading, '
+              'cachedBytes=${cacheInfo.cachedBytes}',
+              tag: 'Player');
+        }
+        
+        if (shouldRebuild) {
+          logDebug('Player: playPrevious rebuilding playlist to use cached file for ${prevSong.id}', tag: 'Player');
+          
+          // Update state immediately to prevent UI glitch
+          final oldState = state;
+          state = state.copyWith(
+            currentIndex: prevIndex,
+            currentSong: prevSong,
+            status: PlayerStatus.loading,
+          );
+          
+          try {
+            // Force playlist rebuild to use cached file instead of original stream
+            _transitionGeneration++;
+            _isTransitioning = false;
+            _hasLoadedSource = false; // Force full re-resolution
+            
+            await _syncPlaylistToQueue(shouldPlay: true);
+            return;
+          } catch (e) {
+            // Fallback to normal transition if rebuild fails
+            logWarning('Player: Cache rebuild failed, using normal transition: $e', tag: 'Player');
+            state = oldState.copyWith(currentIndex: prevIndex, currentSong: prevSong);
+            await _audioPlayer.setPlaylistIndex(prevIndex);
+            await _audioPlayer.play();
+            state = state.copyWith(status: PlayerStatus.playing);
+            return;
+          }
+        }
+        
+        // No substantial cache or not worth rebuilding, use normal instant playlist transition
+        logDebug('Player: playPrevious using normal instant transition for ${prevSong.id}', tag: 'Player');
+        state = state.copyWith(
+          currentIndex: prevIndex,
+          currentSong: prevSong,
+        );
+        await _audioPlayer.setPlaylistIndex(prevIndex);
+        await _audioPlayer.play();
+        return;
+      }
+      
       await _audioPlayer.setPlaylistIndex(state.currentIndex - 1);
       await _audioPlayer.play();
       return;

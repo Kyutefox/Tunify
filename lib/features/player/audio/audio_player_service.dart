@@ -181,10 +181,9 @@ class AudioPlayerService {
 
     // On Apple platforms (iOS, macOS), no custom headers — AVURLAsset hangs
     // with Origin/Referer set. Signed YouTube URLs are self-authenticating.
-    final audioSource = (isApplePlatform)
-        ? AudioSource.uri(Uri.parse(url))
-        // ignore: experimental_member_use
-        : LockCachingAudioSource(Uri.parse(url), headers: requestHeaders);
+    // Disable LockCachingAudioSource as it conflicts with our custom cache system
+    // Use regular AudioSource.uri and let our cache handle the optimization
+    final audioSource = AudioSource.uri(Uri.parse(url), headers: requestHeaders);
 
     await _audioSessionReady;
     await _player.setAudioSource(

@@ -507,8 +507,11 @@ class StreamCacheService {
           tag: 'StreamCache');
     } else if (fileSize > 0) {
       cachedBytes = fileSize;
-      isComplete = true;
-      log('StreamCache: getCacheInfo $songId - file:$fileSize bytes, NO METADATA (treating as complete)',
+      // When metadata is missing, we can't assume completion
+      // Use a reasonable estimate based on typical song sizes
+      // Most songs are 3-10MB, so treat <2MB as incomplete
+      isComplete = fileSize >= (2 * 1024 * 1024); // 2MB threshold
+      log('StreamCache: getCacheInfo $songId - file:$fileSize bytes, NO METADATA (${isComplete ? 'assuming complete' : 'assuming incomplete'})',
           tag: 'StreamCache');
     } else {
       cachedBytes = 0;
@@ -522,7 +525,7 @@ class StreamCacheService {
       exists: true,
       filePath: path,
       cachedBytes: cachedBytes,
-      totalBytes: metadata?.totalBytes ?? fileSize,
+      totalBytes: metadata?.totalBytes ?? (isComplete ? fileSize : (5 * 1024 * 1024)), // 5MB estimate for incomplete files
       isComplete: isComplete,
     );
   }

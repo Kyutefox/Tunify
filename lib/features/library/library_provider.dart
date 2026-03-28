@@ -123,7 +123,11 @@ class LibraryState {
     final pinned = <LibraryPlaylist>[];
     final unpinned = <LibraryPlaylist>[];
     for (final p in list) {
-      if (p.isPinned) pinned.add(p); else unpinned.add(p);
+      if (p.isPinned) {
+        pinned.add(p);
+      } else {
+        unpinned.add(p);
+      }
     }
     return [...pinned, ...unpinned];
   }

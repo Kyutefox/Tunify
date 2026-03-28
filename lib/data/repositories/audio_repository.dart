@@ -1,14 +1,11 @@
 import 'dart:async';
 
-import 'package:tunify/core/utils/platform_utils.dart';
-
 import 'package:just_audio/just_audio.dart';
-
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/music_stream_manager.dart';
+import 'package:tunify/features/settings/stream_cache_service.dart';
 import 'package:tunify/features/player/audio/crossfade_engine.dart';
 import 'package:tunify_logger/tunify_logger.dart';
-import 'package:tunify/features/settings/stream_cache_service.dart';
 
 enum AudioSourceKind {
   local,

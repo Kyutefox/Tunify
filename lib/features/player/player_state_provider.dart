@@ -1870,25 +1870,25 @@ class PlayerNotifier extends Notifier<PlayerState> {
     state = state.copyWith(status: PlayerStatus.paused);
     if (_hasLoadedSource) {
       try {
-        final song = state.currentSong;
-        if (song != null) {
-          final box = await Hive.openBox<dynamic>('player_state');
-          final prefs = await SharedPreferences.getInstance();
-          await Future.wait([
-            box.put('song', song.toJson()),
-            prefs.setInt(StorageKeys.prefsLastPlayedPositionMs,
-                _audioPlayer.position.inMilliseconds),
-            prefs.setInt(
-                StorageKeys.prefsLastPlayedDurationMs,
-                _audioPlayer.duration?.inMilliseconds ??
-                    state.duration?.inMilliseconds ??
-                    0),
-          ]);
-        }
+        await _persistPlaybackState();
       } catch (e) {
         logWarning('Player: pause persist failed: $e', tag: 'Player');
       }
     }
+  }
+
+  Future<void> clearCurrentSong() async {
+    await pause();
+    state = state.copyWith(
+      clearSong: true,
+      queue: [],
+      currentIndex: -1,
+      status: PlayerStatus.idle,
+    );
+    _usingPlaylist = false;
+    _loadedPlaylistLength = 0;
+    _hasLoadedSource = false;
+    await _audioPlayer.stop();
   }
 
   Future<void> seekTo(Duration position) async {

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -47,22 +46,51 @@ class MiniPlayer extends ConsumerStatefulWidget {
 
 class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   double _dragY = 0;
+  double _dragX = 0;
   bool _isOpening = false;
+  bool _isClosing = false;
 
   // Drives a subtle scale-up (max 3%) as the user drags upward, giving
   // immediate tactile feedback before the full player opens.
   double _dragScale = 0.0;
+  double _dragOpacity = 1.0;
+  
   // Ensures the selection haptic fires only once per drag gesture.
   bool _didTriggerOpenHaptic = false;
+  bool _didTriggerCloseHaptic = false;
+  bool _didTriggerNextHaptic = false;
+  bool _didTriggerPrevHaptic = false;
 
   void _openFullPlayer() {
     if (_isOpening) return;
     _isOpening = true;
     _didTriggerOpenHaptic = false;
     if (_dragScale > 0) setState(() => _dragScale = 0.0);
+    if (_dragOpacity < 1.0) setState(() => _dragOpacity = 1.0);
     openFullPlayerRoute(context);
     Future<void>.delayed(const Duration(milliseconds: 500), () {
       if (mounted) _isOpening = false;
+    });
+  }
+
+  void _closeMiniPlayer() {
+    if (_isClosing) return;
+    _isClosing = true;
+    _didTriggerCloseHaptic = false;
+    HapticFeedback.heavyImpact();
+    
+    // Clean fade out without any indicators
+    setState(() => _dragOpacity = 0.0);
+    
+    // Smooth fade out and hide
+    Future<void>.delayed(const Duration(milliseconds: 250), () {
+      if (mounted) {
+        // Clear current song to hide the mini player
+        ref.read(playerProvider.notifier).clearCurrentSong();
+        _isClosing = false;
+        // Reset opacity after the player is hidden (no visual effect since player is gone)
+        _dragOpacity = 1.0;
+      }
     });
   }
 
@@ -87,6 +115,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
       onTap: _openFullPlayer,
       onVerticalDragUpdate: (d) {
         _dragY += d.delta.dy;
+        
         if (_dragY < 0) {
           // Upward drag: fire a one-shot selection haptic at 8px to signal
           // the gesture is being recognized, before the route commits at 24px.
@@ -104,22 +133,65 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
             _openFullPlayer();
             _dragY = 0;
           }
+        } else if (_dragY > 0) {
+          // Downward drag: prepare to close mini player
+          if (!_didTriggerCloseHaptic && _dragY > 8) {
+            _didTriggerCloseHaptic = true;
+            HapticFeedback.selectionClick();
+          }
+          // Fade out as we drag down
+          final downPx = _dragY.clamp(0.0, 50.0);
+          final newOpacity = 1.0 - (downPx / 50.0);
+          if ((newOpacity - _dragOpacity).abs() > 0.01) {
+            setState(() => _dragOpacity = newOpacity);
+          }
+          if (_dragY > 30) {
+            _closeMiniPlayer();
+            _dragY = 0;
+          }
         }
       },
       onVerticalDragEnd: (_) {
         _dragY = 0;
         _didTriggerOpenHaptic = false;
+        _didTriggerCloseHaptic = false;
         if (_dragScale > 0) setState(() => _dragScale = 0.0);
+        if (_dragOpacity < 1.0) setState(() => _dragOpacity = 1.0);
+      },
+      onHorizontalDragUpdate: (d) {
+        _dragX += d.delta.dx;
+        
+        // Provide visual feedback during horizontal drag
+        if (_dragX.abs() > 5) {
+          if (_dragX > 0 && !_didTriggerPrevHaptic) {
+            // Dragging right (previous)
+            _didTriggerPrevHaptic = true;
+            _didTriggerNextHaptic = false;
+            HapticFeedback.selectionClick();
+          } else if (_dragX < 0 && !_didTriggerNextHaptic) {
+            // Dragging left (next)
+            _didTriggerNextHaptic = true;
+            _didTriggerPrevHaptic = false;
+            HapticFeedback.selectionClick();
+          }
+        }
       },
       onHorizontalDragEnd: (d) {
         final v = d.primaryVelocity ?? 0;
-        if (v < -400) {
+        if (v < -300 || _dragX < -50) {
+          // Swipe left (next song)
           HapticFeedback.mediumImpact();
           ref.read(playerProvider.notifier).playNext();
-        } else if (v > 400) {
+        } else if (v > 300 || _dragX > 50) {
+          // Swipe right (previous song)
           HapticFeedback.mediumImpact();
           ref.read(playerProvider.notifier).playPrevious();
         }
+        
+        // Reset horizontal drag state
+        _dragX = 0;
+        _didTriggerNextHaptic = false;
+        _didTriggerPrevHaptic = false;
       },
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -128,9 +200,16 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
           AppSpacing.sm,
           AppSpacing.sm,
         ),
+        child: AnimatedOpacity(
+        opacity: _dragOpacity,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOutCubic,
         child: Transform.scale(
-          scale: 1.0 + _dragScale * 0.03,
-          child: AnimatedContainer(
+          scale: 1.0 + _dragScale * 0.03, // Only scale on intentional drag up, not swipe gestures
+          // Add horizontal translation feedback for swipe gestures
+          child: Transform.translate(
+            offset: Offset(_dragX * 0.2, 0), // Only horizontal movement, no vertical
+            child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeOutCubic,
             height: 68,
@@ -158,6 +237,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
             child: Stack(
               clipBehavior: Clip.hardEdge,
               children: [
+                // Main content
                 Positioned.fill(
                   bottom: 3,
                   child: Padding(
@@ -210,6 +290,75 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                     ),
                   ),
                 ),
+                
+                // Elegant swipe indicators - subtle and animated
+                if (_dragX.abs() > 10)
+                  Positioned.fill(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 150),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          // Previous indicator (right swipe)
+                          if (_dragX > 0)
+                            Expanded(
+                              child: AnimatedOpacity(
+                                opacity: (_dragX / 50).clamp(0.0, 1.0),
+                                duration: const Duration(milliseconds: 100),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.skip_previous,
+                                      color: AppColors.textMuted,
+                                      size: 24,
+                                    ),
+                                    SizedBox(width: 8),
+                                    Text(
+                                      'Previous',
+                                      style: TextStyle(
+                                        color: AppColors.textMuted,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          
+                          // Next indicator (left swipe)
+                          if (_dragX < 0)
+                            Expanded(
+                              child: AnimatedOpacity(
+                                opacity: (-_dragX / 50).clamp(0.0, 1.0),
+                                duration: const Duration(milliseconds: 100),
+                                child: const Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Next',
+                                      style: TextStyle(
+                                        color: AppColors.textMuted,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8),
+                                    Icon(
+                                      Icons.skip_next,
+                                      color: AppColors.textMuted,
+                                      size: 24,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                
                 // PERF: const — allocated once globally as a compile-time constant.
                 // The seek bar reads its own providers inside the RepaintBoundary,
                 // so only this layer repaints on position ticks.
@@ -223,7 +372,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                 ),
               ],
             ),
+            ),
           ),
+        ),
         ),
       ),
     );

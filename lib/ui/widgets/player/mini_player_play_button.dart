@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
@@ -20,7 +21,10 @@ class MiniPlayerPlayButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.lightImpact();
+        onTap();
+      },
       child: Container(
         width: 38,
         height: 38,

@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
@@ -14,53 +15,23 @@ import '../player/../player/mini_player_play_button.dart';
 void openFullPlayerRoute(BuildContext context) {
   Navigator.of(context).push(
     PageRouteBuilder(
-      opaque: true,
-      barrierColor: Colors.black,
+      opaque: false,
+      barrierColor: Colors.transparent,
       pageBuilder: (_, __, ___) => const PlayerScreen(),
-      // 420ms open: gives the two-phase stagger time to read clearly.
-      // 280ms close: slightly faster than open — snappy dismissal feels
-      // intentional; mirrors Spotify and Apple Music's close timing.
-      transitionDuration: const Duration(milliseconds: 420),
-      reverseTransitionDuration: const Duration(milliseconds: 280),
+      transitionDuration: const Duration(milliseconds: 380),
+      reverseTransitionDuration: const Duration(milliseconds: 260),
       transitionsBuilder: (_, animation, __, child) {
-        // Phase 1 (0–25%): Only the album art Hero is visible, expanding from
-        // the mini player position. The shell (with the mini player in its
-        // correct position) is visible underneath — this is how Flutter renders
-        // during Hero flight with opaque:true+FadeTransition(opacity:0).
-        //
-        // Phase 2 (25–85%): Background fades in around the arriving Hero.
-        // Interval + easeOut: fast initial fill, graceful deceleration to opaque.
-        final bgFade = CurvedAnimation(
-          parent: animation,
-          curve: const Interval(0.25, 0.85, curve: Curves.easeOut),
-          // easeIn on close: player content fades slowly at first then
-          // accelerates away, matching the "Hero shrinking back" metaphor.
-          reverseCurve: Curves.easeIn,
-        );
-
-        // Phase 3 (30–100%): Controls and player text slide up into position.
-        // Starts 5% after bgFade so the background materialises first, then
-        // content arrives inside it. easeOutCubic: snaps to destination fast,
-        // ~88% complete at the midpoint of its interval — weighted and deliberate.
-        final contentSlide = CurvedAnimation(
-          parent: animation,
-          curve: const Interval(0.30, 1.0, curve: Curves.easeOutCubic),
-          // easeInCubic on close: content snaps away quickly, reinforcing the
-          // downward-swipe dismissal gesture.
-          reverseCurve: Curves.easeInCubic,
-        );
-
+        // The Hero flies freely — no FadeTransition wrapper fighting it.
+        // The player background (gradient + deferred blur) fades itself in
+        // via PlayerBlurredBackground's own post-frame animation.
+        // On close: fade out so the mini player reappears cleanly.
         return FadeTransition(
-          opacity: bgFade,
-          child: SlideTransition(
-            position: Tween<Offset>(
-              // 5.5% upward offset: subtle enough to not feel like a full slide,
-              // strong enough to give the player UI a sense of weight arriving.
-              begin: const Offset(0.0, 0.055),
-              end: Offset.zero,
-            ).animate(contentSlide),
-            child: child,
+          opacity: CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeIn,
+            reverseCurve: Curves.easeIn,
           ),
+          child: child,
         );
       },
     ),
@@ -78,23 +49,20 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   double _dragY = 0;
   bool _isOpening = false;
 
+  // Drives a subtle scale-up (max 3%) as the user drags upward, giving
+  // immediate tactile feedback before the full player opens.
+  double _dragScale = 0.0;
+  // Ensures the selection haptic fires only once per drag gesture.
+  bool _didTriggerOpenHaptic = false;
+
   void _openFullPlayer() {
     if (_isOpening) return;
     _isOpening = true;
-    // Precache the full-resolution image before pushing the route.
-    // The Hero flight is 420ms — sufficient for a disk-cache decode to
-    // complete. Without this, CachedNetworkImage decodes mid-flight at the
-    // full-player cache size (artSize × dpr), which is a different ImageCache
-    // key from the mini player's (44 × dpr) entry. That mid-flight decode
-    // triggers markNeedsBuild on the image widget, which the Hero framework
-    // detects as a layout change and pauses to remeasure — the visible stutter.
-    final song = ref.read(currentSongProvider);
-    if (song != null && song.thumbnailUrl.isNotEmpty) {
-      precacheImage(CachedNetworkImageProvider(song.thumbnailUrl), context);
-    }
+    _didTriggerOpenHaptic = false;
+    if (_dragScale > 0) setState(() => _dragScale = 0.0);
     openFullPlayerRoute(context);
-    Future<void>.delayed(const Duration(milliseconds: 400), () {
-      _isOpening = false;
+    Future<void>.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _isOpening = false;
     });
   }
 
@@ -119,17 +87,37 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
       onTap: _openFullPlayer,
       onVerticalDragUpdate: (d) {
         _dragY += d.delta.dy;
-        if (_dragY < -24) {
-          _openFullPlayer();
-          _dragY = 0;
+        if (_dragY < 0) {
+          // Upward drag: fire a one-shot selection haptic at 8px to signal
+          // the gesture is being recognized, before the route commits at 24px.
+          if (!_didTriggerOpenHaptic && _dragY < -8) {
+            _didTriggerOpenHaptic = true;
+            HapticFeedback.selectionClick();
+          }
+          // Scale preview: linearly map 0–50px of upward drag to 0–3% scale.
+          final upPx = (-_dragY).clamp(0.0, 50.0);
+          final newScale = upPx / 50.0;
+          if ((newScale - _dragScale).abs() > 0.01) {
+            setState(() => _dragScale = newScale);
+          }
+          if (_dragY < -24) {
+            _openFullPlayer();
+            _dragY = 0;
+          }
         }
       },
-      onVerticalDragEnd: (_) => _dragY = 0,
+      onVerticalDragEnd: (_) {
+        _dragY = 0;
+        _didTriggerOpenHaptic = false;
+        if (_dragScale > 0) setState(() => _dragScale = 0.0);
+      },
       onHorizontalDragEnd: (d) {
         final v = d.primaryVelocity ?? 0;
         if (v < -400) {
+          HapticFeedback.mediumImpact();
           ref.read(playerProvider.notifier).playNext();
         } else if (v > 400) {
+          HapticFeedback.mediumImpact();
           ref.read(playerProvider.notifier).playPrevious();
         }
       },
@@ -140,99 +128,101 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
           AppSpacing.sm,
           AppSpacing.sm,
         ),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOutCubic,
-          height: 68,
-          decoration: BoxDecoration(
-            color: Color.lerp(AppColors.surfaceLight, dominantColor, 0.18)!
-                .withValues(alpha: 0.97),
-            borderRadius: BorderRadius.circular(AppRadius.xl),
-            border: Border.all(
-              color: dominantColor.withValues(alpha: 0.20),
-              width: 0.5,
+        child: Transform.scale(
+          scale: 1.0 + _dragScale * 0.03,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            height: 68,
+            decoration: BoxDecoration(
+              color: Color.lerp(AppColors.surfaceLight, dominantColor, 0.18)!
+                  .withValues(alpha: 0.97),
+              borderRadius: BorderRadius.circular(AppRadius.xl),
+              border: Border.all(
+                color: dominantColor.withValues(alpha: 0.20),
+                width: 0.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: dominantColor.withValues(alpha: 0.18),
+                  blurRadius: 20,
+                  offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.28),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
-            boxShadow: [
-              BoxShadow(
-                color: dominantColor.withValues(alpha: 0.18),
-                blurRadius: 20,
-                offset: const Offset(0, 4),
-              ),
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.28),
-                blurRadius: 16,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Stack(
-            clipBehavior: Clip.hardEdge,
-            children: [
-              Positioned.fill(
-                bottom: 3,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.md,
-                  ),
-                  child: Row(
-                    children: [
-                      AlbumArtHero(
-                        url: song.thumbnailUrl,
-                        size: 44,
-                        borderRadius: AppRadius.md,
-                        placeholderIconSize: 20,
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              song.title,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
-                                fontSize: AppFontSize.md,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              song.artist,
-                              style: const TextStyle(
-                                color: AppColors.textMuted,
-                                fontSize: AppFontSize.xs,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
+            child: Stack(
+              clipBehavior: Clip.hardEdge,
+              children: [
+                Positioned.fill(
+                  bottom: 3,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                    ),
+                    child: Row(
+                      children: [
+                        AlbumArtHero(
+                          url: song.thumbnailUrl,
+                          size: 44,
+                          borderRadius: AppRadius.md,
                         ),
-                      ),
-                      MiniPlayerPlayButton(
-                        isPlaying: isPlaying,
-                        isLoading: isLoading,
-                        onTap: () =>
-                            ref.read(playerProvider.notifier).togglePlayPause(),
-                      ),
-                    ],
+                        const SizedBox(width: AppSpacing.md),
+                        Expanded(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                song.title,
+                                style: const TextStyle(
+                                  color: AppColors.textPrimary,
+                                  fontSize: AppFontSize.md,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                song.artist,
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: AppFontSize.xs,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                        MiniPlayerPlayButton(
+                          isPlaying: isPlaying,
+                          isLoading: isLoading,
+                          onTap: () =>
+                              ref.read(playerProvider.notifier).togglePlayPause(),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              // PERF: const — allocated once globally as a compile-time constant.
-              // The seek bar reads its own providers inside the RepaintBoundary,
-              // so only this layer repaints on position ticks.
-              const Positioned(
-                left: AppSpacing.md,
-                right: AppSpacing.md,
-                bottom: 0,
-                child: RepaintBoundary(
-                  child: _MiniPlayerSeekBar(),
+                // PERF: const — allocated once globally as a compile-time constant.
+                // The seek bar reads its own providers inside the RepaintBoundary,
+                // so only this layer repaints on position ticks.
+                const Positioned(
+                  left: AppSpacing.md,
+                  right: AppSpacing.md,
+                  bottom: 0,
+                  child: RepaintBoundary(
+                    child: _MiniPlayerSeekBar(),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

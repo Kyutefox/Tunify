@@ -7,7 +7,13 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 
-class PlayerBlurredBackground extends StatelessWidget {
+/// Blurred background for the player screen.
+///
+/// Defers the expensive [ImageFiltered] blur rasterization until after the
+/// Hero animation completes. Without the delay the GPU is asked to rasterize
+/// a full-screen blur on the very first frame of the route, which competes
+/// with the Hero flight and causes the visible mid-flight stutter.
+class PlayerBlurredBackground extends StatefulWidget {
   const PlayerBlurredBackground({
     super.key,
     required this.url,
@@ -18,29 +24,68 @@ class PlayerBlurredBackground extends StatelessWidget {
   final Color dominantColor;
 
   @override
+  State<PlayerBlurredBackground> createState() =>
+      _PlayerBlurredBackgroundState();
+}
+
+class _PlayerBlurredBackgroundState extends State<PlayerBlurredBackground>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+    );
+    _opacity = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    // One post-frame callback: Hero rasterizes first frame, then blur is added.
+    // GPU handles them sequentially instead of simultaneously — no hitch.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _ctrl.forward();
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final hasArt = url.isNotEmpty;
+    final hasArt = widget.url.isNotEmpty;
     return Stack(
       fit: StackFit.expand,
       children: [
+        // Solid background — always visible instantly, no delay.
+        Container(color: AppColors.background),
+        // Gradient overlay — visible immediately so the player never looks dim.
         if (hasArt)
-          // PERF: ValueKey ensures this layer is reused across song changes when
-          // the URL stays the same. The blur (sigmaX: 40) is expensive; the
-          // RepaintBoundary ensures it only repaints when the image URL changes,
-          // not on every dominantColor animation tick.
           RepaintBoundary(
-            key: ValueKey('blur_$url'),
-            child: ColorFiltered(
-              colorFilter: ColorFilter.mode(
-                Colors.black.withValues(alpha: PaletteTheme.playerDarkOverlayAlpha),
-                BlendMode.darken,
+            child: AnimatedContainer(
+              duration: AppDuration.medium,
+              curve: AppCurves.decelerate,
+              decoration: BoxDecoration(
+                gradient: PaletteTheme.playerGradient(widget.dominantColor),
               ),
+            ),
+          ),
+        // Blur layer — deferred until after the Hero flight ends so the GPU
+        // doesn't rasterize a full-screen blur mid-flight (the visible stutter).
+        // ColorFiltered dark overlay is INSIDE the fade so brightness is
+        // consistent: gradient already provides the dark feel before blur arrives.
+        if (hasArt)
+          FadeTransition(
+            opacity: _opacity,
+            child: RepaintBoundary(
+              key: ValueKey('blur_${widget.url}'),
               child: ImageFiltered(
-                // sigmaX: 20 is visually identical to 40 on a 100×100 source
-              // image stretched to fill the screen, but ~2× faster GPU compute.
-              imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                imageFilter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: CachedNetworkImage(
-                  imageUrl: url,
+                  imageUrl: widget.url,
                   fit: BoxFit.cover,
                   memCacheWidth: 100,
                   memCacheHeight: 100,
@@ -51,22 +96,14 @@ class PlayerBlurredBackground extends StatelessWidget {
                 ),
               ),
             ),
-          )
-        else
-          Container(color: AppColors.background),
+          ),
+        // Permanent dark overlay — always on top of blur so brightness never
+        // changes as blur fades in. Replaces the ColorFiltered that was inside
+        // the deferred layer.
         if (hasArt)
-          // PERF: RepaintBoundary isolates the gradient overlay's implicit
-          // animation repaints (60–120fps) from the blur layer above it.
-          // Without this boundary, every gradient animation tick would
-          // invalidate the full background stack.
-          RepaintBoundary(
-            child: AnimatedContainer(
-              duration: AppDuration.medium,
-              curve: AppCurves.decelerate,
-              decoration: BoxDecoration(
-                gradient: PaletteTheme.playerGradient(dominantColor),
-              ),
-            ),
+          ColoredBox(
+            color: Colors.black.withValues(
+                alpha: PaletteTheme.playerDarkOverlayAlpha),
           ),
       ],
     );

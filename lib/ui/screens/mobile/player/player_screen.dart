@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,6 +17,7 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/screens/shared/player/player_controls.dart';
 import 'package:tunify/ui/screens/shared/player/player_progress_bar.dart';
 import 'package:tunify/ui/screens/shared/player/player_shared.dart';
+import 'package:tunify/ui/widgets/player/album_art_hero.dart';
 
 class MobilePlayerScreen extends ConsumerStatefulWidget {
   const MobilePlayerScreen({super.key});
@@ -28,36 +28,29 @@ class MobilePlayerScreen extends ConsumerStatefulWidget {
 
 class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
     with SingleTickerProviderStateMixin {
+  // ── Swipe-to-dismiss ──────────────────────────────────────────────────────
+  double _dismissOffset = 0;
+  double _snapFromOffset = 0;
   double _dragDy = 0;
 
-  late AnimationController _artScaleCtrl;
-  late Animation<double> _artScale;
+  late final AnimationController _snapBackCtrl;
 
   @override
   void initState() {
     super.initState();
-    _artScaleCtrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 400),
-      value: 1.0,
-    );
-    _artScale = Tween<double>(begin: 0.92, end: 1.0).animate(
-      CurvedAnimation(parent: _artScaleCtrl, curve: Curves.easeOutCubic),
-    );
-
+    _snapBackCtrl = AnimationController(vsync: this);
+    _snapBackCtrl.addListener(() {
+      if (mounted) {
+        setState(() {
+          _dismissOffset = _snapFromOffset * (1.0 - _snapBackCtrl.value);
+        });
+      }
+    });
     ref.listenManual(currentSongProvider, (_, next) {
       if (next != null) _fetchLyrics();
     });
-    ref.listenManual(playerProvider.select((s) => s.isPlaying), (_, isPlaying) {
-      if (isPlaying) {
-        _artScaleCtrl.forward();
-      } else {
-        _artScaleCtrl.reverse();
-      }
-    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _fetchLyrics();
+      if (mounted) _fetchLyrics();
     });
   }
 
@@ -70,7 +63,7 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
 
   @override
   void dispose() {
-    _artScaleCtrl.dispose();
+    _snapBackCtrl.dispose();
     super.dispose();
   }
 
@@ -92,22 +85,55 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
       );
     }
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    final screenHeight = MediaQuery.sizeOf(context).height;
+    // Scale factor: at 0 offset the player is full size; at screenHeight it
+    // has shrunk 8%. Clamped so it can never flip or go negative.
+    final dismissScale =
+        1.0 - (_dismissOffset / screenHeight).clamp(0.0, 1.0) * 0.08;
+
+    return Transform.translate(
+      offset: Offset(0, _dismissOffset),
+      child: Transform.scale(
+        scale: dismissScale,
+        child: AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: GestureDetector(
-        onVerticalDragEnd: (d) {
-          final velocity = d.primaryVelocity ?? 0;
-          if (velocity > 600 || _dragDy > 100) {
-            _dragDy = 0;
-            _close();
-          } else {
-            _dragDy = 0;
+        onVerticalDragUpdate: (d) {
+          if (d.delta.dy > 0) {
+            _snapBackCtrl.stop();
+            setState(() {
+              _dragDy += d.delta.dy;
+              _dismissOffset = _dragDy;
+            });
           }
         },
-        onVerticalDragUpdate: (d) {
-          if (d.delta.dy > 0) _dragDy += d.delta.dy;
+        onVerticalDragEnd: (d) {
+          final velocity = d.primaryVelocity ?? 0;
+          if (velocity > 600 || _dragDy > 120) {
+            _dragDy = 0;
+            _dismissOffset = 0;
+            _close();
+          } else {
+            _snapFromOffset = _dismissOffset;
+            _dragDy = 0;
+            _snapBackCtrl.value = 0.0;
+            _snapBackCtrl.animateTo(
+              1.0,
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+            );
+          }
         },
-        onVerticalDragCancel: () => _dragDy = 0,
+        onVerticalDragCancel: () {
+          _snapFromOffset = _dismissOffset;
+          _dragDy = 0;
+          _snapBackCtrl.value = 0.0;
+          _snapBackCtrl.animateTo(
+            1.0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+          );
+        },
         child: Scaffold(
           backgroundColor: AppColors.background,
           body: Stack(
@@ -144,9 +170,11 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
               ),
             ],
           ),
-        ),
-      ),
-    );
+        ),      // Scaffold
+      ),        // GestureDetector
+        ),      // AnnotatedRegion
+      ),        // Transform.scale
+    );          // Transform.translate
   }
 
   Widget _buildTopBar() {
@@ -195,82 +223,40 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
   Widget _buildAlbumArt(Song song, Color dominantColor) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final artSize = screenWidth - (AppSpacing.xl * 2) - 32;
-    final cachePx = (artSize * MediaQuery.devicePixelRatioOf(context)).round();
 
-    return ScaleTransition(
-      scale: _artScale,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragEnd: (d) {
-          final v = d.primaryVelocity ?? 0;
-          final notifier = ref.read(playerProvider.notifier);
-          if (v < -400) {
-            notifier.playNext();
-          } else if (v > 400) {
-            notifier.playPrevious();
-          }
-        },
-        child: Hero(
-          tag: 'player-album-art',
-          child: RepaintBoundary(
-            key: ValueKey('album_art_${song.id}'),
-            child: Container(
-              width: artSize,
-              height: artSize,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(AppRadius.xl),
-                boxShadow: [
-                  BoxShadow(
-                    color: dominantColor.withValues(
-                        alpha: PaletteTheme.playerArtGlowAlpha),
-                    blurRadius: 50,
-                    spreadRadius: 5,
-                    offset: const Offset(0, 12),
-                  ),
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.3),
-                    blurRadius: 30,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              child: song.thumbnailUrl.isEmpty
-                  ? Container(
-                      width: artSize,
-                      height: artSize,
-                      color: AppColors.surfaceLight,
-                      child: AppIcon(
-                          icon: AppIcons.musicNote,
-                          color: AppColors.textMuted,
-                          size: 80),
-                    )
-                  : Container(
-                      color: Colors.black.withValues(alpha: 0.22),
-                      child: CachedNetworkImage(
-                        imageUrl: song.thumbnailUrl,
-                        width: artSize,
-                        height: artSize,
-                        memCacheWidth: cachePx,
-                        memCacheHeight: cachePx,
-                        fit: BoxFit.contain,
-                        fadeInDuration: Duration.zero,
-                        fadeOutDuration: Duration.zero,
-                        errorWidget: (_, __, ___) => Container(
-                          width: artSize,
-                          height: artSize,
-                          color: AppColors.surfaceLight,
-                          child: AppIcon(
-                              icon: AppIcons.musicNote,
-                              color: AppColors.textMuted,
-                              size: 80),
-                        ),
-                      ),
-                    ),
-              ),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onHorizontalDragEnd: (d) {
+        final v = d.primaryVelocity ?? 0;
+        final notifier = ref.read(playerProvider.notifier);
+        if (v < -400) {
+          notifier.playNext();
+        } else if (v > 400) {
+          notifier.playPrevious();
+        }
+      },
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppRadius.xl),
+          boxShadow: [
+            BoxShadow(
+              color: dominantColor.withValues(
+                  alpha: PaletteTheme.playerArtGlowAlpha),
+              blurRadius: 50,
+              spreadRadius: 5,
+              offset: const Offset(0, 12),
             ),
-          ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.3),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: AlbumArtHero(
+          url: song.thumbnailUrl,
+          size: artSize,
+          borderRadius: AppRadius.xl,
         ),
       ),
     );
@@ -313,7 +299,10 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
         ),
         const SizedBox(width: AppSpacing.md),
         GestureDetector(
-          onTap: () => ref.read(libraryProvider.notifier).toggleLiked(song),
+          onTap: () {
+            HapticFeedback.lightImpact();
+            ref.read(libraryProvider.notifier).toggleLiked(song);
+          },
           child: AnimatedSwitcher(
             duration: AppDuration.fast,
             transitionBuilder: (child, anim) =>

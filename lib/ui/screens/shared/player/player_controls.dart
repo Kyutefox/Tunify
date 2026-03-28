@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
@@ -46,12 +47,18 @@ class PlayerControls extends ConsumerWidget {
         _ShuffleControlIcon(
           isActive: isAnyShuffleActive,
           isSmart: isSmartShuffleActive,
-          onTap: notifier.toggleShuffle,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            notifier.toggleShuffle();
+          },
         ),
         PlayerControlIcon(
           icon: AppIcons.skipPrevious,
           size: 36,
-          onTap: notifier.playPrevious,
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            notifier.playPrevious();
+          },
         ),
         PlayerBigPlayButton(
           isPlaying: isPlaying,
@@ -62,12 +69,18 @@ class PlayerControls extends ConsumerWidget {
         PlayerControlIcon(
           icon: AppIcons.skipNext,
           size: 36,
-          onTap: notifier.playNext,
+          onTap: () {
+            HapticFeedback.mediumImpact();
+            notifier.playNext();
+          },
         ),
         PlayerControlIcon(
           icon: _repeatIcon(repeatMode),
           isActive: repeatMode != PlayerRepeatMode.off,
-          onTap: notifier.cycleRepeatMode,
+          onTap: () {
+            HapticFeedback.selectionClick();
+            notifier.cycleRepeatMode();
+          },
         ),
       ],
     );
@@ -197,6 +210,7 @@ class _PlayerBigPlayButtonState extends State<PlayerBigPlayButton>
       onTapDown: (_) => _scale.reverse(),
       onTapUp: (_) {
         _scale.forward();
+        HapticFeedback.lightImpact();
         widget.onTap();
       },
       onTapCancel: () => _scale.forward(),

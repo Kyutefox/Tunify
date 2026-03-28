@@ -64,8 +64,6 @@ class AlbumArtHero extends StatelessWidget {
           curve: Curves.easeOutCubic,
           reverseCurve: Curves.easeInCubic,
         ));
-        // PERF: image in .child — allocated once; only ClipRRect rebuilds
-        // per frame as the border radius animates.
         return AnimatedBuilder(
           animation: radius,
           child: _ArtImage(url: url, iconSize: placeholderIconSize),

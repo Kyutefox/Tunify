@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_folder.dart';
@@ -336,7 +338,7 @@ class _LibrarySectionGrid extends StatelessWidget {
       itemCount: entries.length,
       itemBuilder: (context, index) {
         final entry = entries[index];
-        return switch (entry) {
+        final card = switch (entry) {
           LikedSongsEntry(:final songCount, :final onTap) => _StaticGridCard(
               iconWidget: FavouriteIcon(
                 isLiked: true,
@@ -382,12 +384,13 @@ class _LibrarySectionGrid extends StatelessWidget {
               onOptions: (rect) => onPlaylistOptions(playlist, rect),
             ),
         };
+        return _StaggeredItem(index: index, child: card);
       },
     );
   }
 }
 
-class _StaticGridCard extends StatelessWidget {
+class _StaticGridCard extends StatefulWidget {
   const _StaticGridCard({
     this.icon,
     this.iconColor,
@@ -409,57 +412,77 @@ class _StaticGridCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
+  State<_StaticGridCard> createState() => _StaticGridCardState();
+}
+
+class _StaticGridCardState extends State<_StaticGridCard> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: backgroundGradient == null ? backgroundColor : null,
-                gradient: backgroundGradient,
-                borderRadius: BorderRadius.circular(AppRadius.md),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: widget.backgroundGradient == null
+                      ? widget.backgroundColor
+                      : null,
+                  gradient: widget.backgroundGradient,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
+                child: Center(
+                  child: widget.iconWidget ??
+                      AppIcon(
+                        icon: widget.icon!,
+                        color: widget.iconColor!,
+                        size: 40,
+                      ),
+                ),
               ),
-              child: Center(
-                child: iconWidget ??
-                    AppIcon(
-                      icon: icon!,
-                      color: iconColor!,
-                      size: 40,
-                    ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              widget.title,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: AppFontSize.md,
+                fontWeight: FontWeight.w600,
               ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            title,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
-              fontSize: AppFontSize.md,
-              fontWeight: FontWeight.w600,
+            Text(
+              widget.subtitle,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: AppFontSize.xs,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            subtitle,
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: AppFontSize.xs,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-class _LibraryPlaylistGridCard extends StatelessWidget {
+class _LibraryPlaylistGridCard extends StatefulWidget {
   const _LibraryPlaylistGridCard({
     required this.playlist,
     required this.onTap,
@@ -471,81 +494,105 @@ class _LibraryPlaylistGridCard extends StatelessWidget {
   final void Function(Rect?) onOptions;
 
   @override
+  State<_LibraryPlaylistGridCard> createState() =>
+      _LibraryPlaylistGridCardState();
+}
+
+class _LibraryPlaylistGridCardState extends State<_LibraryPlaylistGridCard> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final playlist = widget.playlist;
     return GestureDetector(
-      onTap: onTap,
-      onLongPress: () => onOptions(null),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: LayoutBuilder(
-              builder: (context, constraints) => PlaylistCoverThumbnail(
-                playlist: playlist,
-                size: constraints.maxHeight.isFinite
-                    ? constraints.maxHeight
-                    : constraints.maxWidth,
-                borderRadius: BorderRadius.circular(AppRadius.md),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      onLongPress: () {
+        HapticFeedback.mediumImpact();
+        widget.onOptions(null);
+      },
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) => PlaylistCoverThumbnail(
+                  playlist: playlist,
+                  size: constraints.maxHeight.isFinite
+                      ? constraints.maxHeight
+                      : constraints.maxWidth,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              if (playlist.isPinned)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
-                  child: AppIcon(
-                    icon: AppIcons.pin,
-                    size: 12,
-                    color: AppColors.primary,
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                if (playlist.isPinned)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: AppIcon(
+                      icon: AppIcons.pin,
+                      size: 12,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                Expanded(
+                  child: Text(
+                    playlist.name.capitalized,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: AppFontSize.md,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-              Expanded(
-                child: Text(
-                  playlist.name.capitalized,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: AppFontSize.md,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Builder(
-                builder: (btnCtx) => GestureDetector(
-                  onTap: () {
-                    final box = btnCtx.findRenderObject() as RenderBox?;
-                    onOptions(box != null && box.hasSize
-                        ? box.localToGlobal(Offset.zero) & box.size
-                        : null);
-                  },
-                  child: AppIcon(
-                    icon: AppIcons.moreHoriz,
-                    color: AppColors.textMuted,
-                    size: 20,
+                Builder(
+                  builder: (btnCtx) => GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      final box = btnCtx.findRenderObject() as RenderBox?;
+                      widget.onOptions(box != null && box.hasSize
+                          ? box.localToGlobal(Offset.zero) & box.size
+                          : null);
+                    },
+                    child: AppIcon(
+                      icon: AppIcons.moreHoriz,
+                      color: AppColors.textMuted,
+                      size: 20,
+                    ),
                   ),
                 ),
-              ),
-            ],
-          ),
-          Text(
-            playlist.trackCountLabel,
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: AppFontSize.xs,
+              ],
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+            Text(
+              playlist.trackCountLabel,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: AppFontSize.xs,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _LibraryFolderGridCard extends StatelessWidget {
+class _LibraryFolderGridCard extends StatefulWidget {
   const _LibraryFolderGridCard({
     required this.folder,
     required this.onTap,
@@ -557,80 +604,103 @@ class _LibraryFolderGridCard extends StatelessWidget {
   final void Function(Rect?) onOptions;
 
   @override
+  State<_LibraryFolderGridCard> createState() => _LibraryFolderGridCardState();
+}
+
+class _LibraryFolderGridCardState extends State<_LibraryFolderGridCard> {
+  bool _pressed = false;
+
+  @override
   Widget build(BuildContext context) {
+    final folder = widget.folder;
     return GestureDetector(
-      onTap: onTap,
-      onLongPress: () => onOptions(null),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
-                borderRadius: BorderRadius.circular(AppRadius.md),
-              ),
-              child: Center(
-                child: AppIcon(
-                  icon: AppIcons.folder,
-                  color: AppColors.primary,
-                  size: 40,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        widget.onTap();
+      },
+      onLongPress: () {
+        HapticFeedback.mediumImpact();
+        widget.onOptions(null);
+      },
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) => setState(() => _pressed = false),
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.95 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        curve: Curves.easeOut,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
-              ),
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          Row(
-            children: [
-              if (folder.isPinned)
-                Padding(
-                  padding: const EdgeInsets.only(right: 4),
+                child: Center(
                   child: AppIcon(
-                    icon: AppIcons.pin,
-                    size: 12,
+                    icon: AppIcons.folder,
                     color: AppColors.primary,
-                  ),
-                ),
-              Expanded(
-                child: Text(
-                  folder.name.capitalized,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
-                    fontSize: AppFontSize.md,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Builder(
-                builder: (btnCtx) => GestureDetector(
-                  onTap: () {
-                    final box = btnCtx.findRenderObject() as RenderBox?;
-                    onOptions(box != null && box.hasSize
-                        ? box.localToGlobal(Offset.zero) & box.size
-                        : null);
-                  },
-                  child: AppIcon(
-                    icon: AppIcons.moreHoriz,
-                    color: AppColors.textMuted,
-                    size: 20,
+                    size: 40,
                   ),
                 ),
               ),
-            ],
-          ),
-          Text(
-            folder.playlistCount == 0
-                ? 'No playlists'
-                : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: AppFontSize.xs,
             ),
-          ),
-        ],
+            const SizedBox(height: AppSpacing.sm),
+            Row(
+              children: [
+                if (folder.isPinned)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: AppIcon(
+                      icon: AppIcons.pin,
+                      size: 12,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                Expanded(
+                  child: Text(
+                    folder.name.capitalized,
+                    style: const TextStyle(
+                      color: AppColors.textPrimary,
+                      fontSize: AppFontSize.md,
+                      fontWeight: FontWeight.w600,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                Builder(
+                  builder: (btnCtx) => GestureDetector(
+                    onTap: () {
+                      HapticFeedback.selectionClick();
+                      final box = btnCtx.findRenderObject() as RenderBox?;
+                      widget.onOptions(box != null && box.hasSize
+                          ? box.localToGlobal(Offset.zero) & box.size
+                          : null);
+                    },
+                    child: AppIcon(
+                      icon: AppIcons.moreHoriz,
+                      color: AppColors.textMuted,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            Text(
+              folder.playlistCount == 0
+                  ? 'No playlists'
+                  : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: AppFontSize.xs,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -654,8 +724,14 @@ class _LibraryFolderListTile extends StatelessWidget {
     final tile = Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
-        onLongPress: () => onOptions(null),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        onLongPress: () {
+          HapticFeedback.mediumImpact();
+          onOptions(null);
+        },
         hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
@@ -737,6 +813,25 @@ class _LibraryFolderListTile extends StatelessWidget {
   }
 }
 
+/// Wraps a list item with a staggered fade+slide entrance animation.
+/// Delay is proportional to [index] so items cascade in from top to bottom.
+class _StaggeredItem extends StatelessWidget {
+  const _StaggeredItem({required this.index, required this.child});
+
+  final int index;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (MediaQuery.maybeOf(context)?.disableAnimations ?? false) return child;
+    final delay = Duration(milliseconds: 30 * index.clamp(0, 20));
+    return child
+        .animate(delay: delay)
+        .fadeIn(duration: const Duration(milliseconds: 220), curve: Curves.easeOut)
+        .slideY(begin: 0.06, end: 0, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+  }
+}
+
 class _LibrarySectionList extends StatelessWidget {
   const _LibrarySectionList({
     required this.entries,
@@ -764,7 +859,7 @@ class _LibrarySectionList extends StatelessWidget {
       },
       itemBuilder: (context, index) {
         final entry = entries[index];
-        return switch (entry) {
+        final tile = switch (entry) {
           LikedSongsEntry(:final songCount, :final onTap) => _StaticListTile(
               iconWidget: FavouriteIcon(
                 isLiked: true,
@@ -810,6 +905,7 @@ class _LibrarySectionList extends StatelessWidget {
               onOptions: (rect) => onPlaylistOptions(playlist, rect),
             ),
         };
+        return _StaggeredItem(index: index, child: tile);
       },
     );
   }
@@ -843,7 +939,10 @@ class _StaticListTile extends StatelessWidget {
     final tile = Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
         hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
@@ -920,8 +1019,14 @@ class _LibraryPlaylistListTile extends StatelessWidget {
     final tile = Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onTap,
-        onLongPress: () => onOptions(null),
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        onLongPress: () {
+          HapticFeedback.mediumImpact();
+          onOptions(null);
+        },
         hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(

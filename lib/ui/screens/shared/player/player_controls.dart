@@ -102,27 +102,35 @@ class _ShuffleControlIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     const size = 26.0;
     final padding = ((44.0 - size) / 2).clamp(8.0, 16.0);
-    final color = isActive ? AppColors.primary : _kIconInactive;
+    final targetColor = isActive ? AppColors.primary : _kIconInactive;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: EdgeInsets.all(padding),
-        child: SizedBox(
-          width: size,
-          height: size,
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              AppIcon(icon: AppIcons.shuffle, size: size, color: color),
-              if (isSmart)
-                Positioned(
-                  right: -6,
-                  top: -6,
-                  child: Icon(Icons.auto_awesome, size: 13, color: color),
-                ),
-            ],
-          ),
+        child: TweenAnimationBuilder<Color?>(
+          tween: ColorTween(end: targetColor),
+          duration: AppDuration.fast,
+          curve: Curves.easeOut,
+          builder: (_, color, __) {
+            final c = color ?? targetColor;
+            return SizedBox(
+              width: size,
+              height: size,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AppIcon(icon: AppIcons.shuffle, size: size, color: c),
+                  if (isSmart)
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: Icon(Icons.auto_awesome, size: 13, color: c),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );
@@ -147,15 +155,21 @@ class PlayerControlIcon extends StatelessWidget {
   Widget build(BuildContext context) {
     // Ensure minimum 44px touch target per HIG/Material guidelines.
     final padding = ((44.0 - size) / 2).clamp(8.0, 16.0);
+    final targetColor = isActive ? AppColors.primary : _kIconInactive;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: EdgeInsets.all(padding),
-        child: AppIcon(
-          icon: icon,
-          size: size,
-          color: isActive ? AppColors.primary : _kIconInactive,
+        child: TweenAnimationBuilder<Color?>(
+          tween: ColorTween(end: targetColor),
+          duration: AppDuration.fast,
+          curve: Curves.easeOut,
+          builder: (_, color, __) => AppIcon(
+            icon: icon,
+            size: size,
+            color: color ?? targetColor,
+          ),
         ),
       ),
     );
@@ -275,7 +289,10 @@ class PlayerExtraButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

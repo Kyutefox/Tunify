@@ -52,6 +52,7 @@ extension LibraryViewModeX on LibraryViewMode {
 // is negligible compared to the Set allocation savings from late final.
 class LibraryState {
   LibraryState({
+    this.isLoading = true,
     this.playlists = const [],
     this.folders = const [],
     this.sortOrder = LibrarySortOrder.recent,
@@ -63,6 +64,7 @@ class LibraryState {
     this.followedAlbums = const [],
   });
 
+  final bool isLoading;
   final List<LibraryPlaylist> playlists;
   final List<LibraryFolder> folders;
   final LibrarySortOrder sortOrder;
@@ -143,6 +145,7 @@ class LibraryState {
   }
 
   LibraryState copyWith({
+    bool? isLoading,
     List<LibraryPlaylist>? playlists,
     List<LibraryFolder>? folders,
     LibrarySortOrder? sortOrder,
@@ -153,6 +156,7 @@ class LibraryState {
     List<LibraryArtist>? followedArtists,
     List<LibraryAlbum>? followedAlbums,
   }) => LibraryState(
+    isLoading: isLoading ?? this.isLoading,
     playlists: playlists ?? this.playlists,
     folders: folders ?? this.folders,
     sortOrder: sortOrder ?? this.sortOrder,
@@ -185,6 +189,7 @@ class LibraryNotifier extends Notifier<LibraryState> {
     final result = await Result.guard(() => _repo.loadAll());
     result.when(
       ok: (data) => state = state.copyWith(
+        isLoading: false,
         playlists: data.playlists,
         folders: data.folders,
         sortOrder: LibrarySortOrderX.fromString(data.sortOrder),
@@ -194,7 +199,10 @@ class LibraryNotifier extends Notifier<LibraryState> {
         followedArtists: data.followedArtists,
         followedAlbums: data.followedAlbums,
       ),
-      err: (e) => logWarning('Library: load failed: $e', tag: 'Library'),
+      err: (e) {
+        logWarning('Library: load failed: $e', tag: 'Library');
+        state = state.copyWith(isLoading: false);
+      },
     );
   }
 

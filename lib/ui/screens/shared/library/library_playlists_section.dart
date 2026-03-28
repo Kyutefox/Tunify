@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
+import 'package:tunify/ui/screens/shared/home/home_shared.dart' show SkeletonBox;
+
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
@@ -1122,5 +1124,66 @@ class _LibraryHoverTileState extends State<_LibraryHoverTile> {
         child: widget.child,
       ),
     );
+  }
+}
+
+// ── Library skeleton ─────────────────────────────────────────────────────────
+
+/// Shimmer placeholder list shown while the library is loading from SQLite.
+class LibrarySkeletonList extends StatelessWidget {
+  const LibrarySkeletonList({super.key, this.itemCount = 8});
+  final int itemCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: itemCount,
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+      itemBuilder: (_, index) => _LibrarySkeletonTile(index: index),
+    );
+  }
+}
+
+class _LibrarySkeletonTile extends StatelessWidget {
+  const _LibrarySkeletonTile({required this.index});
+  final int index;
+
+  // Vary title widths so the skeleton looks natural.
+  static const _titleWidths = [130.0, 160.0, 110.0, 145.0, 125.0, 155.0, 120.0, 140.0];
+
+  @override
+  Widget build(BuildContext context) {
+    final titleWidth = _titleWidths[index % _titleWidths.length];
+    const thumbSize = 52.0;
+    final delay = Duration(milliseconds: 40 * index.clamp(0, 12));
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+      child: Row(
+        children: [
+          SkeletonBox(width: thumbSize, height: thumbSize, radius: AppRadius.sm),
+          const SizedBox(width: AppSpacing.md),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SkeletonBox(width: titleWidth, height: 13, radius: AppRadius.xs),
+              const SizedBox(height: AppSpacing.xs),
+              SkeletonBox(width: 70, height: 10, radius: AppRadius.xs),
+            ],
+          ),
+        ],
+      ),
+    )
+        .animate(
+          delay: delay,
+          onPlay: (c) => c.repeat(),
+        )
+        .shimmer(
+          duration: const Duration(milliseconds: 1400),
+          color: AppColors.surfaceHighlight,
+          curve: Curves.easeInOut,
+        );
   }
 }

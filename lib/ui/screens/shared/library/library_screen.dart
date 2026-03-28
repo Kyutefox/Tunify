@@ -167,6 +167,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
+    final isLoading = ref.watch(libraryProvider.select((s) => s.isLoading));
     final sortOrder = ref.watch(libraryProvider.select((s) => s.sortOrder));
     final viewMode = ref.watch(libraryProvider.select((s) => s.viewMode));
     final playlists = ref.watch(libraryPlaylistsProvider);
@@ -227,6 +228,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final contentKey = ValueKey('$_contentFilter-$_selectedFolderId');
 
     Widget buildScrollView(bool withRefresh) {
+      if (isLoading) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+          child: const LibrarySkeletonList(),
+        );
+      }
       final scrollView = CustomScrollView(
         key: contentKey,
         cacheExtent: 1000,

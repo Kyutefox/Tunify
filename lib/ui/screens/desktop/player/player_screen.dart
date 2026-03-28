@@ -554,6 +554,7 @@ void showSleepTimerSheet(BuildContext context) {
 // Speed extra button — shows current speed when non-1×.
 class SpeedExtraButton extends StatelessWidget {
   const SpeedExtraButton({
+    super.key,
     required this.isActive,
     required this.speed,
     required this.onTap,
@@ -2297,7 +2298,7 @@ class _PlaybackSpeedSheetContent extends ConsumerWidget {
   String _label(double speed) {
     if (speed == 1.0) return '1× Normal';
     final s = speed.toStringAsFixed(speed.truncateToDouble() == speed ? 0 : 2);
-    return '${s}×';
+    return '$s×';
   }
 
   @override

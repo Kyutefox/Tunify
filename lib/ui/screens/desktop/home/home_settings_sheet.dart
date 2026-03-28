@@ -290,6 +290,79 @@ class _CrossfadeTile extends StatelessWidget {
   }
 }
 
+class _BassBoostTile extends StatelessWidget {
+  const _BassBoostTile({required this.value, required this.onChanged});
+
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  String get _label {
+    if (value == 0.0) return 'Off';
+    if (value <= 0.33) return 'Low';
+    if (value <= 0.66) return 'Medium';
+    return 'High';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppIcon(
+                  icon: AppIcons.equalizer,
+                  color: AppColors.textSecondary,
+                  size: 22),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Bass Boost',
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: AppFontSize.lg,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      _label,
+                      style: const TextStyle(
+                          color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppColors.primary,
+              inactiveTrackColor: AppColors.surfaceLight,
+              thumbColor: AppColors.primary,
+              overlayColor: AppColors.primary.withValues(alpha: 0.12),
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+            ),
+            child: Slider(
+              value: value,
+              min: 0.0,
+              max: 1.0,
+              divisions: 10,
+              onChanged: onChanged,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Data Settings ─────────────────────────────────────────────────────────────
 
 /// Body-only widget for Data settings — no Scaffold wrapper.
@@ -537,6 +610,7 @@ class PlaybackSettingsBody extends ConsumerWidget {
     final normEnabled = ref.watch(playerProvider.select((s) => s.isNormalizationEnabled));
     final isGaplessEnabled = ref.watch(playerProvider.select((s) => s.isGaplessEnabled));
     final crossfadeDuration = ref.watch(playerProvider.select((s) => s.crossfadeDurationSeconds));
+    final bassBoost = ref.watch(playerProvider.select((s) => s.bassBoostLevel));
     final showExplicit = ref.watch(showExplicitContentProvider);
 
     return ListView(
@@ -571,6 +645,11 @@ class PlaybackSettingsBody extends ConsumerWidget {
           value: crossfadeDuration,
           onChanged: (v) =>
               ref.read(playerProvider.notifier).setCrossfadeDuration(v),
+        ),
+        _BassBoostTile(
+          value: bassBoost,
+          onChanged: (v) =>
+              ref.read(playerProvider.notifier).setBassBoost(v),
         ),
       ],
     );

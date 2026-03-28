@@ -136,6 +136,8 @@ class CrossfadeEngine {
   Future<void> setNormalizationGainDb(double db) =>
       _primary.setNormalizationGainDb(db);
 
+  Future<void> setBassBoost(double level) => _primary.setBassBoost(level);
+
   /// Forwards a normalization gain to the secondary player when one exists.
   ///
   /// Applies during both the preload phase (secondary buffering, ramp not yet

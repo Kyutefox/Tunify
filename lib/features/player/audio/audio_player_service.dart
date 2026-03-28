@@ -20,7 +20,9 @@ import 'package:scrapper/scrapper.dart';
 class AudioPlayerService {
   late AudioPlayer _player;
   AndroidLoudnessEnhancer? _loudnessEnhancer;
+  AndroidEqualizer? _equalizer;
   bool _normalizationEnabled = false;
+  double _bassBoostLevel = 0.0; // 0.0–1.0
   late final Future<AudioSession> _audioSessionReady;
   // Whether this instance is a secondary crossfade player.
   // Secondary players share the primary's audio focus and must never call
@@ -67,12 +69,13 @@ class AudioPlayerService {
     if (Platform.isAndroid) {
       _loudnessEnhancer = AndroidLoudnessEnhancer();
       _loudnessEnhancer!.setEnabled(false);
+      _equalizer = AndroidEqualizer();
+      _equalizer!.setEnabled(false);
       _player = AudioPlayer(
         handleInterruptions: handleInterruptions,
         audioPipeline: AudioPipeline(
-          androidAudioEffects: [_loudnessEnhancer!],
+          androidAudioEffects: [_loudnessEnhancer!, _equalizer!],
         ),
-        // Match old app: no useProxyForRequestHeaders (use just_audio default).
       );
     } else {
       _player = AudioPlayer(handleInterruptions: handleInterruptions);
@@ -327,6 +330,38 @@ class AudioPlayerService {
       tag: 'AudioPlayerService',
     );
   }
+
+  /// Sets bass boost level (0.0 = off, 1.0 = max).
+  ///
+  /// Android: uses [AndroidEqualizer] to boost the two lowest frequency bands
+  /// (60Hz and 230Hz) by up to +10 dB. The equalizer is disabled at level 0.
+  /// iOS/macOS: not supported (no-op).
+  Future<void> setBassBoost(double level) async {
+    _bassBoostLevel = level.clamp(0.0, 1.0);
+    if (!Platform.isAndroid || _equalizer == null) return;
+    if (_bassBoostLevel == 0.0) {
+      await _equalizer!.setEnabled(false);
+      return;
+    }
+    final params = await _equalizer!.parameters;
+    final bands = params.bands;
+    if (bands.isEmpty) return;
+    // Boost only the lowest two bands (sub-bass ~60Hz, bass ~230Hz).
+    // Level 1.0 → +10 dB on sub-bass, +7 dB on bass.
+    // Higher bands stay at 0 dB so only low frequencies are affected.
+    final maxGainDb = params.maxDecibels; // typically +15.0
+    final subBassGain = (10.0 * _bassBoostLevel).clamp(0.0, maxGainDb);
+    final bassGain = (7.0 * _bassBoostLevel).clamp(0.0, maxGainDb);
+    if (bands.isNotEmpty) await bands[0].setGain(subBassGain);
+    if (bands.length > 1) await bands[1].setGain(bassGain);
+    // Zero out remaining bands to avoid unintended coloration.
+    for (int i = 2; i < bands.length; i++) {
+      await bands[i].setGain(0.0);
+    }
+    await _equalizer!.setEnabled(true);
+  }
+
+  double get bassBoostLevel => _bassBoostLevel;
 
   /// Applies a crossfade volume multiplier (0.0–1.0) without affecting normalization.
   /// Android: sets player volume directly (normalization uses LoudnessEnhancer, not volume).

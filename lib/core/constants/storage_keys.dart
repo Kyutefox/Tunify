@@ -14,6 +14,7 @@ abstract final class StorageKeys {
   static const String prefsLastPlaylistId = 'last_playlist_id';
   static const String prefsVolumeNormalization = 'volume_normalization_enabled';
   static const String prefsPlaybackSpeed = 'playback_speed';
+  static const String prefsBassBoostLevel = 'bass_boost_level';
   /// Hive box key: persisted queue as JSON list (max 50 items).
   static const String hiveKeyQueue = 'queue';
   /// Hive box key: current index within the persisted queue.

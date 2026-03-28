@@ -68,10 +68,12 @@ class PlayerState {
   final bool? _isGaplessEnabled;
   final int? _crossfadeDurationSeconds;
   final double? _playbackSpeed;
+  final double? _bassBoostLevel;
 
   bool get isGaplessEnabled => _isGaplessEnabled ?? true;
   int get crossfadeDurationSeconds => _crossfadeDurationSeconds ?? 0;
   double get playbackSpeed => _playbackSpeed ?? 1.0;
+  double get bassBoostLevel => _bassBoostLevel ?? 0.0;
 
   const PlayerState({
     this.status = PlayerStatus.idle,
@@ -89,11 +91,13 @@ class PlayerState {
     bool isGaplessEnabled = true,
     int crossfadeDurationSeconds = 0,
     double playbackSpeed = 1.0,
+    double bassBoostLevel = 0.0,
     this.smartShuffleSongIds = const {},
     this.activeShuffleMode = ShuffleMode.none,
   })  : _isGaplessEnabled = isGaplessEnabled,
         _crossfadeDurationSeconds = crossfadeDurationSeconds,
-        _playbackSpeed = playbackSpeed;
+        _playbackSpeed = playbackSpeed,
+        _bassBoostLevel = bassBoostLevel;
 
   bool get isPlaying => status == PlayerStatus.playing;
   bool get isLoading =>
@@ -122,6 +126,7 @@ class PlayerState {
     bool? isGaplessEnabled,
     int? crossfadeDurationSeconds,
     double? playbackSpeed,
+    double? bassBoostLevel,
     Set<String>? smartShuffleSongIds,
     ShuffleMode? activeShuffleMode,
     bool clearSong = false,
@@ -147,6 +152,7 @@ class PlayerState {
       crossfadeDurationSeconds:
           crossfadeDurationSeconds ?? this.crossfadeDurationSeconds,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
+      bassBoostLevel: bassBoostLevel ?? this.bassBoostLevel,
       smartShuffleSongIds:
           clearSmartShuffleIds ? const {} : (smartShuffleSongIds ?? this.smartShuffleSongIds),
       activeShuffleMode: activeShuffleMode ?? this.activeShuffleMode,
@@ -172,6 +178,7 @@ class PlayerState {
         isGaplessEnabled == other.isGaplessEnabled &&
         crossfadeDurationSeconds == other.crossfadeDurationSeconds &&
         playbackSpeed == other.playbackSpeed &&
+        bassBoostLevel == other.bassBoostLevel &&
         setEquals(smartShuffleSongIds, other.smartShuffleSongIds) &&
         activeShuffleMode == other.activeShuffleMode;
   }
@@ -198,6 +205,7 @@ class PlayerState {
         isGaplessEnabled,
         crossfadeDurationSeconds,
         playbackSpeed,
+        bassBoostLevel,
         smartShuffleSongIds.length,
         activeShuffleMode,
       );
@@ -2686,7 +2694,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     } catch (e) {
       logWarning('Player: _restorePlaybackSettings failed: $e', tag: 'Player');
     }
-    // Restore playback speed (stored in SharedPreferences, not DB).
+    // Restore playback speed and bass boost (stored in SharedPreferences, not DB).
     try {
       final prefs = await SharedPreferences.getInstance();
       final speed = prefs.getDouble(StorageKeys.prefsPlaybackSpeed) ?? 1.0;
@@ -2694,8 +2702,13 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _audioPlayer.setSpeed(speed);
         state = state.copyWith(playbackSpeed: speed);
       }
+      final bass = prefs.getDouble(StorageKeys.prefsBassBoostLevel) ?? 0.0;
+      if (bass > 0.0) {
+        await _audioPlayer.setBassBoost(bass);
+        state = state.copyWith(bassBoostLevel: bass);
+      }
     } catch (e) {
-      logWarning('Player: _restorePlaybackSpeed failed: $e', tag: 'Player');
+      logWarning('Player: _restorePlaybackSettings (prefs) failed: $e', tag: 'Player');
     }
   }
 
@@ -2765,6 +2778,18 @@ class PlayerNotifier extends Notifier<PlayerState> {
       await prefs.setDouble(StorageKeys.prefsPlaybackSpeed, clamped);
     } catch (e) {
       logWarning('Player: setPlaybackSpeed persist failed: $e', tag: 'Player');
+    }
+  }
+
+  Future<void> setBassBoost(double level) async {
+    final clamped = level.clamp(0.0, 1.0);
+    await _audioPlayer.setBassBoost(clamped);
+    state = state.copyWith(bassBoostLevel: clamped);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(StorageKeys.prefsBassBoostLevel, clamped);
+    } catch (e) {
+      logWarning('Player: setBassBoost persist failed: $e', tag: 'Player');
     }
   }
 

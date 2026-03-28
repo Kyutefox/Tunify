@@ -9,7 +9,8 @@ import 'package:tunify/features/player/lyrics_provider.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/screens/desktop/player/player_screen.dart'
-    show showQueueSheet, showLyricsSheet, showDevicesSheet, showSleepTimerSheet;
+    show showQueueSheet, showLyricsSheet, showDevicesSheet, showSleepTimerSheet,
+        showPlaybackSpeedSheet, SpeedExtraButton;
 import 'package:tunify/ui/screens/shared/player/song_options_sheet.dart'
     show showSongOptionsSheet;
 import 'package:tunify/ui/theme/app_colors.dart';
@@ -325,8 +326,11 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
       showLyricsSheet(context, dominantColor: dominantColor);
   void _showDevicesSheet() => showDevicesSheet(context);
   void _showSleepTimerSheet() => showSleepTimerSheet(context);
+  void _showPlaybackSpeedSheet() => showPlaybackSpeedSheet(context);
 
   Widget _buildExtraControls(Color dominantColor) {
+    final speed = ref.watch(playerProvider.select((s) => s.playbackSpeed));
+    final isSpeedActive = (speed - 1.0).abs() > 0.01;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -342,6 +346,10 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
             icon: AppIcons.bedtime,
             label: 'Sleep',
             onTap: _showSleepTimerSheet),
+        SpeedExtraButton(
+            isActive: isSpeedActive,
+            speed: speed,
+            onTap: _showPlaybackSpeedSheet),
       ],
     );
   }

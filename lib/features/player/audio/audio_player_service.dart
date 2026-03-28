@@ -268,6 +268,10 @@ class AudioPlayerService {
 
   void setLoopMode(LoopMode mode) => _player.setLoopMode(mode);
 
+  Future<void> setSpeed(double speed) async {
+    await _player.setSpeed(speed.clamp(0.25, 3.0));
+  }
+
   Future<void> setVolume(double volume) async {
     await _player.setVolume(volume.clamp(0.0, 1.0));
   }

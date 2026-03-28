@@ -129,6 +129,7 @@ class CrossfadeEngine {
 
   Future<void> togglePlayPause() => _primary.togglePlayPause();
   Future<void> setVolume(double v) => _primary.setVolume(v);
+  Future<void> setSpeed(double speed) => _primary.setSpeed(speed);
   void setLoopMode(ja.LoopMode mode) => _primary.setLoopMode(mode);
   Future<void> setNormalization(bool enabled) =>
       _primary.setNormalization(enabled);

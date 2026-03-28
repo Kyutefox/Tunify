@@ -180,7 +180,26 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: GestureDetector(
+      child: Focus(
+        autofocus: true,
+        onKeyEvent: (_, event) {
+          if (event is! KeyDownEvent) return KeyEventResult.ignored;
+          final notifier = ref.read(playerProvider.notifier);
+          if (event.logicalKey == LogicalKeyboardKey.space) {
+            notifier.togglePlayPause();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            notifier.playNext();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            notifier.playPrevious();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: GestureDetector(
         onVerticalDragEnd: (d) {
           final velocity = d.primaryVelocity ?? 0;
           if (velocity > 600 || _dragDy > 100) {
@@ -257,7 +276,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ],
           ),
         ),
-      ),
+        ),   // GestureDetector
+      ),     // Focus
     );
   }
 
@@ -417,8 +437,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       showLyricsSheet(context, dominantColor: dominantColor);
   void _showDevicesSheet() => showDevicesSheet(context);
   void _showSleepTimerSheet() => showSleepTimerSheet(context);
+  void _showPlaybackSpeedSheet() => showPlaybackSpeedSheet(context);
 
   Widget _buildExtraControls(Color dominantColor) {
+    final speed = ref.watch(playerProvider.select((s) => s.playbackSpeed));
+    final isSpeedActive = (speed - 1.0).abs() > 0.01;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -434,6 +457,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             icon: AppIcons.bedtime,
             label: 'Sleep',
             onTap: _showSleepTimerSheet),
+        SpeedExtraButton(
+            isActive: isSpeedActive,
+            speed: speed,
+            onTap: _showPlaybackSpeedSheet),
       ],
     );
   }
@@ -521,6 +548,62 @@ void showSleepTimerSheet(BuildContext context) {
     context,
     maxHeight: 500,
     child: const _SleepTimerSheetContent(),
+  );
+}
+
+// Speed extra button — shows current speed when non-1×.
+class SpeedExtraButton extends StatelessWidget {
+  const SpeedExtraButton({
+    required this.isActive,
+    required this.speed,
+    required this.onTap,
+  });
+
+  final bool isActive;
+  final double speed;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xBFFFFFFF);
+    final activeColor = AppColors.primary;
+    final displayColor = isActive ? activeColor : color;
+    final speedLabel = isActive
+        ? '${speed.toStringAsFixed(speed.truncateToDouble() == speed ? 0 : 2)}×'
+        : 'Speed';
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcon(icon: AppIcons.playbackSpeed, color: displayColor, size: 22),
+            const SizedBox(height: AppSpacing.xs + 2),
+            Text(
+              speedLabel,
+              style: TextStyle(
+                color: displayColor,
+                fontSize: AppFontSize.micro,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void showPlaybackSpeedSheet(BuildContext context) {
+  showAppSheet(
+    context,
+    maxHeight: 380,
+    child: const _PlaybackSpeedSheetContent(),
   );
 }
 
@@ -2199,6 +2282,103 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Text(line.text),
+      ),
+    );
+  }
+}
+
+// ── Playback Speed Sheet ──────────────────────────────────────────────────────
+
+class _PlaybackSpeedSheetContent extends ConsumerWidget {
+  const _PlaybackSpeedSheetContent();
+
+  static const _speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+
+  String _label(double speed) {
+    if (speed == 1.0) return '1× Normal';
+    final s = speed.toStringAsFixed(speed.truncateToDouble() == speed ? 0 : 2);
+    return '${s}×';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(playerProvider.select((s) => s.playbackSpeed));
+    final notifier = ref.read(playerProvider.notifier);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 0),
+          child: Text(
+            'Playback speed',
+            style: TextStyle(
+              color: AppColors.textPrimary.withValues(alpha: 0.95),
+              fontSize: AppFontSize.md,
+              fontWeight: FontWeight.w600,
+              letterSpacing: AppLetterSpacing.label,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        for (final speed in _speeds)
+          _SpeedTile(
+            label: _label(speed),
+            speed: speed,
+            isSelected: (current - speed).abs() < 0.01,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              notifier.setPlaybackSpeed(speed);
+              Navigator.of(context).pop();
+            },
+          ),
+        const SizedBox(height: AppSpacing.md),
+      ],
+    );
+  }
+}
+
+class _SpeedTile extends StatelessWidget {
+  const _SpeedTile({
+    required this.label,
+    required this.speed,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final double speed;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: kSheetHorizontalPadding, vertical: AppSpacing.md),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                  fontSize: AppFontSize.lg,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ),
+            if (isSelected)
+              AppIcon(
+                  icon: AppIcons.check,
+                  size: 20,
+                  color: AppColors.primary),
+          ],
+        ),
       ),
     );
   }

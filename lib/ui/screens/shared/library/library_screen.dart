@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -51,6 +52,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   /// When non-null, section shows this folder's playlists with a back row instead of main list.
   String? _selectedFolderId;
+
+  // ── Bulk selection ───────────────────────────────────────────────────────────
+  bool _isSelecting = false;
+  final Set<String> _selectedIds = {};
 
   @override
   void initState() {
@@ -276,6 +281,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           ),
         ),
       ),
+      bottomSheet: _isSelecting
+          ? _BulkSelectBar(
+              selectedCount: _selectedIds.length,
+              onCancel: _exitSelectMode,
+              onDelete: _selectedIds.isNotEmpty ? _deleteSelected : null,
+            )
+          : null,
     );
   }
 
@@ -340,6 +352,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               showCreateFirstPlaylistEmptyState:
                   showCreateFirstPlaylistEmptyState,
               isFolderView: _selectedFolderId != null,
+              isSelecting: _isSelecting,
+              selectedIds: _selectedIds,
+              onLongPress: _enterSelectMode,
             ),
           ),
         ];
@@ -429,6 +444,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 
   void _onPlaylistTap(LibraryPlaylist playlist) {
+    if (_isSelecting) {
+      _toggleSelection(playlist.id);
+      return;
+    }
     Navigator.of(context).push(
       appPageRoute<void>(
         builder: (_) => LibraryPlaylistScreen(playlistId: playlist.id),
@@ -437,18 +456,82 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 
   void _onFolderTap(LibraryFolder folder) {
+    if (_isSelecting) {
+      _toggleSelection(folder.id);
+      return;
+    }
     setState(() => _selectedFolderId = folder.id);
   }
 
   void _onFolderOptions(LibraryFolder folder, Rect? anchorRect) {
+    if (_isSelecting) {
+      _toggleSelection(folder.id);
+      return;
+    }
     _unfocus();
     showLibraryFolderOptionsSheet(context, ref, folder, anchorRect: anchorRect);
   }
 
   void _onPlaylistOptions(LibraryPlaylist playlist, Rect? anchorRect) {
+    if (_isSelecting) {
+      _toggleSelection(playlist.id);
+      return;
+    }
     _unfocus();
     showLibraryPlaylistOptionsSheet(context, ref, playlist,
         anchorRect: anchorRect);
+  }
+
+  void _enterSelectMode(String id) {
+    HapticFeedback.mediumImpact();
+    setState(() {
+      _isSelecting = true;
+      _selectedIds
+        ..clear()
+        ..add(id);
+    });
+  }
+
+  void _exitSelectMode() {
+    setState(() {
+      _isSelecting = false;
+      _selectedIds.clear();
+    });
+  }
+
+  void _toggleSelection(String id) {
+    setState(() {
+      if (_selectedIds.contains(id)) {
+        _selectedIds.remove(id);
+        if (_selectedIds.isEmpty) _isSelecting = false;
+      } else {
+        _selectedIds.add(id);
+      }
+    });
+  }
+
+  Future<void> _deleteSelected() async {
+    final count = _selectedIds.length;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: 'Delete $count item${count == 1 ? '' : 's'}?',
+      message: 'This cannot be undone.',
+      confirmLabel: 'Delete',
+      isDestructive: true,
+    );
+    if (!confirmed) return;
+    final ids = Set<String>.from(_selectedIds);
+    _exitSelectMode();
+    final notifier = ref.read(libraryProvider.notifier);
+    for (final id in ids) {
+      final isFolder =
+          ref.read(libraryProvider).folders.any((f) => f.id == id);
+      if (isFolder) {
+        await notifier.deleteFolder(id);
+      } else {
+        await notifier.deletePlaylist(id);
+      }
+    }
   }
 }
 
@@ -1485,6 +1568,71 @@ class _ContentSwitcherState extends State<_ContentSwitcher>
       child: SlideTransition(
         position: _slide,
         child: _current,
+      ),
+    );
+  }
+}
+
+// ── Bulk-select action bar ────────────────────────────────────────────────────
+
+class _BulkSelectBar extends StatelessWidget {
+  const _BulkSelectBar({
+    required this.selectedCount,
+    required this.onCancel,
+    this.onDelete,
+  });
+
+  final int selectedCount;
+  final VoidCallback onCancel;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: AppColors.surface,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.base, vertical: AppSpacing.sm),
+          child: Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                onPressed: onCancel,
+                tooltip: 'Cancel',
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Text(
+                  selectedCount == 0
+                      ? 'Select items'
+                      : '$selectedCount selected',
+                  style: const TextStyle(
+                    color: AppColors.textPrimary,
+                    fontSize: AppFontSize.lg,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.delete_outline,
+                  color: onDelete != null
+                      ? AppColors.accentRed
+                      : AppColors.textMuted,
+                ),
+                onPressed: onDelete != null
+                    ? () {
+                        HapticFeedback.mediumImpact();
+                        onDelete!();
+                      }
+                    : null,
+                tooltip: 'Delete selected',
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

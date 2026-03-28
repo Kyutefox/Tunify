@@ -148,6 +148,7 @@ class AppIcons {
       HugeIcons.strokeRoundedFireworks;
   static List<List<dynamic>> get bolt => HugeIcons.strokeRoundedFire02;
   static List<List<dynamic>> get bedtime => HugeIcons.strokeRoundedMoon02;
+  static List<List<dynamic>> get playbackSpeed => HugeIcons.strokeRoundedTimer01;
   static List<List<dynamic>> get github => HugeIcons.strokeRoundedGithub;
 }
 

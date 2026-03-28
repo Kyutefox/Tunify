@@ -55,6 +55,7 @@ class PlayerControls extends ConsumerWidget {
         PlayerControlIcon(
           icon: AppIcons.skipPrevious,
           size: 36,
+          semanticLabel: 'Previous',
           onTap: () {
             HapticFeedback.mediumImpact();
             notifier.playPrevious();
@@ -69,6 +70,7 @@ class PlayerControls extends ConsumerWidget {
         PlayerControlIcon(
           icon: AppIcons.skipNext,
           size: 36,
+          semanticLabel: 'Next',
           onTap: () {
             HapticFeedback.mediumImpact();
             notifier.playNext();
@@ -77,6 +79,7 @@ class PlayerControls extends ConsumerWidget {
         PlayerControlIcon(
           icon: _repeatIcon(repeatMode),
           isActive: repeatMode != PlayerRepeatMode.off,
+          semanticLabel: 'Repeat: ${repeatMode.name}',
           onTap: () {
             HapticFeedback.selectionClick();
             notifier.cycleRepeatMode();
@@ -103,34 +106,38 @@ class _ShuffleControlIcon extends StatelessWidget {
     const size = 26.0;
     final padding = ((44.0 - size) / 2).clamp(8.0, 16.0);
     final targetColor = isActive ? AppColors.primary : _kIconInactive;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: EdgeInsets.all(padding),
-        child: TweenAnimationBuilder<Color?>(
-          tween: ColorTween(end: targetColor),
-          duration: AppDuration.fast,
-          curve: Curves.easeOut,
-          builder: (_, color, __) {
-            final c = color ?? targetColor;
-            return SizedBox(
-              width: size,
-              height: size,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  AppIcon(icon: AppIcons.shuffle, size: size, color: c),
-                  if (isSmart)
-                    Positioned(
-                      right: -6,
-                      top: -6,
-                      child: Icon(Icons.auto_awesome, size: 13, color: c),
-                    ),
-                ],
-              ),
-            );
-          },
+    return Semantics(
+      button: true,
+      label: isSmart ? 'Smart Shuffle' : (isActive ? 'Shuffle on' : 'Shuffle off'),
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: EdgeInsets.all(padding),
+          child: TweenAnimationBuilder<Color?>(
+            tween: ColorTween(end: targetColor),
+            duration: AppDuration.fast,
+            curve: Curves.easeOut,
+            builder: (_, color, __) {
+              final c = color ?? targetColor;
+              return SizedBox(
+                width: size,
+                height: size,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    AppIcon(icon: AppIcons.shuffle, size: size, color: c),
+                    if (isSmart)
+                      Positioned(
+                        right: -6,
+                        top: -6,
+                        child: Icon(Icons.auto_awesome, size: 13, color: c),
+                      ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ),
     );
@@ -144,31 +151,37 @@ class PlayerControlIcon extends StatelessWidget {
     required this.onTap,
     this.size = 26,
     this.isActive = false,
+    this.semanticLabel,
   });
 
   final List<List<dynamic>> icon;
   final VoidCallback onTap;
   final double size;
   final bool isActive;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
     // Ensure minimum 44px touch target per HIG/Material guidelines.
     final padding = ((44.0 - size) / 2).clamp(8.0, 16.0);
     final targetColor = isActive ? AppColors.primary : _kIconInactive;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: EdgeInsets.all(padding),
-        child: TweenAnimationBuilder<Color?>(
-          tween: ColorTween(end: targetColor),
-          duration: AppDuration.fast,
-          curve: Curves.easeOut,
-          builder: (_, color, __) => AppIcon(
-            icon: icon,
-            size: size,
-            color: color ?? targetColor,
+    return Semantics(
+      button: true,
+      label: semanticLabel,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: EdgeInsets.all(padding),
+          child: TweenAnimationBuilder<Color?>(
+            tween: ColorTween(end: targetColor),
+            duration: AppDuration.fast,
+            curve: Curves.easeOut,
+            builder: (_, color, __) => AppIcon(
+              icon: icon,
+              size: size,
+              color: color ?? targetColor,
+            ),
           ),
         ),
       ),
@@ -220,7 +233,10 @@ class _PlayerBigPlayButtonState extends State<PlayerBigPlayButton>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: widget.isPlaying ? 'Pause' : 'Play',
+      child: GestureDetector(
       onTapDown: (_) => _scale.reverse(),
       onTapUp: (_) {
         _scale.forward();
@@ -270,7 +286,8 @@ class _PlayerBigPlayButtonState extends State<PlayerBigPlayButton>
           ),
         ),
       ),
-    );
+      ), // GestureDetector
+    );   // Semantics
   }
 }
 
@@ -352,21 +369,25 @@ class PlayerExtraButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.selectionClick();
-        onTap();
-      },
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AppIcon(icon: icon, color: _kExtraIconColor, size: 22),
-            const SizedBox(height: AppSpacing.xs + 2),
-            Text(label, style: _kExtraLabelStyle),
-          ],
+    return Semantics(
+      button: true,
+      label: label,
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          onTap();
+        },
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AppIcon(icon: icon, color: _kExtraIconColor, size: 22),
+              const SizedBox(height: AppSpacing.xs + 2),
+              Text(label, style: _kExtraLabelStyle),
+            ],
+          ),
         ),
       ),
     );

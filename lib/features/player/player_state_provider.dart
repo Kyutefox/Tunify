@@ -67,9 +67,11 @@ class PlayerState {
   // still get the correct safe default instead of a null-dereference crash.
   final bool? _isGaplessEnabled;
   final int? _crossfadeDurationSeconds;
+  final double? _playbackSpeed;
 
   bool get isGaplessEnabled => _isGaplessEnabled ?? true;
   int get crossfadeDurationSeconds => _crossfadeDurationSeconds ?? 0;
+  double get playbackSpeed => _playbackSpeed ?? 1.0;
 
   const PlayerState({
     this.status = PlayerStatus.idle,
@@ -86,10 +88,12 @@ class PlayerState {
     this.isNormalizationEnabled = false,
     bool isGaplessEnabled = true,
     int crossfadeDurationSeconds = 0,
+    double playbackSpeed = 1.0,
     this.smartShuffleSongIds = const {},
     this.activeShuffleMode = ShuffleMode.none,
   })  : _isGaplessEnabled = isGaplessEnabled,
-        _crossfadeDurationSeconds = crossfadeDurationSeconds;
+        _crossfadeDurationSeconds = crossfadeDurationSeconds,
+        _playbackSpeed = playbackSpeed;
 
   bool get isPlaying => status == PlayerStatus.playing;
   bool get isLoading =>
@@ -117,6 +121,7 @@ class PlayerState {
     bool? isNormalizationEnabled,
     bool? isGaplessEnabled,
     int? crossfadeDurationSeconds,
+    double? playbackSpeed,
     Set<String>? smartShuffleSongIds,
     ShuffleMode? activeShuffleMode,
     bool clearSong = false,
@@ -141,6 +146,7 @@ class PlayerState {
       isGaplessEnabled: isGaplessEnabled ?? this.isGaplessEnabled,
       crossfadeDurationSeconds:
           crossfadeDurationSeconds ?? this.crossfadeDurationSeconds,
+      playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       smartShuffleSongIds:
           clearSmartShuffleIds ? const {} : (smartShuffleSongIds ?? this.smartShuffleSongIds),
       activeShuffleMode: activeShuffleMode ?? this.activeShuffleMode,
@@ -165,6 +171,7 @@ class PlayerState {
         isNormalizationEnabled == other.isNormalizationEnabled &&
         isGaplessEnabled == other.isGaplessEnabled &&
         crossfadeDurationSeconds == other.crossfadeDurationSeconds &&
+        playbackSpeed == other.playbackSpeed &&
         setEquals(smartShuffleSongIds, other.smartShuffleSongIds) &&
         activeShuffleMode == other.activeShuffleMode;
   }
@@ -190,6 +197,7 @@ class PlayerState {
         isNormalizationEnabled,
         isGaplessEnabled,
         crossfadeDurationSeconds,
+        playbackSpeed,
         smartShuffleSongIds.length,
         activeShuffleMode,
       );
@@ -2678,6 +2686,17 @@ class PlayerNotifier extends Notifier<PlayerState> {
     } catch (e) {
       logWarning('Player: _restorePlaybackSettings failed: $e', tag: 'Player');
     }
+    // Restore playback speed (stored in SharedPreferences, not DB).
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final speed = prefs.getDouble(StorageKeys.prefsPlaybackSpeed) ?? 1.0;
+      if (speed != 1.0) {
+        await _audioPlayer.setSpeed(speed);
+        state = state.copyWith(playbackSpeed: speed);
+      }
+    } catch (e) {
+      logWarning('Player: _restorePlaybackSpeed failed: $e', tag: 'Player');
+    }
   }
 
   Future<void> setGaplessPlayback(bool enabled) async {
@@ -2734,6 +2753,18 @@ class PlayerNotifier extends Notifier<PlayerState> {
           PlaybackSettingKeys.volumeNormalization, enabled);
     } catch (e) {
       logWarning('Player: setNormalization persist failed: $e', tag: 'Player');
+    }
+  }
+
+  Future<void> setPlaybackSpeed(double speed) async {
+    final clamped = speed.clamp(0.25, 3.0);
+    await _audioPlayer.setSpeed(clamped);
+    state = state.copyWith(playbackSpeed: clamped);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(StorageKeys.prefsPlaybackSpeed, clamped);
+    } catch (e) {
+      logWarning('Player: setPlaybackSpeed persist failed: $e', tag: 'Player');
     }
   }
 

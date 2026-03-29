@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 enum InputFieldStyle {
   outlined,
@@ -56,7 +57,7 @@ class AppInputField extends StatelessWidget {
         return InputDecoration(
           hintText: useHint ? hintText : null,
           hintStyle: TextStyle(
-            color: AppColors.textMuted.withValues(alpha: 0.7),
+            color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
             fontSize: AppFontSize.xl,
           ),
           border: InputBorder.none,
@@ -69,7 +70,7 @@ class AppInputField extends StatelessWidget {
       case InputFieldStyle.filled:
         return InputDecoration(
           hintText: useHint ? hintText : null,
-          hintStyle: const TextStyle(color: AppColors.textMuted),
+          hintStyle: TextStyle(color: AppColorsScheme.of(context).textMuted),
           prefixIcon: prefixIcon != null
               ? Padding(
                   padding: const EdgeInsets.all(12),
@@ -83,7 +84,7 @@ class AppInputField extends StatelessWidget {
                 )
               : null,
           filled: true,
-          fillColor: fillColor ?? AppColors.surfaceLight,
+          fillColor: fillColor ?? AppColorsScheme.of(context).surfaceLight,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),
             borderSide: BorderSide.none,
@@ -104,19 +105,19 @@ class AppInputField extends StatelessWidget {
       case InputFieldStyle.outlined:
         return InputDecoration(
           labelText: useLabel ? labelText : null,
-          labelStyle: const TextStyle(
-            color: AppColors.textSecondary,
+          labelStyle: TextStyle(
+            color: AppColorsScheme.of(context).textSecondary,
             fontSize: AppFontSize.base,
           ),
-          floatingLabelStyle: const TextStyle(
-            color: AppColors.textSecondary,
+          floatingLabelStyle: TextStyle(
+            color: AppColorsScheme.of(context).textSecondary,
             fontSize: AppFontSize.md,
             fontWeight: FontWeight.w500,
           ),
           floatingLabelBehavior: FloatingLabelBehavior.auto,
           floatingLabelAlignment: FloatingLabelAlignment.start,
           hintText: useHint ? hintText : null,
-          hintStyle: const TextStyle(color: AppColors.textMuted),
+          hintStyle: TextStyle(color: AppColorsScheme.of(context).textMuted),
           prefixIcon: prefixIcon != null
               ? SizedBox(
                   width: 48,
@@ -132,14 +133,14 @@ class AppInputField extends StatelessWidget {
               : null,
           suffixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           filled: true,
-          fillColor: fillColor ?? AppColors.glassWhite,
+          fillColor: fillColor ?? AppColorsScheme.of(context).surfaceLight,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),
-            borderSide: const BorderSide(color: AppColors.glassBorder),
+            borderSide: BorderSide(color: AppColorsScheme.of(context).surfaceHighlight),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),
-            borderSide: const BorderSide(color: AppColors.glassBorder, width: 1),
+            borderSide: BorderSide(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),
@@ -169,7 +170,7 @@ class AppInputField extends StatelessWidget {
   Widget build(BuildContext context) {
     final decoration = _buildDecoration(context);
     final textStyle = TextStyle(
-      color: AppColors.textPrimary,
+      color: AppColorsScheme.of(context).textPrimary,
       fontSize: style == InputFieldStyle.transparent ? 16 : 15,
       height: AppLineHeight.normal,
       fontWeight: style == InputFieldStyle.transparent ? FontWeight.w500 : null,

@@ -4,6 +4,7 @@ import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
 import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 enum CreateLibraryItemMode {
   createPlaylist,
@@ -93,10 +94,10 @@ class _CreateLibraryItemScreenState extends State<CreateLibraryItemScreen> {
     final mode = widget.mode;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       appBar: BackTitleAppBar(
         title: mode.title,
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColorsScheme.of(context).background,
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: AppSpacing.sm),

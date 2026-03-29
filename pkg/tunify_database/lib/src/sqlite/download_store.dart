@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
@@ -10,7 +8,7 @@ class DownloadStore {
   DownloadStore();
 
   static const String _dbName = 'downloads.db';
-  static const int _version = 3;
+  static const int _version = 1;
 
   Database? _db;
 
@@ -22,7 +20,6 @@ class DownloadStore {
       path,
       version: _version,
       onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
     );
     return _db!;
   }
@@ -30,49 +27,37 @@ class DownloadStore {
   Future<void> _onCreate(Database db, int version) async {
     await db.execute('''
       CREATE TABLE IF NOT EXISTS downloads (
-        song_id TEXT PRIMARY KEY,
-        local_path TEXT NOT NULL,
-        song_json TEXT NOT NULL,
-        created_at TEXT NOT NULL,
-        sort_order INTEGER NOT NULL DEFAULT 0
+        song_id          TEXT PRIMARY KEY,
+        local_path       TEXT NOT NULL,
+        title            TEXT NOT NULL DEFAULT '',
+        artist           TEXT NOT NULL DEFAULT '',
+        thumbnail_url    TEXT NOT NULL DEFAULT '',
+        duration_ms      INTEGER NOT NULL DEFAULT 0,
+        is_explicit      INTEGER NOT NULL DEFAULT 0,
+        artist_browse_id TEXT,
+        album_browse_id  TEXT,
+        album_name       TEXT,
+        created_at       TEXT NOT NULL,
+        sort_order       INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await db.execute('''
       CREATE TABLE IF NOT EXISTS cached_songs (
-        song_id TEXT PRIMARY KEY,
-        song_json TEXT NOT NULL,
-        created_at TEXT NOT NULL,
+        song_id          TEXT PRIMARY KEY,
+        title            TEXT NOT NULL DEFAULT '',
+        artist           TEXT NOT NULL DEFAULT '',
+        thumbnail_url    TEXT NOT NULL DEFAULT '',
+        duration_ms      INTEGER NOT NULL DEFAULT 0,
+        is_explicit      INTEGER NOT NULL DEFAULT 0,
+        artist_browse_id TEXT,
+        album_browse_id  TEXT,
+        album_name       TEXT,
+        created_at       TEXT NOT NULL,
         last_accessed_at TEXT NOT NULL
       )
     ''');
   }
 
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute(
-        'ALTER TABLE downloads ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0',
-      );
-      final rows = await db.query('downloads', orderBy: 'created_at DESC');
-      for (var i = 0; i < rows.length; i++) {
-        await db.update(
-          'downloads',
-          {'sort_order': i},
-          where: 'song_id = ?',
-          whereArgs: [rows[i]['song_id']],
-        );
-      }
-    }
-    if (oldVersion < 3) {
-      await db.execute('''
-        CREATE TABLE IF NOT EXISTS cached_songs (
-          song_id TEXT PRIMARY KEY,
-          song_json TEXT NOT NULL,
-          created_at TEXT NOT NULL,
-          last_accessed_at TEXT NOT NULL
-        )
-      ''');
-    }
-  }
 
   /// Application documents subdirectory for downloaded audio files.
   static Future<String> get downloadDirectory async {
@@ -106,9 +91,16 @@ class DownloadStore {
       'downloads',
       orderBy: 'sort_order ASC, created_at DESC',
     );
-    return rows.map((r) {
-      final json = jsonDecode(r['song_json'] as String) as Map<String, dynamic>;
-      return json;
+    return rows.map((r) => <String, dynamic>{
+      'id': r['song_id'],
+      'title': r['title'],
+      'artist': r['artist'],
+      'thumbnailUrl': r['thumbnail_url'],
+      'durationMs': r['duration_ms'],
+      'isExplicit': (r['is_explicit'] as int? ?? 0) == 1,
+      'artistBrowseId': r['artist_browse_id'],
+      'albumBrowseId': r['album_browse_id'],
+      'albumName': r['album_name'],
     }).toList();
   }
 
@@ -136,7 +128,14 @@ class DownloadStore {
       {
         'song_id': songId,
         'local_path': localPath,
-        'song_json': jsonEncode(songJson),
+        'title': songJson['title'] ?? '',
+        'artist': songJson['artist'] ?? '',
+        'thumbnail_url': songJson['thumbnailUrl'] ?? '',
+        'duration_ms': songJson['durationMs'] ?? 0,
+        'is_explicit': (songJson['isExplicit'] == true) ? 1 : 0,
+        'artist_browse_id': songJson['artistBrowseId'],
+        'album_browse_id': songJson['albumBrowseId'],
+        'album_name': songJson['albumName'],
         'created_at': DateTime.now().toUtc().toIso8601String(),
         'sort_order': sortOrder,
       },
@@ -189,7 +188,14 @@ class DownloadStore {
       'cached_songs',
       {
         'song_id': songId,
-        'song_json': jsonEncode(songJson),
+        'title': songJson['title'] ?? '',
+        'artist': songJson['artist'] ?? '',
+        'thumbnail_url': songJson['thumbnailUrl'] ?? '',
+        'duration_ms': songJson['durationMs'] ?? 0,
+        'is_explicit': (songJson['isExplicit'] == true) ? 1 : 0,
+        'artist_browse_id': songJson['artistBrowseId'],
+        'album_browse_id': songJson['albumBrowseId'],
+        'album_name': songJson['albumName'],
         'created_at': now,
         'last_accessed_at': now,
       },
@@ -212,8 +218,18 @@ class DownloadStore {
       where: 'song_id = ?',
       whereArgs: [songId],
     );
-    return jsonDecode(rows.first['song_json'] as String)
-        as Map<String, dynamic>;
+    final r = rows.first;
+    return <String, dynamic>{
+      'id': r['song_id'],
+      'title': r['title'],
+      'artist': r['artist'],
+      'thumbnailUrl': r['thumbnail_url'],
+      'durationMs': r['duration_ms'],
+      'isExplicit': (r['is_explicit'] as int? ?? 0) == 1,
+      'artistBrowseId': r['artist_browse_id'],
+      'albumBrowseId': r['album_browse_id'],
+      'albumName': r['album_name'],
+    };
   }
 
   /// Gets cached song metadata for multiple songIds. Returns map of songId -> metadata.
@@ -231,8 +247,17 @@ class DownloadStore {
     final result = <String, Map<String, dynamic>>{};
     for (final row in rows) {
       final songId = row['song_id'] as String;
-      result[songId] =
-          jsonDecode(row['song_json'] as String) as Map<String, dynamic>;
+      result[songId] = <String, dynamic>{
+        'id': row['song_id'],
+        'title': row['title'],
+        'artist': row['artist'],
+        'thumbnailUrl': row['thumbnail_url'],
+        'durationMs': row['duration_ms'],
+        'isExplicit': (row['is_explicit'] as int? ?? 0) == 1,
+        'artistBrowseId': row['artist_browse_id'],
+        'albumBrowseId': row['album_browse_id'],
+        'albumName': row['album_name'],
+      };
       await db.update(
         'cached_songs',
         {'last_accessed_at': now},

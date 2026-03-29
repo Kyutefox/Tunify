@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +8,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/core/constants/app_strings.dart';
+import 'package:tunify/core/services/hive_service.dart';
+import 'package:tunify/core/services/shared_prefs_service.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
@@ -27,9 +28,10 @@ import 'package:tunify/ui/shell/desktop_shell.dart';
 import 'package:tunify/ui/shell/mobile_shell.dart';
 import 'package:tunify/ui/screens/shared/auth/loading_screen.dart';
 import 'package:tunify/ui/screens/shared/auth/welcome_screen.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/features/settings/theme_provider.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_theme.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 final supabaseInitProvider = FutureProvider<void>((ref) async {
   try {
@@ -51,7 +53,11 @@ final supabaseInitProvider = FutureProvider<void>((ref) async {
 Future<void> main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    await Hive.initFlutter();
+    
+    await Future.wait([
+      HiveService.instance.init(),
+      SharedPrefsService.instance.init(),
+    ]);
 
     final crossfadeEngine = CrossfadeEngine(AudioPlayerService());
 
@@ -135,13 +141,16 @@ class _TunifyAppContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
     final init = ref.watch(supabaseInitProvider);
 
     if (init.isLoading) {
       return MaterialApp(
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
         builder: _noKeyboardShiftBuilder,
         home: const LoadingScreen(),
       );
@@ -151,7 +160,9 @@ class _TunifyAppContent extends ConsumerWidget {
       return MaterialApp(
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
         builder: _noKeyboardShiftBuilder,
         home: _InitErrorScreen(
           onRetry: () => ref.invalidate(supabaseInitProvider),
@@ -166,7 +177,9 @@ class _TunifyAppContent extends ConsumerWidget {
       return MaterialApp(
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
         builder: _noKeyboardShiftBuilder,
         home: const LoadingScreen(),
       );
@@ -191,12 +204,11 @@ class _TunifyAppContent extends ConsumerWidget {
           if (next != null) {
             final bridge = ref.read(databaseBridgeProvider);
             final syncManager = ref.read(syncManagerProvider);
-            ref.read(databaseHydrationInProgressProvider.notifier).state = true;
+            ref.read(databaseHydrationInProgressProvider.notifier).set(true);
             // Await pull so SQLite is filled before providers reload; then start sync and notify.
             bridge.pullFromSupabase(next.id).then((_) async {
               if (ref.read(currentUserProvider)?.id != next.id) return;
-              ref.read(databaseHydrationInProgressProvider.notifier).state =
-                  false;
+              ref.read(databaseHydrationInProgressProvider.notifier).set(false);
               if (!ref.exists(homeProvider)) return;
               try {
                 await ref.read(homeProvider.notifier).prepareHomeForLogin();
@@ -210,16 +222,12 @@ class _TunifyAppContent extends ConsumerWidget {
               ref.read(libraryProvider.notifier).onAuthChanged(next);
               ref.read(recentSearchProvider.notifier).onAuthChanged();
               ref.read(showExplicitContentProvider.notifier).onAuthChanged();
-              ref
-                  .read(smartRecommendationShuffleProvider.notifier)
-                  .onAuthChanged();
             }).catchError((e, st) {
               logWarning(
                   'Auth: pullFromSupabase failed ($e), continuing with local data',
                   tag: 'Auth');
               if (ref.read(currentUserProvider)?.id != next.id) return;
-              ref.read(databaseHydrationInProgressProvider.notifier).state =
-                  false;
+              ref.read(databaseHydrationInProgressProvider.notifier).set(false);
               if (!ref.exists(homeProvider)) return;
               // Still let user in; start sync and reload with whatever is in SQLite
               syncManager.start(next.id);
@@ -227,14 +235,10 @@ class _TunifyAppContent extends ConsumerWidget {
               ref.read(libraryProvider.notifier).onAuthChanged(next);
               ref.read(recentSearchProvider.notifier).onAuthChanged();
               ref.read(showExplicitContentProvider.notifier).onAuthChanged();
-              ref
-                  .read(smartRecommendationShuffleProvider.notifier)
-                  .onAuthChanged();
             });
           } else {
             ref.read(syncManagerProvider).stop();
-            ref.read(databaseHydrationInProgressProvider.notifier).state =
-                false;
+            ref.read(databaseHydrationInProgressProvider.notifier).set(false);
             // Flush cached stream URLs on logout — they are tied to session
             // cookies and would fail or serve wrong content for the next user.
             ref.read(streamManagerProvider).clearCache();
@@ -243,9 +247,6 @@ class _TunifyAppContent extends ConsumerWidget {
             ref.read(libraryProvider.notifier).onAuthChanged(next);
             ref.read(recentSearchProvider.notifier).onAuthChanged();
             ref.read(showExplicitContentProvider.notifier).onAuthChanged();
-            ref
-                .read(smartRecommendationShuffleProvider.notifier)
-                .onAuthChanged();
           }
         }
       },
@@ -260,7 +261,9 @@ class _TunifyAppContent extends ConsumerWidget {
     return MaterialApp(
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       builder: _noKeyboardShiftBuilder,
       home: isGuest
           ? shell()
@@ -331,7 +334,7 @@ class _InitErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
@@ -340,23 +343,23 @@ class _InitErrorScreen extends StatelessWidget {
             children: [
               AppIcon(
                 icon: AppIcons.cloudOff,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 size: 42,
               ),
               const SizedBox(height: AppSpacing.md),
-              const Text(
+              Text(
                 'Unable to initialize services',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              const Text(
+              Text(
                 'Please check your connection and try again.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: AppColorsScheme.of(context).textSecondary),
               ),
               const SizedBox(height: AppSpacing.base),
               AppButton(

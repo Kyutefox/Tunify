@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +18,6 @@ import 'package:tunify/data/repositories/database_repository.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 import 'package:tunify/features/settings/music_stream_manager.dart';
 import 'package:tunify/core/utils/list_utils.dart';
-import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 
 /// A single dynamic section in the home feed: may contain songs, playlists, or artists.
@@ -281,20 +279,13 @@ class HomeNotifier extends Notifier<HomeState> {
     }
     _cache = null;
     state = const HomeState();
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(StorageKeys.prefsHomeFeedCache);
-    } catch (_) {}
     await _loadRecentlyPlayed();
     await loadContent();
   }
 
   Future<void> _loadRecentlyPlayed() async {
     try {
-      final user = ref.read(currentUserProvider);
-      final history = await _repository.loadRecentlyPlayed(
-        userId: user?.id,
-      );
+      final history = await _repository.loadRecentlyPlayed();
       if (history.isEmpty) return;
       final songs = history
           .map((h) => Song(
@@ -779,20 +770,7 @@ class HomeNotifier extends Notifier<HomeState> {
   Future<bool> _restoreFromPersistedCache() async {
     try {
       final box = await Hive.openBox<dynamic>('home_feed');
-      Object? rawEntry = box.get('feed');
-
-      // One-time migration: move existing SharedPreferences JSON into Hive.
-      if (rawEntry == null) {
-        final prefs = await SharedPreferences.getInstance();
-        final json = prefs.getString(StorageKeys.prefsHomeFeedCache);
-        if (json != null && json.isNotEmpty) {
-          try {
-            rawEntry = jsonDecode(json) as Map;
-            await box.put('feed', rawEntry);
-          } catch (_) {}
-          await prefs.remove(StorageKeys.prefsHomeFeedCache);
-        }
-      }
+      final Object? rawEntry = box.get('feed');
 
       if (rawEntry == null) return false;
       final map = _deepCastMap(rawEntry as Map);
@@ -1007,7 +985,6 @@ class HomeNotifier extends Notifier<HomeState> {
   Future<void> _saveRecentlyPlayed(
       List<Song> songs, List<DateTime> timestamps) async {
     try {
-      final user = ref.read(currentUserProvider);
       final now = DateTime.now();
       final history = <RecentlyPlayedSong>[];
       for (var i = 0; i < songs.length; i++) {
@@ -1021,10 +998,7 @@ class HomeNotifier extends Notifier<HomeState> {
           lastPlayed: i < timestamps.length ? timestamps[i] : now,
         ));
       }
-      await _repository.saveRecentlyPlayed(
-        history,
-        userId: user?.id,
-      );
+      await _repository.saveRecentlyPlayed(history);
     } catch (e) {
       logWarning('Home: _saveRecentlyPlayed failed: $e', tag: 'Home');
     }

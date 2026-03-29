@@ -25,11 +25,13 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
 import 'package:tunify/features/settings/music_stream_manager.dart';
 import 'package:tunify/features/settings/stream_cache_service.dart';
+import 'package:tunify/features/settings/theme_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'about_screen.dart';
 import 'package:tunify/ui/widgets/common/sheet_drag_handle.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 void _showDataResultSnackBar(BuildContext context,
     {String? success, Object? error}) {
@@ -50,11 +52,13 @@ class HomeSettingsSheet extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
+    final isLight = themeMode == ThemeMode.light;
     return ClipRRect(
       borderRadius:
           const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
       child: Container(
-        color: AppColors.surface,
+        color: AppColorsScheme.of(context).surface,
         padding: EdgeInsets.only(
           left: kSheetHorizontalPadding,
           right: kSheetHorizontalPadding,
@@ -67,18 +71,23 @@ class HomeSettingsSheet extends ConsumerWidget {
           children: [
             const SheetDragHandle(),
             const SizedBox(height: AppSpacing.lg),
-            const Padding(
+            Padding(
               padding: EdgeInsets.symmetric(horizontal: 0),
               child: Text(
                 'Settings',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ),
             const SizedBox(height: AppSpacing.xl),
+            _ThemeToggleCard(
+              isLight: isLight,
+              onToggle: () => ref.read(themeProvider.notifier).toggleTheme(),
+            ),
+            const SizedBox(height: AppSpacing.md),
             _SettingsCard(
               icon: AppIcons.equalizer,
               iconColor: AppColors.accentOrange,
@@ -145,6 +154,84 @@ class HomeSettingsSheet extends ConsumerWidget {
   }
 }
 
+class _ThemeToggleCard extends StatelessWidget {
+  const _ThemeToggleCard({required this.isLight, required this.onToggle});
+
+  final bool isLight;
+  final VoidCallback onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onToggle,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+        child: Container(
+          padding: const EdgeInsets.all(AppSpacing.base),
+          decoration: BoxDecoration(
+            color: AppColorsScheme.of(context).surfaceLight,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: AppColorsScheme.of(context).surfaceHighlight,
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.accentCyan.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                ),
+                child: Center(
+                  child: AppIcon(
+                    icon: isLight ? AppIcons.sun : AppIcons.moon,
+                    color: AppColors.accentCyan,
+                    size: 26,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.base),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Appearance',
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.xxl,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      isLight ? 'Light theme' : 'Dark theme',
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textSecondary,
+                        fontSize: AppFontSize.md,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Switch(
+                value: isLight,
+                onChanged: (_) => onToggle(),
+                activeThumbColor: AppColors.primary,
+                activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SettingsCard extends StatelessWidget {
   const _SettingsCard({
     required this.icon,
@@ -172,8 +259,12 @@ class _SettingsCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(AppSpacing.base),
           decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
+            color: AppColorsScheme.of(context).surfaceLight,
             borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(
+              color: AppColorsScheme.of(context).surfaceHighlight,
+              width: 1,
+            ),
           ),
           child: Row(
             children: [
@@ -195,8 +286,8 @@ class _SettingsCard extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.xxl,
                         fontWeight: FontWeight.w700,
                       ),
@@ -204,8 +295,8 @@ class _SettingsCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textSecondary,
                         fontSize: AppFontSize.md,
                       ),
                     ),
@@ -214,7 +305,7 @@ class _SettingsCard extends StatelessWidget {
               ),
               AppIcon(
                   icon: AppIcons.chevronRight,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 22),
             ],
           ),
@@ -241,25 +332,25 @@ class _CrossfadeTile extends StatelessWidget {
             children: [
               AppIcon(
                   icon: AppIcons.refresh,
-                  color: AppColors.textSecondary,
+                  color: AppColorsScheme.of(context).textSecondary,
                   size: 22),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Crossfade',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.lg,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       value == 0 ? 'Off' : '$value seconds',
-                      style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                      style: TextStyle(
+                          color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
                     ),
                   ],
                 ),
@@ -269,7 +360,7 @@ class _CrossfadeTile extends StatelessWidget {
           SliderTheme(
             data: SliderThemeData(
               activeTrackColor: AppColors.primary,
-              inactiveTrackColor: AppColors.surfaceLight,
+              inactiveTrackColor: AppColorsScheme.of(context).surfaceLight,
               thumbColor: AppColors.primary,
               overlayColor: AppColors.primary.withValues(alpha: 0.12),
               trackHeight: 3,
@@ -282,6 +373,79 @@ class _CrossfadeTile extends StatelessWidget {
               max: 12,
               divisions: 12,
               onChanged: (v) => onChanged(v.round()),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BassBoostTile extends StatelessWidget {
+  const _BassBoostTile({required this.value, required this.onChanged});
+
+  final double value;
+  final ValueChanged<double> onChanged;
+
+  String get _label {
+    if (value == 0.0) return 'Off';
+    if (value <= 0.33) return 'Low';
+    if (value <= 0.66) return 'Medium';
+    return 'High';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              AppIcon(
+                  icon: AppIcons.equalizer,
+                  color: AppColorsScheme.of(context).textSecondary,
+                  size: 22),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Bass Boost',
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.lg,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      _label,
+                      style: TextStyle(
+                          color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SliderTheme(
+            data: SliderThemeData(
+              activeTrackColor: AppColors.primary,
+              inactiveTrackColor: AppColorsScheme.of(context).surfaceLight,
+              thumbColor: AppColors.primary,
+              overlayColor: AppColors.primary.withValues(alpha: 0.12),
+              trackHeight: 3,
+              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
+              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+            ),
+            child: Slider(
+              value: value,
+              min: 0.0,
+              max: 1.0,
+              divisions: 10,
+              onChanged: onChanged,
             ),
           ),
         ],
@@ -350,7 +514,7 @@ class _DataSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColorsScheme.of(context).background,
         appBar: const BackTitleAppBar(title: 'Data'),
         body: const DataSettingsBody(),
       );
@@ -380,7 +544,7 @@ class _DataTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
           child: Row(
             children: [
-              AppIcon(icon: icon, color: AppColors.textSecondary, size: 22),
+              AppIcon(icon: icon, color: AppColorsScheme.of(context).textSecondary, size: 22),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -388,16 +552,16 @@ class _DataTile extends StatelessWidget {
                   children: [
                     Text(
                       label,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.lg,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
                       subtitle,
-                      style: const TextStyle(
-                          color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                      style: TextStyle(
+                          color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
                     ),
                   ],
                 ),
@@ -418,7 +582,7 @@ Future<void> _dataCacheStats(BuildContext context, WidgetRef ref) async {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          backgroundColor: AppColors.surfaceLight,
+          backgroundColor: AppColorsScheme.of(context).surfaceLight,
           title: const Text('Cache Statistics'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -534,10 +698,11 @@ class PlaybackSettingsBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final playerState = ref.watch(playerProvider);
-    final normEnabled = playerState.isNormalizationEnabled;
+    final normEnabled = ref.watch(playerProvider.select((s) => s.isNormalizationEnabled));
+    final isGaplessEnabled = ref.watch(playerProvider.select((s) => s.isGaplessEnabled));
+    final crossfadeDuration = ref.watch(playerProvider.select((s) => s.crossfadeDurationSeconds));
+    final bassBoost = ref.watch(playerProvider.select((s) => s.bassBoostLevel));
     final showExplicit = ref.watch(showExplicitContentProvider);
-    final smartRecShuffle = ref.watch(smartRecommendationShuffleProvider);
 
     return ListView(
       padding: const EdgeInsets.symmetric(
@@ -560,27 +725,22 @@ class PlaybackSettingsBody extends ConsumerWidget {
               ref.read(showExplicitContentProvider.notifier).setShowExplicit(v),
         ),
         _PlaybackToggleTile(
-          icon: AppIcons.shuffle,
-          label: 'Smart Recommendation Shuffle',
-          subtitle:
-              'When queue has one song from a playlist or library, fill with recommendations only if shuffle is on',
-          value: smartRecShuffle,
-          onChanged: (v) => ref
-              .read(smartRecommendationShuffleProvider.notifier)
-              .setSmartRecommendationShuffle(v),
-        ),
-        _PlaybackToggleTile(
           icon: AppIcons.musicNote,
           label: 'Gapless Playback',
           subtitle: 'Remove silence between tracks',
-          value: playerState.isGaplessEnabled,
+          value: isGaplessEnabled,
           onChanged: (v) =>
               ref.read(playerProvider.notifier).setGaplessPlayback(v),
         ),
         _CrossfadeTile(
-          value: playerState.crossfadeDurationSeconds,
+          value: crossfadeDuration,
           onChanged: (v) =>
               ref.read(playerProvider.notifier).setCrossfadeDuration(v),
+        ),
+        _BassBoostTile(
+          value: bassBoost,
+          onChanged: (v) =>
+              ref.read(playerProvider.notifier).setBassBoost(v),
         ),
       ],
     );
@@ -592,7 +752,7 @@ class _PlaybackSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColorsScheme.of(context).background,
         appBar: const BackTitleAppBar(title: 'Playback'),
         body: const PlaybackSettingsBody(),
       );
@@ -619,7 +779,7 @@ class _PlaybackToggleTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Row(
         children: [
-          AppIcon(icon: icon, color: AppColors.textSecondary, size: 22),
+          AppIcon(icon: icon, color: AppColorsScheme.of(context).textSecondary, size: 22),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -627,16 +787,16 @@ class _PlaybackToggleTile extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.lg,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   subtitle,
-                  style: const TextStyle(
-                      color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                  style: TextStyle(
+                      color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
                 ),
               ],
             ),
@@ -845,16 +1005,16 @@ class _SupabaseSettingsBodyState extends ConsumerState<SupabaseSettingsBody> {
             _usingCustomConfig
                 ? 'Currently using your Supabase config'
                 : 'Currently using default config',
-            style: const TextStyle(
-              color: AppColors.textMuted,
+            style: TextStyle(
+              color: AppColorsScheme.of(context).textMuted,
               fontSize: AppFontSize.md,
             ),
           ),
           const SizedBox(height: AppSpacing.sm),
-          const Text(
+          Text(
             'Leave URL and anon key empty to use the default config. Enter both to use your own project.',
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: AppColorsScheme.of(context).textSecondary,
               fontSize: AppFontSize.md,
             ),
           ),
@@ -916,7 +1076,7 @@ class _SupabaseSettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColorsScheme.of(context).background,
         appBar: const BackTitleAppBar(title: 'Supabase'),
         body: const SupabaseSettingsBody(),
       );

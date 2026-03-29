@@ -8,14 +8,42 @@ class SqliteGetController {
 
   final Future<Database> Function() _getDb;
 
-  /// Loads full library from playlists, folders, folder_playlists and settings.
+  /// Loads full library from playlist_info, playlist_songs, folders,
+  /// folder_playlists and settings.
   Future<Map<String, dynamic>> loadLibraryData() async {
     final db = await _getDb();
     try {
-      final playlistRows = await db.query('playlists',
-          where: 'is_saved = 1', orderBy: 'updated_at DESC');
+      // Regular playlists only (not artist/album rows).
+      final playlistRows = await db.query('playlist_info',
+          where: 'is_saved = 1 AND is_artist = 0 AND is_album = 0',
+          orderBy: 'updated_at DESC');
+      final artistRows = await db.query('playlist_info',
+          where: 'is_saved = 1 AND is_artist = 1',
+          orderBy: 'created_at DESC');
+      final albumRows = await db.query('playlist_info',
+          where: 'is_saved = 1 AND is_album = 1',
+          orderBy: 'created_at DESC');
+      final songRows = await db.query('playlist_songs',
+          orderBy: 'playlist_id, sort_order_sequence ASC');
       final folderRows = await db.query('folders', orderBy: 'name');
       final junctionRows = await db.query('folder_playlists');
+
+      // Group songs by playlist_id, mapping DB columns → Song.fromJson keys.
+      final songsByPlaylist = <String, List<Map<String, dynamic>>>{};
+      for (final r in songRows) {
+        final pid = r['playlist_id'] as String;
+        songsByPlaylist.putIfAbsent(pid, () => []).add({
+          'id': r['song_id'],
+          'title': r['title'],
+          'artist': r['artist'],
+          'thumbnailUrl': r['cover_url'],
+          'durationMs': r['duration_ms'],
+          'isExplicit': (r['is_explicit'] as int? ?? 0) == 1,
+          'artistBrowseId': r['artist_browse_id'],
+          'albumBrowseId': r['album_browse_id'],
+          'albumName': r['album_name'],
+        });
+      }
 
       final folderToPlaylists = <String, List<String>>{};
       for (final r in junctionRows) {
@@ -25,83 +53,73 @@ class SqliteGetController {
       }
 
       final playlists = playlistRows.map((r) {
-        final songsJson = r['songs'] as String? ?? '[]';
-        final songsList = jsonDecode(songsJson) as List<dynamic>?;
+        final id = r['id'] as String;
         return <String, dynamic>{
-          'id': r['id'],
+          'id': id,
           'name': r['name'],
           'description': r['description'] ?? '',
           'sort_order': r['sort_order'],
-          'songs': songsList ?? [],
+          'songs': songsByPlaylist[id] ?? [],
           'created_at': r['created_at'],
           'updated_at': r['updated_at'],
-          'custom_image_url': r['custom_image_url'],
+          'cover_url': r['cover_url'],
           'is_imported': (r['is_imported'] as int? ?? 0) == 1,
           'browse_id': r['browse_id'],
-          'cached_palette_color': r['cached_palette_color'],
-          'remote_track_count': r['remote_track_count'] as int?,
+          'palette_color': r['palette_color'],
+          'total_track_count_remote': r['total_track_count_remote'] as int?,
+          'shuffle_enabled': r['shuffle_enabled'] as int? ?? 0,
+          'is_pinned': (r['is_pinned'] as int? ?? 0) == 1,
         };
       }).toList();
 
-      final pinnedPlaylistsStr =
-          (await _getSetting(db, 'pinned_playlist_ids')) ?? '[]';
-      final pinnedFoldersStr =
-          (await _getSetting(db, 'pinned_folder_ids')) ?? '[]';
-      final pinnedPlaylistIds =
-          (jsonDecode(pinnedPlaylistsStr) as List<dynamic>?)
-                  ?.cast<String>()
-                  .toSet() ??
-              <String>{};
-      final pinnedFolderIds = (jsonDecode(pinnedFoldersStr) as List<dynamic>?)
-              ?.cast<String>()
-              .toSet() ??
-          <String>{};
-      final playlistShufflesRaw =
-          (await _getSetting(db, 'playlist_shuffles')) ?? '{}';
-      final playlistShuffles =
-          (jsonDecode(playlistShufflesRaw) as Map<String, dynamic>?) ??
-              <String, dynamic>{};
-
-      for (final p in playlists) {
-        p['is_pinned'] = pinnedPlaylistIds.contains(p['id']?.toString());
-        p['shuffleEnabled'] = playlistShuffles[p['id']?.toString()] == true;
-      }
       final folders = folderRows.map((r) {
         final id = r['id'] as String;
         return <String, dynamic>{
           'id': id,
           'name': r['name'],
           'created_at': r['created_at'],
-          'is_pinned': pinnedFolderIds.contains(id),
+          'is_pinned': (r['is_pinned'] as int? ?? 0) == 1,
           'playlistIds': folderToPlaylists[id] ?? [],
         };
       }).toList();
 
       final sortOrder = (await _getSetting(db, 'sort_order')) ?? 'recent';
       final viewMode = (await _getSetting(db, 'view_mode')) ?? 'list';
-      final likedJson = (await _getSetting(db, 'liked_song_ids')) ?? '[]';
-      final likedSongs = jsonDecode(likedJson) as List<dynamic>? ?? [];
-      final likedShuffle = (await _getSetting(db, 'liked_shuffle')) == 'true';
-      final downloadedShuffle =
-          (await _getSetting(db, 'downloaded_shuffle')) == 'true';
-      final followedArtistsJson =
-          (await _getSetting(db, 'followed_artists')) ?? '[]';
-      final followedAlbumsJson =
-          (await _getSetting(db, 'followed_albums')) ?? '[]';
-      final followedArtists =
-          jsonDecode(followedArtistsJson) as List<dynamic>? ?? [];
-      final followedAlbums =
-          jsonDecode(followedAlbumsJson) as List<dynamic>? ?? [];
+      final downloadedShuffleStr = await _getSetting(db, 'downloaded_shuffle');
+      final downloadedShuffleMode = downloadedShuffleStr == 'true' ? 1
+          : (downloadedShuffleStr == null || downloadedShuffleStr == 'false') ? 0
+          : int.tryParse(downloadedShuffleStr) ?? 0;
+      final downloadsSortOrder =
+          (await _getSetting(db, 'downloads_sort_order')) ?? 'customOrder';
+
+      // Map artist rows → LibraryArtist.fromJson compatible maps.
+      final followedArtists = artistRows.map((r) => <String, dynamic>{
+            'id': r['id'],
+            'name': r['name'],
+            'thumbnailUrl': r['cover_url'] ?? '',
+            'browseId': r['browse_id'],
+            'followedAt': r['created_at'],
+            if (r['palette_color'] != null) 'cachedPaletteColor': r['palette_color'],
+          }).toList();
+
+      // Map album rows → LibraryAlbum.fromJson compatible maps.
+      final followedAlbums = albumRows.map((r) => <String, dynamic>{
+            'id': r['id'],
+            'title': r['name'],
+            'artistName': r['description'] ?? '',
+            'thumbnailUrl': r['cover_url'] ?? '',
+            'browseId': r['browse_id'],
+            'followedAt': r['created_at'],
+            if (r['palette_color'] != null) 'cachedPaletteColor': r['palette_color'],
+          }).toList();
 
       return {
         'playlists': playlists,
         'folders': folders,
-        'likedSongs': likedSongs,
         'sortOrder': sortOrder,
         'viewMode': viewMode,
-        'likedShuffleEnabled': likedShuffle,
-        'downloadedShuffleEnabled': downloadedShuffle,
-        'playlistShuffles': playlistShuffles,
+        'downloadedShuffleMode': downloadedShuffleMode,
+        'downloadsSortOrder': downloadsSortOrder,
         'followedArtists': followedArtists,
         'followedAlbums': followedAlbums,
       };
@@ -114,25 +132,27 @@ class SqliteGetController {
   static Map<String, dynamic> emptyLibraryData() => {
         'playlists': <Map>[],
         'folders': <Map>[],
-        'likedSongs': <Map>[],
         'sortOrder': 'recent',
         'viewMode': 'list',
-        'likedShuffleEnabled': false,
-        'downloadedShuffleEnabled': false,
-        'playlistShuffles': <String, dynamic>{},
+        'downloadedShuffleMode': 0,
+        'downloadsSortOrder': 'customOrder',
         'followedArtists': <Map>[],
         'followedAlbums': <Map>[],
       };
 
-  /// Loads recently played from settings (recently_played key).
+  /// Loads recently played from the recently_played table.
   Future<List<Map<String, dynamic>>> loadRecentlyPlayed() async {
     try {
       final db = await _getDb();
-      final json = await _getSetting(db, 'recently_played');
-      if (json == null || json.isEmpty) return [];
-      final list = jsonDecode(json) as List<dynamic>?;
-      if (list == null) return [];
-      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+      final rows = await db.query('recently_played', orderBy: 'last_played_at DESC');
+      return rows.map((r) => <String, dynamic>{
+        'id': r['song_id'],
+        'title': r['title'],
+        'artist': r['artist'],
+        'thumbnailUrl': r['thumbnail_url'],
+        'durationSeconds': r['duration_seconds'],
+        'lastPlayed': r['last_played_at'],
+      }).toList();
     } catch (_) {
       return [];
     }
@@ -153,33 +173,23 @@ class SqliteGetController {
     return rows.firstOrNull?['value'] as String?;
   }
 
-  /// Loads recent search queries from settings (recent_searches key).
+  /// Loads recent search queries from the recent_searches table.
   Future<List<String>> loadRecentSearches() async {
-    final raw = await getSetting('recent_searches');
-    if (raw == null || raw.isEmpty) return [];
     try {
-      final list = jsonDecode(raw) as List<dynamic>?;
-      return list
-              ?.map((e) => e.toString())
-              .where((s) => s.trim().isNotEmpty)
-              .toList() ??
-          [];
+      final db = await _getDb();
+      final rows = await db.query('recent_searches', orderBy: 'created_at DESC');
+      return rows.map((r) => r['query'] as String).toList();
     } catch (_) {
       return [];
     }
   }
 
-  /// Loads downloaded song IDs from settings (downloaded_song_ids key).
+  /// Loads downloaded song IDs from the downloaded_song_ids table.
   Future<List<String>> loadDownloadedSongIds() async {
-    final raw = await getSetting('downloaded_song_ids');
-    if (raw == null || raw.isEmpty) return [];
     try {
-      final list = jsonDecode(raw) as List<dynamic>?;
-      return list
-              ?.map((e) => e.toString())
-              .where((s) => s.isNotEmpty)
-              .toList() ??
-          [];
+      final db = await _getDb();
+      final rows = await db.query('downloaded_song_ids');
+      return rows.map((r) => r['song_id'] as String).toList();
     } catch (_) {
       return [];
     }
@@ -194,53 +204,19 @@ class SqliteGetController {
     };
   }
 
-  /// Returns the cached_palette_color for any playlist row with [browseId].
+  /// Returns the palette_color for any playlist_info row with [browseId].
   Future<int?> getPlaylistPaletteColor(String browseId) async {
     try {
       final db = await _getDb();
       final rows = await db.query(
-        'playlists',
-        columns: ['cached_palette_color'],
+        'playlist_info',
+        columns: ['palette_color'],
         where: 'browse_id = ?',
         whereArgs: [browseId],
         limit: 1,
       );
       if (rows.isEmpty) return null;
-      return rows.first['cached_palette_color'] as int?;
-    } catch (_) {
-      return null;
-    }
-  }
-
-  static const Duration _collectionTrackTtl = Duration(minutes: 30);
-
-  /// Returns cached collection tracks for [browseId], or null if missing/expired.
-  Future<List<Map<String, dynamic>>?> getCollectionTracks(
-      String browseId) async {
-    try {
-      final db = await _getDb();
-      final rows = await db.query(
-        'collection_tracks',
-        where: 'browse_id = ? AND is_saved = 0',
-        whereArgs: [browseId],
-        orderBy: 'track_index ASC',
-      );
-      if (rows.isEmpty) return null;
-      final now = DateTime.now().toUtc();
-      final allExpired = rows.every((r) {
-        final cachedAt = DateTime.tryParse(r['cached_at'] as String? ?? '');
-        if (cachedAt == null) return true;
-        return now.difference(cachedAt) > _collectionTrackTtl;
-      });
-      if (allExpired) {
-        await db.delete('collection_tracks',
-            where: 'browse_id = ? AND is_saved = 0', whereArgs: [browseId]);
-        return null;
-      }
-      return rows.map((r) {
-        final trackDataJson = r['track_data'] as String? ?? '{}';
-        return Map<String, dynamic>.from(jsonDecode(trackDataJson) as Map);
-      }).toList();
+      return rows.first['palette_color'] as int?;
     } catch (_) {
       return null;
     }

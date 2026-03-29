@@ -7,6 +7,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tunify/core/constants/app_strings.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class AuthBranding extends StatelessWidget {
   const AuthBranding({super.key});
@@ -44,8 +45,8 @@ class AuthBranding extends StatelessWidget {
         Text(
           AppStrings.appName,
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            color: AppColorsScheme.of(context).textPrimary,
             fontSize: AppFontSize.hero,
             fontWeight: FontWeight.w800,
             letterSpacing: AppLetterSpacing.display,
@@ -59,8 +60,8 @@ class AuthBranding extends StatelessWidget {
         Text(
           'Your music.\nYour mood.',
           textAlign: TextAlign.center,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
+          style: TextStyle(
+            color: AppColorsScheme.of(context).textSecondary,
             fontSize: AppFontSize.h3,
             fontWeight: FontWeight.w400,
             height: AppLineHeight.relaxed,
@@ -86,7 +87,7 @@ class DesktopAuthLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       body: Row(
         children: [
           const Expanded(
@@ -116,8 +117,8 @@ class _DesktopLeftPanel extends StatelessWidget {
               gradient: LinearGradient(
                 colors: [
                   Colors.transparent,
-                  AppColors.background.withValues(alpha: 0.2),
-                  AppColors.background.withValues(alpha: 0.5),
+                  AppColorsScheme.of(context).background.withValues(alpha: 0.2),
+                  AppColorsScheme.of(context).background.withValues(alpha: 0.5),
                 ],
                 stops: const [0.0, 0.5, 1.0],
                 begin: Alignment.topCenter,
@@ -145,7 +146,7 @@ class _DesktopRightPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: AppColors.background,
+      color: AppColorsScheme.of(context).background,
       child: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl * 2),
@@ -213,11 +214,11 @@ class WavePainter extends CustomPainter {
       final height = (wave1 * 0.65 + wave2 * 0.35) * maxHeight + 8;
 
       final x = (i * 2 + 0.5) * barWidth + barWidth * 0.5;
-      final opacity = 0.12 + wave1 * 0.22;
+      final opacity = 0.25 + wave1 * 0.45;
 
       final paint = Paint()
         ..color = _primaryColor.withValues(alpha: opacity)
-        ..strokeWidth = barWidth * 0.7
+        ..strokeWidth = barWidth * 1.2
         ..strokeCap = StrokeCap.round;
 
       canvas.drawLine(

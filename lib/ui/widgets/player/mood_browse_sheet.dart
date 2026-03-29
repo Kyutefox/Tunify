@@ -11,6 +11,7 @@ import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 void showMoodBrowseSheet(
   BuildContext context, {
@@ -205,7 +206,7 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                     padding: const EdgeInsets.only(right: AppSpacing.md),
                     child: AppIcon(
                       icon: AppIcons.back,
-                      color: AppColors.textPrimary,
+                      color: AppColorsScheme.of(context).textPrimary,
                       size: 20,
                     ),
                   ),
@@ -213,8 +214,8 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
               Expanded(
                 child: Text(
                   currentPage.title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.h3,
                     fontWeight: FontWeight.w700,
                     letterSpacing: AppLetterSpacing.heading,
@@ -225,7 +226,7 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                 onTap: () => Navigator.of(context).pop(),
                 child: AppIcon(
                   icon: AppIcons.close,
-                  color: AppColors.textSecondary,
+                  color: AppColorsScheme.of(context).textSecondary,
                   size: 24,
                 ),
               ),
@@ -233,11 +234,11 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
           ),
         ),
         if (_loading)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
             child: LinearProgressIndicator(
               color: AppColors.primary,
-              backgroundColor: AppColors.surfaceLight,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
               minHeight: 2,
             ),
           ),
@@ -263,12 +264,12 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                         (currentPage.playlists == null ||
                             currentPage.playlists!.isEmpty)) ...[
                       if (_pages.length > 1)
-                        const Padding(
+                        Padding(
                           padding: EdgeInsets.only(bottom: AppSpacing.md),
                           child: Text(
                             'Categories',
                             style: TextStyle(
-                              color: AppColors.textSecondary,
+                              color: AppColorsScheme.of(context).textSecondary,
                               fontSize: AppFontSize.base,
                               fontWeight: FontWeight.w600,
                             ),
@@ -277,6 +278,9 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                       GridView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
+                        cacheExtent: 1000,
+                        addAutomaticKeepAlives: true,
+                        addRepaintBoundaries: true,
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
@@ -298,12 +302,12 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
 
                     if (currentPage.playlists != null &&
                         currentPage.playlists!.isNotEmpty) ...[
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(bottom: AppSpacing.md),
                         child: Text(
                           'Playlists',
                           style: TextStyle(
-                            color: AppColors.textSecondary,
+                            color: AppColorsScheme.of(context).textSecondary,
                             fontSize: AppFontSize.base,
                             fontWeight: FontWeight.w600,
                           ),
@@ -327,7 +331,7 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                           child: Text(
                             'No subcategories or playlists for this mood.',
                             style: TextStyle(
-                              color: AppColors.textMuted,
+                              color: AppColorsScheme.of(context).textMuted,
                               fontSize: AppFontSize.base,
                             ),
                           ),
@@ -420,25 +424,25 @@ class _PlaylistRow extends StatelessWidget {
                       placeholder: (_, __) => Container(
                         width: 56,
                         height: 56,
-                        color: AppColors.surfaceLight,
+                        color: AppColorsScheme.of(context).surfaceLight,
                       ),
                       errorWidget: (_, __, ___) => Container(
                         width: 56,
                         height: 56,
-                        color: AppColors.surfaceLight,
+                        color: AppColorsScheme.of(context).surfaceLight,
                         child: AppIcon(
                           icon: AppIcons.musicNote,
-                          color: AppColors.textMuted,
+                          color: AppColorsScheme.of(context).textMuted,
                         ),
                       ),
                     )
                   : Container(
                       width: 56,
                       height: 56,
-                      color: AppColors.surfaceLight,
+                      color: AppColorsScheme.of(context).surfaceLight,
                       child: AppIcon(
                         icon: AppIcons.musicNote,
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                       ),
                     ),
             ),
@@ -449,8 +453,8 @@ class _PlaylistRow extends StatelessWidget {
                 children: [
                   Text(
                     playlist.title,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textPrimary,
                       fontSize: AppFontSize.lg,
                       fontWeight: FontWeight.w600,
                     ),
@@ -462,8 +466,8 @@ class _PlaylistRow extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       playlist.subtitle!,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.sm,
                       ),
                       maxLines: 1,
@@ -475,7 +479,7 @@ class _PlaylistRow extends StatelessWidget {
             ),
             AppIcon(
               icon: AppIcons.playCircleOutline,
-              color: AppColors.textSecondary,
+              color: AppColorsScheme.of(context).textSecondary,
               size: 28,
             ),
           ],

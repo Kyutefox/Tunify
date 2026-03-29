@@ -8,6 +8,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/common/sheet_drag_handle.dart';
 import '../../shared/home/home_shared.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class HomeUserMenuSheet extends StatelessWidget {
   const HomeUserMenuSheet({
@@ -37,7 +38,7 @@ class HomeUserMenuSheet extends StatelessWidget {
         filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.surface.withValues(alpha: 0.92),
+            color: AppColorsScheme.of(context).surface.withValues(alpha: 0.92),
             border: const Border(
               top: BorderSide(color: AppColors.glassBorder, width: 0.5),
             ),
@@ -93,8 +94,8 @@ class HomeUserMenuSheet extends StatelessWidget {
                       children: [
                         Text(
                           username,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: TextStyle(
+                            color: AppColorsScheme.of(context).textPrimary,
                             fontSize: AppFontSize.xxl,
                             fontWeight: FontWeight.w700,
                           ),
@@ -104,18 +105,18 @@ class HomeUserMenuSheet extends StatelessWidget {
                         if (email != null)
                           Text(
                             email!,
-                            style: const TextStyle(
-                              color: AppColors.textMuted,
+                            style: TextStyle(
+                              color: AppColorsScheme.of(context).textMuted,
                               fontSize: AppFontSize.md,
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           )
                         else
-                          const Text(
+                          Text(
                             'Private Session',
                             style: TextStyle(
-                              color: AppColors.textMuted,
+                              color: AppColorsScheme.of(context).textMuted,
                               fontSize: AppFontSize.md,
                             ),
                           ),
@@ -129,13 +130,13 @@ class HomeUserMenuSheet extends StatelessWidget {
                         width: 36,
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
+                          color: AppColorsScheme.of(context).surfaceLight,
                           shape: BoxShape.circle,
                         ),
                         child: Center(
                           child: AppIcon(
                             icon: AppIcons.edit,
-                            color: AppColors.textSecondary,
+                            color: AppColorsScheme.of(context).textSecondary,
                             size: 18,
                           ),
                         ),
@@ -175,16 +176,17 @@ class _MenuRow extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
-    this.color = AppColors.textPrimary,
+    this.color,
   });
 
   final List<List<dynamic>> icon;
   final String label;
   final VoidCallback onTap;
-  final Color color;
+  final Color? color;
 
   @override
   Widget build(BuildContext context) {
+    final resolvedColor = color ?? AppColorsScheme.of(context).textPrimary;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -192,12 +194,12 @@ class _MenuRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
         child: Row(
           children: [
-            AppIcon(icon: icon, color: color, size: 20),
+            AppIcon(icon: icon, color: resolvedColor, size: 20),
             const SizedBox(width: AppSpacing.md),
             Text(
               label,
               style: TextStyle(
-                color: color,
+                color: resolvedColor,
                 fontSize: AppFontSize.lg,
                 fontWeight: FontWeight.w600,
               ),

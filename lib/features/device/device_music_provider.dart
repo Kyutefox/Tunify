@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:on_audio_query_pluse/on_audio_query.dart';
 
 import 'package:tunify/data/models/song.dart';
@@ -86,13 +86,15 @@ class DeviceMusicState {
 /// Song IDs are prefixed with `device_` to prevent collisions with stream IDs.
 /// File paths are stored in [DeviceMusicState.pathMap] and used by [AudioRepository]
 /// to play local tracks without fetching a remote stream URL.
-class DeviceMusicNotifier extends StateNotifier<DeviceMusicState> {
+class DeviceMusicNotifier extends Notifier<DeviceMusicState> {
   final OnAudioQuery _audioQuery = OnAudioQuery();
 
-  DeviceMusicNotifier() : super(const DeviceMusicState()) {
+  @override
+  DeviceMusicState build() {
     if (Platform.isMacOS) {
       _restoreMacOSFolder();
     }
+    return const DeviceMusicState();
   }
 
   // ─── macOS ─────────────────────────────────────────────────────────────────
@@ -353,6 +355,4 @@ class DeviceMusicNotifier extends StateNotifier<DeviceMusicState> {
 }
 
 final deviceMusicProvider =
-    StateNotifierProvider<DeviceMusicNotifier, DeviceMusicState>((ref) {
-  return DeviceMusicNotifier();
-});
+    NotifierProvider<DeviceMusicNotifier, DeviceMusicState>(DeviceMusicNotifier.new);

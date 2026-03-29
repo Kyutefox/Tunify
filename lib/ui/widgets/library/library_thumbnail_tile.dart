@@ -2,10 +2,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/common/hover_tile.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class LibraryThumbnailTile extends StatelessWidget {
   const LibraryThumbnailTile({
@@ -51,7 +51,7 @@ class LibraryThumbnailTile extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.lg,
                         fontWeight:
                             t.isDesktop ? FontWeight.w700 : FontWeight.w600,
@@ -61,8 +61,8 @@ class LibraryThumbnailTile extends StatelessWidget {
                       subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.md,
                       ),
                     ),
@@ -94,12 +94,12 @@ class _IconThumb extends StatelessWidget {
       width: size,
       height: size,
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Center(
         child:
-            AppIcon(icon: icon, color: AppColors.textMuted, size: size * 0.5),
+            AppIcon(icon: icon, color: AppColorsScheme.of(context).textMuted, size: size * 0.5),
       ),
     );
   }
@@ -120,22 +120,22 @@ class _Thumb extends StatelessWidget {
       child: Container(
         width: size,
         height: size,
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         child: thumbnailUrl != null
             ? CachedNetworkImage(
                 imageUrl: thumbnailUrl!,
                 fit: BoxFit.cover,
-                errorWidget: (_, __, ___) => _icon(size),
+                errorWidget: (ctx, __, ___) => _icon(ctx, size),
               )
-            : _icon(size),
+            : _icon(context, size),
       ),
     );
   }
 
-  Widget _icon(double size) => Center(
+  Widget _icon(BuildContext context, double size) => Center(
         child: AppIcon(
           icon: AppIcons.musicNote,
-          color: AppColors.textMuted,
+          color: AppColorsScheme.of(context).textMuted,
           size: size * 0.5,
         ),
       );

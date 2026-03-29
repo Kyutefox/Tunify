@@ -13,10 +13,16 @@ abstract final class StorageKeys {
   static const String prefsLastQueueSource = 'last_queue_source';
   static const String prefsLastPlaylistId = 'last_playlist_id';
   static const String prefsVolumeNormalization = 'volume_normalization_enabled';
+  static const String prefsPlaybackSpeed = 'playback_speed';
+  static const String prefsBassBoostLevel = 'bass_boost_level';
+  static const String prefsThemeMode = 'theme_mode';
+  /// Hive box key: persisted queue as JSON list (max 50 items).
+  static const String hiveKeyQueue = 'queue';
+  /// Hive box key: current index within the persisted queue.
+  static const String hiveKeyQueueIndex = 'queue_index';
+  /// Hive box key: active shuffle mode int (0=none, 2=smart).
+  static const String hiveKeyActiveShuffleMode = 'active_shuffle_mode';
+  /// Hive box key: list of smart-shuffle song IDs (✨ recs).
+  static const String hiveKeySmartShuffleIds = 'smart_shuffle_ids';
 
-  // ——— SharedPreferences: migration keys (read-once then deleted) ———
-  /// Legacy home feed cache — read during Hive migration, then removed from SharedPreferences.
-  static const String prefsHomeFeedCache = 'home_feed_cache';
-  /// Legacy last-played song JSON — read during Hive migration, then removed from SharedPreferences.
-  static const String prefsLastPlayedSong = 'last_played_song';
 }

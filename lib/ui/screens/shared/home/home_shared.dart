@@ -8,6 +8,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/player/now_playing_indicator.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Circular play button used in section headers and action rows.
 /// Provides consistent size, color, and press feedback everywhere.
@@ -121,9 +122,9 @@ class PlaceholderArt extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.surfaceHighlight, AppColors.surfaceLight],
+          colors: [AppColorsScheme.of(context).surfaceHighlight, AppColorsScheme.of(context).surfaceLight],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -131,7 +132,7 @@ class PlaceholderArt extends StatelessWidget {
       child: Center(
         child: AppIcon(
           icon: AppIcons.musicNote,
-          color: AppColors.textMuted,
+          color: AppColorsScheme.of(context).textMuted,
           size: 36,
         ),
       ),
@@ -156,7 +157,7 @@ class SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.surfaceHighlight,
+        color: AppColorsScheme.of(context).surfaceHighlight,
         borderRadius: BorderRadius.circular(radius),
       ),
     );
@@ -231,11 +232,13 @@ class NowPlayingStatus {
   final bool isPlaying;
 
   static NowPlayingStatus of(WidgetRef ref, String songId) {
-    final isNowPlaying = ref.watch(
-      playerProvider.select((s) => s.currentSong?.id == songId),
-    );
-    final isPlaying = ref.watch(
-      playerProvider.select((s) => s.isPlaying),
+    // PERF: single select — scopes isPlaying to this songId, one equality check
+    // instead of two broad subscriptions (was: all tiles rebuilt on play/pause).
+    final (isNowPlaying, isPlaying) = ref.watch(
+      playerProvider.select((s) {
+        final isCurrent = s.currentSong?.id == songId;
+        return (isCurrent, isCurrent && s.isPlaying);
+      }),
     );
     return NowPlayingStatus(isNowPlaying: isNowPlaying, isPlaying: isPlaying);
   }
@@ -252,34 +255,37 @@ class DpiAwareThumbnail extends StatelessWidget {
     required this.url,
     required this.size,
     this.radius = AppRadius.sm,
-    this.placeholder,
   });
 
   final String url;
   final double size;
   final double radius;
-  final Widget? placeholder;
 
   @override
   Widget build(BuildContext context) {
-    final px = cachePx(context, size);
-    final fallback = placeholder ?? PlaceholderArt(size: size);
+    final dpr = MediaQuery.devicePixelRatioOf(context);
+    final cacheSize = (size * dpr).round();
+    
+    // PERF: ClipRRect (1 render object) replaces Container+BoxDecoration+clipBehavior (3+).
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
-      clipBehavior: Clip.hardEdge,
-      child: url.isNotEmpty
-          ? CachedNetworkImage(
-              imageUrl: url,
-              width: size,
-              height: size,
-              memCacheWidth: px,
-              memCacheHeight: px,
-              fit: BoxFit.cover,
-              fadeInDuration: Duration.zero,
-              fadeOutDuration: Duration.zero,
-              errorWidget: (_, __, ___) => fallback,
-            )
-          : fallback,
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: url.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: url,
+                width: size,
+                height: size,
+                fit: BoxFit.cover,
+                memCacheWidth: cacheSize,
+                memCacheHeight: cacheSize,
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                errorWidget: (_, __, ___) => PlaceholderArt(size: size),
+              )
+            : PlaceholderArt(size: size),
+      ),
     );
   }
 }
@@ -296,13 +302,13 @@ class ExplicitBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.textMuted.withValues(alpha: 0.25),
+        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: const Text(
+      child: Text(
         'E',
         style: TextStyle(
-          color: AppColors.textMuted,
+          color: AppColorsScheme.of(context).textMuted,
           fontSize: AppFontSize.micro,
           fontWeight: FontWeight.w700,
         ),

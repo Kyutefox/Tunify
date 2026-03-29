@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:on_audio_query_pluse/on_audio_query.dart';
 
+import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/common/confirm_dialog.dart';
+import 'package:tunify/ui/widgets/common/sheet.dart';
 import 'package:tunify/ui/widgets/library/song_list_tile.dart';
 import 'package:tunify/ui/widgets/player/now_playing_indicator.dart';
 import 'package:tunify/core/constants/app_icons.dart';
@@ -23,6 +25,7 @@ import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
 import '../player/song_options_sheet.dart';
 import '../home/home_shared.dart';
 import 'package:tunify/ui/widgets/common/empty_state_placeholder.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Inline content for Library > Downloaded filter. Shows either library
 /// downloads (Play all, Shuffle, Edit) or device music (Play all, Shuffle).
@@ -107,14 +110,15 @@ class _LibraryDownloadedList extends ConsumerWidget {
     final showExplicit = ref.watch(showExplicitContentProvider);
     final filtered = filterByExplicitSetting(songs, showExplicit);
     final displaySongs = _sortSongsByOrder(filtered, sortOrder);
-    final shuffleEnabled = ref.watch(downloadedShuffleProvider);
+    final shuffleMode = ref.watch(libraryProvider.select((s) => s.downloadedShuffleMode));
+    final shuffleEnabled = shuffleMode != ShuffleMode.none;
 
     if (displaySongs.isEmpty) {
       return SliverFillRemaining(
         child: EmptyStatePlaceholder(
           icon: AppIcon(
             icon: AppIcons.download,
-            color: AppColors.textMuted,
+            color: AppColorsScheme.of(context).textMuted,
             size: 48,
           ),
           title: 'No downloads yet',
@@ -131,14 +135,33 @@ class _LibraryDownloadedList extends ConsumerWidget {
       child: Row(
         children: [
           AppIconButton(
-            icon: AppIcon(
-              icon: AppIcons.shuffle,
-              size: 22,
-              color: shuffleEnabled ? AppColors.primary : AppColors.textMuted,
+            icon: shuffleMode == ShuffleMode.smart
+                ? SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: Stack(children: [
+                      AppIcon(
+                          icon: AppIcons.shuffle,
+                          size: 22,
+                          color: AppColors.primary),
+                      const Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: Icon(Icons.auto_awesome,
+                            size: 9, color: AppColors.primary),
+                      ),
+                    ]),
+                  )
+                : AppIcon(
+                    icon: AppIcons.shuffle,
+                    size: 22,
+                    color:
+                        shuffleEnabled ? AppColors.primary : AppColorsScheme.of(context).textMuted,
+                  ),
+            onPressed: () => showAppSheet(
+              context,
+              child: _DownloadsShuffleModeSheet(current: shuffleMode),
             ),
-            onPressed: () {
-              ref.read(libraryProvider.notifier).toggleDownloadedShuffle();
-            },
             size: 40,
             iconSize: 22,
           ),
@@ -146,7 +169,7 @@ class _LibraryDownloadedList extends ConsumerWidget {
             icon: AppIcon(
               icon: AppIcons.edit,
               size: 22,
-              color: AppColors.textMuted,
+              color: AppColorsScheme.of(context).textMuted,
             ),
             onPressed: () => openEditDownloadedSheet(context, songs),
             size: 40,
@@ -178,6 +201,9 @@ class _LibraryDownloadedList extends ConsumerWidget {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            cacheExtent: 1000,
+            addAutomaticKeepAlives: true,
+            addRepaintBoundaries: true,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -235,8 +261,8 @@ class _LibraryDownloadedList extends ConsumerWidget {
                 Flexible(
                   child: Text(
                     song.artist,
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                    style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -248,15 +274,15 @@ class _LibraryDownloadedList extends ConsumerWidget {
               children: [
                 Text(
                   song.durationFormatted,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.md,
                   ),
                 ),
                 AppIconButton(
                   icon: AppIcon(
                       icon: AppIcons.moreVert,
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       size: 20),
                   onPressedWithContext: (btnCtx) => showSongOptionsSheet(
                       context,
@@ -387,7 +413,7 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
             Text(
               song.title,
               style: TextStyle(
-                color: isNowPlaying ? AppColors.accent : AppColors.textPrimary,
+                color: isNowPlaying ? AppColors.accent : AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
@@ -396,8 +422,8 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
             ),
             Text(
               song.artist,
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted,
                 fontSize: AppFontSize.xs,
               ),
               maxLines: 1,
@@ -450,7 +476,7 @@ class _DeviceMusicList extends ConsumerWidget {
         child: EmptyStatePlaceholder(
           icon: AppIcon(
             icon: AppIcons.musicNote,
-            color: AppColors.textMuted,
+            color: AppColorsScheme.of(context).textMuted,
             size: 48,
           ),
           title: 'No music found on device',
@@ -471,7 +497,7 @@ class _DeviceMusicList extends ConsumerWidget {
             icon: AppIcon(
               icon: AppIcons.shuffle,
               size: 22,
-              color: AppColors.textMuted,
+              color: AppColorsScheme.of(context).textMuted,
             ),
             onPressed: () {
               final shuffled = List<Song>.from(displaySongs)..shuffle(Random());
@@ -507,6 +533,9 @@ class _DeviceMusicList extends ConsumerWidget {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            cacheExtent: 1000,
+            addAutomaticKeepAlives: true,
+            addRepaintBoundaries: true,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -564,11 +593,11 @@ class _DeviceMusicList extends ConsumerWidget {
                   nullArtworkWidget: Container(
                     width: 48,
                     height: 48,
-                    color: AppColors.surfaceLight,
+                    color: AppColorsScheme.of(context).surfaceLight,
                     child: Center(
                       child: AppIcon(
                         icon: AppIcons.musicNote,
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         size: 22,
                       ),
                     ),
@@ -581,15 +610,15 @@ class _DeviceMusicList extends ConsumerWidget {
               children: [
                 Text(
                   song.durationFormatted,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.sm,
                   ),
                 ),
                 AppIconButton(
                   icon: AppIcon(
                       icon: AppIcons.moreVert,
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       size: 20),
                   onPressedWithContext: (btnCtx) => showSongOptionsSheet(
                       context,
@@ -659,11 +688,11 @@ class _DeviceMusicGridCard extends ConsumerWidget {
                         nullArtworkWidget: Container(
                           width: double.infinity,
                           height: double.infinity,
-                          color: AppColors.surfaceLight,
+                          color: AppColorsScheme.of(context).surfaceLight,
                           child: Center(
                             child: AppIcon(
                               icon: AppIcons.musicNote,
-                              color: AppColors.textMuted,
+                              color: AppColorsScheme.of(context).textMuted,
                               size: 32,
                             ),
                           ),
@@ -714,7 +743,7 @@ class _DeviceMusicGridCard extends ConsumerWidget {
             Text(
               song.title,
               style: TextStyle(
-                color: isNowPlaying ? AppColors.accent : AppColors.textPrimary,
+                color: isNowPlaying ? AppColors.accent : AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
@@ -723,8 +752,8 @@ class _DeviceMusicGridCard extends ConsumerWidget {
             ),
             Text(
               song.artist,
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted,
                 fontSize: AppFontSize.xs,
               ),
               maxLines: 1,
@@ -753,7 +782,7 @@ class _DevicePermissionPrompt extends StatelessWidget {
     return EmptyStatePlaceholder(
       icon: AppIcon(
         icon: AppIcons.folder,
-        color: AppColors.textMuted,
+        color: AppColorsScheme.of(context).textMuted,
         size: 48,
       ),
       title: 'Allow access to device music',
@@ -836,10 +865,10 @@ class _EditDownloadedSheetState extends ConsumerState<_EditDownloadedSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       appBar: BackTitleAppBar(
         title: 'Edit Downloads',
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColorsScheme.of(context).background,
         actions: [
           TextButton(
             onPressed: _save,
@@ -851,6 +880,7 @@ class _EditDownloadedSheetState extends ConsumerState<_EditDownloadedSheet> {
       ),
       body: ReorderableListView.builder(
         buildDefaultDragHandles: false,
+        cacheExtent: 1000,
         itemCount: _items.length,
         onReorder: _onReorder,
         itemBuilder: (context, index) {
@@ -866,7 +896,7 @@ class _EditDownloadedSheetState extends ConsumerState<_EditDownloadedSheet> {
                     icon: marked
                         ? AppIcons.removeCircle
                         : AppIcons.removeCircleOutline,
-                    color: marked ? AppColors.accentRed : AppColors.textMuted,
+                    color: marked ? AppColors.accentRed : AppColorsScheme.of(context).textMuted,
                     size: 22,
                   ),
                   onPressed: () => _toggleRemove(song),
@@ -883,20 +913,20 @@ class _EditDownloadedSheetState extends ConsumerState<_EditDownloadedSheet> {
                     placeholder: (_, __) => Container(
                         width: 48,
                         height: 48,
-                        color: AppColors.surfaceLight,
+                        color: AppColorsScheme.of(context).surfaceLight,
                         child: Center(
                             child: AppIcon(
                                 icon: AppIcons.musicNote,
-                                color: AppColors.textMuted,
+                                color: AppColorsScheme.of(context).textMuted,
                                 size: 24))),
                     errorWidget: (_, __, ___) => Container(
                         width: 48,
                         height: 48,
-                        color: AppColors.surfaceLight,
+                        color: AppColorsScheme.of(context).surfaceLight,
                         child: Center(
                             child: AppIcon(
                                 icon: AppIcons.musicNote,
-                                color: AppColors.textMuted,
+                                color: AppColorsScheme.of(context).textMuted,
                                 size: 24))),
                   ),
                 ),
@@ -904,22 +934,121 @@ class _EditDownloadedSheetState extends ConsumerState<_EditDownloadedSheet> {
             ),
             title: Text(song.title,
                 style: TextStyle(
-                    color: marked ? AppColors.textMuted : AppColors.textPrimary,
+                    color: marked ? AppColorsScheme.of(context).textMuted : AppColorsScheme.of(context).textPrimary,
                     decoration: marked ? TextDecoration.lineThrough : null)),
             subtitle: Text(song.artist,
                 style: TextStyle(
-                    color: AppColors.textMuted,
+                    color: AppColorsScheme.of(context).textMuted,
                     decoration: marked ? TextDecoration.lineThrough : null)),
             trailing: ReorderableDragStartListener(
               index: index,
               child: AppIcon(
                   icon: AppIcons.dragHandle,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 22),
             ),
           );
         },
       ),
+    );
+  }
+}
+
+// ─── Downloads Shuffle Mode Sheet ─────────────────────────────────────────────
+
+class _DownloadsShuffleModeSheet extends ConsumerWidget {
+  const _DownloadsShuffleModeSheet({required this.current});
+  final ShuffleMode current;
+
+  void _set(BuildContext context, WidgetRef ref, ShuffleMode mode) {
+    ref.read(libraryProvider.notifier).setDownloadedShuffleMode(mode);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base, AppSpacing.lg, AppSpacing.base, AppSpacing.md),
+        child: Text('Shuffle',
+            style: TextStyle(
+                color: AppColorsScheme.of(context).textPrimary,
+                fontSize: AppFontSize.xl,
+                fontWeight: FontWeight.w700)),
+      ),
+      _ShuffleTile(
+        label: 'Shuffle off',
+        selected: current == ShuffleMode.none,
+        isSmart: false,
+        onTap: () => _set(context, ref, ShuffleMode.none),
+      ),
+      _ShuffleTile(
+        label: 'Regular Shuffle',
+        subtitle: 'Shuffle downloaded songs',
+        selected: current == ShuffleMode.regular,
+        isSmart: false,
+        onTap: () => _set(context, ref, ShuffleMode.regular),
+      ),
+      _ShuffleTile(
+        label: 'Smart Shuffle',
+        subtitle: 'Shuffle + mix in recommended songs',
+        selected: current == ShuffleMode.smart,
+        isSmart: true,
+        onTap: () => _set(context, ref, ShuffleMode.smart),
+      ),
+      const SizedBox(height: AppSpacing.xl),
+    ]);
+  }
+}
+
+class _ShuffleTile extends StatelessWidget {
+  const _ShuffleTile({
+    required this.label,
+    required this.selected,
+    required this.isSmart,
+    required this.onTap,
+    this.subtitle,
+  });
+
+  final String label;
+  final String? subtitle;
+  final bool selected;
+  final bool isSmart;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = selected ? AppColors.primary : AppColorsScheme.of(context).textSecondary;
+    return ListTile(
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.base, vertical: 4),
+      leading: SizedBox(
+        width: 24,
+        height: 24,
+        child: Stack(children: [
+          AppIcon(icon: AppIcons.shuffle, size: 24, color: iconColor),
+          if (isSmart)
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Icon(Icons.auto_awesome, size: 10, color: iconColor),
+            ),
+        ]),
+      ),
+      title: Text(label,
+          style: TextStyle(
+              color: selected ? AppColors.primary : AppColorsScheme.of(context).textPrimary,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
+      subtitle: subtitle != null
+          ? Text(subtitle!,
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm))
+          : null,
+      trailing: selected
+          ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)
+          : null,
+      onTap: onTap,
     );
   }
 }

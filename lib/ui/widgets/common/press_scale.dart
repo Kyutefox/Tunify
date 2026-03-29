@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class PressScale extends StatefulWidget {
   const PressScale({
@@ -96,16 +96,16 @@ class _GlassPressButtonState extends State<GlassPressButton> {
             height: widget.containerSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.08),
+              color: AppColorsScheme.of(context).surfaceLight,
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
+                color: AppColorsScheme.of(context).surfaceHighlight,
                 width: 0.5,
               ),
             ),
             child: Center(
               child: AppIcon(
                 icon: widget.icon,
-                color: AppColors.textPrimary,
+                color: AppColorsScheme.of(context).textPrimary,
                 size: widget.size,
               ),
             ),

@@ -1,104 +1,95 @@
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tunify/data/models/song.dart';
-import 'package:tunify_database/tunify_database.dart';
 
-/// In-memory cache for remote collection tracks + palette metadata.
-/// Keyed by browse/playlist ID. Lives for the app session — cleared on logout.
+/// Hive-backed cache for remote collection tracks (imported playlists, artists, albums).
+///
+/// Two-source architecture:
+///   - Hive  : persistent, 1-hour TTL (this class)
+///   - SQLite: permanent library data  (playlist_songs table)
+///
+/// Only covers fetched-on-demand content — custom playlists and liked songs
+/// are stored permanently in SQLite and never pass through here.
 class CollectionTrackCache {
   CollectionTrackCache._();
   static final CollectionTrackCache instance = CollectionTrackCache._();
 
-  final Map<String, CacheEntry> _cache = {};
-  DatabaseBridge? _db;
+  static const _boxName = 'collection_tracks';
+  static const Duration ttl = Duration(hours: 1);
 
-  /// Injects the database reference. Call once at app startup.
-  void init(DatabaseBridge db) {
-    _db = db;
+  Box<dynamic>? _box;
+
+  Future<Box<dynamic>> _getBox() async {
+    if (_box != null && _box!.isOpen) return _box!;
+    _box = await Hive.openBox<dynamic>(_boxName);
+    return _box!;
   }
 
-  /// How long a cached entry stays fresh before a background refresh is triggered.
-  static const Duration ttl = Duration(minutes: 30);
+  /// Reads the full entry (songs + imageUrl) from Hive.
+  /// Returns null if missing or TTL expired — caller should fetch from API.
+  Future<CacheEntry?> getEntryFromCache(String id) async {
+    final box = await _getBox();
+    final raw = box.get(id);
+    if (raw == null) return null;
 
-  /// Returns the full entry for [id], or null if not cached / expired.
-  CacheEntry? getEntry(String id) {
-    final entry = _cache[id];
-    if (entry == null) return null;
-    if (DateTime.now().difference(entry.cachedAt) > ttl) {
-      _cache.remove(id);
+    final map = Map<String, dynamic>.from(raw as Map);
+    final cachedAt = DateTime.tryParse(map['cachedAt'] as String? ?? '');
+    if (cachedAt == null || DateTime.now().difference(cachedAt) > ttl) {
+      await box.delete(id);
       return null;
     }
-    return entry;
+
+    final tracksRaw = map['tracks'] as List<dynamic>? ?? [];
+    final songs = tracksRaw
+        .map((t) => Song.fromJson(Map<String, dynamic>.from(t as Map)))
+        .toList();
+    final paletteRaw = map['paletteColor'] as int?;
+    return CacheEntry(
+      songs: songs,
+      cachedAt: cachedAt,
+      imageUrl: map['imageUrl'] as String?,
+      paletteColor: paletteRaw != null ? Color(paletteRaw) : null,
+    );
   }
 
-  /// Convenience: just the song list.
+  /// Returns songs for [id] from Hive, or null if missing / expired.
   Future<List<Song>?> getSongs(String id) async {
-    // L1: in-memory check
-    final entry = getEntry(id);
-    if (entry != null) return entry.songs;
-    // L2: SQLite check
-    final rows = await _db?.getCollectionTracks(id);
-    if (rows == null) return null;
-    final songs = rows.map((r) => Song.fromJson(r)).toList();
-    // Populate L1
-    _cache[id] = CacheEntry(
-      songs: songs,
-      cachedAt: DateTime.now(),
-    );
-    return songs;
+    return (await getEntryFromCache(id))?.songs;
   }
 
-  /// Convenience: just the palette color.
-  Future<Color?> getPaletteColor(String id) async {
-    // L1: in-memory check
-    final entry = getEntry(id);
-    if (entry?.paletteColor != null) return entry!.paletteColor;
-    // L2: SQLite check
-    final colorValue = await _db?.getPlaylistPaletteColor(id);
-    if (colorValue == null) return null;
-    return Color(colorValue);
-  }
-
-  /// Stores songs (and optionally palette + imageUrl) for [id].
+  /// Stores [songs], [imageUrl], and [paletteColor] for [id] in Hive.
   void put(String id, List<Song> songs, {Color? paletteColor, String? imageUrl}) {
-    final existing = _cache[id];
-    _cache[id] = CacheEntry(
-      songs: songs,
-      cachedAt: DateTime.now(),
-      // Keep existing palette/image if not provided (e.g. songs refreshed before palette extracted)
-      paletteColor: paletteColor ?? existing?.paletteColor,
-      imageUrl: imageUrl ?? existing?.imageUrl,
-    );
-    // Persist to L2 SQLite
-    final serialized = songs.map((s) => s.toJson()).toList();
-    _db?.upsertCollectionTracks(id, serialized).ignore();
-    if (paletteColor != null || imageUrl != null) {
-      _db?.upsertPlaylistCache(id, paletteColor?.toARGB32(), imageUrl).ignore();
-    }
+    final now = DateTime.now();
+    _getBox().then((box) {
+      box.put(id, {
+        'tracks': songs.map((s) => s.toJson()).toList(),
+        'cachedAt': now.toUtc().toIso8601String(),
+        if (imageUrl != null) 'imageUrl': imageUrl,
+        if (paletteColor != null) 'paletteColor': paletteColor.toARGB32(),
+      });
+    }).ignore();
   }
 
-  /// Updates only the palette color for an already-cached entry.
+  /// Updates just the palette color for an existing Hive entry.
   void updatePalette(String id, Color paletteColor) {
-    final existing = _cache[id];
-    if (existing == null) return;
-    _cache[id] = CacheEntry(
-      songs: existing.songs,
-      cachedAt: existing.cachedAt,
-      paletteColor: paletteColor,
-      imageUrl: existing.imageUrl,
-    );
+    _getBox().then((box) {
+      final raw = box.get(id);
+      if (raw == null) return;
+      final map = Map<String, dynamic>.from(raw as Map);
+      map['paletteColor'] = paletteColor.toARGB32();
+      box.put(id, map);
+    }).ignore();
   }
 
-  /// Removes a single entry (force-refresh).
+  /// Removes a single entry from Hive (forces a re-fetch on next open).
   void invalidate(String id) {
-    _cache.remove(id);
-    _db?.deleteCollectionTracks(id).ignore();
+    _getBox().then((box) => box.delete(id)).ignore();
   }
 
-  /// Clears all cached entries (call on logout).
-  void clear() {
-    _cache.clear();
-    _db?.clearCacheOnlyPlaylists().ignore();
-    _db?.clearCacheOnlyCollectionTracks().ignore();
+  /// Clears all cached entries from Hive. Call on logout.
+  Future<void> clear() async {
+    final box = await _getBox();
+    await box.clear();
   }
 }
 

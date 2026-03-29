@@ -17,6 +17,7 @@ import 'package:tunify/ui/widgets/auth/guest_profile_setup_form.dart';
 import 'package:tunify/ui/screens/mobile/auth/auth_screen.dart' as mobile_auth;
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'guest_profile_setup_screen.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
@@ -81,10 +82,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       constraints: const BoxConstraints(maxWidth: 400),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColorsScheme.of(context).surface,
           borderRadius: BorderRadius.circular(AppRadius.xxl),
           border: Border.all(
-            color: AppColors.glassBorder,
+            color: AppColorsScheme.of(context).surfaceHighlight,
             width: 0.5,
           ),
           boxShadow: [
@@ -136,7 +137,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         children: [
           Container(
             decoration: BoxDecoration(
-              color: AppColors.surface,
+              color: AppColorsScheme.of(context).surface,
               borderRadius: BorderRadius.circular(AppRadius.xxl),
               border: Border.all(
                 color: AppColors.glassBorder,
@@ -154,10 +155,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
+                Text(
                   'Welcome',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.display2,
                     fontWeight: FontWeight.w900,
                     letterSpacing: AppLetterSpacing.display,
@@ -166,8 +167,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                 const SizedBox(height: AppSpacing.xs),
                 Text(
                   'Sign in to continue to ${AppStrings.appName}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textSecondary,
                     fontSize: AppFontSize.base,
                   ),
                 ),
@@ -214,10 +215,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       constraints: const BoxConstraints(maxWidth: 400),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
+          color: AppColorsScheme.of(context).surface,
           borderRadius: BorderRadius.circular(AppRadius.xxl),
           border: Border.all(
-            color: AppColors.glassBorder,
+            color: AppColorsScheme.of(context).surfaceHighlight,
             width: 0.5,
           ),
           boxShadow: [
@@ -268,13 +269,13 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           AppIcon(
             icon: AppIcons.back,
             size: 18,
-            color: AppColors.textSecondary,
+            color: AppColorsScheme.of(context).textSecondary,
           ),
           const SizedBox(width: AppSpacing.xs),
-          const Text(
+          Text(
             'Back',
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: AppColorsScheme.of(context).textSecondary,
               fontSize: AppFontSize.base,
             ),
           ),
@@ -312,10 +313,10 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
+              Text(
                 'Continue as guest',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColors.primary,
                   fontSize: AppFontSize.base,
                   fontWeight: FontWeight.w500,
                 ),
@@ -324,7 +325,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               AppIcon(
                 icon: AppIcons.chevronRight,
                 size: 11,
-                color: AppColors.textSecondary,
+                color: AppColors.primary,
               ),
             ],
           ),
@@ -354,15 +355,15 @@ class _DesktopButton extends StatelessWidget {
           gradient: filled ? AppColors.primaryGradient : null,
           border: filled
               ? null
-              : Border.all(color: AppColors.glassBorder, width: 1),
+              : Border.all(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
           borderRadius: BorderRadius.circular(AppRadius.md),
-          color: filled ? null : AppColors.glassWhite,
+          color: filled ? null : AppColorsScheme.of(context).surfaceLight,
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: TextStyle(
-            color: filled ? Colors.white : AppColors.textPrimary,
+            color: filled ? Colors.white : AppColorsScheme.of(context).textPrimary,
             fontSize: AppFontSize.base,
             fontWeight: FontWeight.w700,
             letterSpacing: AppLetterSpacing.normal,
@@ -385,7 +386,7 @@ class _MobileWelcomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       body: Stack(
         fit: StackFit.expand,
         children: [
@@ -396,9 +397,9 @@ class _MobileWelcomeScreen extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    AppColors.background.withValues(alpha: 0.55),
-                    AppColors.background.withValues(alpha: 0.92),
-                    AppColors.background,
+                    AppColorsScheme.of(context).background.withValues(alpha: 0.55),
+                    AppColorsScheme.of(context).background.withValues(alpha: 0.92),
+                    AppColorsScheme.of(context).background,
                   ],
                   stops: const [0.0, 0.3, 0.6, 1.0],
                   begin: Alignment.topCenter,
@@ -469,15 +470,15 @@ class _MobileButton extends StatelessWidget {
           gradient: filled ? AppColors.primaryGradient : null,
           border: filled
               ? null
-              : Border.all(color: AppColors.glassBorder, width: 1),
+              : Border.all(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
           borderRadius: BorderRadius.circular(AppRadius.input),
-          color: filled ? null : AppColors.glassWhite,
+          color: filled ? null : AppColorsScheme.of(context).surfaceLight,
         ),
         alignment: Alignment.center,
         child: Text(
           label,
           style: TextStyle(
-            color: filled ? Colors.white : AppColors.textPrimary,
+            color: filled ? Colors.white : AppColorsScheme.of(context).textPrimary,
             fontSize: AppFontSize.xl,
             fontWeight: FontWeight.w700,
             letterSpacing: AppLetterSpacing.normal,
@@ -512,10 +513,10 @@ class _MobileGuestLink extends ConsumerWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               'Continue as guest',
               style: TextStyle(
-                color: AppColors.textSecondary,
+                color: AppColorsScheme.of(context).textSecondary,
                 fontSize: AppFontSize.base,
                 fontWeight: FontWeight.w500,
               ),
@@ -524,7 +525,7 @@ class _MobileGuestLink extends ConsumerWidget {
             AppIcon(
               icon: AppIcons.chevronRight,
               size: 11,
-              color: AppColors.textSecondary,
+              color: AppColorsScheme.of(context).textSecondary,
             ),
           ],
         ),

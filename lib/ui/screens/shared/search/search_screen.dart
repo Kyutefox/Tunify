@@ -9,6 +9,7 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
 import 'package:tunify/core/utils/debouncer.dart';
+import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/screens/shared/player/song_options_sheet.dart';
 
 import 'package:tunify/ui/widgets/common/mood_section.dart';
@@ -22,7 +23,9 @@ import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class _SearchBarPlaceholder extends ConsumerWidget {
   const _SearchBarPlaceholder({required this.onTap});
@@ -31,11 +34,13 @@ class _SearchBarPlaceholder extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final moods = ref.watch(moodsProvider);
+    // PERF: Removed ref.watch(moodsProvider) — moods are only needed inside
+    // the tap callback. ref.read() is called at tap time so this widget is no
+    // longer subscribed to mood list changes.
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.input),
         border: Border.all(color: Colors.transparent, width: 1),
       ),
@@ -51,7 +56,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
                   const SizedBox(width: AppSpacing.base),
                   AppIcon(
                     icon: AppIcons.search,
-                    color: AppColors.textMuted,
+                    color: AppColorsScheme.of(context).textMuted,
                     size: 22,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -59,7 +64,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
                     child: Text(
                       'Search songs, artists, and more',
                       style: TextStyle(
-                        color: AppColors.textMuted.withValues(alpha: 0.7),
+                        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                         fontSize: AppFontSize.xl,
                         fontWeight: FontWeight.w500,
                       ),
@@ -74,10 +79,10 @@ class _SearchBarPlaceholder extends ConsumerWidget {
             Container(
               width: 1,
               height: 22,
-              color: AppColors.textMuted.withValues(alpha: 0.3),
+              color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.3),
             ),
             GestureDetector(
-              onTap: () => showMoodBrowseSheet(context, moods: moods),
+              onTap: () => showMoodBrowseSheet(context, moods: ref.read(moodsProvider)),
               behavior: HitTestBehavior.opaque,
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 14),
@@ -86,14 +91,14 @@ class _SearchBarPlaceholder extends ConsumerWidget {
                   children: [
                     AppIcon(
                       icon: AppIcons.gridView,
-                      color: AppColors.textSecondary,
+                      color: AppColorsScheme.of(context).textSecondary,
                       size: 18,
                     ),
                     const SizedBox(width: AppSpacing.xs + 2),
-                    const Text(
+                    Text(
                       'Browse',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: AppColorsScheme.of(context).textSecondary,
                         fontSize: AppFontSize.md,
                         fontWeight: FontWeight.w600,
                       ),
@@ -260,7 +265,7 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
         emptyStateIcon: AppIcon(
           icon: AppIcons.search,
           size: 64,
-          color: AppColors.textMuted,
+          color: AppColorsScheme.of(context).textMuted,
         ),
         emptyStateHeading: 'Play what you love',
         emptyStateSubheading: 'Search artist, songs, and more',
@@ -268,7 +273,7 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
     );
     if (!hasSong) return searchPage;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         bottom: false,
@@ -354,10 +359,6 @@ class SearchResultsBody extends ConsumerWidget {
       );
     }
 
-    final suggestionCount =
-        showInlineSuggestions ? inlineSuggestions.length : 0;
-    final contentCount = state.isLoading ? 8 : displayResults.length;
-    final totalCount = suggestionCount + contentCount;
     final hasContent = state.isLoading || hasResults;
 
     if (!hasContent) {
@@ -373,23 +374,23 @@ class SearchResultsBody extends ConsumerWidget {
                 children: [
                   AppIcon(
                       icon: AppIcons.wifiOff,
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       size: 16),
                   const SizedBox(width: AppSpacing.xs),
-                  const Text(
+                  Text(
                     "You're offline — suggestions unavailable",
                     style: TextStyle(
-                        color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                        color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
                   ),
                 ],
               ),
             ),
-          const Expanded(
+          Expanded(
             child: Center(
               child: Text(
                 'No results found',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.lg,
                   fontWeight: FontWeight.w600,
                 ),
@@ -400,103 +401,198 @@ class SearchResultsBody extends ConsumerWidget {
       );
     }
 
-    return ListView.builder(
-      key: ValueKey('search_${state.query}_${suggestionCount}_$contentCount'),
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(
-        left: AppSpacing.base,
-        right: AppSpacing.base,
-        bottom: AppSpacing.max,
-      ),
-      itemCount: totalCount,
-      itemBuilder: (context, index) {
-        if (index < suggestionCount) {
-          final s = inlineSuggestions[index];
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => onSuggestionTap?.call(s),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.base,
-                  vertical: AppSpacing.xs,
+    final filter = state.filter;
+    final artistResults = state.artistResults;
+    final albumResults = state.albumResults;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ── Filter tab bar — only shown when results are available ──
+        if (!state.isLoading && hasResults)
+          _SearchFilterBar(
+            selected: filter,
+            onSelect: (f) => ref.read(searchProvider.notifier).setFilter(f),
+          ),
+        // ── Results list ──
+        Expanded(
+          child: AnimatedSwitcher(
+            duration: AppDuration.fast,
+            child: _buildResultsForFilter(
+              context: context,
+              ref: ref,
+              state: state,
+              filter: filter,
+              displayResults: displayResults,
+              artistResults: artistResults,
+              albumResults: albumResults,
+              showInlineSuggestions: showInlineSuggestions,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultsForFilter({
+    required BuildContext context,
+    required WidgetRef ref,
+    required SearchState state,
+    required SearchFilter filter,
+    required List<Song> displayResults,
+    required List<ArtistSearchResult> artistResults,
+    required List<AlbumSearchResult> albumResults,
+    required bool showInlineSuggestions,
+  }) {
+    // Loading state — always show skeletons regardless of filter
+    if (state.isLoading) {
+      return ListView.builder(
+        key: const ValueKey('loading'),
+        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+        itemCount: 8,
+        itemBuilder: (_, __) => const _SkeletonResultTile(),
+      );
+    }
+
+    switch (filter) {
+      case SearchFilter.artists:
+        if (artistResults.isEmpty) return _emptyFilterState(context, 'No artists found');
+        return ListView.builder(
+          key: const ValueKey('artists'),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: AppSpacing.max),
+          itemCount: artistResults.length,
+          itemBuilder: (_, i) => _ArtistResultTile(artist: artistResults[i]),
+        );
+
+      case SearchFilter.albums:
+        if (albumResults.isEmpty) return _emptyFilterState(context, 'No albums found');
+        return ListView.builder(
+          key: const ValueKey('albums'),
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.only(bottom: AppSpacing.max),
+          itemCount: albumResults.length,
+          itemBuilder: (_, i) => _AlbumResultTile(album: albumResults[i]),
+        );
+
+      case SearchFilter.all:
+      case SearchFilter.songs:
+        final suggestionCount =
+            showInlineSuggestions ? inlineSuggestions.length : 0;
+        final totalCount = suggestionCount + displayResults.length;
+        return ListView.builder(
+          key: ValueKey('songs_${state.query}'),
+          cacheExtent: 1000,
+          addAutomaticKeepAlives: true,
+          addRepaintBoundaries: true,
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.only(
+            left: AppSpacing.base,
+            right: AppSpacing.base,
+            bottom: AppSpacing.max,
+          ),
+          itemCount: totalCount,
+          itemBuilder: (context, index) {
+            if (index < suggestionCount) {
+              final s = inlineSuggestions[index];
+              return RepaintBoundary(
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => onSuggestionTap?.call(s),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.base,
+                        vertical: AppSpacing.xs,
+                      ),
+                      child: Row(
+                        children: [
+                          SizedBox(
+                            width: 54,
+                            height: 54,
+                            child: Center(
+                              child: AppIcon(
+                                icon: AppIcons.search,
+                                color: AppColorsScheme.of(context).textMuted,
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Text(
+                              s,
+                              style: TextStyle(
+                                color: AppColorsScheme.of(context).textPrimary,
+                                fontSize: AppFontSize.base,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          AppIcon(
+                            icon: AppIcons.arrowUpLeft,
+                            color: AppColorsScheme.of(context).textMuted,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-                child: Row(
+              );
+            }
+            final song = displayResults[index - suggestionCount];
+            return RepaintBoundary(
+              child: SongListTile(
+                song: song,
+                thumbnailSize: 54,
+                onTap: () => onOpenPlayer(song),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    SizedBox(
-                      width: 54,
-                      height: 54,
-                      child: Center(
-                        child: AppIcon(
-                          icon: AppIcons.search,
-                          color: AppColors.textMuted,
-                          size: 24,
-                        ),
+                    Text(
+                      song.durationFormatted,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
+                        fontSize: AppFontSize.md,
                       ),
                     ),
-                    const SizedBox(width: AppSpacing.md),
-                    Expanded(
-                      child: Text(
-                        s,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: AppFontSize.base,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                    AppIconButton(
+                      icon: AppIcon(
+                        icon: AppIcons.moreVert,
+                        color: AppColorsScheme.of(context).textMuted,
+                        size: 20,
                       ),
-                    ),
-                    AppIcon(
-                      icon: AppIcons.arrowUpLeft,
-                      color: AppColors.textMuted,
-                      size: 20,
+                      onPressedWithContext: (btnCtx) => showSongOptionsSheet(
+                          context,
+                          song: song,
+                          ref: ref,
+                          buttonContext: btnCtx),
+                      iconSize: 20,
+                      size: 40,
                     ),
                   ],
                 ),
               ),
-            ),
-          );
-        }
-        final resultIndex = index - suggestionCount;
-        if (state.isLoading) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.sm),
-            child: _SkeletonResultTile(),
-          );
-        }
-        final song = displayResults[resultIndex];
-        return SongListTile(
-          song: song,
-          thumbnailSize: 54,
-          onTap: () => onOpenPlayer(song),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                song.durationFormatted,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: AppFontSize.md,
-                ),
-              ),
-              AppIconButton(
-                icon: AppIcon(
-                  icon: AppIcons.moreVert,
-                  color: AppColors.textMuted,
-                  size: 20,
-                ),
-                onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
-                    song: song, ref: ref, buttonContext: btnCtx),
-                iconSize: 20,
-                size: 40,
-              ),
-            ],
-          ),
+            );
+          },
         );
-      },
-    );
+    }
   }
+
+  Widget _emptyFilterState(BuildContext context, String message) => Center(
+        key: ValueKey(message),
+        child: Text(
+          message,
+          style: TextStyle(
+            color: AppColorsScheme.of(context).textSecondary,
+            fontSize: AppFontSize.lg,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      );
 }
 
 class _SearchMoodGrid extends ConsumerWidget {
@@ -557,7 +653,7 @@ class RecentSearchSection extends ConsumerWidget {
             children: [
               AppIcon(
                 icon: AppIcons.search,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 size: compact ? 18 : 20,
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -565,7 +661,7 @@ class RecentSearchSection extends ConsumerWidget {
                 child: Text(
                   'Recent searches',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: compact ? 16 : 20,
                     fontWeight: FontWeight.w700,
                     letterSpacing: AppLetterSpacing.heading,
@@ -612,18 +708,18 @@ class RecentSearchSection extends ConsumerWidget {
                       vertical: AppSpacing.sm,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceLight.withValues(alpha: 0.8),
+                      color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.8),
                       borderRadius: BorderRadius.circular(AppRadius.xl),
                       border: Border.all(
-                        color: AppColors.textMuted.withValues(alpha: 0.2),
+                        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       query,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.base,
                         fontWeight: FontWeight.w500,
                       ),
@@ -642,14 +738,305 @@ class RecentSearchSection extends ConsumerWidget {
   }
 }
 
+class _SearchFilterBar extends StatelessWidget {
+  const _SearchFilterBar({
+    required this.selected,
+    required this.onSelect,
+  });
+
+  final SearchFilter selected;
+  final void Function(SearchFilter) onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.base,
+        vertical: AppSpacing.sm,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (final f in SearchFilter.values)
+            Padding(
+              padding: EdgeInsets.only(
+                right: f != SearchFilter.values.last ? AppSpacing.sm : 0,
+              ),
+              child: _SearchFilterChip(
+                label: switch (f) {
+                  SearchFilter.all => 'All',
+                  SearchFilter.songs => 'Songs',
+                  SearchFilter.artists => 'Artists',
+                  SearchFilter.albums => 'Albums',
+                },
+                selected: f == selected,
+                onTap: () => onSelect(f),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SearchFilterChip extends StatefulWidget {
+  const _SearchFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  State<_SearchFilterChip> createState() => _SearchFilterChipState();
+}
+
+class _SearchFilterChipState extends State<_SearchFilterChip>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl = AnimationController(
+    vsync: this,
+    duration: AppDuration.fast,
+    value: widget.selected ? 1.0 : 0.0,
+  );
+  late final Animation<double> _t = CurvedAnimation(
+    parent: _ctrl,
+    curve: AppCurves.decelerate,
+    reverseCurve: AppCurves.standard,
+  );
+
+  @override
+  void didUpdateWidget(_SearchFilterChip old) {
+    super.didUpdateWidget(old);
+    if (widget.selected != old.selected) {
+      widget.selected ? _ctrl.forward() : _ctrl.reverse();
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    return AnimatedBuilder(
+      animation: _t,
+      builder: (context, _) {
+        final tv = _t.value;
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: widget.onTap,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            child: Container(
+              height: t.isDesktop ? 36 : 32,
+              padding: EdgeInsets.symmetric(horizontal: t.isDesktop ? t.spacing.md : AppSpacing.md),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Color.lerp(
+                  AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.8),
+                  AppColors.primary.withValues(alpha: 0.2),
+                  tv,
+                ),
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                border: Border.all(
+                  color: Color.lerp(Colors.transparent, AppColors.primary, tv)!,
+                  width: 1,
+                ),
+              ),
+              child: Text(
+                widget.label,
+                style: TextStyle(
+                  color: Color.lerp(AppColorsScheme.of(context).textSecondary, AppColors.primary, tv),
+                  fontSize: t.font.md,
+                  fontWeight: tv > 0.5 ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ArtistResultTile extends StatelessWidget {
+  const _ArtistResultTile({required this.artist});
+
+  final ArtistSearchResult artist;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          appPageRoute<void>(
+            builder: (_) => LibraryPlaylistScreen.artist(
+              artistName: artist.name,
+              thumbnailUrl: artist.thumbnailUrl,
+              browseId: artist.browseId,
+            ),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              ClipOval(
+                child: Image.network(
+                  artist.thumbnailUrl,
+                  width: 54,
+                  height: 54,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 54,
+                    height: 54,
+                    color: AppColorsScheme.of(context).surfaceLight,
+                    child: AppIcon(
+                      icon: AppIcons.person,
+                      color: AppColorsScheme.of(context).textMuted,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      artist.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.base,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Artist',
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
+                        fontSize: AppFontSize.sm,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AlbumResultTile extends StatelessWidget {
+  const _AlbumResultTile({required this.album});
+
+  final AlbumSearchResult album;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          appPageRoute<void>(
+            builder: (_) => LibraryPlaylistScreen.album(
+              songTitle: album.name,
+              name: album.name,
+              artistName: album.artist,
+              thumbnailUrl: album.thumbnailUrl,
+              browseId: album.browseId,
+            ),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: Image.network(
+                  album.thumbnailUrl,
+                  width: 54,
+                  height: 54,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 54,
+                    height: 54,
+                    color: AppColorsScheme.of(context).surfaceLight,
+                    child: AppIcon(
+                      icon: AppIcons.musicNote,
+                      color: AppColorsScheme.of(context).textMuted,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      album.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.base,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      album.artist,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
+                        fontSize: AppFontSize.sm,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _SkeletonResultTile extends StatelessWidget {
   const _SkeletonResultTile();
 
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: AppColors.surfaceLight,
-      highlightColor: AppColors.surfaceHighlight,
+      baseColor: AppColorsScheme.of(context).surfaceLight,
+      highlightColor: AppColorsScheme.of(context).surfaceHighlight,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.base,
@@ -659,7 +1046,7 @@ class _SkeletonResultTile extends StatelessWidget {
           width: 54,
           height: 54,
           decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
+            color: AppColorsScheme.of(context).surfaceLight,
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
         ),
@@ -667,7 +1054,7 @@ class _SkeletonResultTile extends StatelessWidget {
           height: 13,
           margin: const EdgeInsets.only(right: 60),
           decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
+            color: AppColorsScheme.of(context).surfaceLight,
             borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
@@ -676,7 +1063,7 @@ class _SkeletonResultTile extends StatelessWidget {
           width: 80,
           margin: const EdgeInsets.only(top: 6),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColorsScheme.of(context).surface,
             borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
@@ -696,7 +1083,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -711,12 +1098,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(bottom: AppSpacing.md),
                     child: Text(
                       'Search',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.display3,
                         fontWeight: FontWeight.w800,
                         letterSpacing: AppLetterSpacing.display,

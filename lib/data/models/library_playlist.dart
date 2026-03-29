@@ -1,5 +1,22 @@
 import 'package:tunify/data/models/song.dart';
 
+/// Per-playlist shuffle mode.
+///
+/// Stored as an INTEGER (0/1/2) in SQLite.
+enum ShuffleMode { none, regular, smart }
+
+/// Serialization helpers for [ShuffleMode].
+extension ShuffleModeX on ShuffleMode {
+  /// Converts a stored INTEGER (0/1/2) to a [ShuffleMode].
+  static ShuffleMode fromInt(int? v) {
+    return switch (v) {
+      1 => ShuffleMode.regular,
+      2 => ShuffleMode.smart,
+      _ => ShuffleMode.none,
+    };
+  }
+}
+
 /// Sort order applied to the track list inside a [LibraryPlaylist].
 enum PlaylistTrackSortOrder {
   /// User-defined drag-drop ordering (default).
@@ -47,7 +64,7 @@ class LibraryPlaylist {
   final DateTime updatedAt;
   final List<Song> songs;
   final PlaylistTrackSortOrder sortOrder;
-  final bool shuffleEnabled;
+  final ShuffleMode shuffleMode;
   final bool isPinned;
   /// Custom cover image URL (user-selected); null uses first track art.
   final String? customImageUrl;
@@ -72,7 +89,7 @@ class LibraryPlaylist {
     required this.updatedAt,
     this.songs = const [],
     this.sortOrder = PlaylistTrackSortOrder.customOrder,
-    this.shuffleEnabled = false,
+    this.shuffleMode = ShuffleMode.none,
     this.isPinned = false,
     this.customImageUrl,
     this.isImported = false,
@@ -80,6 +97,9 @@ class LibraryPlaylist {
     this.cachedPaletteColor,
     this.remoteTrackCount,
   });
+
+  /// Convenience getter — true when any shuffle is active.
+  bool get shuffleEnabled => shuffleMode != ShuffleMode.none;
 
   /// For imported playlists, songs are not persisted — fall back to the
   /// remote count stored at import time so the library tile shows a real number.
@@ -98,7 +118,7 @@ class LibraryPlaylist {
     DateTime? updatedAt,
     List<Song>? songs,
     PlaylistTrackSortOrder? sortOrder,
-    bool? shuffleEnabled,
+    ShuffleMode? shuffleMode,
     bool? isPinned,
     String? customImageUrl,
     bool? isImported,
@@ -114,7 +134,7 @@ class LibraryPlaylist {
       updatedAt: updatedAt ?? this.updatedAt,
       songs: songs ?? this.songs,
       sortOrder: sortOrder ?? this.sortOrder,
-      shuffleEnabled: shuffleEnabled ?? this.shuffleEnabled,
+      shuffleMode: shuffleMode ?? this.shuffleMode,
       isPinned: isPinned ?? this.isPinned,
       customImageUrl: customImageUrl ?? this.customImageUrl,
       isImported: isImported ?? this.isImported,
@@ -149,7 +169,7 @@ class LibraryPlaylist {
         'updatedAt': updatedAt.toIso8601String(),
         'songs': songs.map((s) => s.toJson()).toList(),
         'sortOrder': sortOrder.value,
-        'shuffleEnabled': shuffleEnabled,
+        'shuffleEnabled': shuffleMode.index,
         'isPinned': isPinned,
         if (customImageUrl != null) 'customImageUrl': customImageUrl,
         'isImported': isImported,
@@ -173,7 +193,7 @@ class LibraryPlaylist {
       songs: songs,
       sortOrder:
           PlaylistTrackSortOrderX.fromString(json['sortOrder'] as String?),
-      shuffleEnabled: json['shuffleEnabled'] as bool? ?? false,
+      shuffleMode: ShuffleModeX.fromInt(json['shuffleEnabled']),
       isPinned: json['isPinned'] as bool? ?? false,
       customImageUrl: json['customImageUrl'] as String?,
       isImported: json['isImported'] as bool? ?? false,

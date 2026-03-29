@@ -2,23 +2,31 @@ import 'package:sqflite/sqflite.dart';
 
 /// SQLite delete operations. All delete logic lives in this controller.
 class SqliteDeleteController {
-  /// Deletes playlists whose id is not in [currentIds], within [txn].
-  /// Only touches library rows (is_saved = 1).
-  Future<void> deletePlaylistsNotIn(Transaction txn, Set<String> currentIds) async {
-    final existing = await txn.query('playlists', columns: ['id'], where: 'is_saved = 1');
+  /// Deletes saved playlists whose id is not in [currentIds], within [txn].
+  /// ON DELETE CASCADE removes corresponding playlist_songs rows automatically.
+  Future<void> deletePlaylistsNotIn(
+      Transaction txn, Set<String> currentIds) async {
+    final existing = await txn
+        .query('playlist_info', columns: ['id'], where: 'is_saved = 1');
     for (final row in existing) {
       final id = row['id'] as String;
-      if (!currentIds.contains(id)) await txn.delete('playlists', where: 'id = ? AND is_saved = 1', whereArgs: [id]);
+      if (!currentIds.contains(id)) {
+        await txn.delete('playlist_info',
+            where: 'id = ? AND is_saved = 1', whereArgs: [id]);
+      }
     }
   }
 
-  /// Deletes folders whose id is not in [currentFolderIds] and their folder_playlists, within [txn].
-  Future<void> deleteFoldersNotIn(Transaction txn, Set<String> currentFolderIds) async {
+  /// Deletes folders whose id is not in [currentFolderIds] within [txn].
+  /// folder_playlists rows are removed separately since we clear them wholesale.
+  Future<void> deleteFoldersNotIn(
+      Transaction txn, Set<String> currentFolderIds) async {
     final existingFolders = await txn.query('folders', columns: ['id']);
     for (final row in existingFolders) {
       final id = row['id'] as String;
       if (!currentFolderIds.contains(id)) {
-        await txn.delete('folder_playlists', where: 'folder_id = ?', whereArgs: [id]);
+        await txn
+            .delete('folder_playlists', where: 'folder_id = ?', whereArgs: [id]);
         await txn.delete('folders', where: 'id = ?', whereArgs: [id]);
       }
     }
@@ -29,10 +37,31 @@ class SqliteDeleteController {
     await txn.delete('folder_playlists');
   }
 
+  /// Deletes a single playlist by [id].
+  /// ON DELETE CASCADE removes its playlist_songs and folder_playlists rows.
+  Future<void> deletePlaylist(Database db, String id) async {
+    await db.delete('playlist_info', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Deletes a single folder by [id].
+  /// ON DELETE CASCADE removes its folder_playlists rows.
+  Future<void> deleteFolder(Database db, String id) async {
+    await db.delete('folders', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Removes a single playlist from a folder's junction table.
+  Future<void> deleteFolderPlaylistEntry(
+      Database db, String folderId, String playlistId) async {
+    await db.delete('folder_playlists',
+        where: 'folder_id = ? AND playlist_id = ?',
+        whereArgs: [folderId, playlistId]);
+  }
+
   /// Deletes the stream URL cache entry for [videoId].
   Future<void> deleteStreamUrlCache(Database db, String videoId) async {
     try {
-      await db.delete('stream_url_cache', where: 'video_id = ?', whereArgs: [videoId]);
+      await db.delete('stream_url_cache',
+          where: 'video_id = ?', whereArgs: [videoId]);
     } catch (_) {}
   }
 
@@ -40,7 +69,8 @@ class SqliteDeleteController {
   Future<void> clearExpiredStreamUrlCache(Database db) async {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
-      await db.delete('stream_url_cache', where: 'expires_at < ?', whereArgs: [now]);
+      await db
+          .delete('stream_url_cache', where: 'expires_at < ?', whereArgs: [now]);
     } catch (_) {}
   }
 
@@ -51,24 +81,11 @@ class SqliteDeleteController {
     } catch (_) {}
   }
 
-  /// Deletes all cache-only playlist rows (is_saved = 0).
+  /// Deletes all cache-only playlist_info rows (is_saved = 0).
+  /// ON DELETE CASCADE removes their playlist_songs rows automatically.
   Future<void> clearCacheOnlyPlaylists(Database db) async {
     try {
-      await db.delete('playlists', where: 'is_saved = ?', whereArgs: [0]);
-    } catch (_) {}
-  }
-
-  /// Deletes all collection_tracks rows for [browseId].
-  Future<void> deleteCollectionTracks(Database db, String browseId) async {
-    try {
-      await db.delete('collection_tracks', where: 'browse_id = ?', whereArgs: [browseId]);
-    } catch (_) {}
-  }
-
-  /// Deletes all cache-only collection_tracks rows (is_saved = 0).
-  Future<void> clearCacheOnlyCollectionTracks(Database db) async {
-    try {
-      await db.delete('collection_tracks', where: 'is_saved = ?', whereArgs: [0]);
+      await db.delete('playlist_info', where: 'is_saved = ?', whereArgs: [0]);
     } catch (_) {}
   }
 

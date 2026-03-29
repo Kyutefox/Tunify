@@ -20,6 +20,7 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import '../library/add_to_playlist_sheet.dart';
 import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class SongOptionExtra {
   final List<List<dynamic>> icon;
@@ -304,10 +305,10 @@ class _SongOptionsContent extends ConsumerWidget {
                   errorWidget: (_, __, ___) => Container(
                     width: 48,
                     height: 48,
-                    color: AppColors.surfaceLight,
+                    color: AppColorsScheme.of(context).surfaceLight,
                     child: AppIcon(
                         icon: AppIcons.musicNote,
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         size: 24),
                   ),
                 ),
@@ -319,8 +320,8 @@ class _SongOptionsContent extends ConsumerWidget {
                   children: [
                     Text(
                       song.title,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.xl,
                         fontWeight: FontWeight.w700,
                       ),
@@ -330,8 +331,8 @@ class _SongOptionsContent extends ConsumerWidget {
                     const SizedBox(height: 2),
                     Text(
                       song.artist,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textSecondary,
                         fontSize: AppFontSize.md,
                       ),
                       maxLines: 1,
@@ -344,7 +345,7 @@ class _SongOptionsContent extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           Divider(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: AppColorsScheme.of(context).surfaceHighlight,
             height: 1,
           ),
           const SizedBox(height: AppSpacing.md),
@@ -400,7 +401,7 @@ class _SongOptionsContent extends ConsumerWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           Divider(
-            color: Colors.white.withValues(alpha: 0.08),
+            color: AppColorsScheme.of(context).surfaceHighlight,
             height: 1,
           ),
           const SizedBox(height: AppSpacing.sm),
@@ -514,7 +515,7 @@ class _QuickActionRow extends StatelessWidget {
                   icon: isDownloaded ? AppIcons.checkCircle : AppIcons.download,
                   iconColor: isDownloaded
                       ? AppColors.primary
-                      : AppColors.textSecondary,
+                      : AppColorsScheme.of(context).textSecondary,
                   label: 'Download',
                   isActive: isDownloaded,
                   onTap: onDownload ?? () {},
@@ -526,7 +527,7 @@ class _QuickActionRow extends StatelessWidget {
               icon: isRemoveFromPlaylist || isDownloads || isLocalFiles
                   ? AppIcons.removeCircleOutline
                   : AppIcons.playlistAdd,
-              iconColor: AppColors.textSecondary,
+              iconColor: AppColorsScheme.of(context).textSecondary,
               label: isDownloads
                   ? 'Remove'
                   : (isLocalFiles
@@ -541,7 +542,7 @@ class _QuickActionRow extends StatelessWidget {
               isLiked: isLiked,
               songId: songId,
               size: 26,
-              emptyColor: AppColors.textSecondary,
+              emptyColor: AppColorsScheme.of(context).textSecondary,
             ),
             label: isLiked ? 'Liked' : 'Like',
             isActive: isLiked,
@@ -596,11 +597,11 @@ class _QuickActionButton extends StatelessWidget {
                   shape: BoxShape.circle,
                   color: isActive
                       ? AppColors.primary.withValues(alpha: 0.15)
-                      : AppColors.glassWhite,
+                      : AppColorsScheme.of(context).surfaceLight,
                   border: Border.all(
                     color: isActive
                         ? AppColors.primary.withValues(alpha: 0.35)
-                        : AppColors.glassBorder,
+                        : AppColorsScheme.of(context).surfaceHighlight,
                     width: 1,
                   ),
                 ),
@@ -616,8 +617,8 @@ class _QuickActionButton extends StatelessWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 label,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.sm,
                   fontWeight: FontWeight.w500,
                 ),

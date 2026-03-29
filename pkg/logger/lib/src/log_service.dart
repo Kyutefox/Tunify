@@ -37,12 +37,6 @@ void log(String message, {String level = 'INFO', String? tag, DateTime? when}) {
   }
 }
 
-/// Path to log file; not used when logging to terminal only. Kept for API compatibility.
-Future<String?> getLogFilePath() async => null;
-
-/// Read tail of log file; not used when logging to terminal only. Kept for API compatibility.
-Future<String> readLogTail({int maxLines = 500}) async => '';
-
 void logDebug(String message, {String? tag}) =>
     log(message, level: 'DEBUG', tag: tag);
 

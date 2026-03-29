@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'home_shared.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class HomePageSkeleton extends StatelessWidget {
   const HomePageSkeleton({super.key});
@@ -115,7 +115,7 @@ class HomePageSkeleton extends StatelessWidget {
       ],
     ).animate(onPlay: (c) => c.repeat()).shimmer(
           duration: const Duration(milliseconds: 1400),
-          color: AppColors.surfaceHighlight,
+          color: AppColorsScheme.of(context).surfaceHighlight,
         );
   }
 }
@@ -196,7 +196,7 @@ class SectionAsyncSwap extends StatelessWidget {
     if (isLoading) {
       return loadingChild.animate(onPlay: (c) => c.repeat()).shimmer(
             duration: const Duration(milliseconds: 1400),
-            color: AppColors.surfaceHighlight,
+            color: AppColorsScheme.of(context).surfaceHighlight,
           );
     }
     return const SizedBox.shrink();
@@ -249,7 +249,7 @@ class QuickPickTileSkeleton extends StatelessWidget {
       width: 220,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Row(
@@ -395,7 +395,7 @@ class DynamicSectionsSkeleton extends StatelessWidget {
       ],
     ).animate(onPlay: (c) => c.repeat()).shimmer(
           duration: const Duration(milliseconds: 1400),
-          color: AppColors.surfaceHighlight,
+          color: AppColorsScheme.of(context).surfaceHighlight,
         );
   }
 }

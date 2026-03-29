@@ -26,19 +26,39 @@ Future<Database> _openTestDb() async {
     version: 1,
     onCreate: (db, _) async {
       await db.execute('''
-        CREATE TABLE playlists (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          description TEXT NOT NULL DEFAULT '',
-          sort_order TEXT NOT NULL DEFAULT 'customOrder',
-          songs TEXT NOT NULL DEFAULT '[]',
-          created_at TEXT NOT NULL,
-          updated_at TEXT NOT NULL,
-          custom_image_url TEXT,
-          is_imported INTEGER NOT NULL DEFAULT 0,
-          browse_id TEXT,
-          cached_palette_color INTEGER,
-          is_saved INTEGER NOT NULL DEFAULT 1
+        CREATE TABLE playlist_info (
+          id                       TEXT PRIMARY KEY,
+          name                     TEXT NOT NULL,
+          description              TEXT NOT NULL DEFAULT '',
+          sort_order               TEXT NOT NULL DEFAULT 'customOrder',
+          cover_url                TEXT,
+          is_imported              INTEGER NOT NULL DEFAULT 0,
+          browse_id                TEXT,
+          palette_color            INTEGER,
+          is_saved                 INTEGER NOT NULL DEFAULT 1,
+          total_track_count_remote INTEGER,
+          shuffle_enabled          INTEGER NOT NULL DEFAULT 0,
+          is_pinned                INTEGER NOT NULL DEFAULT 0,
+          is_artist                INTEGER NOT NULL DEFAULT 0,
+          is_album                 INTEGER NOT NULL DEFAULT 0,
+          created_at               TEXT NOT NULL,
+          updated_at               TEXT NOT NULL
+        )
+      ''');
+      await db.execute('''
+        CREATE TABLE playlist_songs (
+          row_id              INTEGER PRIMARY KEY AUTOINCREMENT,
+          playlist_id         TEXT NOT NULL,
+          song_id             TEXT NOT NULL,
+          title               TEXT NOT NULL,
+          artist              TEXT NOT NULL,
+          cover_url           TEXT NOT NULL DEFAULT '',
+          duration_ms         INTEGER NOT NULL DEFAULT 0,
+          is_explicit         INTEGER NOT NULL DEFAULT 0,
+          artist_browse_id    TEXT,
+          album_browse_id     TEXT,
+          album_name          TEXT,
+          sort_order_sequence INTEGER NOT NULL DEFAULT 0
         )
       ''');
       await db.execute('''
@@ -49,16 +69,6 @@ Future<Database> _openTestDb() async {
           bitrate INTEGER NOT NULL DEFAULT 0,
           quality TEXT NOT NULL DEFAULT '',
           expires_at TEXT NOT NULL
-        )
-      ''');
-      await db.execute('''
-        CREATE TABLE collection_tracks (
-          browse_id TEXT NOT NULL,
-          track_index INTEGER NOT NULL,
-          track_data TEXT NOT NULL,
-          is_saved INTEGER NOT NULL DEFAULT 0,
-          cached_at TEXT NOT NULL,
-          PRIMARY KEY (browse_id, track_index)
         )
       ''');
       await db.execute('''
@@ -188,9 +198,9 @@ void main() {
     await db.close();
   });
 
-  // ── P4: loadLibraryData returns only is_saved=1 playlists ────────────────
+  // ── P4: loadLibraryData returns only regular is_saved=1 playlists ────────
 
-  test('P4: loadLibraryData returns only is_saved=1 playlists', () async {
+  test('P4: loadLibraryData returns only regular is_saved=1 playlists', () async {
     final rng = Random(45);
 
     for (var i = 0; i < iterations; i++) {
@@ -201,33 +211,39 @@ void main() {
       final cacheCount = rng.nextInt(5) + 1; // 1..5
       final now = DateTime.now().toUtc().toIso8601String();
 
-      // Insert is_saved=1 rows
+      // Insert regular library rows (is_saved=1, is_artist=0, is_album=0)
       for (var j = 0; j < savedCount; j++) {
-        await db.insert('playlists', {
+        await db.insert('playlist_info', {
           'id': 'saved_${i}_$j',
           'name': 'Saved $j',
           'description': '',
           'sort_order': 'customOrder',
-          'songs': '[]',
           'created_at': now,
           'updated_at': now,
           'is_imported': 0,
           'is_saved': 1,
+          'shuffle_enabled': 0,
+          'is_pinned': 0,
+          'is_artist': 0,
+          'is_album': 0,
         });
       }
 
-      // Insert is_saved=0 rows
+      // Insert cache rows (is_saved=0) — should be excluded
       for (var j = 0; j < cacheCount; j++) {
-        await db.insert('playlists', {
+        await db.insert('playlist_info', {
           'id': 'cache_${i}_$j',
           'name': 'Cache $j',
           'description': '',
           'sort_order': 'customOrder',
-          'songs': '[]',
           'created_at': now,
           'updated_at': now,
           'is_imported': 0,
           'is_saved': 0,
+          'shuffle_enabled': 0,
+          'is_pinned': 0,
+          'is_artist': 0,
+          'is_album': 0,
         });
       }
 
@@ -256,23 +272,26 @@ void main() {
       final now = DateTime.now().toUtc().toIso8601String();
 
       // Insert a library row (is_saved=1)
-      await db.insert('playlists', {
+      await db.insert('playlist_info', {
         'id': browseId,
         'name': originalName,
         'description': 'original desc',
         'sort_order': 'customOrder',
-        'songs': '[]',
         'created_at': now,
         'updated_at': now,
         'is_imported': 0,
         'browse_id': browseId,
         'is_saved': 1,
+        'shuffle_enabled': 0,
+        'is_pinned': 0,
+        'is_artist': 0,
+        'is_album': 0,
       });
 
       // Attempt to overwrite with cache entry
       await create.upsertPlaylistCache(db, browseId, 0xFF123456, 'https://img.example.com/cover.jpg');
 
-      final rows = await db.query('playlists',
+      final rows = await db.query('playlist_info',
           where: 'id = ?', whereArgs: [browseId]);
       expect(rows.length, equals(1));
       expect(rows.first['is_saved'], equals(1),
@@ -284,136 +303,65 @@ void main() {
     }
   });
 
-  // ── P6: Collection track cache round-trip within TTL ─────────────────────
+  // ── P6: loadLibraryData separates artists and albums from playlists ───────
 
-  test('P6: collection track cache round-trip within TTL', () async {
+  test('P6: loadLibraryData separates artists and albums from regular playlists',
+      () async {
     final rng = Random(47);
-    final create = SqliteCreateController();
-
-    for (var i = 0; i < iterations; i++) {
-      final db = await _openTestDb();
-      final localGet = SqliteGetController(() async => db);
-      final browseId = _randomId(rng);
-      final trackCount = rng.nextInt(10) + 1; // 1..10
-
-      final tracks = List.generate(trackCount, (j) => {
-            'id': 'track_$j',
-            'title': 'Track $j',
-            'artist': 'Artist',
-          });
-
-      await create.upsertCollectionTracks(db, browseId, tracks);
-      final result = await localGet.getCollectionTracks(browseId);
-
-      expect(result, isNotNull,
-          reason: 'iteration $i: expected non-null result');
-      expect(result!.length, equals(trackCount),
-          reason: 'iteration $i: expected $trackCount tracks, got ${result.length}');
-
-      await db.close();
-    }
-  });
-
-  // ── P7: Expired collection track entries return null ─────────────────────
-
-  test('P7: expired collection track entries return null and are deleted',
-      () async {
-    final rng = Random(48);
-
-    for (var i = 0; i < iterations; i++) {
-      final db = await _openTestDb();
-      final localGet = SqliteGetController(() async => db);
-      final browseId = _randomId(rng);
-      final trackCount = rng.nextInt(5) + 1;
-
-      // Insert rows with cached_at 31+ minutes ago
-      final expiredCachedAt = DateTime.now()
-          .toUtc()
-          .subtract(Duration(minutes: 31 + rng.nextInt(60)))
-          .toIso8601String();
-
-      for (var j = 0; j < trackCount; j++) {
-        await db.insert('collection_tracks', {
-          'browse_id': browseId,
-          'track_index': j,
-          'track_data': '{"id":"track_$j"}',
-          'is_saved': 0,
-          'cached_at': expiredCachedAt,
-        });
-      }
-
-      final result = await localGet.getCollectionTracks(browseId);
-      expect(result, isNull,
-          reason: 'iteration $i: expired entries should return null');
-
-      // Rows should be deleted
-      final rows = await db.query('collection_tracks',
-          where: 'browse_id = ?', whereArgs: [browseId]);
-      expect(rows, isEmpty,
-          reason: 'iteration $i: expired rows should be deleted');
-
-      await db.close();
-    }
-  });
-
-  // ── P8: loadLibraryData filter (sync guard) ───────────────────────────────
-
-  test('P8: sync guard — loadLibraryData returns only is_saved=1 playlists',
-      () async {
-    final rng = Random(49);
 
     for (var i = 0; i < iterations; i++) {
       final db = await _openTestDb();
       final localGet = SqliteGetController(() async => db);
       final now = DateTime.now().toUtc().toIso8601String();
 
-      final savedCount = rng.nextInt(4) + 1;
-      final cacheCount = rng.nextInt(4) + 1;
+      final playlistCount = rng.nextInt(3) + 1;
+      final artistCount = rng.nextInt(3) + 1;
+      final albumCount = rng.nextInt(3) + 1;
 
-      for (var j = 0; j < savedCount; j++) {
-        await db.insert('playlists', {
-          'id': 'lib_${i}_$j',
-          'name': 'Library $j',
-          'description': '',
-          'sort_order': 'customOrder',
-          'songs': '[]',
-          'created_at': now,
-          'updated_at': now,
-          'is_imported': 0,
-          'is_saved': 1,
+      for (var j = 0; j < playlistCount; j++) {
+        await db.insert('playlist_info', {
+          'id': 'pl_${i}_$j', 'name': 'Playlist $j', 'description': '',
+          'sort_order': 'customOrder', 'created_at': now, 'updated_at': now,
+          'is_imported': 0, 'is_saved': 1, 'shuffle_enabled': 0,
+          'is_pinned': 0, 'is_artist': 0, 'is_album': 0,
         });
       }
-
-      for (var j = 0; j < cacheCount; j++) {
-        await db.insert('playlists', {
-          'id': 'cache_${i}_$j',
-          'name': 'Cache $j',
-          'description': '',
-          'sort_order': 'customOrder',
-          'songs': '[]',
-          'created_at': now,
-          'updated_at': now,
-          'is_imported': 0,
-          'is_saved': 0,
+      for (var j = 0; j < artistCount; j++) {
+        await db.insert('playlist_info', {
+          'id': 'ar_${i}_$j', 'name': 'Artist $j', 'description': '',
+          'sort_order': 'customOrder', 'created_at': now, 'updated_at': now,
+          'is_imported': 0, 'is_saved': 1, 'shuffle_enabled': 0,
+          'is_pinned': 0, 'is_artist': 1, 'is_album': 0,
+        });
+      }
+      for (var j = 0; j < albumCount; j++) {
+        await db.insert('playlist_info', {
+          'id': 'al_${i}_$j', 'name': 'Album $j', 'description': 'Artist Name',
+          'sort_order': 'customOrder', 'created_at': now, 'updated_at': now,
+          'is_imported': 0, 'is_saved': 1, 'shuffle_enabled': 0,
+          'is_pinned': 0, 'is_artist': 0, 'is_album': 1,
         });
       }
 
       final result = await localGet.loadLibraryData();
       final playlists = result['playlists'] as List;
+      final artists = result['followedArtists'] as List;
+      final albums = result['followedAlbums'] as List;
 
-      // All returned playlists must be library rows (no is_saved field exposed,
-      // but count must equal savedCount since filter is WHERE is_saved = 1)
-      expect(playlists.length, equals(savedCount),
-          reason:
-              'iteration $i: push payload should contain only $savedCount is_saved=1 rows');
+      expect(playlists.length, equals(playlistCount),
+          reason: 'iteration $i: expected $playlistCount regular playlists');
+      expect(artists.length, equals(artistCount),
+          reason: 'iteration $i: expected $artistCount followed artists');
+      expect(albums.length, equals(albumCount),
+          reason: 'iteration $i: expected $albumCount followed albums');
 
       await db.close();
     }
   });
 
-  // ── P9: insertPlaylists sets is_saved=1 ──────────────────────────────────
+  // ── P7: upsertPlaylists sets is_saved=1 ──────────────────────────────────
 
-  test('P9: insertPlaylists sets is_saved=1 on all written rows', () async {
+  test('P7: upsertPlaylists sets is_saved=1 on all written rows', () async {
     final rng = Random(50);
     final create = SqliteCreateController();
 
@@ -427,19 +375,25 @@ void main() {
             'name': 'Playlist $j',
             'description': '',
             'sort_order': 'customOrder',
-            'songs': [],
+            'songs': <Map>[],
             'created_at': now,
             'updated_at': now,
             'is_imported': false,
             'browse_id': null,
-            'cached_palette_color': null,
+            'palette_color': null,
+            'cover_url': null,
+            'total_track_count_remote': null,
+            'shuffle_enabled': false,
+            'is_pinned': false,
+            'is_artist': false,
+            'is_album': false,
           });
 
       await db.transaction((txn) async {
-        await create.insertPlaylists(txn, playlists);
+        await create.upsertPlaylists(txn, playlists);
       });
 
-      final rows = await db.query('playlists');
+      final rows = await db.query('playlist_info');
       expect(rows.length, equals(count));
       for (final row in rows) {
         expect(row['is_saved'], equals(1),
@@ -450,9 +404,9 @@ void main() {
     }
   });
 
-  // ── P10: Logout clears all cache-only data ───────────────────────────────
+  // ── P8: Logout clears all cache-only data ────────────────────────────────
 
-  test('P10: logout clears all cache-only data, preserves library rows',
+  test('P8: logout clears all cache-only data, preserves library rows',
       () async {
     final rng = Random(51);
     final create = SqliteCreateController();
@@ -464,33 +418,29 @@ void main() {
 
       final libCount = rng.nextInt(3) + 1;
       final cachePlaylistCount = rng.nextInt(3) + 1;
-      final cacheTrackBrowseIds = rng.nextInt(3) + 1;
       final streamCount = rng.nextInt(5) + 1;
 
       // Insert library playlists (is_saved=1)
       for (var j = 0; j < libCount; j++) {
-        await db.insert('playlists', {
+        await db.insert('playlist_info', {
           'id': 'lib_${i}_$j',
           'name': 'Library $j',
           'description': '',
           'sort_order': 'customOrder',
-          'songs': '[]',
           'created_at': now,
           'updated_at': now,
           'is_imported': 0,
           'is_saved': 1,
+          'shuffle_enabled': 0,
+          'is_pinned': 0,
+          'is_artist': 0,
+          'is_album': 0,
         });
       }
 
       // Insert cache playlists (is_saved=0)
       for (var j = 0; j < cachePlaylistCount; j++) {
         await create.upsertPlaylistCache(db, 'cache_${i}_$j', null, null);
-      }
-
-      // Insert collection tracks (is_saved=0)
-      for (var j = 0; j < cacheTrackBrowseIds; j++) {
-        await create.upsertCollectionTracks(
-            db, 'browse_${i}_$j', [{'id': 'track_0'}]);
       }
 
       // Insert stream URL cache rows
@@ -508,20 +458,13 @@ void main() {
 
       // Logout sequence
       await delete.clearCacheOnlyPlaylists(db);
-      await delete.clearCacheOnlyCollectionTracks(db);
       await delete.clearAllStreamUrlCache(db);
 
       // Verify: zero cache-only playlists
-      final cachePlaylists = await db.query('playlists',
+      final cachePlaylists = await db.query('playlist_info',
           where: 'is_saved = ?', whereArgs: [0]);
       expect(cachePlaylists, isEmpty,
           reason: 'iteration $i: no cache-only playlists should remain');
-
-      // Verify: zero collection tracks
-      final tracks = await db.query('collection_tracks',
-          where: 'is_saved = ?', whereArgs: [0]);
-      expect(tracks, isEmpty,
-          reason: 'iteration $i: no cache-only collection tracks should remain');
 
       // Verify: zero stream URL cache rows
       final streams = await db.query('stream_url_cache');
@@ -529,7 +472,7 @@ void main() {
           reason: 'iteration $i: no stream URL cache rows should remain');
 
       // Verify: library rows preserved
-      final libRows = await db.query('playlists',
+      final libRows = await db.query('playlist_info',
           where: 'is_saved = ?', whereArgs: [1]);
       expect(libRows.length, equals(libCount),
           reason: 'iteration $i: library rows should be preserved');
@@ -538,66 +481,60 @@ void main() {
     }
   });
 
-  // ── P11: Migration preserves existing rows with is_saved=1 ───────────────
+  // ── P9: sync guard — loadLibraryData returns only is_saved=1 playlists ───
 
-  test('P11: ALTER TABLE ADD COLUMN DEFAULT 1 sets is_saved=1 on existing rows',
+  test('P9: sync guard — loadLibraryData returns only is_saved=1 playlists',
       () async {
-    final rng = Random(52);
+    final rng = Random(49);
 
     for (var i = 0; i < iterations; i++) {
-      // Simulate a v3-style table (without is_saved column)
-      final db = await openDatabase(
-        inMemoryDatabasePath,
-        version: 1,
-        onCreate: (db, _) async {
-          await db.execute('''
-            CREATE TABLE playlists (
-              id TEXT PRIMARY KEY,
-              name TEXT NOT NULL,
-              description TEXT NOT NULL DEFAULT '',
-              sort_order TEXT NOT NULL DEFAULT 'customOrder',
-              songs TEXT NOT NULL DEFAULT '[]',
-              created_at TEXT NOT NULL,
-              updated_at TEXT NOT NULL,
-              custom_image_url TEXT,
-              is_imported INTEGER NOT NULL DEFAULT 0,
-              browse_id TEXT,
-              cached_palette_color INTEGER
-            )
-          ''');
-        },
-      );
-
-      final rowCount = rng.nextInt(5) + 1;
+      final db = await _openTestDb();
+      final localGet = SqliteGetController(() async => db);
       final now = DateTime.now().toUtc().toIso8601String();
 
-      // Insert rows into v3-style table
-      for (var j = 0; j < rowCount; j++) {
-        await db.insert('playlists', {
-          'id': 'pl_${i}_$j',
-          'name': 'Playlist $j',
+      final savedCount = rng.nextInt(4) + 1;
+      final cacheCount = rng.nextInt(4) + 1;
+
+      for (var j = 0; j < savedCount; j++) {
+        await db.insert('playlist_info', {
+          'id': 'lib_${i}_$j',
+          'name': 'Library $j',
           'description': '',
           'sort_order': 'customOrder',
-          'songs': '[]',
           'created_at': now,
           'updated_at': now,
           'is_imported': 0,
+          'is_saved': 1,
+          'shuffle_enabled': 0,
+          'is_pinned': 0,
+          'is_artist': 0,
+          'is_album': 0,
         });
       }
 
-      // Run the v3→v4 migration: ALTER TABLE ADD COLUMN with DEFAULT 1
-      await db.execute(
-          'ALTER TABLE playlists ADD COLUMN is_saved INTEGER NOT NULL DEFAULT 1');
-
-      // Verify all rows have is_saved=1
-      final rows = await db.query('playlists');
-      expect(rows.length, equals(rowCount),
-          reason: 'iteration $i: all rows should be preserved');
-      for (final row in rows) {
-        expect(row['is_saved'], equals(1),
-            reason:
-                'iteration $i: migrated row should have is_saved=1, got ${row['is_saved']}');
+      for (var j = 0; j < cacheCount; j++) {
+        await db.insert('playlist_info', {
+          'id': 'cache_${i}_$j',
+          'name': 'Cache $j',
+          'description': '',
+          'sort_order': 'customOrder',
+          'created_at': now,
+          'updated_at': now,
+          'is_imported': 0,
+          'is_saved': 0,
+          'shuffle_enabled': 0,
+          'is_pinned': 0,
+          'is_artist': 0,
+          'is_album': 0,
+        });
       }
+
+      final result = await localGet.loadLibraryData();
+      final playlists = result['playlists'] as List;
+
+      expect(playlists.length, equals(savedCount),
+          reason:
+              'iteration $i: push payload should contain only $savedCount is_saved=1 rows');
 
       await db.close();
     }

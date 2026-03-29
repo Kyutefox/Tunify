@@ -117,6 +117,23 @@ StreamQuality _audioToStreamQuality(AudioQuality q) {
   }
 }
 
+/// Parameters for stream fetch isolate
+class _StreamFetchParams {
+  final String videoId;
+  final bool preferAac;
+  
+  _StreamFetchParams(this.videoId, this.preferAac);
+}
+
+/// Result from stream fetch isolate (serializable)
+class _StreamFetchResult {
+  final String url;
+  final int bitrate;
+  final String mimeType;
+  
+  _StreamFetchResult(this.url, this.bitrate, this.mimeType);
+}
+
 /// YouTube stream URLs expire after ~6 hours. Cache entries are considered
 /// stale at 5h30m to leave a safe buffer before the URL actually expires.
 const Duration _kStreamUrlTtl = Duration(hours: 5, minutes: 30);
@@ -215,6 +232,32 @@ class MusicStreamManager {
     if (_visitorData != null && _visitorData!.isNotEmpty) {
       (onVisitorDataReceived ?? _defaultOnVisitorDataReceived)(_visitorData);
     }
+  }
+
+  /// Fetches stream URL in background using compute to prevent UI blocking
+  Future<_StreamFetchResult?> _fetchStreamInIsolate(String videoId, bool preferAac) async {
+    try {
+      // Use compute to run the network-heavy operation off the main thread
+      return await compute(_fetchStreamIsolateFunction, _StreamFetchParams(videoId, preferAac));
+    } catch (e) {
+      log('PlayFlow: _fetchStreamInIsolate failed: $e', tag: 'PlayFlow');
+      return null;
+    }
+  }
+
+  /// Top-level function for compute isolate - returns serializable data
+  static Future<_StreamFetchResult?> _fetchStreamIsolateFunction(_StreamFetchParams params) async {
+    final ytDirect = scrapper.YoutubeDirect();
+    final stream = await ytDirect.streams.fetchBestAudioStream(
+      params.videoId,
+      preferAac: params.preferAac,
+    );
+    if (stream == null) return null;
+    return _StreamFetchResult(
+      stream.url,
+      stream.bitrate!,
+      stream.mimeType,
+    );
   }
 
   /// Visitor-data tokens longer than this are service-worker init blobs, not
@@ -448,16 +491,16 @@ class MusicStreamManager {
         };
       }
       final fetchT0 = apiSw.elapsedMilliseconds;
-      final ytStream = await _ytDirect.streams.fetchBestAudioStream(
-        videoId,
-        preferAac: isApplePlatform,
-      );
+      
+      // Run network-heavy operation in isolate to prevent UI blocking
+      final ytStream = await _fetchStreamInIsolate(videoId, isApplePlatform);
+      
       log('PlayFlow: getStreamUrl fetchBestAudioStream (youtube_explode_dart getManifest) done in ${apiSw.elapsedMilliseconds - fetchT0}ms',
           tag: 'PlayFlow');
       if (ytStream == null) {
         throw Exception('No audio stream available for $videoId');
       }
-      final bitrate = ytStream.bitrate ?? 128;
+      final bitrate = ytStream.bitrate;
       final quality = bitrate >= 160
           ? AudioQuality.high
           : bitrate >= 80

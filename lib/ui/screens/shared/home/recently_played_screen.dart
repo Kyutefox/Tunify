@@ -2,7 +2,6 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
@@ -17,8 +16,15 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import '../player/song_options_sheet.dart';
 import 'package:tunify/ui/widgets/common/empty_state_placeholder.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
-final _rpShuffleProvider = StateProvider<bool>((ref) => false);
+class _RpShuffleNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  void toggle() => state = !state;
+}
+
+final _rpShuffleProvider = NotifierProvider<_RpShuffleNotifier, bool>(_RpShuffleNotifier.new);
 
 class RecentlyPlayedScreen extends ConsumerWidget {
   const RecentlyPlayedScreen({super.key});
@@ -40,13 +46,13 @@ class RecentlyPlayedScreen extends ConsumerWidget {
     final shuffleEnabled = ref.watch(_rpShuffleProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       appBar: const BackTitleAppBar(title: 'Recently Played'),
       body: displaySongs.isEmpty
           ? EmptyStatePlaceholder(
               icon: AppIcon(
                 icon: AppIcons.musicNote,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 size: 48,
               ),
               title: 'Nothing played yet',
@@ -68,11 +74,10 @@ class RecentlyPlayedScreen extends ConsumerWidget {
                           size: 24,
                           color: shuffleEnabled
                               ? AppColors.primary
-                              : AppColors.textMuted,
+                              : AppColorsScheme.of(context).textMuted,
                         ),
                         onPressed: () {
-                          ref.read(_rpShuffleProvider.notifier).state =
-                              !shuffleEnabled;
+                          ref.read(_rpShuffleProvider.notifier).toggle();
                         },
                       ),
                       const Spacer(),
@@ -179,6 +184,9 @@ class _DateGroupedSongList extends ConsumerWidget {
 
     if (timestamps.isEmpty) {
       return ListView.builder(
+        cacheExtent: 1000,
+        addAutomaticKeepAlives: true,
+        itemExtent: 70,
         padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
         itemCount: songs.length,
         itemBuilder: (context, index) => SongListTile(
@@ -189,8 +197,8 @@ class _DateGroupedSongList extends ConsumerWidget {
               Flexible(
                 child: Text(
                   songs[index].artist,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.sm,
                   ),
                   maxLines: 1,
@@ -200,8 +208,8 @@ class _DateGroupedSongList extends ConsumerWidget {
               const SizedBox(width: AppSpacing.sm),
               Text(
                 songs[index].durationFormatted,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.sm,
                 ),
               ),
@@ -212,15 +220,15 @@ class _DateGroupedSongList extends ConsumerWidget {
             children: [
               Text(
                 songs[index].durationFormatted,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.md,
                 ),
               ),
               AppIconButton(
                 icon: AppIcon(
                   icon: AppIcons.moreVert,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 20,
                 ),
                 onPressedWithContext: (btnCtx) =>
@@ -235,6 +243,8 @@ class _DateGroupedSongList extends ConsumerWidget {
     }
 
     return ListView.builder(
+      cacheExtent: 1000,
+      addAutomaticKeepAlives: true,
       padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
       itemCount: _itemCount(groups),
       itemBuilder: (context, index) {
@@ -250,8 +260,8 @@ class _DateGroupedSongList extends ConsumerWidget {
               Flexible(
                 child: Text(
                   song.artist,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.sm,
                   ),
                   maxLines: 1,
@@ -261,8 +271,8 @@ class _DateGroupedSongList extends ConsumerWidget {
               const SizedBox(width: AppSpacing.sm),
               Text(
                 song.durationFormatted,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.sm,
                 ),
               ),
@@ -273,15 +283,15 @@ class _DateGroupedSongList extends ConsumerWidget {
             children: [
               Text(
                 song.durationFormatted,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.md,
                 ),
               ),
               AppIconButton(
                 icon: AppIcon(
                   icon: AppIcons.moreVert,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 20,
                 ),
                 onPressedWithContext: (btnCtx) => showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
@@ -354,8 +364,8 @@ class _DateHeader extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: const TextStyle(
-          color: AppColors.textSecondary,
+        style: TextStyle(
+          color: AppColorsScheme.of(context).textSecondary,
           fontSize: AppFontSize.base,
           fontWeight: FontWeight.w700,
           letterSpacing: AppLetterSpacing.normal,

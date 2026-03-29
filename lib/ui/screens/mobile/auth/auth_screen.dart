@@ -5,6 +5,7 @@ import 'package:tunify/ui/widgets/common/sheet.dart';
 import 'package:tunify/ui/widgets/auth/auth_shared.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class MobileAuthScreen extends ConsumerStatefulWidget {
   const MobileAuthScreen({super.key, this.initialSignUp = false});
@@ -50,7 +51,7 @@ class _MobileAuthScreenState extends ConsumerState<MobileAuthScreen>
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface.withValues(alpha: 0.98),
+          color: AppColorsScheme.of(context).surface.withValues(alpha: 0.98),
           border: const Border(
             top: BorderSide(color: AppColors.glassBorder, width: 0.5),
           ),
@@ -79,7 +80,7 @@ class _MobileAuthScreenState extends ConsumerState<MobileAuthScreen>
                       width: 36,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColors.textMuted.withValues(alpha: 0.4),
+                        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(AppRadius.full),
                       ),
                     ),
@@ -119,5 +120,5 @@ class _AuthScreenState extends ConsumerState<AuthScreen> {
 
   @override
   Widget build(BuildContext context) =>
-      const Scaffold(backgroundColor: AppColors.background);
+      Scaffold(backgroundColor: AppColorsScheme.of(context).background);
 }

@@ -42,6 +42,7 @@ import '../player/song_options_sheet.dart';
 import 'library_downloaded_content.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 enum CollectionType { playlist, album, artist }
 
@@ -69,13 +70,13 @@ List<Song> _sortBySortOrder(List<Song> songs, PlaylistTrackSortOrder order) {
   }
 }
 
-Widget _thumbPlaceholder({double size = 48}) => Container(
+Widget _thumbPlaceholder(BuildContext context, {double size = 48}) => Container(
       width: size,
       height: size,
-      color: AppColors.surfaceLight,
+      color: AppColorsScheme.of(context).surfaceLight,
       child: Center(
           child: AppIcon(
-              icon: AppIcons.musicNote, color: AppColors.textMuted, size: 24)),
+              icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted, size: 24)),
     );
 
 enum _PersistKind { playlist, album, artist }
@@ -187,9 +188,6 @@ class LibraryPlaylistScreen extends ConsumerStatefulWidget {
 
 class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   LibraryPlaylist? _remoteAsLocal;
-  // Default true for all remote-capable types; _initSync sets to false on cache hit.
-  // This prevents the "Playlist not found" flash when cache is empty.
-  bool _remoteLoading = true;
   String? _remoteError;
   bool _addingToLibrary = false;
   String? _resolvedBrowseId;
@@ -198,6 +196,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   String? _lastPaletteUrl;
   LibraryPlaylist? _localPlaylistCache;
   bool _importedFetchTriggered = false;
+  ShuffleMode _ephemeralShuffleMode = ShuffleMode.none;
 
   bool get _isRemote =>
       widget._isRemotePlaylist ||
@@ -229,63 +228,31 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   /// Reads cache + DB to pre-populate _remoteAsLocal and _paletteColor
   /// so the first frame renders the full UI with no loading flash.
   void _initSync() {
-    // Liked songs — always local, never needs loading
+    // Liked songs — pre-load its fixed pink color for smooth transition
     if (widget.playlistId == 'liked') {
-      _remoteLoading = false;
+      _paletteColor = const Color(0xFFE91E8C);
       return;
     }
 
     // Downloads — always local, never needs loading
     if (widget.playlistId == 'downloads') {
-      _remoteLoading = false;
       return;
     }
 
     // Local Files — always local, never needs loading
     if (widget.playlistId == 'localFiles') {
-      _remoteLoading = false;
       return;
     }
 
-    // Remote playlist — check in-memory cache
+    // Remote playlist — no cache, show LoadingScaffold until Hive/network ready.
     if (widget._isRemotePlaylist) {
-      final pl = widget.remotePlaylist!;
-      final entry = CollectionTrackCache.instance.getEntry(pl.id);
-      if (entry != null) {
-        _paletteColor = entry.paletteColor;
-        _remoteAsLocal = _makePlaylist(
-          id: pl.id,
-          name: pl.title,
-          description: pl.curatorName ?? pl.description,
-          songs: entry.songs,
-          imageUrl: pl.coverUrl.isEmpty ? null : pl.coverUrl,
-        );
-        _remoteLoading = false;
-      } else {
-        _remoteLoading = true;
-      }
       return;
     }
 
-    // Album — check in-memory cache (browseId known upfront)
+    // Album — pre-load DB palette if available; LoadingScaffold until Hive/network ready.
     if (widget._isAlbum) {
       final browseId = widget.albumBrowseId;
       if (browseId != null) {
-        final entry = CollectionTrackCache.instance.getEntry(browseId);
-        if (entry != null) {
-          _resolvedBrowseId = browseId;
-          _paletteColor = entry.paletteColor;
-          _remoteAsLocal = _makePlaylist(
-            id: browseId,
-            name: widget.albumName ?? widget.albumSongTitle ?? '',
-            description: widget.albumArtistName ?? '',
-            songs: entry.songs,
-            imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
-          );
-          _remoteLoading = false;
-          return;
-        }
-        // Check DB palette even if no cache
         final album = _readLibraryState()
             ?.followedAlbums
             .where((a) => a.id == browseId || a.browseId == browseId)
@@ -294,31 +261,13 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           _paletteColor = Color(album!.cachedPaletteColor!);
         }
       }
-      _remoteLoading = true;
       return;
     }
 
-    // Artist — check in-memory cache (browseId known upfront)
+    // Artist — pre-load DB palette if available; LoadingScaffold until Hive/network ready.
     if (widget._isArtist) {
       final browseId = widget.albumBrowseId;
       if (browseId != null) {
-        final entry = CollectionTrackCache.instance.getEntry(browseId);
-        final songs = entry?.songs;
-        if (songs != null) {
-          _resolvedBrowseId = browseId;
-          _paletteColor = entry?.paletteColor;
-          _remoteAsLocal = _makePlaylist(
-            id: browseId,
-            name: widget.albumName ?? '',
-            songs: songs,
-            imageUrl:
-                CollectionTrackCache.instance.getEntry(browseId)?.imageUrl ??
-                    widget.albumThumbnailUrl,
-          );
-          _remoteLoading = false;
-          return;
-        }
-        // Check DB palette even if no cache
         final artist = _readLibraryState()
             ?.followedArtists
             .where((a) => a.id == browseId || a.browseId == browseId)
@@ -327,14 +276,18 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           _paletteColor = Color(artist!.cachedPaletteColor!);
         }
       }
-      _remoteLoading = true;
       return;
     }
 
     // Local playlist (user-created or imported) — never show loading screen.
-    // ref is not available in initState so we defer data loading to postFrameCallback,
-    // but we must set _remoteLoading=false now so the first build doesn't show LoadingScaffold.
-    _remoteLoading = false;
+    // Local playlist — pre-load cached palette synchronously so first frame has correct gradient.
+    final local = _readLibraryState()
+        ?.playlists
+        .where((p) => p.id == widget.playlistId)
+        .firstOrNull;
+    if (local?.cachedPaletteColor != null) {
+      _paletteColor = Color(local!.cachedPaletteColor!);
+    }
   }
 
   /// Safe read of library state — only callable after ref is available (post-initState).
@@ -368,25 +321,16 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           final browseId = local.browseId ?? local.id;
           final cached = await CollectionTrackCache.instance.getSongs(browseId);
           if (cached != null && _remoteAsLocal == null) {
-            final cachedPalette =
-                await CollectionTrackCache.instance.getPaletteColor(browseId);
-            if (cachedPalette != null) {
-              setState(() => _paletteColor = cachedPalette);
-            }
             setState(() {
               _remoteAsLocal = _makePlaylist(
                 id: local.id,
                 name: local.name,
                 description: local.description,
                 songs: cached,
-                imageUrl: CollectionTrackCache.instance
-                        .getEntry(browseId)
-                        ?.imageUrl ??
-                    local.customImageUrl,
+                imageUrl: local.customImageUrl,
                 browseId: browseId,
                 createdAt: local.createdAt,
               );
-              _remoteLoading = false;
             });
             _importedFetchTriggered = true;
             // Silent background refresh after transition — don't show loading
@@ -401,24 +345,22 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           }
           return;
         }
-        // User-created playlist — just extract palette after transition
+        // User-created playlist — extract palette after transition and persist it
         if (_paletteColor == null) {
           _scheduleAfterTransition(() => _extractPalette(
-              local.customImageUrl ?? local.songs.firstOrNull?.thumbnailUrl));
+              local.customImageUrl ?? local.songs.firstOrNull?.thumbnailUrl,
+              persistId: local.id,
+              persistKind: _PersistKind.playlist));
         }
       }
       return;
     }
 
-    // Remote / album / artist — if we already have data from cache (_remoteLoading=false),
-    // schedule a silent background refresh after transition completes.
-    if (!_remoteLoading && _remoteAsLocal != null) {
-      // Already have data from cache — schedule silent refresh after transition
-      _scheduleAfterTransition(() => _startFetches(silent: true));
-    } else {
-      // No cache — fetch after transition (loading screen is already showing).
-      _scheduleAfterTransition(() => _startFetches(silent: false));
-    }
+    // Remote / album / artist:
+    // Check Hive immediately (no transition delay) — it's ~10ms.
+    // Cache hit: populates before the slide animation finishes, no LoadingScaffold seen.
+    // Cache miss: LoadingScaffold stays until network fetch + palette are both done.
+    _startFetches(silent: false);
   }
 
   void _scheduleAfterTransition(VoidCallback fn) {
@@ -447,14 +389,12 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   }
 
   void _setLoading() => setState(() {
-        _remoteLoading = true;
         _remoteError = null;
       });
   void _setError(Object e) {
     if (mounted) {
       setState(() {
         _remoteError = e.toString();
-        _remoteLoading = false;
       });
     }
   }
@@ -482,26 +422,24 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
   Future<void> _fetchRemoteTracks({bool silent = false}) async {
     final pl = widget.remotePlaylist!;
-    final entry = CollectionTrackCache.instance.getEntry(pl.id);
-    if (entry != null) {
+    final entry = await CollectionTrackCache.instance.getEntryFromCache(pl.id);
+    if (entry != null && mounted) {
       if (!silent || _remoteAsLocal == null) {
-        if (entry.paletteColor != null && mounted && _paletteColor == null) {
-          setState(() => _paletteColor = entry.paletteColor);
-        }
         if (_remoteAsLocal == null) {
+          final imageUrl = pl.coverUrl.isEmpty ? entry.imageUrl : pl.coverUrl;
           setState(() {
+            if (entry.paletteColor != null) _paletteColor = entry.paletteColor;
             _remoteAsLocal = _makePlaylist(
               id: pl.id,
               name: pl.title,
               description: pl.curatorName ?? pl.description,
               songs: entry.songs,
-              imageUrl: pl.coverUrl.isEmpty ? null : pl.coverUrl,
+              imageUrl: imageUrl,
             );
-            _remoteLoading = false;
           });
         }
       }
-      if (entry.paletteColor == null && _paletteColor == null) {
+      if (_paletteColor == null) {
         _extractPalette(pl.coverUrl.isEmpty
             ? entry.songs.firstOrNull?.thumbnailUrl
             : pl.coverUrl);
@@ -529,7 +467,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           songs: songs,
           imageUrl: imageUrl,
         );
-        _remoteLoading = false;
       });
       if (color != null) {
         CollectionTrackCache.instance.updatePalette(pl.id, color);
@@ -540,40 +477,41 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   }
 
   Future<void> _fetchAlbumTracks({bool silent = false}) async {
-    if (!silent) _setLoading();
     try {
       final sm = ref.read(streamManagerProvider);
       _resolvedBrowseId = widget.albumBrowseId;
       if (_resolvedBrowseId == null && widget.albumSongId != null) {
+        if (!silent) _setLoading();
         final full = await sm
             .getSongFromPlayer(widget.albumSongId!)
             .timeout(const Duration(seconds: 10), onTimeout: () => null);
         _resolvedBrowseId = full?.albumBrowseId;
       }
       if (_resolvedBrowseId == null) {
+        if (!silent) _setLoading();
         final r = await sm.searchResolveBrowseIds(
             '${widget.albumSongTitle} ${widget.albumArtistName}'.trim());
         _resolvedBrowseId = r.albumBrowseId;
       }
       if (_resolvedBrowseId == null) throw Exception('Could not find album');
 
-      final entry = CollectionTrackCache.instance.getEntry(_resolvedBrowseId!);
+      // BrowseId resolved — check Hive before deciding to show loading.
+      final entry = await CollectionTrackCache.instance.getEntryFromCache(_resolvedBrowseId!);
       if (entry != null && mounted) {
-        if (entry.paletteColor != null) {
-          setState(() => _paletteColor = entry.paletteColor);
+        if (!silent || _remoteAsLocal == null) {
+          setState(() {
+            if (entry.paletteColor != null) _paletteColor = entry.paletteColor;
+            _albumSubtitle = widget.albumArtistName;
+            _remoteAsLocal = _makePlaylist(
+              id: _resolvedBrowseId!,
+              name: widget.albumName ?? widget.albumSongTitle ?? '',
+              description: widget.albumArtistName ?? '',
+              songs: entry.songs,
+              imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
+            );
+          });
         }
-        setState(() {
-          _albumSubtitle = widget.albumArtistName;
-          _remoteAsLocal = _makePlaylist(
-            id: _resolvedBrowseId!,
-            name: widget.albumName ?? widget.albumSongTitle ?? '',
-            description: widget.albumArtistName ?? '',
-            songs: entry.songs,
-            imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
-          );
-          _remoteLoading = false;
-        });
-        if (entry.paletteColor == null) {
+        if (_paletteColor == null) {
           final isInLib = ref.read(libraryProvider).followedAlbums.any((a) =>
               a.id == _resolvedBrowseId || a.browseId == _resolvedBrowseId);
           _extractPalette(entry.imageUrl ?? widget.albumThumbnailUrl,
@@ -582,6 +520,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         }
         return;
       }
+      if (!silent) _setLoading();
 
       final result = await sm.getCollectionTracks(_resolvedBrowseId!);
       if (!mounted) return;
@@ -607,7 +546,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           songs: songs,
           imageUrl: imageUrl,
         );
-        _remoteLoading = false;
       });
       if (color != null) {
         _persistPalette(color, _resolvedBrowseId!, _PersistKind.album);
@@ -638,35 +576,27 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
       if (_resolvedBrowseId == null) throw Exception('Could not find artist');
 
-      final cached =
-          await CollectionTrackCache.instance.getSongs(_resolvedBrowseId!);
-      if (cached != null && mounted) {
-        // Cache hit — only update if not already shown (silent refresh skips UI update)
+      final entry =
+          await CollectionTrackCache.instance.getEntryFromCache(_resolvedBrowseId!);
+      if (entry != null && mounted) {
+        // Cache hit — update if first load or non-silent refresh
         if (!silent || _remoteAsLocal == null) {
-          final cachedPalette = await CollectionTrackCache.instance
-              .getPaletteColor(_resolvedBrowseId!);
-          if (cachedPalette != null && _paletteColor == null) {
-            setState(() => _paletteColor = cachedPalette);
-          }
           if (_remoteAsLocal == null) {
             setState(() {
+              if (entry.paletteColor != null) _paletteColor = entry.paletteColor;
               _remoteAsLocal = _makePlaylist(
                 id: _resolvedBrowseId!,
                 name: widget.albumName ?? '',
-                songs: cached,
-                imageUrl: CollectionTrackCache.instance
-                        .getEntry(_resolvedBrowseId!)
-                        ?.imageUrl ??
-                    widget.albumThumbnailUrl,
+                songs: entry.songs,
+                imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
               );
-              _remoteLoading = false;
             });
           }
-          if (cachedPalette == null && _paletteColor == null) {
+          if (_paletteColor == null) {
             final isInLib = ref.read(libraryProvider).followedArtists.any((a) =>
                 a.id == _resolvedBrowseId || a.browseId == _resolvedBrowseId);
             _extractPalette(
-                _remoteAsLocal?.customImageUrl ?? widget.albumThumbnailUrl,
+                entry.imageUrl ?? widget.albumThumbnailUrl,
                 persistId: isInLib ? _resolvedBrowseId : null,
                 persistKind: isInLib ? _PersistKind.artist : null);
           }
@@ -696,7 +626,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           songs: songs,
           imageUrl: imageUrl,
         );
-        _remoteLoading = false;
       });
       if (color != null) {
         _persistPalette(color, _resolvedBrowseId!, _PersistKind.artist);
@@ -727,11 +656,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final cached = await CollectionTrackCache.instance.getSongs(browseId);
     if (cached != null) {
       if (!mounted) return;
-      final cachedPalette =
-          await CollectionTrackCache.instance.getPaletteColor(browseId);
-      if (cachedPalette != null && _paletteColor == null) {
-        setState(() => _paletteColor = cachedPalette);
-      }
       if (_remoteAsLocal == null) {
         setState(() {
           _remoteAsLocal = _makePlaylist(
@@ -739,21 +663,16 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             name: local.name,
             description: local.description,
             songs: cached,
-            imageUrl:
-                CollectionTrackCache.instance.getEntry(browseId)?.imageUrl ??
-                    local.customImageUrl,
+            imageUrl: local.customImageUrl,
             browseId: browseId,
             createdAt: local.createdAt,
           );
-          _remoteLoading = false;
         });
       }
-      if (cachedPalette == null) {
-        _extractPalette(
-            local.customImageUrl ?? cached.firstOrNull?.thumbnailUrl,
-            persistId: local.id,
-            persistKind: _PersistKind.playlist);
-      }
+      _extractPalette(
+          local.customImageUrl ?? cached.firstOrNull?.thumbnailUrl,
+          persistId: local.id,
+          persistKind: _PersistKind.playlist);
       return;
     }
 
@@ -790,7 +709,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           browseId: browseId,
           createdAt: local.createdAt,
         );
-        _remoteLoading = false;
       });
       if (color != null) {
         _persistPalette(color, local.id, _PersistKind.playlist);
@@ -858,12 +776,18 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final playlist = _remoteAsLocal;
     if (playlist == null) return;
     setState(() => _addingToLibrary = true);
+    
+    // Extract and cache palette immediately so it's available on next open
+    final imageUrl = playlist.customImageUrl ?? 
+                     playlist.songs.firstOrNull?.thumbnailUrl;
+    
     if (widget._isAlbum) {
+      final albumId = _resolvedBrowseId ??
+                      widget.albumBrowseId ??
+                      widget.albumName ??
+                      '';
       await ref.read(libraryProvider.notifier).toggleFollowAlbum(LibraryAlbum(
-            id: _resolvedBrowseId ??
-                widget.albumBrowseId ??
-                widget.albumName ??
-                '',
+            id: albumId,
             title: playlist.name,
             artistName: _albumSubtitle ?? widget.albumArtistName ?? '',
             thumbnailUrl:
@@ -871,21 +795,49 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             browseId: _resolvedBrowseId ?? widget.albumBrowseId,
             followedAt: DateTime.now(),
           ));
+      // Persist current palette or extract and persist for smooth next open
+      if (_paletteColor != null) {
+        // Already have palette - just persist it
+        _persistPalette(_paletteColor!, albumId, _PersistKind.album);
+      } else if (imageUrl != null) {
+        // Don't have palette yet - extract and persist
+        await _extractPalette(imageUrl,
+            persistId: albumId, persistKind: _PersistKind.album);
+      }
     } else if (widget._isArtist) {
+      final artistId = _resolvedBrowseId ??
+                       widget.albumBrowseId ??
+                       widget.albumName ??
+                       '';
       await ref.read(libraryProvider.notifier).toggleFollowArtist(LibraryArtist(
-            id: _resolvedBrowseId ??
-                widget.albumBrowseId ??
-                widget.albumName ??
-                '',
+            id: artistId,
             name: playlist.name,
             thumbnailUrl:
                 playlist.customImageUrl ?? widget.albumThumbnailUrl ?? '',
             browseId: _resolvedBrowseId ?? widget.albumBrowseId,
             followedAt: DateTime.now(),
           ));
+      // Persist current palette or extract and persist for smooth next open
+      if (_paletteColor != null) {
+        // Already have palette - just persist it
+        _persistPalette(_paletteColor!, artistId, _PersistKind.artist);
+      } else if (imageUrl != null) {
+        // Don't have palette yet - extract and persist
+        await _extractPalette(imageUrl,
+            persistId: artistId, persistKind: _PersistKind.artist);
+      }
     } else {
-      await ref.read(libraryProvider.notifier).addPlaylistToLibrary(
-          playlist.copyWith(browseId: playlist.browseId ?? playlist.id));
+      final playlistToAdd = playlist.copyWith(browseId: playlist.browseId ?? playlist.id);
+      await ref.read(libraryProvider.notifier).addPlaylistToLibrary(playlistToAdd);
+      // Persist current palette or extract and persist for smooth next open
+      if (_paletteColor != null) {
+        // Already have palette - just persist it
+        _persistPalette(_paletteColor!, playlistToAdd.id, _PersistKind.playlist);
+      } else if (imageUrl != null) {
+        // Don't have palette yet - extract and persist
+        await _extractPalette(imageUrl,
+            persistId: playlistToAdd.id, persistKind: _PersistKind.playlist);
+      }
     }
     if (mounted) setState(() => _addingToLibrary = false);
   }
@@ -952,7 +904,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                     'Tap Download on a song to add it here.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppColors.textMuted.withValues(alpha: 0.7),
+                      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                       fontSize: AppFontSize.base,
                     ),
                   ),
@@ -1050,7 +1002,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color:
-                                    AppColors.textMuted.withValues(alpha: 0.7),
+                                    AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                                 fontSize: AppFontSize.base,
                               ),
                             ),
@@ -1074,7 +1026,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.folder_outlined,
-                        size: 14, color: AppColors.textSecondary),
+                        size: 14, color: AppColorsScheme.of(context).textSecondary),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -1082,7 +1034,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: AppColorsScheme.of(context).textSecondary,
                           fontSize: AppFontSize.xs,
                         ),
                       ),
@@ -1117,7 +1069,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                         : 'No local files found',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppColors.textMuted.withValues(alpha: 0.7),
+                      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                       fontSize: AppFontSize.base,
                     ),
                   ),
@@ -1193,6 +1145,32 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
     final isImported = _isRemote || playlist.isImported;
     final songs = playlist.sortedSongs;
+
+    // For user-created playlists: re-extract palette when the source URL changes
+    // (song added/removed/replaced) or when we have songs but no palette yet.
+    if (!_isRemote && !isImported) {
+      final paletteSource =
+          playlist.customImageUrl ?? songs.firstOrNull?.thumbnailUrl;
+      // sourceChanged: we've extracted before but the cover source is different now
+      final sourceChanged =
+          _lastPaletteUrl != null && paletteSource != _lastPaletteUrl;
+      // needsExtraction: no palette yet and there's a source to extract from
+      final needsExtraction = _paletteColor == null && paletteSource != null;
+      if (sourceChanged || needsExtraction) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          setState(() {
+            _paletteColor = null;
+            _lastPaletteUrl = null; // clear dedup guard so extraction always runs
+          });
+          if (paletteSource != null) {
+            _extractPalette(paletteSource,
+                persistId: widget.playlistId,
+                persistKind: _PersistKind.playlist);
+          }
+        });
+      }
+    }
     final hasSong = ref.watch(currentSongProvider) != null;
     final filteredSongs =
         filterByExplicitSetting(songs, ref.watch(showExplicitContentProvider));
@@ -1225,19 +1203,25 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         playlistId: playlist.id,
         songs: songs,
         filteredSongs: filteredSongs,
-        disableShuffle: _isRemote && !isInLibrary,
         showLibraryStatus: !isLiked && isImported,
         isInLibrary: isInLibrary,
         onAddToLibrary: _addToLibrary,
         addingToLibrary: _addingToLibrary,
+        externalShuffleMode:
+            (_isRemote && !isInLibrary) ? _ephemeralShuffleMode : null,
+        onShuffleModeChanged: (_isRemote && !isInLibrary)
+            ? (m) => setState(() => _ephemeralShuffleMode = m)
+            : null,
       ),
       playButton: _CollectionPlayButton(
         playlistId: playlist.id,
         songs: songs,
         filteredSongs: filteredSongs,
-        disableShuffle: _isRemote && !isInLibrary,
         queueSource:
             isLiked ? 'liked' : (widget._isAlbum ? 'album' : 'playlist'),
+        externalShuffleEnabled: (_isRemote && !isInLibrary)
+            ? (_ephemeralShuffleMode != ShuffleMode.none)
+            : null,
       ),
       pills: (widget._isAlbum || widget._isArtist || isImported)
           ? null
@@ -1268,7 +1252,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                       : 'No songs match your filter',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppColors.textMuted.withValues(alpha: 0.7),
+                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                     fontSize: AppFontSize.base,
                   ),
                 ),
@@ -1301,7 +1285,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
   Widget _buildSubtitle(LibraryPlaylist playlist) {
     final muted = TextStyle(
-        color: AppColors.textMuted.withValues(alpha: 0.9),
+        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
         fontSize: AppFontSize.base);
     final countDuration = Row(children: [
       Text(
@@ -1320,8 +1304,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       children: [
         if (artistLine != null)
           Text(artistLine,
-              style: const TextStyle(
-                  color: AppColors.textSecondary,
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w500)),
         const SizedBox(height: AppSpacing.sm),
@@ -1332,7 +1316,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
   Widget _buildCountDuration(List<Song> songs) {
     final muted = TextStyle(
-        color: AppColors.textMuted.withValues(alpha: 0.9),
+        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
         fontSize: AppFontSize.base);
     return Row(children: [
       Text('${songs.length} ${songs.length == 1 ? 'song' : 'songs'}',
@@ -1431,7 +1415,7 @@ class _PlaylistCover extends StatelessWidget {
           decoration: BoxDecoration(
             shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
             borderRadius: isCircle ? null : BorderRadius.circular(AppRadius.sm),
-            color: AppColors.surfaceLight.withValues(alpha: 0.6),
+            color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.6),
             boxShadow: [shadow],
           ),
           child: isCircle
@@ -1442,10 +1426,10 @@ class _PlaylistCover extends StatelessWidget {
                       height: _size,
                       fit: BoxFit.cover,
                       errorWidget: (_, __, ___) => Container(
-                          color: AppColors.surfaceLight,
+                          color: AppColorsScheme.of(context).surfaceLight,
                           child: AppIcon(
                               icon: AppIcons.person,
-                              color: AppColors.textMuted,
+                              color: AppColorsScheme.of(context).textMuted,
                               size: 64))))
               : Padding(
                   padding: const EdgeInsets.all(4),
@@ -1456,7 +1440,7 @@ class _PlaylistCover extends StatelessWidget {
                         width: _size - 8,
                         height: _size - 8,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => _mosaic(songs, _size - 8)),
+                        errorWidget: (errCtx, __, ___) => _mosaic(errCtx, songs, _size - 8)),
                   )),
         ),
       );
@@ -1489,7 +1473,7 @@ class _PlaylistCover extends StatelessWidget {
               width: _size,
               height: _size,
               decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
+                color: AppColorsScheme.of(context).surfaceLight,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 boxShadow: [
                   BoxShadow(
@@ -1501,7 +1485,7 @@ class _PlaylistCover extends StatelessWidget {
               child: Center(
                   child: AppIcon(
                       icon: AppIcons.musicNote,
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       size: 64))));
     }
 
@@ -1510,16 +1494,16 @@ class _PlaylistCover extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          color: AppColors.surfaceLight.withValues(alpha: 0.6),
+          color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.6),
           boxShadow: [shadow],
         ),
         child: Padding(
-            padding: const EdgeInsets.all(4), child: _mosaic(songs, _size - 8)),
+            padding: const EdgeInsets.all(4), child: _mosaic(context, songs, _size - 8)),
       ),
     );
   }
 
-  static Widget _mosaic(List<Song> songs, double size) {
+  static Widget _mosaic(BuildContext context, List<Song> songs, double size) {
     if (songs.length == 1) {
       return ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -1528,7 +1512,7 @@ class _PlaylistCover extends StatelessWidget {
               width: size,
               height: size,
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _cell(null, size)));
+              errorWidget: (errCtx, __, ___) => _cell(errCtx, null, size)));
     }
     final urls = songs.take(4).map((s) => s.thumbnailUrl).toList();
     const gap = 2.0;
@@ -1538,20 +1522,20 @@ class _PlaylistCover extends StatelessWidget {
         height: size,
         child: Column(children: [
           Row(children: [
-            _cell(urls.elementAtOrNull(0), cell),
+            _cell(context, urls.elementAtOrNull(0), cell),
             const SizedBox(width: gap),
-            _cell(urls.elementAtOrNull(1), cell)
+            _cell(context, urls.elementAtOrNull(1), cell)
           ]),
           const SizedBox(height: gap),
           Row(children: [
-            _cell(urls.elementAtOrNull(2), cell),
+            _cell(context, urls.elementAtOrNull(2), cell),
             const SizedBox(width: gap),
-            _cell(urls.elementAtOrNull(3), cell)
+            _cell(context, urls.elementAtOrNull(3), cell)
           ]),
         ]));
   }
 
-  static Widget _cell(String? url, double s) {
+  static Widget _cell(BuildContext context, String? url, double s) {
     return SizedBox(
         width: s,
         height: s,
@@ -1563,16 +1547,16 @@ class _PlaylistCover extends StatelessWidget {
                     fit: BoxFit.cover,
                     memCacheWidth: px,
                     memCacheHeight: px,
-                    errorWidget: (_, __, ___) => _placeholder(s: s));
+                    errorWidget: (errCtx, __, ___) => _placeholder(s: s, context: errCtx));
               })
-            : _placeholder(s: s));
+            : _placeholder(s: s, context: context));
   }
 
-  static Widget _placeholder({required double s}) => Container(
+  static Widget _placeholder({required double s, required BuildContext context}) => Container(
       width: s,
       height: s,
-      color: AppColors.surfaceLight,
-      child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted));
+      color: AppColorsScheme.of(context).surfaceLight,
+      child: AppIcon(icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted));
 }
 
 // ─── Liked Songs helpers (edit / add sheets) ─────────────────────────────────
@@ -1600,37 +1584,52 @@ class _ActionRow extends ConsumerWidget {
     required this.playlistId,
     required this.songs,
     required this.filteredSongs,
-    this.disableShuffle = false,
     this.showLibraryStatus = false,
     this.isInLibrary = true,
     this.onAddToLibrary,
     this.addingToLibrary = false,
     this.isDownloads = false,
     this.isLocalFiles = false,
+    this.externalShuffleMode,
+    this.onShuffleModeChanged,
   });
 
   final String playlistId;
   final List<Song> songs, filteredSongs;
-  final bool disableShuffle,
-      showLibraryStatus,
+  final bool showLibraryStatus,
       isInLibrary,
       addingToLibrary,
       isDownloads,
       isLocalFiles;
   final VoidCallback? onAddToLibrary;
+  final ShuffleMode? externalShuffleMode;
+  final ValueChanged<ShuffleMode>? onShuffleModeChanged;
+
+  void _showShuffleModeSheet(
+      BuildContext context, WidgetRef ref, ShuffleMode current) {
+    showAppSheet(
+      context,
+      child: _ShuffleModeSheet(
+        current: current,
+        playlistId: playlistId,
+        isDownloads: isDownloads || isLocalFiles,
+        onSet: onShuffleModeChanged,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final shuffleEnabled = disableShuffle
-        ? false
-        : isDownloads || isLocalFiles
-            ? ref.watch(downloadedShuffleProvider)
+    final ShuffleMode shuffleMode = externalShuffleMode ??
+        (isDownloads || isLocalFiles
+            ? ref.watch(libraryProvider.select((s) => s.downloadedShuffleMode))
             : ref.watch(libraryProvider.select((s) =>
                 s.playlists
                     .where((p) => p.id == playlistId)
                     .firstOrNull
-                    ?.shuffleEnabled ??
-                false));
+                    ?.shuffleMode ??
+                ShuffleMode.none)));
+    final shuffleEnabled = shuffleMode != ShuffleMode.none;
 
     return SizedBox(
       height: kCollectionActionRowHeight,
@@ -1639,19 +1638,36 @@ class _ActionRow extends ConsumerWidget {
             const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
           AppIconButton(
-            icon: AppIcon(
-                icon: AppIcons.shuffle,
-                size: 24,
-                color:
-                    shuffleEnabled ? AppColors.primary : AppColors.textPrimary),
-            onPressed: filteredSongs.isNotEmpty && !disableShuffle
-                ? () => isDownloads || isLocalFiles
-                    ? ref
-                        .read(libraryProvider.notifier)
-                        .toggleDownloadedShuffle()
-                    : ref
-                        .read(libraryProvider.notifier)
-                        .togglePlaylistShuffle(playlistId)
+            icon: SizedBox(
+              width: 24,
+              height: 24,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  AppIcon(
+                    icon: AppIcons.shuffle,
+                    size: 24,
+                    color: shuffleEnabled
+                        ? AppColors.primary
+                        : AppColorsScheme.of(context).textPrimary,
+                  ),
+                  if (shuffleMode == ShuffleMode.smart)
+                    Positioned(
+                      right: -6,
+                      top: -6,
+                      child: Icon(
+                        Icons.auto_awesome,
+                        size: 13,
+                        color: shuffleEnabled
+                            ? AppColors.primary
+                            : AppColorsScheme.of(context).textPrimary,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            onPressed: filteredSongs.isNotEmpty
+                ? () => _showShuffleModeSheet(context, ref, shuffleMode)
                 : null,
             size: 40,
             iconSize: 24,
@@ -1661,11 +1677,11 @@ class _ActionRow extends ConsumerWidget {
           if (showLibraryStatus)
             AppIconButton(
               icon: addingToLibrary
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppColors.textMuted))
+                          strokeWidth: 2, color: AppColorsScheme.of(context).textMuted))
                   : AppIcon(
                       icon: isInLibrary
                           ? AppIcons.checkCircle
@@ -1673,7 +1689,7 @@ class _ActionRow extends ConsumerWidget {
                       size: 24,
                       color: isInLibrary
                           ? AppColors.primary
-                          : AppColors.textPrimary),
+                          : AppColorsScheme.of(context).textPrimary),
               onPressed:
                   (!isInLibrary && !addingToLibrary) ? onAddToLibrary : null,
               size: 40,
@@ -1695,27 +1711,27 @@ class _CollectionPlayButton extends ConsumerWidget {
     required this.songs,
     required this.filteredSongs,
     required this.queueSource,
-    this.disableShuffle = false,
     this.isDownloads = false,
     this.isLocalFiles = false,
+    this.externalShuffleEnabled,
   });
 
   final String playlistId, queueSource;
   final List<Song> songs, filteredSongs;
-  final bool disableShuffle, isDownloads, isLocalFiles;
+  final bool isDownloads, isLocalFiles;
+  final bool? externalShuffleEnabled;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final shuffleEnabled = disableShuffle
-        ? false
-        : isDownloads || isLocalFiles
+    final bool shuffleEnabled = externalShuffleEnabled ??
+        (isDownloads || isLocalFiles
             ? ref.watch(downloadedShuffleProvider)
             : ref.watch(libraryProvider.select((s) =>
                 s.playlists
                     .where((p) => p.id == playlistId)
                     .firstOrNull
-                    ?.shuffleEnabled ??
-                false));
+                    ?.shuffleEnabled ?? // true for regular and smart modes
+                false)));
     return PlayCircleButton(
       onTap: filteredSongs.isNotEmpty
           ? () {
@@ -1730,6 +1746,124 @@ class _CollectionPlayButton extends ConsumerWidget {
           : () {},
       size: 56,
       iconSize: 28,
+    );
+  }
+}
+
+// ─── Shuffle Mode Sheet ───────────────────────────────────────────────────────
+
+class _ShuffleModeSheet extends ConsumerWidget {
+  const _ShuffleModeSheet({
+    required this.current,
+    required this.playlistId,
+    required this.isDownloads,
+    this.onSet,
+  });
+
+  final ShuffleMode current;
+  final String playlistId;
+  final bool isDownloads;
+  final ValueChanged<ShuffleMode>? onSet;
+
+  void _set(BuildContext context, WidgetRef ref, ShuffleMode mode) {
+    if (onSet != null) {
+      onSet!(mode);
+    } else if (isDownloads) {
+      ref.read(libraryProvider.notifier).setDownloadedShuffleMode(mode);
+    } else {
+      ref.read(libraryProvider.notifier).setPlaylistShuffleMode(playlistId, mode);
+    }
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+            kSheetHorizontalPadding, AppSpacing.lg, kSheetHorizontalPadding, AppSpacing.md),
+        child: Text('Shuffle',
+            style: TextStyle(
+                color: AppColorsScheme.of(context).textPrimary,
+                fontSize: AppFontSize.xl,
+                fontWeight: FontWeight.w700)),
+      ),
+      _ShuffleModeTile(
+        icon: AppIcons.shuffle,
+        label: 'Shuffle off',
+        selected: current == ShuffleMode.none,
+        onTap: () => _set(context, ref, ShuffleMode.none),
+      ),
+      _ShuffleModeTile(
+        icon: AppIcons.shuffle,
+        label: 'Regular Shuffle',
+        subtitle: 'Shuffle songs in this playlist',
+        selected: current == ShuffleMode.regular,
+        onTap: () => _set(context, ref, ShuffleMode.regular),
+      ),
+      _ShuffleModeTile(
+        icon: AppIcons.shuffle,
+        label: 'Smart Shuffle',
+        subtitle: 'Shuffle + mix in recommended songs',
+        selected: current == ShuffleMode.smart,
+        isSmart: true,
+        onTap: () => _set(context, ref, ShuffleMode.smart),
+      ),
+      const SizedBox(height: AppSpacing.xl),
+    ]);
+  }
+}
+
+class _ShuffleModeTile extends StatelessWidget {
+  const _ShuffleModeTile({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.subtitle,
+    this.isSmart = false,
+  });
+
+  final List<List<dynamic>> icon;
+  final String label;
+  final String? subtitle;
+  final bool selected;
+  final bool isSmart;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppColors.primary : AppColorsScheme.of(context).textSecondary;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+          horizontal: kSheetHorizontalPadding, vertical: 4),
+      leading: isSmart
+          ? SizedBox(
+              width: 24,
+              height: 24,
+              child: Stack(children: [
+                AppIcon(icon: icon, size: 24, color: color),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Icon(Icons.auto_awesome, size: 10, color: color),
+                ),
+              ]),
+            )
+          : AppIcon(icon: icon, size: 24, color: color),
+      title: Text(label,
+          style: TextStyle(
+              color: selected ? AppColors.primary : AppColorsScheme.of(context).textPrimary,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
+      subtitle: subtitle != null
+          ? Text(subtitle!,
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm))
+          : null,
+      trailing: selected
+          ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)
+          : null,
+      onTap: onTap,
     );
   }
 }
@@ -1757,14 +1891,14 @@ class _MacOSFolderPrompt extends StatelessWidget {
         Icon(
           Icons.folder_open_outlined,
           size: 48,
-          color: AppColors.textMuted.withValues(alpha: 0.5),
+          color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
           'Choose a music folder',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: AppColorsScheme.of(context).textPrimary,
             fontSize: AppFontSize.lg,
             fontWeight: FontWeight.w600,
           ),
@@ -1774,7 +1908,7 @@ class _MacOSFolderPrompt extends StatelessWidget {
           'Select the folder on your Mac that contains\nyour local audio files.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: AppColors.textMuted.withValues(alpha: 0.7),
+            color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
             fontSize: AppFontSize.base,
           ),
         ),
@@ -1851,7 +1985,7 @@ class _DownloadsSortSheet extends ConsumerWidget {
             AppSpacing.base, AppSpacing.lg, AppSpacing.base, AppSpacing.md),
         child: Text('Sort downloads',
             style: TextStyle(
-                color: AppColors.textPrimary,
+                color: AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.xl,
                 fontWeight: FontWeight.w700)),
       ),
@@ -1961,15 +2095,15 @@ class _Pill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.5)),
+          border: Border.all(color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5)),
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          AppIcon(icon: icon, size: 18, color: AppColors.textSecondary),
+          AppIcon(icon: icon, size: 18, color: AppColorsScheme.of(context).textSecondary),
           const SizedBox(width: AppSpacing.xs),
           Text(label,
-              style: const TextStyle(
-                  color: AppColors.textSecondary,
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.md,
                   fontWeight: FontWeight.w500)),
         ]),
@@ -2081,13 +2215,13 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
             hintText: 'Search YouTube Music',
             style: InputFieldStyle.filled,
             prefixIcon: AppIcon(
-                icon: AppIcons.search, color: AppColors.textMuted, size: 20),
+                icon: AppIcons.search, color: AppColorsScheme.of(context).textMuted, size: 20),
             suffixIcon: _searchCtrl.text.trim().isNotEmpty
                 ? AppIconButton(
                     icon: AppIcon(
                         icon: AppIcons.clear,
                         size: 24,
-                        color: AppColors.textMuted),
+                        color: AppColorsScheme.of(context).textMuted),
                     onPressed: () {
                       _searchCtrl.clear();
                       setState(() => _results = []);
@@ -2114,7 +2248,7 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
               alignment: Alignment.centerLeft,
               child: Text('Recently played',
                   style: TextStyle(
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       fontSize: AppFontSize.sm,
                       fontWeight: FontWeight.w600))),
         ),
@@ -2133,9 +2267,12 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                                 : _searchCtrl.text.trim().isEmpty
                                     ? 'Type above to search for songs'
                                     : 'No results for "${_searchCtrl.text.trim()}"',
-                            style: const TextStyle(color: AppColors.textMuted),
+                            style: TextStyle(color: AppColorsScheme.of(context).textMuted),
                             textAlign: TextAlign.center)))
                 : ListView.builder(
+                    cacheExtent: 1000,
+                    addAutomaticKeepAlives: true,
+                    itemExtent: 70,
                     itemCount: list.length,
                     itemBuilder: (context, i) {
                       final song = list[i];
@@ -2158,7 +2295,7 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                                 fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) => AppIcon(
                                     icon: AppIcons.musicNote,
-                                    color: AppColors.textMuted,
+                                    color: AppColorsScheme.of(context).textMuted,
                                     size: 28)),
                           ),
                         ),
@@ -2168,12 +2305,12 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                             style: TextStyle(
                                 color: isNowPlaying
                                     ? AppColors.accent
-                                    : AppColors.textPrimary)),
+                                    : AppColorsScheme.of(context).textPrimary)),
                         subtitle: Text(song.artist,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: AppColors.textMuted,
+                            style: TextStyle(
+                                color: AppColorsScheme.of(context).textMuted,
                                 fontSize: AppFontSize.sm)),
                         trailing: AppIconButton(
                           icon: AppIcon(
@@ -2182,7 +2319,7 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                                   : AppIcons.addCircleOutline,
                               color: inPlaylist
                                   ? AppColors.primary
-                                  : AppColors.textSecondary,
+                                  : AppColorsScheme.of(context).textSecondary,
                               size: 24),
                           onPressed: () {
                             if (isLiked) {
@@ -2239,18 +2376,18 @@ class _SearchInPlaylistTap extends StatelessWidget {
         child: Container(
           height: 44,
           decoration: BoxDecoration(
-              color: AppColors.surfaceLight.withValues(alpha: 0.8),
+              color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(AppRadius.input)),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Row(children: [
             AppIcon(
                 icon: AppIcons.search,
-                color: AppColors.textMuted.withValues(alpha: 0.9),
+                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
                 size: 20),
             const SizedBox(width: AppSpacing.sm),
             Text('Find in playlist',
                 style: TextStyle(
-                    color: AppColors.textMuted.withValues(alpha: 0.9),
+                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
                     fontSize: AppFontSize.base)),
           ]),
         ),
@@ -2315,18 +2452,21 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
     final body = q.isEmpty
         ? SearchPageEmptyState(
             icon: AppIcon(
-                icon: AppIcons.search, size: 64, color: AppColors.textMuted),
+                icon: AppIcons.search, size: 64, color: AppColorsScheme.of(context).textMuted),
             heading: 'Find in playlist',
             subheading: 'Search by song title or artist')
         : filtered.isEmpty
             ? EmptyListMessage(
                 emptyLabel: 'matches',
                 query: q,
-                style: const TextStyle(
-                    color: AppColors.textSecondary,
+                style: TextStyle(
+                    color: AppColorsScheme.of(context).textSecondary,
                     fontSize: AppFontSize.lg,
                     fontWeight: FontWeight.w600))
             : ListView.builder(
+                cacheExtent: 1000,
+                addAutomaticKeepAlives: true,
+                itemExtent: 70,
                 physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.only(bottom: AppSpacing.max),
                 itemCount: filtered.length,
@@ -2348,7 +2488,7 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
 
     if (!hasSong) return page;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
           bottom: false,
@@ -2390,11 +2530,11 @@ class _TrackTile extends ConsumerWidget {
           queue: songs, playlistId: playlistId, queueSource: queueSource),
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         Text(song.durationFormatted,
-            style: const TextStyle(
-                color: AppColors.textMuted, fontSize: AppFontSize.md)),
+            style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.md)),
         AppIconButton(
           icon: AppIcon(
-              icon: AppIcons.moreVert, color: AppColors.textMuted, size: 20),
+              icon: AppIcons.moreVert, color: AppColorsScheme.of(context).textMuted, size: 20),
           onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
               song: song,
               ref: ref,
@@ -2485,10 +2625,10 @@ class _EditSongsSheetState extends ConsumerState<_EditSongsSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       appBar: BackTitleAppBar(
         title: _isLiked ? 'Edit Liked Songs' : 'Edit playlist',
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColorsScheme.of(context).background,
         actions: [
           AppButton(
               label: 'Save',
@@ -2500,6 +2640,7 @@ class _EditSongsSheetState extends ConsumerState<_EditSongsSheet> {
       ),
       body: ReorderableListView.builder(
         buildDefaultDragHandles: false,
+        cacheExtent: 1000,
         itemCount: _items.length,
         onReorder: _onReorder,
         itemBuilder: (context, index) {
@@ -2516,14 +2657,14 @@ class _EditSongsSheetState extends ConsumerState<_EditSongsSheet> {
                           isLiked: !marked,
                           songId: song.id,
                           size: 22,
-                          emptyColor: AppColors.textMuted)
+                          emptyColor: AppColorsScheme.of(context).textMuted)
                       : AppIcon(
                           icon: marked
                               ? AppIcons.removeCircle
                               : AppIcons.removeCircleOutline,
                           color: marked
                               ? AppColors.accentRed
-                              : AppColors.textMuted,
+                              : AppColorsScheme.of(context).textMuted,
                           size: 22),
                   onPressed: () => _toggleRemove(song),
                   size: 40,
@@ -2539,28 +2680,28 @@ class _EditSongsSheetState extends ConsumerState<_EditSongsSheet> {
                       width: 48,
                       height: 48,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => _thumbPlaceholder(),
-                      errorWidget: (_, __, ___) => _thumbPlaceholder()),
+                      placeholder: (_, __) => _thumbPlaceholder(context),
+                      errorWidget: (_, __, ___) => _thumbPlaceholder(context)),
                 ),
               ),
             ]),
             title: Text(song.title,
                 style: TextStyle(
                     color: marked
-                        ? AppColors.textMuted
+                        ? AppColorsScheme.of(context).textMuted
                         : isNowPlaying
                             ? AppColors.primary
-                            : AppColors.textPrimary,
+                            : AppColorsScheme.of(context).textPrimary,
                     decoration: marked ? TextDecoration.lineThrough : null)),
             subtitle: Text(song.artist,
                 style: TextStyle(
-                    color: AppColors.textMuted,
+                    color: AppColorsScheme.of(context).textMuted,
                     decoration: marked ? TextDecoration.lineThrough : null)),
             trailing: ReorderableDragStartListener(
                 index: index,
                 child: AppIcon(
                     icon: AppIcons.dragHandle,
-                    color: AppColors.textMuted,
+                    color: AppColorsScheme.of(context).textMuted,
                     size: 22)),
           );
         },
@@ -2583,9 +2724,9 @@ class _SortPlaylistSheet extends ConsumerWidget {
       Padding(
         padding: const EdgeInsets.symmetric(
             horizontal: kSheetHorizontalPadding, vertical: AppSpacing.xl),
-        child: const Text('Sort by',
+        child: Text('Sort by',
             style: TextStyle(
-                color: AppColors.textPrimary,
+                color: AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.xxl,
                 fontWeight: FontWeight.w700)),
       ),
@@ -2634,7 +2775,7 @@ class _SortTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
           horizontal: kSheetHorizontalPadding, vertical: 8),
-      title: Text(label, style: const TextStyle(color: AppColors.textPrimary)),
+      title: Text(label, style: TextStyle(color: AppColorsScheme.of(context).textPrimary)),
       trailing: selected
           ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)
           : null,
@@ -2717,7 +2858,7 @@ class _NameAndDetailsSheetState extends ConsumerState<_NameAndDetailsSheet> {
                 icon: AppIcon(
                     icon: AppIcons.back,
                     size: 22,
-                    color: AppColors.textPrimary),
+                    color: AppColorsScheme.of(context).textPrimary),
                 onPressed: () => Navigator.of(context).pop(),
                 size: 40,
                 iconSize: 22),
@@ -2740,11 +2881,11 @@ class _NameAndDetailsSheetState extends ConsumerState<_NameAndDetailsSheet> {
               AppButton(
                   label: 'Change',
                   variant: AppButtonVariant.text,
-                  foregroundColor: AppColors.textSecondary,
+                  foregroundColor: AppColorsScheme.of(context).textSecondary,
                   icon: AppIcon(
                       icon: AppIcons.edit,
                       size: 18,
-                      color: AppColors.textSecondary),
+                      color: AppColorsScheme.of(context).textSecondary),
                   onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                           content: Text(
@@ -2793,9 +2934,9 @@ class _NameDetailsCover extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
+              color: AppColorsScheme.of(context).surfaceLight,
               borderRadius: BorderRadius.circular(AppRadius.sm)),
-          child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted));
+          child: AppIcon(icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted));
     }
     if (songs.length == 1) {
       return ClipRRect(
@@ -2806,7 +2947,7 @@ class _NameDetailsCover extends StatelessWidget {
               height: size,
               fit: BoxFit.cover,
               errorWidget: (_, __, ___) => AppIcon(
-                  icon: AppIcons.musicNote, color: AppColors.textMuted)));
+                  icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted)));
     }
     final urls = songs.take(4).map((s) => s.thumbnailUrl).toList();
     const gap = 2.0;
@@ -2816,32 +2957,32 @@ class _NameDetailsCover extends StatelessWidget {
         height: size,
         child: Column(children: [
           Row(children: [
-            _cell(urls.elementAtOrNull(0), cell),
+            _cell(context, urls.elementAtOrNull(0), cell),
             SizedBox(width: gap),
-            _cell(urls.elementAtOrNull(1), cell),
+            _cell(context, urls.elementAtOrNull(1), cell),
           ]),
           const SizedBox(height: gap),
           Row(children: [
-            _cell(urls.elementAtOrNull(2), cell),
+            _cell(context, urls.elementAtOrNull(2), cell),
             SizedBox(width: gap),
-            _cell(urls.elementAtOrNull(3), cell),
+            _cell(context, urls.elementAtOrNull(3), cell),
           ]),
         ]));
   }
 
-  Widget _cell(String? url, double s) => SizedBox(
+  Widget _cell(BuildContext context, String? url, double s) => SizedBox(
       width: s,
       height: s,
       child: url != null
           ? CachedNetworkImage(
               imageUrl: url,
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _place(s))
-          : _place(s));
+              errorWidget: (ctx, __, ___) => _place(ctx, s))
+          : _place(context, s));
 
-  Widget _place(double s) => Container(
+  Widget _place(BuildContext context, double s) => Container(
       width: s,
       height: s,
-      color: AppColors.surfaceLight,
-      child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted));
+      color: AppColorsScheme.of(context).surfaceLight,
+      child: AppIcon(icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted));
 }

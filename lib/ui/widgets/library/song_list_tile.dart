@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
@@ -10,6 +11,7 @@ import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/common/hover_tile.dart';
 import 'package:tunify/ui/screens/shared/home/home_shared.dart';
 import '../player/now_playing_indicator.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class SongListTile extends ConsumerWidget {
   const SongListTile({
@@ -43,12 +45,34 @@ class SongListTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = AppTokens.of(context);
-    final status = NowPlayingStatus.of(ref, song.id);
     final showExplicitContent = ref.watch(showExplicitContentProvider);
     final showEBadge = showExplicitContent && song.isExplicit;
 
+    // PERF: Per-song selectors instead of NowPlayingStatus.of(ref, song.id).
+    // Each tile only rebuilds when its specific song's play state changes —
+    // not on every player state emission. With 100 list items, a song change
+    // previously rebuilt all 100 tiles; now only 2 rebuild (old → new current).
+    final isNowPlaying = ref.watch(
+      playerProvider.select((s) => s.currentSong?.id == song.id),
+    );
+    final isActivePlaying = ref.watch(
+      playerProvider.select((s) => s.isPlaying && s.currentSong?.id == song.id),
+    );
+
+    return RepaintBoundary(
+      child: _buildTile(context, t, isNowPlaying, isActivePlaying, showEBadge),
+    );
+  }
+
+  Widget _buildTile(
+    BuildContext context,
+    AppTokens t,
+    bool isNowPlaying,
+    bool isActivePlaying,
+    bool showEBadge,
+  ) {
     Widget tile = Container(
-      color: highlightBackground && status.isNowPlaying
+      color: highlightBackground && isNowPlaying
           ? AppColors.primary.withValues(alpha: 0.08)
           : null,
       padding: contentPadding,
@@ -57,16 +81,23 @@ class SongListTile extends ConsumerWidget {
           if (index != null) ...[
             SizedBox(
               width: 24,
-              child: status.isNowPlaying && showIndexIndicator
-                  ? NowPlayingIndicator(
-                      size: 16, barCount: 3, animate: status.isPlaying)
-                  : Text(
-                      '$index',
-                      style: TextStyle(
-                        color: t.mutedColor,
-                        fontSize: t.font.base,
+              child: AnimatedSwitcher(
+                duration: AppDuration.fast,
+                transitionBuilder: (child, anim) =>
+                    FadeTransition(opacity: anim, child: child),
+                child: isNowPlaying && showIndexIndicator
+                    ? NowPlayingIndicator(
+                        key: const ValueKey('indicator'),
+                        size: 16, barCount: 3, animate: isActivePlaying)
+                    : Text(
+                        '$index',
+                        key: ValueKey('idx_$index'),
+                        style: TextStyle(
+                          color: t.mutedColor,
+                          fontSize: t.font.base,
+                        ),
                       ),
-                    ),
+              ),
             ),
             SizedBox(width: t.spacing.sm),
           ],
@@ -77,7 +108,7 @@ class SongListTile extends ConsumerWidget {
                 DpiAwareThumbnail(
                   url: song.thumbnailUrl,
                   size: thumbnailSize,
-                  placeholder: _thumbPlaceholder(),
+                  radius: AppRadius.sm,
                 ),
           ),
           SizedBox(width: t.spacing.md),
@@ -89,22 +120,30 @@ class SongListTile extends ConsumerWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (status.isNowPlaying &&
-                        (index == null || !showIndexIndicator))
-                      InlineNowPlayingDot(animate: status.isPlaying),
+                    AnimatedSize(
+                      duration: AppDuration.fast,
+                      curve: Curves.easeOut,
+                      child: isNowPlaying && (index == null || !showIndexIndicator)
+                          ? InlineNowPlayingDot(animate: isActivePlaying)
+                          : const SizedBox.shrink(),
+                    ),
                     Expanded(
-                      child: Text(
-                        song.title,
+                      child: AnimatedDefaultTextStyle(
+                        duration: AppDuration.fast,
+                        curve: Curves.easeOut,
                         style: TextStyle(
-                          color: status.isNowPlaying
+                          color: isNowPlaying
                               ? AppColors.primary
-                              : AppColors.textPrimary,
+                              : AppColorsScheme.of(context).textPrimary,
                           fontSize: t.font.base,
                           fontWeight: t.typography.titleWeight,
                           height: t.typography.bodyLineHeight,
                         ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        child: Text(
+                          song.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
                     ),
                   ],
@@ -150,24 +189,12 @@ class SongListTile extends ConsumerWidget {
     }
 
     return InkWell(
-      onTap: onTap,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: tile,
-    );
-  }
-
-  Widget _thumbPlaceholder() {
-    return Container(
-      width: thumbnailSize,
-      height: thumbnailSize,
-      color: AppColors.surfaceLight,
-      child: Center(
-        child: AppIcon(
-          icon: AppIcons.musicNote,
-          color: AppColors.textMuted,
-          size: thumbnailSize > 50 ? 24 : 22,
-        ),
-      ),
     );
   }
 }

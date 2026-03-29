@@ -5,6 +5,7 @@ import 'package:tunify/ui/screens/shared/library/library_app_bar.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class LibraryFilterChips extends StatefulWidget {
   const LibraryFilterChips({
@@ -273,7 +274,7 @@ class _FilterChipState extends State<_FilterChip>
           child: Text(
             widget.filter.label,
             style: TextStyle(
-              color: Color.lerp(AppColors.textSecondary, AppColors.primary, t),
+              color: Color.lerp(AppColorsScheme.of(context).textSecondary, AppColors.primary, t),
               fontSize: AppTokens.of(context).font.md,
               fontWeight: t > 0.5 ? FontWeight.w600 : FontWeight.w500,
             ),
@@ -335,7 +336,7 @@ class _LibraryChip extends StatelessWidget {
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: Color.lerp(
-              AppColors.surfaceLight.withValues(alpha: 0.8),
+              AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.8),
               AppColors.primary.withValues(alpha: 0.2),
               tv,
             ),

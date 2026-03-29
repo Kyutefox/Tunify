@@ -9,6 +9,7 @@ import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/core/utils/string_utils.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 void showAddToPlaylistSheet(
   BuildContext context, {
@@ -80,7 +81,7 @@ class _AddToPlaylistSheetContentState
             children: [
               AppIcon(
                 icon: AppIcons.playlistAdd,
-                color: AppColors.textPrimary,
+                color: AppColorsScheme.of(context).textPrimary,
                 size: 20,
               ),
               const SizedBox(width: AppSpacing.md),
@@ -89,8 +90,8 @@ class _AddToPlaylistSheetContentState
                   widget.songs.length == 1
                       ? 'Add to playlist'
                       : 'Add ${widget.songs.length} songs to playlist',
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.xxl,
                     fontWeight: FontWeight.w700,
                   ),
@@ -107,7 +108,7 @@ class _AddToPlaylistSheetContentState
           child: Container(
             height: 44,
             decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
+              color: AppColorsScheme.of(context).surfaceLight,
               borderRadius: BorderRadius.circular(AppRadius.input),
             ),
             child: Row(
@@ -115,7 +116,7 @@ class _AddToPlaylistSheetContentState
                 const SizedBox(width: AppSpacing.md),
                 AppIcon(
                   icon: AppIcons.search,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 20,
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -135,7 +136,7 @@ class _AddToPlaylistSheetContentState
                       ),
                       child: AppIcon(
                         icon: AppIcons.clear,
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         size: 18,
                       ),
                     ),
@@ -157,7 +158,7 @@ class _AddToPlaylistSheetContentState
                   ? 'No playlists match "$_query"'
                   : 'Create a playlist in Library first',
               style: TextStyle(
-                color: AppColors.textMuted.withValues(alpha: 0.9),
+                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
                 fontSize: AppFontSize.base,
               ),
             ),
@@ -167,6 +168,8 @@ class _AddToPlaylistSheetContentState
             constraints: BoxConstraints(maxHeight: maxListHeight),
             child: ListView.builder(
               shrinkWrap: true,
+              cacheExtent: 500,
+              addAutomaticKeepAlives: true,
               itemCount: playlists.length,
               itemBuilder: (context, index) {
                 final p = playlists[index];
@@ -190,15 +193,15 @@ class _AddToPlaylistSheetContentState
                       : _placeholderIcon(),
                   title: Text(
                     p.name.capitalized,
-                    style: const TextStyle(
-                      color: AppColors.textPrimary,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textPrimary,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
                   subtitle: Text(
                     p.trackCountLabel,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textMuted,
                       fontSize: AppFontSize.sm,
                     ),
                   ),
@@ -239,12 +242,12 @@ class _AddToPlaylistSheetContentState
       width: 48,
       height: 48,
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
       child: AppIcon(
         icon: AppIcons.musicNote,
-        color: AppColors.textMuted,
+        color: AppColorsScheme.of(context).textMuted,
         size: 24,
       ),
     );

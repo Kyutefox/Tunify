@@ -8,6 +8,7 @@ import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/downloads/download_service.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 void showDownloadQueueSheet(BuildContext context) {
   showAppDraggableSheet(
@@ -54,14 +55,14 @@ class DownloadQueueSheet extends ConsumerWidget {
             children: [
               AppIcon(
                 icon: AppIcons.download,
-                color: AppColors.textPrimary,
+                color: AppColorsScheme.of(context).textPrimary,
                 size: 22,
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'Download queue',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.xxl,
                   fontWeight: FontWeight.w700,
                 ),
@@ -75,7 +76,7 @@ class DownloadQueueSheet extends ConsumerWidget {
               child: Text(
                 'No downloads in the queue',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.lg,
                 ),
               ),
@@ -136,7 +137,7 @@ class DownloadQueueTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     String statusText;
-    Color statusColor = AppColors.textMuted;
+    Color statusColor = AppColorsScheme.of(context).textMuted;
     switch (entry.status) {
       case DownloadStatus.queued:
         statusText = 'Queued';
@@ -188,8 +189,8 @@ class DownloadQueueTile extends StatelessWidget {
               children: [
                 Text(
                   entry.song.title,
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.base,
                     fontWeight: FontWeight.w500,
                   ),
@@ -216,16 +217,16 @@ class DownloadQueueTile extends StatelessWidget {
                         expected > 0
                             ? '${formatDownloadBytes(downloaded)} of ${formatDownloadBytes(expected)}'
                             : formatDownloadBytes(downloaded),
-                        style: const TextStyle(
-                          color: AppColors.textSecondary,
+                        style: TextStyle(
+                          color: AppColorsScheme.of(context).textSecondary,
                           fontSize: AppFontSize.xs,
                         ),
                       ),
                       if (expected > 0)
                         Text(
                           '$percent%',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: AppColorsScheme.of(context).textSecondary,
                             fontSize: AppFontSize.xs,
                             fontWeight: FontWeight.w600,
                           ),
@@ -237,8 +238,8 @@ class DownloadQueueTile extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       formatSpeed(entry.speedBytesPerSecond!),
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.micro,
                       ),
                     ),
@@ -273,7 +274,7 @@ class DownloadQueueTile extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 8, top: 2),
                 child: AppIcon(
                   icon: AppIcons.close,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 18,
                 ),
               ),
@@ -286,7 +287,7 @@ class DownloadQueueTile extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 8, top: 2),
                 child: AppIcon(
                   icon: AppIcons.refresh,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 18,
                 ),
               ),

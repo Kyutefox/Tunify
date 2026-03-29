@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import '../screens/desktop/player/player_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -36,8 +36,15 @@ extension _RightSidebarTabX on RightSidebarTab {
   }
 }
 
+class RightSidebarTabNotifier extends Notifier<RightSidebarTab?> {
+  @override
+  RightSidebarTab? build() => null;
+  void set(RightSidebarTab? tab) => state = tab;
+}
+
 /// Which tab is open in the right sidebar. `null` = sidebar is closed.
-final rightSidebarTabProvider = StateProvider<RightSidebarTab?>((ref) => null);
+final rightSidebarTabProvider =
+    NotifierProvider<RightSidebarTabNotifier, RightSidebarTab?>(RightSidebarTabNotifier.new);
 
 const double kDesktopRightSidebarWidth = 320.0;
 
@@ -83,7 +90,7 @@ class _DesktopRightSidebarState extends ConsumerState<DesktopRightSidebar> {
     return SizedBox(
       width: kDesktopRightSidebarWidth,
       child: Container(
-        color: AppColors.surface,
+        color: AppColorsScheme.of(context).surface,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -139,7 +146,7 @@ class _SidebarTabBar extends ConsumerWidget {
     return Container(
       height: DesktopLayout.rightTabBarHeight,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColorsScheme.of(context).surface,
         border: Border(
           bottom: BorderSide(color: AppColors.glassBorder, width: 0.5),
         ),
@@ -152,20 +159,20 @@ class _SidebarTabBar extends ConsumerWidget {
                 tab: tab,
                 isActive: activeTab == tab,
                 onTap: () =>
-                    ref.read(rightSidebarTabProvider.notifier).state = tab,
+                    ref.read(rightSidebarTabProvider.notifier).set(tab),
               ),
             ),
           ),
           GestureDetector(
             onTap: () =>
-                ref.read(rightSidebarTabProvider.notifier).state = null,
+                ref.read(rightSidebarTabProvider.notifier).set(null),
             behavior: HitTestBehavior.opaque,
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.md),
               child: AppIcon(
                 icon: AppIcons.chevronRight,
                 size: DesktopIconSize.sm,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
               ),
             ),
           ),
@@ -188,7 +195,7 @@ class _TabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primary : AppColors.textMuted;
+    final color = isActive ? AppColors.primary : AppColorsScheme.of(context).textMuted;
 
     return GestureDetector(
       onTap: onTap,

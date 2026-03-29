@@ -20,7 +20,9 @@ import 'package:scrapper/scrapper.dart';
 class AudioPlayerService {
   late AudioPlayer _player;
   AndroidLoudnessEnhancer? _loudnessEnhancer;
+  AndroidEqualizer? _equalizer;
   bool _normalizationEnabled = false;
+  double _bassBoostLevel = 0.0; // 0.0–1.0
   late final Future<AudioSession> _audioSessionReady;
   // Whether this instance is a secondary crossfade player.
   // Secondary players share the primary's audio focus and must never call
@@ -67,12 +69,13 @@ class AudioPlayerService {
     if (Platform.isAndroid) {
       _loudnessEnhancer = AndroidLoudnessEnhancer();
       _loudnessEnhancer!.setEnabled(false);
+      _equalizer = AndroidEqualizer();
+      _equalizer!.setEnabled(false);
       _player = AudioPlayer(
         handleInterruptions: handleInterruptions,
         audioPipeline: AudioPipeline(
-          androidAudioEffects: [_loudnessEnhancer!],
+          androidAudioEffects: [_loudnessEnhancer!, _equalizer!],
         ),
-        // Match old app: no useProxyForRequestHeaders (use just_audio default).
       );
     } else {
       _player = AudioPlayer(handleInterruptions: handleInterruptions);
@@ -181,10 +184,9 @@ class AudioPlayerService {
 
     // On Apple platforms (iOS, macOS), no custom headers — AVURLAsset hangs
     // with Origin/Referer set. Signed YouTube URLs are self-authenticating.
-    final audioSource = (isApplePlatform)
-        ? AudioSource.uri(Uri.parse(url))
-        // ignore: experimental_member_use
-        : LockCachingAudioSource(Uri.parse(url), headers: requestHeaders);
+    // Disable LockCachingAudioSource as it conflicts with our custom cache system
+    // Use regular AudioSource.uri and let our cache handle the optimization
+    final audioSource = AudioSource.uri(Uri.parse(url), headers: requestHeaders);
 
     await _audioSessionReady;
     await _player.setAudioSource(
@@ -269,6 +271,10 @@ class AudioPlayerService {
 
   void setLoopMode(LoopMode mode) => _player.setLoopMode(mode);
 
+  Future<void> setSpeed(double speed) async {
+    await _player.setSpeed(speed.clamp(0.25, 3.0));
+  }
+
   Future<void> setVolume(double volume) async {
     await _player.setVolume(volume.clamp(0.0, 1.0));
   }
@@ -325,13 +331,45 @@ class AudioPlayerService {
     );
   }
 
+  /// Sets bass boost level (0.0 = off, 1.0 = max).
+  ///
+  /// Android: uses [AndroidEqualizer] to boost the two lowest frequency bands
+  /// (60Hz and 230Hz) by up to +10 dB. The equalizer is disabled at level 0.
+  /// iOS/macOS: not supported (no-op).
+  Future<void> setBassBoost(double level) async {
+    _bassBoostLevel = level.clamp(0.0, 1.0);
+    if (!Platform.isAndroid || _equalizer == null) return;
+    if (_bassBoostLevel == 0.0) {
+      await _equalizer!.setEnabled(false);
+      return;
+    }
+    final params = await _equalizer!.parameters;
+    final bands = params.bands;
+    if (bands.isEmpty) return;
+    // Boost only the lowest two bands (sub-bass ~60Hz, bass ~230Hz).
+    // Level 1.0 → +10 dB on sub-bass, +7 dB on bass.
+    // Higher bands stay at 0 dB so only low frequencies are affected.
+    final maxGainDb = params.maxDecibels; // typically +15.0
+    final subBassGain = (10.0 * _bassBoostLevel).clamp(0.0, maxGainDb);
+    final bassGain = (7.0 * _bassBoostLevel).clamp(0.0, maxGainDb);
+    if (bands.isNotEmpty) await bands[0].setGain(subBassGain);
+    if (bands.length > 1) await bands[1].setGain(bassGain);
+    // Zero out remaining bands to avoid unintended coloration.
+    for (int i = 2; i < bands.length; i++) {
+      await bands[i].setGain(0.0);
+    }
+    await _equalizer!.setEnabled(true);
+  }
+
+  double get bassBoostLevel => _bassBoostLevel;
+
   /// Applies a crossfade volume multiplier (0.0–1.0) without affecting normalization.
   /// Android: sets player volume directly (normalization uses LoudnessEnhancer, not volume).
   /// Apple (iOS/macOS): multiplies with the current normalization scalar so both work together.
-  Future<void> applyCrossfadeVolume(double vol) async {
+  void applyCrossfadeVolume(double vol) {
     _crossfadeVol = vol.clamp(0.0, 1.0);
     if (Platform.isAndroid) {
-      await _player.setVolume(_crossfadeVol);
+      _player.setVolume(_crossfadeVol);
     } else if (isApplePlatform) {
       final normVol = _normalizationEnabled
           ? _dbToLinearVolume(_normalizationGainDb).clamp(0.05, 1.0)
@@ -341,7 +379,7 @@ class AudioPlayerService {
       // scalar is non-zero — it prevents near-inaudible normalization gains from
       // disappearing entirely, not from silencing a deliberate fade.
       final effective = _crossfadeVol * normVol;
-      await _player
+      _player
           .setVolume(_crossfadeVol == 0.0 ? 0.0 : effective.clamp(0.05, 1.0));
     }
   }

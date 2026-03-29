@@ -12,6 +12,7 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import '../../../../ui/theme/app_routes.dart';
 import 'package:tunify/ui/widgets/common/section_header.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class RecentlyPlayedSection extends ConsumerStatefulWidget {
   const RecentlyPlayedSection({super.key, required this.onPlay});
@@ -182,15 +183,15 @@ class _NavBtn extends StatelessWidget {
         height: 28,
         decoration: BoxDecoration(
           color: enabled
-              ? AppColors.surfaceLight
-              : AppColors.surfaceLight.withValues(alpha: 0.4),
+              ? AppColorsScheme.of(context).surfaceLight
+              : AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.4),
           shape: BoxShape.circle,
         ),
         child: Center(
           child: AppIcon(
             icon: icon,
             size: 14,
-            color: enabled ? AppColors.textPrimary : AppColors.textMuted,
+            color: enabled ? AppColorsScheme.of(context).textPrimary : AppColorsScheme.of(context).textMuted,
           ),
         ),
       ),
@@ -226,15 +227,15 @@ class _RecentSongCard extends StatelessWidget {
               placeholder: (_, __) => Container(
                 width: size,
                 height: size,
-                color: AppColors.surfaceLight,
+                color: AppColorsScheme.of(context).surfaceLight,
               ),
               errorWidget: (_, __, ___) => Container(
                 width: size,
                 height: size,
-                color: AppColors.surfaceLight,
+                color: AppColorsScheme.of(context).surfaceLight,
                 child: AppIcon(
                   icon: AppIcons.musicNote,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 32,
                 ),
               ),
@@ -243,8 +244,8 @@ class _RecentSongCard extends StatelessWidget {
           const SizedBox(height: AppSpacing.xs),
           Text(
             song.title,
-            style: const TextStyle(
-              color: AppColors.textPrimary,
+            style: TextStyle(
+              color: AppColorsScheme.of(context).textPrimary,
               fontSize: AppFontSize.md,
               fontWeight: FontWeight.w600,
             ),
@@ -253,8 +254,8 @@ class _RecentSongCard extends StatelessWidget {
           ),
           Text(
             song.artist,
-            style: const TextStyle(
-              color: AppColors.textMuted,
+            style: TextStyle(
+              color: AppColorsScheme.of(context).textMuted,
               fontSize: AppFontSize.xs,
             ),
             maxLines: 1,

@@ -3,10 +3,10 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Data model
@@ -106,7 +106,7 @@ class _MenuSheetBody extends StatelessWidget {
           if (header != null) ...[
             header!,
             const SizedBox(height: AppSpacing.md),
-            Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+            Divider(color: AppColorsScheme.of(context).surfaceHighlight, height: 1),
             const SizedBox(height: AppSpacing.sm),
           ] else if (title != null) ...[
             Padding(
@@ -114,8 +114,8 @@ class _MenuSheetBody extends StatelessWidget {
                   top: AppSpacing.sm, bottom: AppSpacing.md),
               child: Text(
                 title!,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.xxl,
                   fontWeight: FontWeight.w700,
                 ),
@@ -134,8 +134,8 @@ class _MenuSheetBody extends StatelessWidget {
               SheetOptionTile(
                 icon: entry.icon,
                 label: entry.label,
-                iconColor: entry.color ?? AppColors.textSecondary,
-                labelColor: entry.color ?? AppColors.textPrimary,
+                iconColor: entry.color ?? AppColorsScheme.of(context).textSecondary,
+                labelColor: entry.color ?? AppColorsScheme.of(context).textPrimary,
                 showChevron: entry.showChevron || entry.subEntries != null,
                 onTap: () {
                   Navigator.of(context).pop();
@@ -516,8 +516,8 @@ class _MenuPanel extends StatelessWidget {
                     title!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textMuted,
                       fontSize: AppFontSize.xs,
                       fontWeight: FontWeight.w600,
                       letterSpacing: AppLetterSpacing.normal,
@@ -532,8 +532,8 @@ class _MenuPanel extends StatelessWidget {
                       horizontal: 14, vertical: 10),
                   child: Text(
                     emptyLabel!,
-                    style: const TextStyle(
-                        color: AppColors.textMuted, fontSize: AppFontSize.md),
+                    style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.md),
                   ),
                 ),
               for (final e in entries)
@@ -591,7 +591,7 @@ class _MenuItemState extends State<_MenuItem> {
   @override
   Widget build(BuildContext context) {
     final e = widget.entry;
-    final color = e.color ?? AppColors.textPrimary;
+    final color = e.color ?? AppColorsScheme.of(context).textPrimary;
     final highlighted = _hovered || widget.isActive;
 
     return MouseRegion(
@@ -655,7 +655,7 @@ class _MenuItemState extends State<_MenuItem> {
                 const SizedBox(width: AppSpacing.xs + 2),
                 AppIcon(
                   icon: AppIcons.chevronRight,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 12,
                 ),
               ],

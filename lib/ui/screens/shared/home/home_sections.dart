@@ -9,6 +9,7 @@ import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/ui/widgets/common/artist_avatar.dart';
 import 'package:tunify/ui/widgets/player/mood_browse_sheet.dart';
+import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
@@ -17,6 +18,7 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/screens/shared/player/song_options_sheet.dart';
 import 'home_shared.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// A stable [PageView] wrapper that lives outside [LayoutBuilder] to prevent
 /// the [PageController] from being detached/reattached on every layout pass.
@@ -73,7 +75,8 @@ class SquareSongCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final status = NowPlayingStatus.of(ref, song.id);
 
-    return PressScale(
+    return RepaintBoundary(
+      child: PressScale(
       onTap: onTap,
       scale: 0.93,
       child: SizedBox(
@@ -98,7 +101,7 @@ class SquareSongCard extends ConsumerWidget {
                     style: TextStyle(
                       color: status.isNowPlaying
                           ? AppColors.accent
-                          : AppColors.textPrimary,
+                          : AppColorsScheme.of(context).textPrimary,
                       fontSize: AppFontSize.md,
                       fontWeight: FontWeight.w600,
                     ),
@@ -110,14 +113,15 @@ class SquareSongCard extends ConsumerWidget {
             ),
             Text(
               song.artist,
-              style: const TextStyle(
-                  color: AppColors.textMuted, fontSize: AppFontSize.xs),
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.xs),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
+    ),
     );
   }
 }
@@ -307,7 +311,7 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
                   style: TextStyle(
                     color: status.isNowPlaying
                         ? AppColors.accent
-                        : AppColors.textPrimary,
+                        : AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.md,
                     fontWeight: FontWeight.w600,
                   ),
@@ -320,8 +324,8 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
           const SizedBox(height: 2),
           Text(
             widget.song.artist,
-            style: const TextStyle(
-                color: AppColors.textMuted, fontSize: AppFontSize.xs),
+            style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.xs),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -334,7 +338,7 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
       width: widget.width,
       height: widget.height,
       decoration: BoxDecoration(
-        color: _hovered ? AppColors.surfaceLight : Colors.transparent,
+        color: _hovered ? AppColorsScheme.of(context).surfaceLight : Colors.transparent,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       padding: isDesktop
@@ -345,24 +349,22 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
           thumb,
           const SizedBox(width: AppSpacing.md),
           textContent,
-          AnimatedOpacity(
-            opacity: 1.0,
-            duration: const Duration(milliseconds: 150),
-            child: AppIconButton(
-              icon: AppIcon(
-                icon: AppIcons.moreVert,
-                color: AppColors.textMuted,
-                size: 18,
-              ),
-              onPressedWithContext: (btnCtx) => showSongOptionsSheet(
-                context,
-                song: widget.song,
-                ref: ref,
-                buttonContext: btnCtx,
-              ),
-              size: 32,
-              iconSize: 18,
+          // PERF: Removed AnimatedOpacity(opacity: 1.0) — opacity never
+          // changed so the animation controller was live but inert overhead.
+          AppIconButton(
+            icon: AppIcon(
+              icon: AppIcons.moreVert,
+              color: AppColorsScheme.of(context).textMuted,
+              size: 18,
             ),
+            onPressedWithContext: (btnCtx) => showSongOptionsSheet(
+              context,
+              song: widget.song,
+              ref: ref,
+              buttonContext: btnCtx,
+            ),
+            size: 32,
+            iconSize: 18,
           ),
         ],
       ),
@@ -497,7 +499,13 @@ class BrowsePlaylistCard extends ConsumerStatefulWidget {
 
 class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
   void _onTap() {
-    final page = LibraryPlaylistScreen.remote(playlist: widget.playlist);
+    final saved = ref
+        .read(libraryProvider)
+        .playlists
+        .any((p) => p.id == widget.playlist.id);
+    final page = saved
+        ? LibraryPlaylistScreen(playlistId: widget.playlist.id)
+        : LibraryPlaylistScreen.remote(playlist: widget.playlist);
     if (!ShellContext.pushDetail(context, page)) {
       Navigator.of(context).push(appPageRoute<void>(builder: (_) => page));
     }
@@ -521,8 +529,8 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
             const SizedBox(height: AppSpacing.sm),
             Text(
               widget.playlist.title,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
@@ -532,8 +540,8 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
             Text(
               widget.playlist.curatorName ??
                   '${widget.playlist.trackCount} songs',
-              style: const TextStyle(
-                  color: AppColors.textMuted, fontSize: AppFontSize.xs),
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.xs),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

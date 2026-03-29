@@ -11,6 +11,7 @@ import '../../shared/home/home_content.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/settings/guest_profile_provider.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -19,7 +20,11 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class _HomeScreenState extends ConsumerState<HomeScreen> 
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   @override
   void initState() {
     super.initState();
@@ -34,12 +39,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    super.build(context); // Required for AutomaticKeepAliveClientMixin
     final greeting = ref.watch(greetingProvider);
 
     final isDesktop = ShellContext.isDesktopOf(context);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -50,7 +56,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 await ref.read(homeProvider.notifier).refresh();
               },
               color: AppColors.primary,
-              backgroundColor: AppColors.surface,
+              backgroundColor: AppColorsScheme.of(context).surface,
               strokeWidth: 2.5,
               displacement: 80,
               child: CustomScrollView(
@@ -114,9 +120,9 @@ class _DesktopGreetingHeader extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
-        color: overlaps ? AppColors.background.withValues(alpha: 0.95) : AppColors.background,
+        color: overlaps ? AppColorsScheme.of(context).background.withValues(alpha: 0.95) : AppColorsScheme.of(context).background,
         border: overlaps
-            ? Border(bottom: BorderSide(color: AppColors.surfaceLight, width: 0.5))
+            ? Border(bottom: BorderSide(color: AppColorsScheme.of(context).surfaceLight, width: 0.5))
             : null,
       ),
       padding: const EdgeInsets.fromLTRB(DesktopSpacing.lg, 0, DesktopSpacing.lg, 0),

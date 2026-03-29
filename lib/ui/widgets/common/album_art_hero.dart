@@ -1,8 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class AlbumArtHero extends StatelessWidget {
   const AlbumArtHero({
@@ -107,10 +107,10 @@ class _ErrorPlaceholder extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      color: AppColors.surfaceLight,
-      child: const Icon(
+      color: AppColorsScheme.of(context).surfaceLight,
+      child: Icon(
         Icons.music_note,
-        color: AppColors.textMuted,
+        color: AppColorsScheme.of(context).textMuted,
         size: 32,
       ),
     );

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart'
     show showAppDraggableSheet, showAppSheet, kSheetHorizontalPadding;
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/downloads/download_service.dart';
@@ -14,6 +14,7 @@ import 'package:tunify/data/models/lyrics_result.dart';
 import 'package:tunify/features/player/lyrics_provider.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/features/player/playback_position_provider.dart';
 import 'package:tunify/features/player/sleep_timer_provider.dart';
 import 'package:tunify/features/device/device_discovery_service.dart';
 import 'package:tunify/features/device/device_discovery_service_extensions.dart';
@@ -29,6 +30,8 @@ import 'package:tunify/ui/screens/shared/player/player_controls.dart';
 import 'package:tunify/ui/screens/shared/player/player_progress_bar.dart';
 import 'package:tunify/ui/screens/shared/player/player_shared.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
+import 'package:tunify/ui/widgets/player/album_art_hero.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   const PlayerScreen({super.key});
@@ -38,11 +41,41 @@ class PlayerScreen extends ConsumerStatefulWidget {
 }
 
 class _PlayerScreenState extends ConsumerState<PlayerScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   double _dragDy = 0;
 
   late AnimationController _artScaleCtrl;
   late Animation<double> _artScale;
+
+  // Deferred background: PlayerBlurredBackground applies
+  // ImageFilter.blur(sigmaX: 20) which creates an expensive GPU layer on its
+  // first paint. Keeping it false on frame 0 lets the Hero overlay start
+  // flying without competing for GPU budget. addPostFrameCallback sets this
+  // to true, triggering a rebuild on frame 1. By the time bgFade begins at
+  // 105ms (25% of 420ms), the blur is already computed and cached.
+  bool _bgVisible = false;
+
+  // ── Entry animations: staggered fade+slide for controls/progress ──────────
+  // _entryCtrl starts 80ms after push (see addPostFrameCallback) so the album
+  // art Hero completes its expensive overlay-insertion + first-rect phase
+  // before any additional composite layers are added to the GPU budget.
+  // Duration 300ms: 80 + 300 = 380ms — all content visible 40ms before route end.
+  //
+  // Absolute timeline from push (420ms route):
+  //   0ms   Hero flight begins (album art only)
+  //   80ms  _entryCtrl.forward() fires
+  //   80ms  song info fades in   (0–50% of 300ms = 0–150ms window)
+  //   116ms progress bar starts  (20–70% of 300ms = 60–210ms window)
+  //   134ms controls start       (30–80% of 300ms = 90–240ms window)
+  //   200ms extra controls start (55–100% of 300ms = 165–300ms window)
+  //   380ms all content at full opacity
+  late AnimationController _entryCtrl;
+  late Animation<double> _songInfoFade;
+  late Animation<double> _progressBarFade;
+  late Animation<Offset> _progressBarSlide;
+  late Animation<double> _controlsFade;
+  late Animation<Offset> _controlsSlide;
+  late Animation<double> _extraControlsFade;
 
   @override
   void initState() {
@@ -54,6 +87,41 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     );
     _artScale = Tween<double>(begin: 0.92, end: 1.0).animate(
       CurvedAnimation(parent: _artScaleCtrl, curve: Curves.easeOutCubic),
+    );
+
+    _entryCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _songInfoFade = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.0, 0.50, curve: Curves.easeOut),
+    );
+    _progressBarFade = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.20, 0.70, curve: Curves.easeOut),
+    );
+    _progressBarSlide = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.20, 0.70, curve: Curves.easeOutCubic),
+    ));
+    _controlsFade = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.30, 0.80, curve: Curves.easeOut),
+    );
+    _controlsSlide = Tween<Offset>(
+      begin: const Offset(0, 0.12),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.30, 0.80, curve: Curves.easeOutCubic),
+    ));
+    _extraControlsFade = CurvedAnimation(
+      parent: _entryCtrl,
+      curve: const Interval(0.55, 1.0, curve: Curves.easeOut),
     );
 
     ref.listenManual(currentSongProvider, (_, next) {
@@ -69,6 +137,13 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _fetchLyrics();
+      // Trigger blur background on frame 1. This setState causes a single
+      // extra build (cheap — no expensive providers change) but moves the
+      // ImageFilter.blur GPU computation off frame 0.
+      setState(() => _bgVisible = true);
+      Future.delayed(const Duration(milliseconds: 80), () {
+        if (mounted) _entryCtrl.forward();
+      });
     });
   }
 
@@ -82,6 +157,12 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   @override
   void dispose() {
     _artScaleCtrl.dispose();
+    _entryCtrl.dispose();
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
     super.dispose();
   }
 
@@ -95,17 +176,36 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
     if (song == null) {
       return const Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Color(0xFF121212),
         body: Center(
           child: Text('Nothing playing',
-              style: TextStyle(color: AppColors.textMuted)),
+              style: TextStyle(color: Colors.white54)),
         ),
       );
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
-      child: GestureDetector(
+      child: Focus(
+        autofocus: true,
+        onKeyEvent: (_, event) {
+          if (event is! KeyDownEvent) return KeyEventResult.ignored;
+          final notifier = ref.read(playerProvider.notifier);
+          if (event.logicalKey == LogicalKeyboardKey.space) {
+            notifier.togglePlayPause();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.arrowRight) {
+            notifier.playNext();
+            return KeyEventResult.handled;
+          }
+          if (event.logicalKey == LogicalKeyboardKey.arrowLeft) {
+            notifier.playPrevious();
+            return KeyEventResult.handled;
+          }
+          return KeyEventResult.ignored;
+        },
+        child: GestureDetector(
         onVerticalDragEnd: (d) {
           final velocity = d.primaryVelocity ?? 0;
           if (velocity > 600 || _dragDy > 100) {
@@ -120,16 +220,18 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         },
         onVerticalDragCancel: () => _dragDy = 0,
         child: Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: const Color(0xFF121212),
           body: Stack(
             fit: StackFit.expand,
             children: [
-              RepaintBoundary(
-                child: PlayerBlurredBackground(
-                  url: song.thumbnailUrl,
-                  dominantColor: dominantColor,
-                ),
-              ),
+              _bgVisible
+                  ? RepaintBoundary(
+                      child: PlayerBlurredBackground(
+                        url: song.thumbnailUrl,
+                        dominantColor: dominantColor,
+                      ),
+                    )
+                  : const ColoredBox(color: Color(0xFF121212)),
               SafeArea(
                 child: Padding(
                   padding:
@@ -141,15 +243,37 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                       const Spacer(flex: 2),
                       _buildAlbumArt(song, dominantColor),
                       const Spacer(flex: 2),
-                      _buildSongInfo(song),
-                      const SizedBox(height: AppSpacing.xxl),
-                      const RepaintBoundary(child: PlayerProgressBar()),
-                      const SizedBox(height: AppSpacing.lg),
-                      RepaintBoundary(
-                        child: PlayerControls(dominantColor: dominantColor),
+                      FadeTransition(
+                        opacity: _songInfoFade,
+                        child: _buildSongInfo(song),
                       ),
                       const SizedBox(height: AppSpacing.xxl),
-                      _buildExtraControls(dominantColor),
+                      FadeTransition(
+                        opacity: _progressBarFade,
+                        child: SlideTransition(
+                          position: _progressBarSlide,
+                          child: const RepaintBoundary(
+                              child: PlayerProgressBar()),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      FadeTransition(
+                        opacity: _controlsFade,
+                        child: SlideTransition(
+                          position: _controlsSlide,
+                          child: RepaintBoundary(
+                            child:
+                                PlayerControls(dominantColor: dominantColor),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.xxl),
+                      // Fade only — extra controls are small and at the
+                      // bottom; slide would compete with controls row above.
+                      FadeTransition(
+                        opacity: _extraControlsFade,
+                        child: _buildExtraControls(dominantColor),
+                      ),
                       const SizedBox(height: AppSpacing.base),
                     ],
                   ),
@@ -158,7 +282,8 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             ],
           ),
         ),
-      ),
+        ),   // GestureDetector
+      ),     // Focus
     );
   }
 
@@ -178,18 +303,16 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           onTap: _close,
         ),
         Expanded(
-          child: Column(
-            children: [
-              Text(
-                label,
-                style: const TextStyle(
-                  color: Color(0xA6FFFFFF),
-                  fontSize: AppFontSize.xs,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: AppLetterSpacing.label,
-                ),
+          child: Center(
+            child: Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.playerLabelSubtle,
+                fontSize: AppFontSize.xs,
+                fontWeight: FontWeight.w600,
+                letterSpacing: AppLetterSpacing.label,
               ),
-            ],
+            ),
           ),
         ),
         PlayerGlassButton(
@@ -208,7 +331,6 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   Widget _buildAlbumArt(Song song, Color dominantColor) {
     final screenWidth = MediaQuery.sizeOf(context).width;
     final artSize = screenWidth - (AppSpacing.xl * 2) - 32;
-    final cachePx = (artSize * MediaQuery.devicePixelRatioOf(context)).round();
 
     return ScaleTransition(
       scale: _artScale,
@@ -223,92 +345,38 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             notifier.playPrevious();
           }
         },
-        child: Hero(
-          tag: 'player-album-art',
-          flightShuttleBuilder: (_, anim, direction, __, ___) {
-            final radius = Tween<double>(
-              begin: direction == HeroFlightDirection.push
-                  ? AppRadius.md
-                  : AppRadius.xl,
-              end: direction == HeroFlightDirection.push
-                  ? AppRadius.xl
-                  : AppRadius.md,
-            ).animate(CurvedAnimation(
-              parent: anim,
-              curve: Curves.easeOutCubic,
-            ));
-            return AnimatedBuilder(
-              animation: radius,
-              builder: (_, __) => ClipRRect(
-                borderRadius: BorderRadius.circular(radius.value),
-                child: song.thumbnailUrl.isEmpty
-                    ? Container(
-                        color: AppColors.surfaceLight,
-                        child: AppIcon(
-                            icon: AppIcons.musicNote,
-                            color: AppColors.textMuted,
-                            size: 80),
-                      )
-                    : CachedNetworkImage(
-                        imageUrl: song.thumbnailUrl,
-                        fit: BoxFit.contain,
-                      ),
+        // BoxShadow lives OUTSIDE the Hero so it never participates in the
+        // Hero flight. With it inside the Hero child, the shadow was absent
+        // during the shuttle and popped in at landing — visually read as the
+        // album art growing taller after the animation completed.
+        // BoxShadow lives OUTSIDE AlbumArtHero so it is never part of the Hero
+        // overlay. Shadow inside the Hero child is absent during the shuttle
+        // and pops in on landing — visually reads as the image growing taller.
+        child: Container(
+          width: artSize,
+          height: artSize,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadius.xl),
+            boxShadow: [
+              BoxShadow(
+                color: dominantColor.withValues(
+                    alpha: PaletteTheme.playerArtGlowAlpha),
+                blurRadius: 50,
+                spreadRadius: 5,
+                offset: const Offset(0, 12),
               ),
-            );
-          },
-          child: Container(
-            width: artSize,
-            height: artSize,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              boxShadow: [
-                BoxShadow(
-                  color: dominantColor.withValues(
-                      alpha: PaletteTheme.playerArtGlowAlpha),
-                  blurRadius: 50,
-                  spreadRadius: 5,
-                  offset: const Offset(0, 12),
-                ),
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 30,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              child: song.thumbnailUrl.isEmpty
-                  ? Container(
-                      width: artSize,
-                      height: artSize,
-                      color: AppColors.surfaceLight,
-                      child: AppIcon(
-                          icon: AppIcons.musicNote,
-                          color: AppColors.textMuted,
-                          size: 80),
-                    )
-                  : Container(
-                      color: Colors.black.withValues(alpha: 0.22),
-                      child: CachedNetworkImage(
-                        imageUrl: song.thumbnailUrl,
-                        width: artSize,
-                        height: artSize,
-                        memCacheWidth: cachePx,
-                        memCacheHeight: cachePx,
-                        fit: BoxFit.contain,
-                        errorWidget: (_, __, ___) => Container(
-                          width: artSize,
-                          height: artSize,
-                          color: AppColors.surfaceLight,
-                          child: AppIcon(
-                              icon: AppIcons.musicNote,
-                              color: AppColors.textMuted,
-                              size: 80),
-                        ),
-                      ),
-                    ),
-            ),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.3),
+                blurRadius: 30,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: AlbumArtHero(
+            url: song.thumbnailUrl,
+            size: artSize,
+            borderRadius: AppRadius.xl,
+            placeholderIconSize: 80,
           ),
         ),
       ),
@@ -327,7 +395,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               Text(
                 song.title,
                 style: const TextStyle(
-                  color: AppColors.textPrimary,
+                  color: Colors.white,
                   fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w700,
                   letterSpacing: AppLetterSpacing.heading,
@@ -340,7 +408,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               Text(
                 song.artist,
                 style: const TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColors.playerIconInactive,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w500,
                 ),
@@ -362,7 +430,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               isLiked: isLiked,
               songId: song.id,
               size: 26,
-              emptyColor: AppColors.textSecondary,
+              emptyColor: AppColors.playerIconInactive,
             ),
           ),
         ),
@@ -375,8 +443,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       showLyricsSheet(context, dominantColor: dominantColor);
   void _showDevicesSheet() => showDevicesSheet(context);
   void _showSleepTimerSheet() => showSleepTimerSheet(context);
+  void _showPlaybackSpeedSheet() => showPlaybackSpeedSheet(context);
 
   Widget _buildExtraControls(Color dominantColor) {
+    final speed = ref.watch(playerProvider.select((s) => s.playbackSpeed));
+    final isSpeedActive = (speed - 1.0).abs() > 0.01;
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceAround,
       children: [
@@ -392,6 +463,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
             icon: AppIcons.bedtime,
             label: 'Sleep',
             onTap: _showSleepTimerSheet),
+        SpeedExtraButton(
+            isActive: isSpeedActive,
+            speed: speed,
+            onTap: _showPlaybackSpeedSheet),
       ],
     );
   }
@@ -442,8 +517,8 @@ void showLyricsSheet(
         colors: [
           dominantColor.withValues(
               alpha: PaletteTheme.playerQueueGradientAlpha),
-          AppColors.surface,
-          AppColors.surface,
+          AppColorsScheme.of(context).surface,
+          AppColorsScheme.of(context).surface,
         ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -479,6 +554,63 @@ void showSleepTimerSheet(BuildContext context) {
     context,
     maxHeight: 500,
     child: const _SleepTimerSheetContent(),
+  );
+}
+
+// Speed extra button — shows current speed when non-1×.
+class SpeedExtraButton extends StatelessWidget {
+  const SpeedExtraButton({
+    super.key,
+    required this.isActive,
+    required this.speed,
+    required this.onTap,
+  });
+
+  final bool isActive;
+  final double speed;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    const color = Color(0xBFFFFFFF);
+    final activeColor = AppColors.primary;
+    final displayColor = isActive ? activeColor : color;
+    final speedLabel = isActive
+        ? '${speed.toStringAsFixed(speed.truncateToDouble() == speed ? 0 : 2)}×'
+        : 'Speed';
+    return GestureDetector(
+      onTap: () {
+        HapticFeedback.selectionClick();
+        onTap();
+      },
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AppIcon(icon: AppIcons.playbackSpeed, color: displayColor, size: 22),
+            const SizedBox(height: AppSpacing.xs + 2),
+            Text(
+              speedLabel,
+              style: TextStyle(
+                color: displayColor,
+                fontSize: AppFontSize.micro,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+void showPlaybackSpeedSheet(BuildContext context) {
+  showAppSheet(
+    context,
+    maxHeight: 380,
+    child: const _PlaybackSpeedSheetContent(),
   );
 }
 
@@ -526,7 +658,7 @@ class _SleepTimerSheetContentState
     final sleepState = ref.watch(sleepTimerProvider);
     final notifier = ref.read(sleepTimerProvider.notifier);
     final remaining = sleepState.remaining;
-    final isEndOfTrack = sleepState.endOfTrack == true;
+    final isEndOfTrack = sleepState.endOfTrack;
     final isActive = sleepState.isActive;
 
     return Column(
@@ -540,7 +672,7 @@ class _SleepTimerSheetContentState
           child: Text(
             'Sleep timer',
             style: TextStyle(
-              color: AppColors.textPrimary.withValues(alpha: 0.95),
+              color: AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.95),
               fontSize: AppFontSize.md,
               fontWeight: FontWeight.w600,
               letterSpacing: AppLetterSpacing.label,
@@ -634,18 +766,18 @@ class _SleepTimerSheetContentState
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _setCustomTimer(),
                       autofocus: true,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.base,
                       ),
                       decoration: InputDecoration(
                         hintText: 'Minutes (e.g. 20)',
                         hintStyle: TextStyle(
-                          color: AppColors.textMuted.withValues(alpha: 0.6),
+                          color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.6),
                           fontSize: AppFontSize.base,
                         ),
                         filled: true,
-                        fillColor: AppColors.surfaceHighlight,
+                        fillColor: AppColorsScheme.of(context).surfaceHighlight,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
                           vertical: AppSpacing.sm,
@@ -704,16 +836,16 @@ class _SleepTimerHero extends StatelessWidget {
             spreadRadius: 0,
           ),
           BoxShadow(
-            color: AppColors.surface.withValues(alpha: 0.5),
+            color: AppColorsScheme.of(context).surface.withValues(alpha: 0.5),
             blurRadius: 40,
             spreadRadius: -8,
           ),
         ],
         gradient: LinearGradient(
           colors: [
-            AppColors.surfaceHighlight,
-            AppColors.surface,
-            AppColors.background,
+            AppColorsScheme.of(context).surfaceHighlight,
+            AppColorsScheme.of(context).surface,
+            AppColorsScheme.of(context).background,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -732,7 +864,7 @@ class _SleepTimerHero extends StatelessWidget {
                   Text(
                     formatDuration(remaining!),
                     style: TextStyle(
-                      color: AppColors.textPrimary,
+                      color: AppColorsScheme.of(context).textPrimary,
                       fontSize: AppFontSize.display3,
                       fontWeight: FontWeight.w400,
                       letterSpacing: AppLetterSpacing.label,
@@ -743,7 +875,7 @@ class _SleepTimerHero extends StatelessWidget {
                   Text(
                     'remaining',
                     style: TextStyle(
-                      color: AppColors.textSecondary.withValues(alpha: 0.9),
+                      color: AppColorsScheme.of(context).textSecondary.withValues(alpha: 0.9),
                       fontSize: AppFontSize.xs,
                       fontWeight: FontWeight.w500,
                       letterSpacing: AppLetterSpacing.normal,
@@ -757,7 +889,7 @@ class _SleepTimerHero extends StatelessWidget {
                     children: [
                       AppIcon(
                         icon: AppIcons.musicNote,
-                        color: AppColors.textSecondary,
+                        color: AppColorsScheme.of(context).textSecondary,
                         size: 28,
                       ),
                       const SizedBox(height: AppSpacing.xs + 2),
@@ -765,7 +897,7 @@ class _SleepTimerHero extends StatelessWidget {
                         'End of song',
                         style: TextStyle(
                           color:
-                              AppColors.textSecondary.withValues(alpha: 0.95),
+                              AppColorsScheme.of(context).textSecondary.withValues(alpha: 0.95),
                           fontSize: AppFontSize.xs,
                           fontWeight: FontWeight.w500,
                         ),
@@ -774,7 +906,7 @@ class _SleepTimerHero extends StatelessWidget {
                   )
                 : AppIcon(
                     icon: AppIcons.bedtime,
-                    color: AppColors.textPrimary.withValues(alpha: 0.85),
+                    color: AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.85),
                     size: 44,
                   ),
       ),
@@ -807,11 +939,11 @@ class _SleepTimerChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.full),
             color: isCancel
-                ? AppColors.surfaceHighlight.withValues(alpha: 0.6)
-                : AppColors.surfaceHighlight,
+                ? AppColorsScheme.of(context).surfaceHighlight.withValues(alpha: 0.6)
+                : AppColorsScheme.of(context).surfaceHighlight,
             border: Border.all(
               color: isCancel
-                  ? AppColors.textMuted.withValues(alpha: 0.3)
+                  ? AppColorsScheme.of(context).textMuted.withValues(alpha: 0.3)
                   : AppColors.glassBorder.withValues(alpha: 0.4),
               width: 0.6,
             ),
@@ -820,8 +952,8 @@ class _SleepTimerChip extends StatelessWidget {
             label,
             style: TextStyle(
               color: isCancel
-                  ? AppColors.textMuted
-                  : AppColors.textPrimary.withValues(alpha: 0.95),
+                  ? AppColorsScheme.of(context).textMuted
+                  : AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.95),
               fontSize: AppFontSize.base,
               fontWeight: FontWeight.w500,
             ),
@@ -910,14 +1042,14 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
             children: [
               AppIcon(
                   icon: AppIcons.speakerGroup,
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   size: 22),
               const SizedBox(width: AppSpacing.sm + 2),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Connect to a device',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.xxl,
                     fontWeight: FontWeight.w700,
                   ),
@@ -954,8 +1086,8 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
           accentColor: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.xs),
-        const Divider(
-          color: AppColors.surfaceHighlight,
+        Divider(
+          color: AppColorsScheme.of(context).surfaceHighlight,
           indent: 24,
           endIndent: 24,
           height: 1,
@@ -976,7 +1108,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
           ),
         ),
         if (_loadingBluetooth)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
             child: Center(
               child: SizedBox(
@@ -984,7 +1116,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                 ),
               ),
             ),
@@ -1005,8 +1137,8 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                 accentColor: AppColors.primary,
               )),
         const SizedBox(height: AppSpacing.xs),
-        const Divider(
-          color: AppColors.surfaceHighlight,
+        Divider(
+          color: AppColorsScheme.of(context).surfaceHighlight,
           indent: 24,
           endIndent: 24,
           height: 1,
@@ -1023,7 +1155,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                   icon: AppIcons.refresh,
                   size: 14,
                   color: _scanningNetwork
-                      ? AppColors.textMuted
+                      ? AppColorsScheme.of(context).textMuted
                       : AppColors.primary,
                 ),
                 const SizedBox(width: AppSpacing.xs),
@@ -1031,7 +1163,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                   _scanningNetwork ? 'Scanning...' : 'Scan',
                   style: TextStyle(
                     color: _scanningNetwork
-                        ? AppColors.textMuted
+                        ? AppColorsScheme.of(context).textMuted
                         : AppColors.primary,
                     fontSize: AppFontSize.sm,
                     fontWeight: FontWeight.w600,
@@ -1079,8 +1211,8 @@ class _SectionLabel extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted,
                 fontSize: AppFontSize.xs,
                 fontWeight: FontWeight.w700,
                 letterSpacing: AppLetterSpacing.label,
@@ -1122,12 +1254,12 @@ class _DeviceTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: isActive
                   ? accentColor.withValues(alpha: 0.15)
-                  : AppColors.surfaceHighlight,
+                  : AppColorsScheme.of(context).surfaceHighlight,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: AppIcon(
               icon: icon,
-              color: isActive ? accentColor : AppColors.textSecondary,
+              color: isActive ? accentColor : AppColorsScheme.of(context).textSecondary,
               size: 21,
             ),
           ),
@@ -1139,7 +1271,7 @@ class _DeviceTile extends StatelessWidget {
                 Text(
                   name,
                   style: TextStyle(
-                    color: isActive ? accentColor : AppColors.textPrimary,
+                    color: isActive ? accentColor : AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.lg,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -1152,7 +1284,7 @@ class _DeviceTile extends StatelessWidget {
                   style: TextStyle(
                     color: isActive
                         ? accentColor.withValues(alpha: 0.7)
-                        : AppColors.textMuted,
+                        : AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.sm,
                   ),
                   maxLines: 1,
@@ -1166,7 +1298,7 @@ class _DeviceTile extends StatelessWidget {
           else
             AppIcon(
               icon: AppIcons.chevronRight,
-              color: AppColors.textMuted,
+              color: AppColorsScheme.of(context).textMuted,
               size: 20,
             ),
         ],
@@ -1218,7 +1350,7 @@ class _EmptySection extends StatelessWidget {
           horizontal: kSheetHorizontalPadding, vertical: 16),
       child: Row(
         children: [
-          AppIcon(icon: icon, color: AppColors.textMuted, size: 28),
+          AppIcon(icon: icon, color: AppColorsScheme.of(context).textMuted, size: 28),
           const SizedBox(width: AppSpacing.md + 2),
           Expanded(
             child: Column(
@@ -1226,8 +1358,8 @@ class _EmptySection extends StatelessWidget {
               children: [
                 Text(
                   message,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.md,
                   ),
                 ),
@@ -1274,10 +1406,10 @@ class _ScanningPlaceholder extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.md + 2),
-          const Text(
+          Text(
             'Scanning your network...',
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: AppColorsScheme.of(context).textSecondary,
               fontSize: AppFontSize.md,
             ),
           ),
@@ -1334,10 +1466,10 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
                 size: 22,
               ),
               const SizedBox(height: AppSpacing.xs + 2),
-              const Text(
+              Text(
                 'On Device',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.micro,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1401,7 +1533,7 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
                   painter: DownloadProgressRingPainter(
                     progress: progress,
                     rotation: _rotationController.value * 2 * 3.14159265359,
-                    trackColor: AppColors.textMuted,
+                    trackColor: AppColorsScheme.of(context).textMuted,
                     progressColor: AppColors.primary,
                     strokeWidth: 2,
                   ),
@@ -1410,7 +1542,7 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
             ),
             AppIcon(
               icon: AppIcons.download,
-              color: AppColors.textSecondary,
+              color: AppColorsScheme.of(context).textSecondary,
               size: 20,
             ),
           ],
@@ -1419,7 +1551,7 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
     } else {
       icon = AppIcon(
         icon: AppIcons.download,
-        color: AppColors.textSecondary,
+        color: AppColorsScheme.of(context).textSecondary,
         size: 22,
       );
     }
@@ -1441,8 +1573,8 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
             const SizedBox(height: AppSpacing.xs + 2),
             Text(
               isInQueue ? 'Downloading' : 'Download',
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted,
                 fontSize: AppFontSize.micro,
                 fontWeight: FontWeight.w500,
               ),
@@ -1467,6 +1599,8 @@ class QueuePanelContent extends ConsumerWidget {
     final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
     final isShuffleEnabled =
         ref.watch(playerProvider.select((s) => s.isShuffleEnabled));
+    final activeShuffleMode =
+        ref.watch(playerProvider.select((s) => s.activeShuffleMode));
     final currentSong = (currentIndex >= 0 && currentIndex < queue.length)
         ? queue[currentIndex]
         : null;
@@ -1480,13 +1614,13 @@ class QueuePanelContent extends ConsumerWidget {
             children: [
               AppIcon(
                   icon: AppIcons.queueMusic,
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   size: 22),
               const SizedBox(width: AppSpacing.sm + 2),
-              const Text(
+              Text(
                 'Queue',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.xxl,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1500,8 +1634,8 @@ class QueuePanelContent extends ConsumerWidget {
                 ),
                 child: Text(
                   '${queue.length}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textSecondary,
                     fontSize: AppFontSize.sm,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1515,7 +1649,7 @@ class QueuePanelContent extends ConsumerWidget {
             child: EmptyStatePlaceholder(
               icon: AppIcon(
                 icon: AppIcons.queueMusic,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 size: 48,
               ),
               title: 'The queue is empty',
@@ -1531,8 +1665,8 @@ class QueuePanelContent extends ConsumerWidget {
                 children: [
                   Text(
                     'Playing ${currentSong.title}',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textSecondary,
                       fontSize: AppFontSize.md,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1564,33 +1698,73 @@ class QueuePanelContent extends ConsumerWidget {
                 ],
               ),
             ),
-          if (isShuffleEnabled)
+          if (isShuffleEnabled || activeShuffleMode != ShuffleMode.none)
             Padding(
               padding: const EdgeInsets.fromLTRB(
                   kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 8),
-              child: Row(
-                children: [
-                  AppIcon(
-                    icon: AppIcons.shuffle,
-                    color: AppColors.textSecondary,
-                    size: 18,
-                  ),
-                  const SizedBox(width: AppSpacing.sm),
-                  const Text(
-                    'Shuffling from',
-                    style: TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: AppFontSize.md,
-                      fontWeight: FontWeight.w500,
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  if (activeShuffleMode == ShuffleMode.smart) {
+                    ref.read(playerProvider.notifier).toggleSmartShuffle();
+                  } else {
+                    ref.read(playerProvider.notifier).toggleShuffle();
+                  }
+                },
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          AppIcon(
+                            icon: AppIcons.shuffle,
+                            color: AppColors.primary,
+                            size: 18,
+                          ),
+                          if (activeShuffleMode == ShuffleMode.smart)
+                            const Positioned(
+                              right: -3,
+                              bottom: -3,
+                              child: Icon(
+                                Icons.auto_awesome,
+                                size: 9,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(width: AppSpacing.sm),
+                    Text(
+                      activeShuffleMode == ShuffleMode.smart
+                          ? 'Smart Shuffling'
+                          : 'Shuffling',
+                      style: const TextStyle(
+                        color: AppColors.primary,
+                        fontSize: AppFontSize.md,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.xs),
+                    AppIcon(
+                      icon: AppIcons.close,
+                      color: AppColors.primary,
+                      size: 14,
+                    ),
+                  ],
+                ),
               ),
             ),
           Expanded(
             child: ReorderableListView.builder(
               scrollController: scrollController,
               buildDefaultDragHandles: false,
+              cacheExtent: 1000,
               padding: const EdgeInsets.only(
                 left: kSheetHorizontalPadding,
                 right: kSheetHorizontalPadding,
@@ -1624,10 +1798,13 @@ class QueuePanelContent extends ConsumerWidget {
                   actualIndex = i;
                 }
                 final song = queue[actualIndex];
+                final smartIds = ref.watch(
+                    playerProvider.select((s) => s.smartShuffleSongIds));
                 return _QueueItem(
                   key: ValueKey(song.id),
                   song: song,
                   queueIndex: actualIndex,
+                  isSmartShuffle: smartIds.contains(song.id),
                   onTap: () {
                     ref
                         .read(playerProvider.notifier)
@@ -1639,7 +1816,7 @@ class QueuePanelContent extends ConsumerWidget {
                       padding: const EdgeInsets.only(right: 8),
                       child: AppIcon(
                         icon: AppIcons.dragHandle,
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         size: 22,
                       ),
                     ),
@@ -1737,7 +1914,7 @@ class _DesktopQueueOverlayState extends State<_DesktopQueueOverlay>
                 color: Colors.transparent,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
+                    color: AppColorsScheme.of(context).surfaceLight,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.08),
@@ -1774,11 +1951,13 @@ class _QueueItem extends ConsumerWidget {
     required this.onTap,
     required this.queueIndex,
     this.dragHandle,
+    this.isSmartShuffle = false,
   });
   final Song song;
   final VoidCallback onTap;
   final int queueIndex;
   final Widget? dragHandle;
+  final bool isSmartShuffle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -1802,15 +1981,24 @@ class _QueueItem extends ConsumerWidget {
                 children: [
                   Text(
                     song.durationFormatted,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textMuted,
                       fontSize: AppFontSize.md,
                     ),
                   ),
+                  if (isSmartShuffle)
+                    const Padding(
+                      padding: EdgeInsets.only(left: 4),
+                      child: Icon(
+                        Icons.auto_awesome,
+                        size: 14,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   AppIconButton(
                     icon: AppIcon(
                       icon: AppIcons.moreVert,
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       size: 20,
                     ),
                     onPressedWithContext: (btnCtx) => showSongOptionsSheet(
@@ -1860,7 +2048,7 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
   void initState() {
     super.initState();
     _positionSubscription = ref.listenManual(
-      playerProvider.select((s) => s.position),
+      playbackPositionProvider,
       (_, position) => _updateActiveIndex(position),
       fireImmediately: true,
     );
@@ -1927,10 +2115,10 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
               AppIcon(
                   icon: AppIcons.lyrics, color: widget.dominantColor, size: 22),
               const SizedBox(width: AppSpacing.sm + 2),
-              const Text(
+              Text(
                 'Lyrics',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.xxl,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1939,8 +2127,8 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
               if (lyricsState.hasLyrics && lyricsState.lyrics!.source != null)
                 Text(
                   lyricsState.lyrics!.source!,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.xs,
                   ),
                 ),
@@ -1956,10 +2144,10 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
 
   Widget _buildLyricsContent(LyricsState state) {
     if (state.isLoading) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation(AppColors.textSecondary),
+          valueColor: AlwaysStoppedAnimation(AppColorsScheme.of(context).textSecondary),
         ),
       );
     }
@@ -1973,22 +2161,22 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
             children: [
               AppIcon(
                   icon: AppIcons.lyrics,
-                  color: AppColors.textMuted.withValues(alpha: 0.4),
+                  color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.4),
                   size: 56),
               const SizedBox(height: AppSpacing.base),
-              const Text(
+              Text(
                 'Couldn\'t load lyrics',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: AppSpacing.xs + 2),
-              const Text(
+              Text(
                 'A network error occurred. Tap to retry.',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.md,
                 ),
                 textAlign: TextAlign.center,
@@ -2005,17 +2193,17 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceHighlight,
+                    color: AppColorsScheme.of(context).surfaceHighlight,
                     borderRadius: BorderRadius.circular(AppRadius.full),
                     border: Border.all(
                       color: AppColors.glassBorder.withValues(alpha: 0.4),
                       width: 0.6,
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Retry',
                     style: TextStyle(
-                      color: AppColors.textPrimary,
+                      color: AppColorsScheme.of(context).textPrimary,
                       fontSize: AppFontSize.base,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2037,22 +2225,22 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
             children: [
               AppIcon(
                   icon: AppIcons.lyrics,
-                  color: AppColors.textMuted.withValues(alpha: 0.4),
+                  color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.4),
                   size: 56),
               const SizedBox(height: AppSpacing.base),
-              const Text(
+              Text(
                 'No lyrics available.',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: AppSpacing.xs + 2),
-              const Text(
+              Text(
                 'Lyrics are not available for this song',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.md,
                 ),
                 textAlign: TextAlign.center,
@@ -2090,9 +2278,9 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
       style: TextStyle(
         color: isSynced
             ? (isActive
-                ? AppColors.textPrimary
-                : AppColors.textPrimary.withValues(alpha: 0.3))
-            : AppColors.textPrimary,
+                ? AppColorsScheme.of(context).textPrimary
+                : AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.3))
+            : AppColorsScheme.of(context).textPrimary,
         fontSize: isActive ? 22 : 20,
         fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
         height: AppLineHeight.relaxed,
@@ -2101,6 +2289,103 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 6),
         child: Text(line.text),
+      ),
+    );
+  }
+}
+
+// ── Playback Speed Sheet ──────────────────────────────────────────────────────
+
+class _PlaybackSpeedSheetContent extends ConsumerWidget {
+  const _PlaybackSpeedSheetContent();
+
+  static const _speeds = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+
+  String _label(double speed) {
+    if (speed == 1.0) return '1× Normal';
+    final s = speed.toStringAsFixed(speed.truncateToDouble() == speed ? 0 : 2);
+    return '$s×';
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(playerProvider.select((s) => s.playbackSpeed));
+    final notifier = ref.read(playerProvider.notifier);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              kSheetHorizontalPadding, 4, kSheetHorizontalPadding, 0),
+          child: Text(
+            'Playback speed',
+            style: TextStyle(
+              color: AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.95),
+              fontSize: AppFontSize.md,
+              fontWeight: FontWeight.w600,
+              letterSpacing: AppLetterSpacing.label,
+            ),
+          ),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        for (final speed in _speeds)
+          _SpeedTile(
+            label: _label(speed),
+            speed: speed,
+            isSelected: (current - speed).abs() < 0.01,
+            onTap: () {
+              HapticFeedback.selectionClick();
+              notifier.setPlaybackSpeed(speed);
+              Navigator.of(context).pop();
+            },
+          ),
+        const SizedBox(height: AppSpacing.md),
+      ],
+    );
+  }
+}
+
+class _SpeedTile extends StatelessWidget {
+  const _SpeedTile({
+    required this.label,
+    required this.speed,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final String label;
+  final double speed;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+            horizontal: kSheetHorizontalPadding, vertical: AppSpacing.md),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? AppColors.primary : AppColorsScheme.of(context).textPrimary,
+                  fontSize: AppFontSize.lg,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
+                ),
+              ),
+            ),
+            if (isSelected)
+              AppIcon(
+                  icon: AppIcons.check,
+                  size: 20,
+                  color: AppColors.primary),
+          ],
+        ),
       ),
     );
   }

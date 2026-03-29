@@ -1,7 +1,6 @@
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/data/models/lyrics_result.dart';
-import 'package:tunify/features/settings/music_stream_manager.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 
 /// Lyrics fetch state: loading, loaded, or error.
@@ -22,11 +21,11 @@ class LyricsState {
 /// Deduplicates in-flight requests: if [fetchForVideo] is called again with the
 /// same [videoId] while lyrics are already loaded, no network call is made.
 /// Stale responses from superseded requests are discarded via [_currentVideoId] checks.
-class LyricsNotifier extends StateNotifier<LyricsState> {
-  final MusicStreamManager _streamManager;
+class LyricsNotifier extends Notifier<LyricsState> {
   String? _currentVideoId;
 
-  LyricsNotifier(this._streamManager) : super(LyricsState.initial);
+  @override
+  LyricsState build() => LyricsState.initial;
 
   /// Fetches lyrics for [videoId], skipping the request if lyrics are already loaded for that ID.
   Future<void> fetchForVideo(String videoId) async {
@@ -36,7 +35,7 @@ class LyricsNotifier extends StateNotifier<LyricsState> {
     state = const LyricsState(isLoading: true);
 
     try {
-      final result = await _streamManager.getLyrics(videoId);
+      final result = await ref.read(streamManagerProvider).getLyrics(videoId);
       if (_currentVideoId != videoId) return;
 
       state = LyricsState(lyrics: result);
@@ -53,7 +52,4 @@ class LyricsNotifier extends StateNotifier<LyricsState> {
 }
 
 final lyricsProvider =
-    StateNotifierProvider<LyricsNotifier, LyricsState>((ref) {
-  final streamManager = ref.watch(streamManagerProvider);
-  return LyricsNotifier(streamManager);
-});
+    NotifierProvider<LyricsNotifier, LyricsState>(LyricsNotifier.new);

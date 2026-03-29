@@ -58,6 +58,16 @@ abstract final class AppColors {
   static const Color glassBlack = Color(0x60000000);
   static const Color glassBorder = Color(0x25FFFFFF);
 
+  // ——— Player overlay text / icon tints (white with opacity) ———
+  /// Player icon inactive state — white @ 80%
+  static const Color playerIconInactive = Color(0xCCFFFFFF);
+  /// Player extra button icons / label — white @ 75%
+  static const Color playerIconExtra = Color(0xBFFFFFFF);
+  /// Player status label ("NOW PLAYING") — white @ 65%
+  static const Color playerLabelSubtle = Color(0xA6FFFFFF);
+  /// Player time label — white @ 50%
+  static const Color playerTimeMuted = Color(0x80FFFFFF);
+
   // ——— Gradients ———
   /// gradient_app_background
   static const LinearGradient backgroundGradient = LinearGradient(
@@ -257,10 +267,10 @@ abstract final class PaletteTheme {
       );
 
   /// Builds the pinned AppBar background color by blending [paletteColor]
-  /// over [AppColors.background].
-  static Color appBarBackground(Color paletteColor) => Color.alphaBlend(
+  /// over [background] (defaults to [AppColors.background]).
+  static Color appBarBackground(Color paletteColor, {Color? background}) => Color.alphaBlend(
         paletteColor.withValues(alpha: appBarBlendAlpha),
-        AppColors.background,
+        background ?? AppColors.background,
       );
 
   /// Builds the dominant-color overlay gradient used in [PlayerBlurredBackground].

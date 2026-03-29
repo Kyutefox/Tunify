@@ -1,5 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 import 'package:tunify/data/models/library_album.dart';
 import 'package:tunify/data/models/library_artist.dart';
@@ -14,7 +13,7 @@ typedef LibraryData = ({
   List<LibraryFolder> folders,
   String sortOrder,
   String viewMode,
-  bool downloadedShuffleEnabled,
+  ShuffleMode downloadedShuffleMode,
   String downloadsSortOrder,
   List<LibraryArtist> followedArtists,
   List<LibraryAlbum> followedAlbums,
@@ -28,17 +27,17 @@ class DatabaseRepository {
   final DatabaseBridge _bridge;
   final SyncManager _syncManager;
 
-  Future<LibraryData> loadAll({String? userId}) async {
+  Future<LibraryData> loadAll() async {
     final raw = await _bridge.loadLibraryData();
     return _rawToLibraryData(raw);
   }
 
-  Future<void> saveAll({required LibraryData data, String? userId}) async {
+  Future<void> saveAll({required LibraryData data}) async {
     await _bridge.saveLibraryData(_libraryDataToRaw(data));
     _syncManager.requestSync();
   }
 
-  Future<List<RecentlyPlayedSong>> loadRecentlyPlayed({String? userId}) async {
+  Future<List<RecentlyPlayedSong>> loadRecentlyPlayed() async {
     final list = await _bridge.loadRecentlyPlayed();
     return list
         .map((m) => RecentlyPlayedSong(
@@ -57,8 +56,7 @@ class DatabaseRepository {
         .toList();
   }
 
-  Future<void> saveRecentlyPlayed(List<RecentlyPlayedSong> songs,
-      {String? userId}) async {
+  Future<void> saveRecentlyPlayed(List<RecentlyPlayedSong> songs) async {
     await _bridge.saveRecentlyPlayed(songs.map((s) => s.toJson()).toList());
     _syncManager.requestSync();
   }
@@ -104,13 +102,127 @@ class DatabaseRepository {
 
   Future<void> close() async => _bridge.close();
 
+  // ── Playlist surgical ops ─────────────────────────────────────────────────
+
+  /// Inserts a new empty playlist row. No songs written.
+  Future<void> createPlaylist(LibraryPlaylist p) async {
+    await _bridge.createPlaylist(_playlistToRaw(p));
+    _syncManager.requestSync();
+  }
+
+  /// Deletes a playlist. Cascade removes its songs and folder memberships.
+  Future<void> deletePlaylist(String id) async {
+    await _bridge.deletePlaylist(id);
+    _syncManager.requestSync();
+  }
+
+  /// Updates specific metadata columns on one playlist.
+  ///
+  /// Only the non-null parameters are written. Pass [touchUpdatedAt] = false
+  /// for background cache writes (palette color) that should not affect
+  /// library sort order.
+  Future<void> updatePlaylistMeta(
+    String id, {
+    String? name,
+    String? description,
+    PlaylistTrackSortOrder? sortOrder,
+    ShuffleMode? shuffleMode,
+    bool? isPinned,
+    String? coverUrl,
+    int? paletteColor,
+    int? remoteTrackCount,
+    bool touchUpdatedAt = true,
+  }) async {
+    final fields = <String, dynamic>{};
+    if (name != null) fields['name'] = name;
+    if (description != null) fields['description'] = description;
+    if (sortOrder != null) fields['sort_order'] = sortOrder.value;
+    if (shuffleMode != null) fields['shuffle_enabled'] = shuffleMode.index;
+    if (isPinned != null) fields['is_pinned'] = isPinned ? 1 : 0;
+    if (coverUrl != null) fields['cover_url'] = coverUrl;
+    if (paletteColor != null) fields['palette_color'] = paletteColor;
+    if (remoteTrackCount != null) fields['total_track_count_remote'] = remoteTrackCount;
+    if (touchUpdatedAt) fields['updated_at'] = DateTime.now().toUtc().toIso8601String();
+    if (fields.isEmpty) return;
+    await _bridge.updatePlaylistMeta(id, fields);
+    _syncManager.requestSync();
+  }
+
+  /// Replaces all songs for [playlistId]. Only that playlist's songs are written.
+  Future<void> replacePlaylistSongs(String playlistId, List<Song> songs) async {
+    final songMaps = songs.map((s) => s.toJson()).toList();
+    final updatedAt = DateTime.now().toUtc().toIso8601String();
+    await _bridge.replacePlaylistSongs(playlistId, songMaps, updatedAt);
+    _syncManager.requestSync();
+  }
+
+  // ── Folder surgical ops ───────────────────────────────────────────────────
+
+  Future<void> createFolder(LibraryFolder f) async {
+    await _bridge.createFolder({
+      'id': f.id,
+      'name': f.name,
+      'created_at': f.createdAt.toUtc().toIso8601String(),
+    });
+    _syncManager.requestSync();
+  }
+
+  Future<void> deleteFolder(String id) async {
+    await _bridge.deleteFolder(id);
+    _syncManager.requestSync();
+  }
+
+  Future<void> renameFolder(String id, String name) async {
+    await _bridge.renameFolder(id, name);
+    _syncManager.requestSync();
+  }
+
+  Future<void> addPlaylistToFolder(String folderId, String playlistId) async {
+    await _bridge.addPlaylistToFolder(folderId, playlistId);
+    _syncManager.requestSync();
+  }
+
+  Future<void> removePlaylistFromFolder(
+      String folderId, String playlistId) async {
+    await _bridge.removePlaylistFromFolder(folderId, playlistId);
+    _syncManager.requestSync();
+  }
+
+  /// Saves the pinned folder IDs by updating the folders table.
+  Future<void> savePinnedFolderIds(List<String> ids) async {
+    await _bridge.updatePinnedFolderIds(ids);
+    _syncManager.requestSync();
+  }
+
+  // ── Followed artists / albums ─────────────────────────────────────────────
+
+  Future<void> followArtist(LibraryArtist artist) async {
+    await _bridge.insertArtist(artist.toJson());
+    _syncManager.requestSync();
+  }
+
+  Future<void> unfollowArtist(String id) async {
+    await _bridge.deleteArtistOrAlbum(id);
+    _syncManager.requestSync();
+  }
+
+  Future<void> followAlbum(LibraryAlbum album) async {
+    await _bridge.insertAlbum(album.toJson());
+    _syncManager.requestSync();
+  }
+
+  Future<void> unfollowAlbum(String id) async {
+    await _bridge.deleteArtistOrAlbum(id);
+    _syncManager.requestSync();
+  }
+
   Future<void> clearAllLocalData() async {
     await _bridge.saveLibraryData({
       'playlists': [],
       'folders': [],
       'sortOrder': 'dateAdded',
       'viewMode': 'grid',
-      'downloadedShuffleEnabled': false,
+      'downloadedShuffleMode': 0,
       'downloadsSortOrder': 'dateAdded',
       'followedArtists': [],
       'followedAlbums': [],
@@ -127,37 +239,7 @@ class DatabaseRepository {
     final playlistsRaw = raw['playlists'] as List<dynamic>? ?? [];
     final foldersRaw = raw['folders'] as List<dynamic>? ?? [];
 
-    // One-time migration: liked songs were stored as a flat list under
-    // 'likedSongs'. Inject them as the reserved 'liked' playlist if it isn't
-    // already present, OR if it exists but is empty while the legacy array has data
-    // (handles the case where a bad save wrote an empty 'liked' entry before migration ran).
-    final likedRaw = raw['likedSongs'] as List<dynamic>? ?? [];
-    final existingLiked =
-        playlistsRaw.cast<Map>().where((p) => p['id'] == 'liked').firstOrNull;
-    final likedSongsInPlaylist =
-        (existingLiked?['songs'] as List<dynamic>? ?? []);
-    final needsMigration = existingLiked == null ||
-        (likedSongsInPlaylist.isEmpty && likedRaw.isNotEmpty);
-
-    LibraryPlaylist? migratedLiked;
-    if (needsMigration && likedRaw.isNotEmpty) {
-      final likedShuffleEnabled = raw['likedShuffleEnabled'] as bool? ?? false;
-      final songs = likedRaw.map((s) {
-        final m = Map<String, dynamic>.from(s as Map);
-        _migrateFallbackDuration(m);
-        return Song.fromJson(m);
-      }).toList();
-      migratedLiked = LibraryPlaylist(
-        id: 'liked',
-        name: 'Liked Songs',
-        createdAt: DateTime(2000),
-        updatedAt: DateTime.now(),
-        songs: songs,
-        shuffleEnabled: likedShuffleEnabled,
-      );
-    }
-
-    final playlists = playlistsRaw.map((p) {
+    final allPlaylists = playlistsRaw.map((p) {
       final m = Map<String, dynamic>.from(p as Map);
       final songsList = m['songs'] as List<dynamic>? ?? [];
       return LibraryPlaylist(
@@ -166,31 +248,20 @@ class DatabaseRepository {
         description: m['description'] as String? ?? '',
         createdAt: _parseDateTime(m['created_at']),
         updatedAt: _parseDateTime(m['updated_at']),
-        songs: songsList.map((s) {
-          final sm = Map<String, dynamic>.from(s as Map);
-          _migrateFallbackDuration(sm);
-          return Song.fromJson(sm);
-        }).toList(),
+        songs: songsList
+            .map((s) => Song.fromJson(Map<String, dynamic>.from(s as Map)))
+            .toList(),
         sortOrder:
             PlaylistTrackSortOrderX.fromString(m['sort_order'] as String?),
-        shuffleEnabled: m['shuffleEnabled'] as bool? ?? false,
+        shuffleMode: ShuffleModeX.fromInt(m['shuffle_enabled']),
         isPinned: m['is_pinned'] as bool? ?? false,
-        customImageUrl: m['custom_image_url'] as String?,
+        customImageUrl: m['cover_url'] as String?,
         isImported: m['is_imported'] as bool? ?? false,
         browseId: m['browse_id'] as String?,
-        cachedPaletteColor: m['cached_palette_color'] as int?,
-        remoteTrackCount: m['remote_track_count'] as int?,
+        cachedPaletteColor: m['palette_color'] as int?,
+        remoteTrackCount: m['total_track_count_remote'] as int?,
       );
     }).toList();
-
-    // When migrating, filter out any existing empty 'liked' entry before prepending the migrated one.
-    final playlistsWithoutLiked = migratedLiked != null
-        ? playlists.where((p) => p.id != 'liked').toList()
-        : playlists;
-
-    final allPlaylists = migratedLiked != null
-        ? [migratedLiked, ...playlistsWithoutLiked]
-        : playlists;
 
     final folders = foldersRaw.map((f) {
       final m = Map<String, dynamic>.from(f as Map);
@@ -217,37 +288,35 @@ class DatabaseRepository {
       folders: folders,
       sortOrder: raw['sortOrder'] as String? ?? 'recent',
       viewMode: raw['viewMode'] as String? ?? 'list',
-      downloadedShuffleEnabled:
-          raw['downloadedShuffleEnabled'] as bool? ?? false,
+      downloadedShuffleMode:
+          ShuffleModeX.fromInt(raw['downloadedShuffleMode'] as int?),
       downloadsSortOrder: raw['downloadsSortOrder'] as String? ?? 'customOrder',
       followedArtists: followedArtists,
       followedAlbums: followedAlbums,
     );
   }
 
+  Map<String, dynamic> _playlistToRaw(LibraryPlaylist p) => {
+        'id': p.id,
+        'name': p.name,
+        'description': p.description,
+        'sort_order': p.sortOrder.value,
+        // Imported playlists always re-fetch tracks — don't persist songs.
+        'songs': p.isImported ? [] : p.songs.map((s) => s.toJson()).toList(),
+        'created_at': p.createdAt.toUtc().toIso8601String(),
+        'updated_at': p.updatedAt.toUtc().toIso8601String(),
+        'cover_url': p.customImageUrl,
+        'is_pinned': p.isPinned,
+        'shuffle_enabled': p.shuffleMode.index,
+        'is_imported': p.isImported,
+        'browse_id': p.browseId,
+        'palette_color': p.cachedPaletteColor,
+        'total_track_count_remote': p.remoteTrackCount,
+      };
+
   Map<String, dynamic> _libraryDataToRaw(LibraryData data) {
     return {
-      'playlists': data.playlists
-          .map((p) => {
-                'id': p.id,
-                'name': p.name,
-                'description': p.description,
-                'sort_order': p.sortOrder.value,
-                // Imported playlists always re-fetch tracks — don't persist songs.
-                // The 'liked' playlist is never imported, so its songs are always saved.
-                'songs':
-                    p.isImported ? [] : p.songs.map((s) => s.toJson()).toList(),
-                'created_at': p.createdAt.toUtc().toIso8601String(),
-                'updated_at': p.updatedAt.toUtc().toIso8601String(),
-                'custom_image_url': p.customImageUrl,
-                'is_pinned': p.isPinned,
-                'shuffleEnabled': p.shuffleEnabled,
-                'is_imported': p.isImported,
-                'browse_id': p.browseId,
-                'cached_palette_color': p.cachedPaletteColor,
-                'remote_track_count': p.remoteTrackCount,
-              })
-          .toList(),
+      'playlists': data.playlists.map(_playlistToRaw).toList(),
       'folders': data.folders
           .map((f) => {
                 'id': f.id,
@@ -259,7 +328,7 @@ class DatabaseRepository {
           .toList(),
       'sortOrder': data.sortOrder,
       'viewMode': data.viewMode,
-      'downloadedShuffleEnabled': data.downloadedShuffleEnabled,
+      'downloadedShuffleMode': data.downloadedShuffleMode.index,
       'downloadsSortOrder': data.downloadsSortOrder,
       'followedArtists': data.followedArtists.map((a) => a.toJson()).toList(),
       'followedAlbums': data.followedAlbums.map((a) => a.toJson()).toList(),
@@ -271,20 +340,20 @@ class DatabaseRepository {
     if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
     return DateTime.now();
   }
-
-  /// Migrates songs stored with the old 3-minute fallback duration (180000ms)
-  /// to Duration.zero so they display as "--:--" instead of "03:00".
-  static void _migrateFallbackDuration(Map<String, dynamic> songMap) {
-    const fallbackMs = 180000;
-    if (songMap['durationMs'] == fallbackMs) songMap['durationMs'] = 0;
-  }
 }
 
 final databaseBridgeProvider =
     Provider<DatabaseBridge>((ref) => DatabaseBridge());
 
+class _HydrationProgressNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+  void set(bool value) => state = value;
+}
+
 /// True while a Supabase → SQLite hydration pull is in progress after login.
-final databaseHydrationInProgressProvider = StateProvider<bool>((ref) => false);
+final databaseHydrationInProgressProvider =
+    NotifierProvider<_HydrationProgressNotifier, bool>(_HydrationProgressNotifier.new);
 
 final databaseRepositoryProvider = Provider<DatabaseRepository>((ref) {
   return DatabaseRepository(

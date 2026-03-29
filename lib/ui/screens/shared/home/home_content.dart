@@ -10,13 +10,13 @@ import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/widgets/common/section_header.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'home_sections.dart';
 import 'home_shared.dart';
 import 'home_skeletons.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class HomeContent extends ConsumerWidget {
   const HomeContent({super.key, required this.onPlay});
@@ -131,15 +131,15 @@ class _NavButton extends StatelessWidget {
         height: t.spacing.xxl,
         decoration: BoxDecoration(
           color: enabled
-              ? AppColors.surfaceLight
-              : AppColors.surfaceLight.withValues(alpha: 0.4),
+              ? AppColorsScheme.of(context).surfaceLight
+              : AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.4),
           shape: BoxShape.circle,
         ),
         child: Center(
           child: AppIcon(
             icon: icon,
             size: t.icon.xs,
-            color: enabled ? AppColors.textPrimary : AppColors.textMuted,
+            color: enabled ? AppColorsScheme.of(context).textPrimary : AppColorsScheme.of(context).textMuted,
           ),
         ),
       ),

@@ -1,8 +1,9 @@
 import 'dart:async';
 
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/features/player/player_state_provider.dart';
+import 'package:tunify/features/player/playback_position_provider.dart';
 
 /// End time (UTC) when the sleep timer will stop playback, or end-of-track mode.
 /// UI can compute remaining as endTime.difference(DateTime.now()).
@@ -10,10 +11,9 @@ class SleepTimerState {
   const SleepTimerState({this.endTime, this.endOfTrack = false});
 
   final DateTime? endTime;
-  /// End-of-track mode; nullable for backwards compatibility (e.g. after hot reload).
-  final bool? endOfTrack;
+  final bool endOfTrack;
 
-  bool get isActive => endTime != null || (endOfTrack == true);
+  bool get isActive => endTime != null || endOfTrack;
 
   /// Remaining time; null if no timer, end-of-track mode, or already expired.
   Duration? get remaining {
@@ -25,14 +25,19 @@ class SleepTimerState {
 
 /// Controls the sleep timer: either a fixed-duration countdown or end-of-track mode.
 ///
-/// Pauses the player by calling [_onTimerEnd] when the countdown expires or
-/// when [checkEndOfTrack] detects that the current track is within 1 second of ending.
-class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
-  SleepTimerNotifier(this._onTimerEnd) : super(const SleepTimerState());
-
-  final void Function() _onTimerEnd;
+/// Pauses the player when the countdown expires or when [checkEndOfTrack]
+/// detects that the current track is within 1 second of ending.
+class SleepTimerNotifier extends Notifier<SleepTimerState> {
   Timer? _sleepTimer;
   Timer? _tickTimer;
+
+  @override
+  SleepTimerState build() {
+    ref.listen<PlayerState>(playerProvider, (_, next) {
+      checkEndOfTrack(next);
+    });
+    return const SleepTimerState();
+  }
 
   void setTimer(Duration duration) {
     _cancelTimers();
@@ -53,7 +58,7 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
   void _onTimerFired() {
     _cancelTimers();
     state = const SleepTimerState();
-    _onTimerEnd();
+    ref.read(playerProvider.notifier).pause();
   }
 
   void cancel() {
@@ -63,13 +68,13 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
 
   /// Called when player state changes; pauses at end of current track if endOfTrack is set.
   void checkEndOfTrack(PlayerState player) {
-    if (state.endOfTrack != true) return;
+    if (!state.endOfTrack) return;
     final duration = player.duration;
     if (duration == null || duration.inMilliseconds <= 0) return;
-    final position = player.position;
+    final position = ref.read(playbackPositionProvider);
     if (position >= duration - const Duration(seconds: 1)) {
       cancel();
-      _onTimerEnd();
+      ref.read(playerProvider.notifier).pause();
     }
   }
 
@@ -82,12 +87,4 @@ class SleepTimerNotifier extends StateNotifier<SleepTimerState> {
 }
 
 final sleepTimerProvider =
-    StateNotifierProvider<SleepTimerNotifier, SleepTimerState>((ref) {
-  final notifier = SleepTimerNotifier(() {
-    ref.read(playerProvider.notifier).pause();
-  });
-  ref.listen<PlayerState>(playerProvider, (_, next) {
-    notifier.checkEndOfTrack(next);
-  });
-  return notifier;
-});
+    NotifierProvider<SleepTimerNotifier, SleepTimerState>(SleepTimerNotifier.new);

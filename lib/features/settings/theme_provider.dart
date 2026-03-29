@@ -8,20 +8,32 @@ class ThemeModeNotifier extends Notifier<ThemeMode> {
   @override
   ThemeMode build() {
     _restore();
-    return ThemeMode.dark;
+    return ThemeMode.system;
   }
 
   Future<void> _restore() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(StorageKeys.prefsThemeMode);
-    if (stored == 'light') state = ThemeMode.light;
+    if (stored == null) return; // No preference stored, keep system default
+    switch (stored) {
+      case 'light':
+        state = ThemeMode.light;
+      case 'dark':
+        state = ThemeMode.dark;
+      case 'system':
+        state = ThemeMode.system;
+    }
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
     state = mode;
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-        StorageKeys.prefsThemeMode, mode == ThemeMode.light ? 'light' : 'dark');
+    final value = switch (mode) {
+      ThemeMode.light => 'light',
+      ThemeMode.dark => 'dark',
+      ThemeMode.system => 'system',
+    };
+    await prefs.setString(StorageKeys.prefsThemeMode, value);
   }
 
   void toggleTheme() {

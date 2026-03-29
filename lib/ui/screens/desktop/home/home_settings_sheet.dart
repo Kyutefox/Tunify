@@ -223,6 +223,8 @@ class _ThemeToggleCard extends StatelessWidget {
                 onChanged: (_) => onToggle(),
                 activeThumbColor: AppColors.primary,
                 activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
+                inactiveThumbColor: AppColorsScheme.of(context).textMuted,
+                inactiveTrackColor: AppColorsScheme.of(context).surfaceHighlight,
               ),
             ],
           ),

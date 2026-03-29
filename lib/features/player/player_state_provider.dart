@@ -63,6 +63,9 @@ class PlayerState {
   /// downloads, etc.). [ShuffleMode.none] when nothing is active.
   final ShuffleMode activeShuffleMode;
 
+  /// True when smart shuffle is actively fetching recommendations.
+  final bool isSmartShuffleLoading;
+
   // Stored as nullable so Shorebird-patched builds that pre-date these fields
   // still get the correct safe default instead of a null-dereference crash.
   final bool? _isGaplessEnabled;
@@ -94,6 +97,7 @@ class PlayerState {
     double bassBoostLevel = 0.0,
     this.smartShuffleSongIds = const {},
     this.activeShuffleMode = ShuffleMode.none,
+    this.isSmartShuffleLoading = false,
   })  : _isGaplessEnabled = isGaplessEnabled,
         _crossfadeDurationSeconds = crossfadeDurationSeconds,
         _playbackSpeed = playbackSpeed,
@@ -129,6 +133,7 @@ class PlayerState {
     double? bassBoostLevel,
     Set<String>? smartShuffleSongIds,
     ShuffleMode? activeShuffleMode,
+    bool? isSmartShuffleLoading,
     bool clearSong = false,
     bool clearError = false,
     bool clearDuration = false,
@@ -156,6 +161,7 @@ class PlayerState {
       smartShuffleSongIds:
           clearSmartShuffleIds ? const {} : (smartShuffleSongIds ?? this.smartShuffleSongIds),
       activeShuffleMode: activeShuffleMode ?? this.activeShuffleMode,
+      isSmartShuffleLoading: isSmartShuffleLoading ?? this.isSmartShuffleLoading,
     );
   }
 
@@ -180,7 +186,8 @@ class PlayerState {
         playbackSpeed == other.playbackSpeed &&
         bassBoostLevel == other.bassBoostLevel &&
         setEquals(smartShuffleSongIds, other.smartShuffleSongIds) &&
-        activeShuffleMode == other.activeShuffleMode;
+        activeShuffleMode == other.activeShuffleMode &&
+        isSmartShuffleLoading == other.isSmartShuffleLoading;
   }
 
   @override
@@ -208,6 +215,7 @@ class PlayerState {
         bassBoostLevel,
         smartShuffleSongIds.length,
         activeShuffleMode,
+        isSmartShuffleLoading,
       );
 }
 
@@ -385,6 +393,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     if (_smartShufflePlaylistSongs.isEmpty) return;
 
     _smartShuffleRefilling = true;
+    state = state.copyWith(isSmartShuffleLoading: true);
     try {
       // Rotate seed through original playlist songs for varied recommendations.
       final seed =
@@ -438,6 +447,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
       logWarning('Player: _maybeRefillSmartShuffle failed: $e', tag: 'Player');
     } finally {
       _smartShuffleRefilling = false;
+      state = state.copyWith(isSmartShuffleLoading: false);
     }
   }
 
@@ -449,6 +459,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
             ShuffleMode.none,
       'downloads' || 'device' => lib.downloadedShuffleMode,
       'liked' => lib.likedPlaylist.shuffleMode,
+      'recently_played' => lib.recentlyPlayedShuffleMode,
       _ => ShuffleMode.none,
     };
   }
@@ -465,6 +476,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
         return lib.downloadedShuffleMode == ShuffleMode.smart;
       case 'liked':
         return lib.likedPlaylist.shuffleMode == ShuffleMode.smart;
+      case 'recently_played':
+        return lib.recentlyPlayedShuffleMode == ShuffleMode.smart;
       default:
         return false;
     }

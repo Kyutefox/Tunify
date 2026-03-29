@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
@@ -79,10 +80,17 @@ class SharedSearchPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColorsScheme.of(context).background,
-      resizeToAvoidBottomInset: false,
-      body: SafeArea(
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final overlayStyle = isDark
+        ? SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent)
+        : SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent);
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: Scaffold(
+        backgroundColor: AppColorsScheme.of(context).background,
+        resizeToAvoidBottomInset: false,
+        body: SafeArea(
         bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -146,6 +154,7 @@ class SharedSearchPage extends StatelessWidget {
             Expanded(child: body),
           ],
         ),
+      ),
       ),
     );
   }

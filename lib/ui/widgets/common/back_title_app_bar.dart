@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
@@ -24,26 +25,39 @@ class BackTitleAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppBar(
-      backgroundColor: backgroundColor ?? Colors.transparent,
-      elevation: 0,
-      leading: IconButton(
-        icon: AppIcon(
-          icon: AppIcons.back,
-          size: 24,
-          color: AppColorsScheme.of(context).textPrimary,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final overlayStyle = isDark
+        ? SystemUiOverlayStyle.light.copyWith(
+            statusBarColor: Colors.transparent,
+          )
+        : SystemUiOverlayStyle.dark.copyWith(
+            statusBarColor: Colors.transparent,
+          );
+
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: AppBar(
+        backgroundColor: backgroundColor ?? Colors.transparent,
+        elevation: 0,
+        systemOverlayStyle: overlayStyle,
+        leading: IconButton(
+          icon: AppIcon(
+            icon: AppIcons.back,
+            size: 24,
+            color: AppColorsScheme.of(context).textPrimary,
+          ),
+          onPressed: onBack ?? () => Navigator.of(context).pop(),
         ),
-        onPressed: onBack ?? () => Navigator.of(context).pop(),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: AppColorsScheme.of(context).textPrimary,
-          fontSize: AppFontSize.xxl,
-          fontWeight: FontWeight.w700,
+        title: Text(
+          title,
+          style: TextStyle(
+            color: AppColorsScheme.of(context).textPrimary,
+            fontSize: AppFontSize.xxl,
+            fontWeight: FontWeight.w700,
+          ),
         ),
+        actions: actions,
       ),
-      actions: actions,
     );
   }
 }

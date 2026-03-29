@@ -1601,9 +1601,17 @@ class QueuePanelContent extends ConsumerWidget {
         ref.watch(playerProvider.select((s) => s.isShuffleEnabled));
     final activeShuffleMode =
         ref.watch(playerProvider.select((s) => s.activeShuffleMode));
+    final isSmartShuffleLoading =
+        ref.watch(playerProvider.select((s) => s.isSmartShuffleLoading));
     final currentSong = (currentIndex >= 0 && currentIndex < queue.length)
         ? queue[currentIndex]
         : null;
+    
+    // Calculate item count: queue items (minus current) + skeleton if loading
+    final queueItemCount = queue.isEmpty
+        ? 0
+        : (currentIndex >= 0 ? queue.length - 1 : queue.length);
+    final showSmartShuffleSkeleton = isSmartShuffleLoading && activeShuffleMode == ShuffleMode.smart;
 
     return Column(
       children: [
@@ -1770,11 +1778,7 @@ class QueuePanelContent extends ConsumerWidget {
                 right: kSheetHorizontalPadding,
                 bottom: 32,
               ),
-              itemCount: queue.isEmpty
-                  ? 0
-                  : (currentIndex >= 0)
-                      ? queue.length - 1
-                      : queue.length,
+              itemCount: queueItemCount + (showSmartShuffleSkeleton ? 1 : 0),
               onReorder: (oldIndex, newIndex) {
                 if (currentIndex < 0) {
                   ref
@@ -1791,6 +1795,11 @@ class QueuePanelContent extends ConsumerWidget {
                     .reorderQueue(oldActual, newActual);
               },
               itemBuilder: (context, i) {
+                // Show skeleton loader at the end when smart shuffle is loading
+                if (showSmartShuffleSkeleton && i == queueItemCount) {
+                  return const _QueueItemSkeleton(key: ValueKey('smart-shuffle-skeleton'));
+                }
+                
                 final int actualIndex;
                 if (currentIndex >= 0) {
                   actualIndex = i >= currentIndex ? i + 1 : i;
@@ -2018,6 +2027,67 @@ class _QueueItem extends ConsumerWidget {
                     ),
                 ],
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _QueueItemSkeleton extends StatelessWidget {
+  const _QueueItemSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 4),
+      child: Row(
+        children: [
+          // Thumbnail skeleton
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: AppColorsScheme.of(context).surfaceHighlight,
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Title skeleton
+                Container(
+                  width: 140,
+                  height: 14,
+                  decoration: BoxDecoration(
+                    color: AppColorsScheme.of(context).surfaceHighlight,
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                // Artist skeleton
+                Container(
+                  width: 100,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: AppColorsScheme.of(context).surfaceHighlight,
+                    borderRadius: BorderRadius.circular(AppRadius.xs),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Smart shuffle indicator
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: Icon(
+              Icons.auto_awesome,
+              size: 14,
+              color: AppColors.primary.withValues(alpha: 0.5),
             ),
           ),
         ],

@@ -7,7 +7,6 @@ import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 // PERF: hoisted as file-level consts — no allocation per build.
 const Color _kIconInactive = AppColors.playerIconInactive;

@@ -59,6 +59,7 @@ class LibraryState {
     this.viewMode = LibraryViewMode.list,
     this.searchQuery = '',
     this.downloadedShuffleMode = ShuffleMode.none,
+    this.recentlyPlayedShuffleMode = ShuffleMode.none,
     this.downloadsSortOrder = PlaylistTrackSortOrder.customOrder,
     this.followedArtists = const [],
     this.followedAlbums = const [],
@@ -73,6 +74,9 @@ class LibraryState {
   final ShuffleMode downloadedShuffleMode;
   /// Convenience getter — true when any downloaded shuffle is active.
   bool get downloadedShuffleEnabled => downloadedShuffleMode != ShuffleMode.none;
+  final ShuffleMode recentlyPlayedShuffleMode;
+  /// Convenience getter — true when any recently played shuffle is active.
+  bool get recentlyPlayedShuffleEnabled => recentlyPlayedShuffleMode != ShuffleMode.none;
   final PlaylistTrackSortOrder downloadsSortOrder;
   final List<LibraryArtist> followedArtists;
   final List<LibraryAlbum> followedAlbums;
@@ -152,6 +156,7 @@ class LibraryState {
     LibraryViewMode? viewMode,
     String? searchQuery,
     ShuffleMode? downloadedShuffleMode,
+    ShuffleMode? recentlyPlayedShuffleMode,
     PlaylistTrackSortOrder? downloadsSortOrder,
     List<LibraryArtist>? followedArtists,
     List<LibraryAlbum>? followedAlbums,
@@ -163,6 +168,7 @@ class LibraryState {
     viewMode: viewMode ?? this.viewMode,
     searchQuery: searchQuery ?? this.searchQuery,
     downloadedShuffleMode: downloadedShuffleMode ?? this.downloadedShuffleMode,
+    recentlyPlayedShuffleMode: recentlyPlayedShuffleMode ?? this.recentlyPlayedShuffleMode,
     downloadsSortOrder: downloadsSortOrder ?? this.downloadsSortOrder,
     followedArtists: followedArtists ?? this.followedArtists,
     followedAlbums: followedAlbums ?? this.followedAlbums,
@@ -195,6 +201,7 @@ class LibraryNotifier extends Notifier<LibraryState> {
         sortOrder: LibrarySortOrderX.fromString(data.sortOrder),
         viewMode: LibraryViewModeX.fromString(data.viewMode),
         downloadedShuffleMode: data.downloadedShuffleMode,
+        recentlyPlayedShuffleMode: data.recentlyPlayedShuffleMode,
         downloadsSortOrder: PlaylistTrackSortOrderX.fromString(data.downloadsSortOrder),
         followedArtists: data.followedArtists,
         followedAlbums: data.followedAlbums,
@@ -258,6 +265,11 @@ class LibraryNotifier extends Notifier<LibraryState> {
     _repo.setSetting('downloaded_shuffle', mode.index.toString());
   }
 
+  void setRecentlyPlayedShuffleMode(ShuffleMode mode) {
+    state = state.copyWith(recentlyPlayedShuffleMode: mode);
+    _repo.setSetting('recently_played_shuffle', mode.index.toString());
+  }
+
   Future<void> setPlaylistShuffleMode(String playlistId, ShuffleMode mode) async {
     state = state.copyWith(playlists: state.playlists.map((p) =>
         p.id == playlistId ? p.copyWith(shuffleMode: mode) : p).toList());
@@ -302,6 +314,29 @@ class LibraryNotifier extends Notifier<LibraryState> {
     );
     state = state.copyWith(playlists: [minimal, ...state.playlists]);
     await _repo.createPlaylist(minimal);
+  }
+
+  /// Exports a remote/imported playlist as a custom local playlist with all
+  /// songs cloned and saved to the database. Unlike [addPlaylistToLibrary],
+  /// this creates a new playlist with a unique ID and saves all songs locally
+  /// so they don't need to be re-fetched.
+  Future<String?> exportPlaylistToLibrary(LibraryPlaylist playlist) async {
+    final now = DateTime.now();
+    final newId = 'lib_${now.millisecondsSinceEpoch}';
+    final exported = LibraryPlaylist(
+      id: newId,
+      name: playlist.name,
+      description: playlist.description,
+      createdAt: now,
+      updatedAt: now,
+      songs: List<Song>.from(playlist.songs),
+      customImageUrl: playlist.customImageUrl,
+      isImported: false,
+      cachedPaletteColor: playlist.cachedPaletteColor,
+    );
+    state = state.copyWith(playlists: [exported, ...state.playlists]);
+    await _repo.createPlaylist(exported);
+    return newId;
   }
 
   Future<void> deletePlaylist(String id) async {
@@ -578,3 +613,9 @@ final downloadedShuffleProvider = Provider<bool>((ref) =>
 
 final downloadedShuffleModeProvider = Provider<ShuffleMode>((ref) =>
     ref.watch(libraryProvider).downloadedShuffleMode);
+
+final recentlyPlayedShuffleProvider = Provider<bool>((ref) =>
+    ref.watch(libraryProvider).recentlyPlayedShuffleEnabled);
+
+final recentlyPlayedShuffleModeProvider = Provider<ShuffleMode>((ref) =>
+    ref.watch(libraryProvider).recentlyPlayedShuffleMode);

@@ -14,6 +14,7 @@ typedef LibraryData = ({
   String sortOrder,
   String viewMode,
   ShuffleMode downloadedShuffleMode,
+  ShuffleMode recentlyPlayedShuffleMode,
   String downloadsSortOrder,
   List<LibraryArtist> followedArtists,
   List<LibraryAlbum> followedAlbums,
@@ -290,6 +291,8 @@ class DatabaseRepository {
       viewMode: raw['viewMode'] as String? ?? 'list',
       downloadedShuffleMode:
           ShuffleModeX.fromInt(raw['downloadedShuffleMode'] as int?),
+      recentlyPlayedShuffleMode:
+          ShuffleModeX.fromInt(raw['recentlyPlayedShuffleMode'] as int?),
       downloadsSortOrder: raw['downloadsSortOrder'] as String? ?? 'customOrder',
       followedArtists: followedArtists,
       followedAlbums: followedAlbums,
@@ -329,6 +332,7 @@ class DatabaseRepository {
       'sortOrder': data.sortOrder,
       'viewMode': data.viewMode,
       'downloadedShuffleMode': data.downloadedShuffleMode.index,
+      'recentlyPlayedShuffleMode': data.recentlyPlayedShuffleMode.index,
       'downloadsSortOrder': data.downloadsSortOrder,
       'followedArtists': data.followedArtists.map((a) => a.toJson()).toList(),
       'followedAlbums': data.followedAlbums.map((a) => a.toJson()).toList(),

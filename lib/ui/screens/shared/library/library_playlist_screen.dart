@@ -197,6 +197,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   LibraryPlaylist? _localPlaylistCache;
   bool _importedFetchTriggered = false;
   ShuffleMode _ephemeralShuffleMode = ShuffleMode.none;
+  bool _exporting = false;
 
   bool get _isRemote =>
       widget._isRemotePlaylist ||
@@ -842,6 +843,41 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     if (mounted) setState(() => _addingToLibrary = false);
   }
 
+  Future<void> _exportToLibrary() async {
+    final playlist = _remoteAsLocal;
+    if (playlist == null || playlist.songs.isEmpty) return;
+    setState(() => _exporting = true);
+    
+    try {
+      final newId = await ref.read(libraryProvider.notifier).exportPlaylistToLibrary(playlist);
+      
+      // Persist palette to the new playlist if we have one
+      if (newId != null && _paletteColor != null) {
+        _persistPalette(_paletteColor!, newId, _PersistKind.playlist);
+      }
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Exported "${playlist.name}" to your library'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to export playlist: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+    
+    if (mounted) setState(() => _exporting = false);
+  }
+
   // ── Build ────────────────────────────────────────────────────────────────
 
   @override
@@ -1206,7 +1242,11 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         showLibraryStatus: !isLiked && isImported,
         isInLibrary: isInLibrary,
         onAddToLibrary: _addToLibrary,
+        onExportToLibrary: (_isRemote && !widget._isAlbum && !widget._isArtist)
+            ? _exportToLibrary
+            : null,
         addingToLibrary: _addingToLibrary,
+        exporting: _exporting,
         externalShuffleMode:
             (_isRemote && !isInLibrary) ? _ephemeralShuffleMode : null,
         onShuffleModeChanged: (_isRemote && !isInLibrary)
@@ -1587,7 +1627,9 @@ class _ActionRow extends ConsumerWidget {
     this.showLibraryStatus = false,
     this.isInLibrary = true,
     this.onAddToLibrary,
+    this.onExportToLibrary,
     this.addingToLibrary = false,
+    this.exporting = false,
     this.isDownloads = false,
     this.isLocalFiles = false,
     this.externalShuffleMode,
@@ -1599,9 +1641,11 @@ class _ActionRow extends ConsumerWidget {
   final bool showLibraryStatus,
       isInLibrary,
       addingToLibrary,
+      exporting,
       isDownloads,
       isLocalFiles;
   final VoidCallback? onAddToLibrary;
+  final VoidCallback? onExportToLibrary;
   final ShuffleMode? externalShuffleMode;
   final ValueChanged<ShuffleMode>? onShuffleModeChanged;
 
@@ -1674,7 +1718,24 @@ class _ActionRow extends ConsumerWidget {
           ),
           if (!isDownloads && !isLocalFiles)
             MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
-          if (showLibraryStatus)
+          if (showLibraryStatus) ...[
+            // Export to library button - creates a custom playlist with songs saved locally
+            if (songs.isNotEmpty && onExportToLibrary != null)
+              AppIconButton(
+                icon: exporting
+                    ? SizedBox(
+                        width: 22,
+                        height: 22,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: AppColorsScheme.of(context).textMuted))
+                    : AppIcon(
+                        icon: AppIcons.fileExport,
+                        size: 24,
+                        color: AppColorsScheme.of(context).textPrimary),
+                onPressed: !exporting ? onExportToLibrary : null,
+                size: 40,
+                iconSize: 24,
+              ),
             AppIconButton(
               icon: addingToLibrary
                   ? SizedBox(
@@ -1695,6 +1756,7 @@ class _ActionRow extends ConsumerWidget {
               size: 40,
               iconSize: 24,
             ),
+          ],
           const Spacer(),
           const SizedBox(width: 56),
         ]),

@@ -10,7 +10,6 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/player/album_art_hero.dart';
 import '../player/../player/mini_player_play_button.dart';
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 void openFullPlayerRoute(BuildContext context) {
@@ -55,9 +54,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   bool _isOpening = false;
   bool _isClosing = false;
 
-  // Cached dynamic shadow — rebuilt only when dominantColor changes,
-  // not on every AnimatedContainer animation frame.
-  Color? _cachedShadowColor;
   late List<BoxShadow> _boxShadows = _kMiniPlayerStaticShadow(context);
 
   // Drives a subtle scale-up (max 3%) as the user drags upward, giving

@@ -185,18 +185,20 @@ class _WaveBackgroundState extends State<WaveBackground>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return AnimatedBuilder(
       animation: _ctrl,
       builder: (_, __) => CustomPaint(
-        painter: WavePainter(_ctrl.value),
+        painter: WavePainter(_ctrl.value, isDark: isDark),
       ),
     );
   }
 }
 
 class WavePainter extends CustomPainter {
-  WavePainter(this.t);
+  WavePainter(this.t, {this.isDark = true});
   final double t;
+  final bool isDark;
 
   static const _barCount = 28;
   static const _primaryColor = AppColors.primary;
@@ -214,7 +216,8 @@ class WavePainter extends CustomPainter {
       final height = (wave1 * 0.65 + wave2 * 0.35) * maxHeight + 8;
 
       final x = (i * 2 + 0.5) * barWidth + barWidth * 0.5;
-      final opacity = 0.25 + wave1 * 0.45;
+      // In light mode, use higher base opacity for better visibility
+      final opacity = isDark ? (0.25 + wave1 * 0.45) : (0.35 + wave1 * 0.50);
 
       final paint = Paint()
         ..color = _primaryColor.withValues(alpha: opacity)
@@ -230,5 +233,5 @@ class WavePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(WavePainter old) => old.t != t;
+  bool shouldRepaint(WavePainter old) => old.t != t || old.isDark != isDark;
 }

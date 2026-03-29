@@ -37,12 +37,24 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final backgroundGradient = isDark
+        ? AppColors.backgroundGradient
+        : LinearGradient(
+            colors: [
+              AppColorsScheme.of(context).background,
+              AppColorsScheme.of(context).surface,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          );
+
     return Scaffold(
       body: Container(
         width: double.infinity,
         height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: AppColors.backgroundGradient,
+        decoration: BoxDecoration(
+          gradient: backgroundGradient,
         ),
         child: Stack(
           fit: StackFit.expand,
@@ -51,7 +63,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             AnimatedBuilder(
               animation: _waveController,
               builder: (_, __) => CustomPaint(
-                painter: _LoadingWavePainter(_waveController.value),
+                painter: _LoadingWavePainter(_waveController.value, isDark: isDark),
               ),
             ),
             // Dark gradient overlay so content stays readable
@@ -117,8 +129,9 @@ class _LoadingScreenState extends State<LoadingScreen>
 
 /// Same wave painter as the welcome screen for visual consistency.
 class _LoadingWavePainter extends CustomPainter {
-  _LoadingWavePainter(this.t);
+  _LoadingWavePainter(this.t, {this.isDark = true});
   final double t;
+  final bool isDark;
 
   static const _barCount = 28;
 
@@ -135,7 +148,8 @@ class _LoadingWavePainter extends CustomPainter {
       final height = (wave1 * 0.65 + wave2 * 0.35) * maxHeight + 8;
 
       final x = (i * 2 + 0.5) * barWidth + barWidth * 0.5;
-      final opacity = 0.25 + wave1 * 0.45;
+      // In light mode, use higher base opacity for better visibility
+      final opacity = isDark ? (0.25 + wave1 * 0.45) : (0.35 + wave1 * 0.50);
 
       final paint = Paint()
         ..color = AppColors.primary.withValues(alpha: opacity)
@@ -151,5 +165,5 @@ class _LoadingWavePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_LoadingWavePainter old) => old.t != t;
+  bool shouldRepaint(_LoadingWavePainter old) => old.t != t || old.isDark != isDark;
 }

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
+import 'package:tunify/features/settings/avatar_provider.dart';
 import 'package:tunify/features/settings/guest_profile_provider.dart';
 import 'package:tunify/data/repositories/database_repository.dart'
     show databaseRepositoryProvider;
@@ -45,11 +46,12 @@ class UserAvatarButton extends ConsumerWidget {
     final isGuest = ref.watch(guestModeProvider);
     final guestUsername =
         isGuest ? ref.watch(guestUsernameProvider).value : null;
+    final cachedAvatarSeed = isGuest ? ref.watch(avatarSeedProvider).value : null;
     final username = (user?.userMetadata?['username'] as String?) ??
         (user?.email?.split('@').first) ??
         (isGuest ? (guestUsername ?? 'Guest') : 'V');
-    final avatarUrl =
-        'https://api.dicebear.com/9.x/fun-emoji/png?seed=${Uri.encodeComponent(username)}&size=72';
+    final avatarSeed = cachedAvatarSeed ?? username;
+    final avatarUrl = generateBotttsAvatarUrl(avatarSeed, size: 72);
 
     return GestureDetector(
       onTap: () {
@@ -110,6 +112,7 @@ void _showMobileSheet(
         if (isGuest) {
           await ref.read(databaseRepositoryProvider).clearAllLocalData();
           await ref.read(guestUsernameProvider.notifier).clearGuestData();
+          await ref.read(avatarSeedProvider.notifier).clearAvatarSeed();
           ref.read(guestModeProvider.notifier).exitGuestMode();
           _refreshProvidersForSignOut(ref);
         } else {
@@ -246,6 +249,7 @@ void _showDesktopMenu(
           if (isGuest) {
             await ref.read(databaseRepositoryProvider).clearAllLocalData();
             await ref.read(guestUsernameProvider.notifier).clearGuestData();
+            await ref.read(avatarSeedProvider.notifier).clearAvatarSeed();
             ref.read(guestModeProvider.notifier).exitGuestMode();
             _refreshProvidersForSignOut(ref);
           } else {
@@ -262,11 +266,12 @@ void showUserMenu(BuildContext context, WidgetRef ref) {
   final user = ref.read(currentUserProvider);
   final isGuest = ref.read(guestModeProvider);
   final guestUsername = isGuest ? ref.read(guestUsernameProvider).value : null;
+  final cachedAvatarSeed = isGuest ? ref.read(avatarSeedProvider).value : null;
   final username = (user?.userMetadata?['username'] as String?) ??
       (user?.email?.split('@').first) ??
       (isGuest ? (guestUsername ?? 'Guest') : 'V');
-  final avatarUrl =
-      'https://api.dicebear.com/9.x/fun-emoji/png?seed=${Uri.encodeComponent(username)}&size=72';
+  final avatarSeed = cachedAvatarSeed ?? username;
+  final avatarUrl = generateBotttsAvatarUrl(avatarSeed, size: 72);
 
   if (ShellContext.isDesktopOf(context)) {
     _showDesktopMenu(context, ref, username, user?.email, avatarUrl);

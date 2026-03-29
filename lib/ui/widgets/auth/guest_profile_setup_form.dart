@@ -1,11 +1,11 @@
-import 'dart:math';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/core/utils/username_generator.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
+import 'package:tunify/features/settings/avatar_provider.dart';
 import 'package:tunify/features/settings/guest_profile_provider.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/common/input_field.dart';
@@ -35,47 +35,7 @@ class _GuestProfileSetupFormState extends ConsumerState<GuestProfileSetupForm> {
   late String _avatarSeed;
   bool _saving = false;
 
-  static const _adjectives = [
-    'Cool',
-    'Happy',
-    'Swift',
-    'Brave',
-    'Chill',
-    'Wild',
-    'Neon',
-    'Cosmic',
-    'Lucky',
-    'Epic',
-    'Mystic',
-    'Solar',
-    'Lunar',
-    'Frost',
-    'Storm',
-  ];
-  static const _nouns = [
-    'Wolf',
-    'Dragon',
-    'Fox',
-    'Bear',
-    'Tiger',
-    'Panda',
-    'Hawk',
-    'Lynx',
-    'Raven',
-    'Phoenix',
-    'Comet',
-    'Ember',
-    'Blaze',
-    'Echo',
-    'Sage',
-  ];
-
-  static String _randomUsername() {
-    final r = Random();
-    return '${_adjectives[r.nextInt(_adjectives.length)]}'
-        '${_nouns[r.nextInt(_nouns.length)]}'
-        '${r.nextInt(900) + 100}';
-  }
+  static String _randomUsername() => UsernameGenerator.generate();
 
   @override
   void initState() {
@@ -94,8 +54,7 @@ class _GuestProfileSetupFormState extends ConsumerState<GuestProfileSetupForm> {
     super.dispose();
   }
 
-  String get _avatarUrl =>
-      'https://api.dicebear.com/9.x/fun-emoji/png?seed=${Uri.encodeComponent(_avatarSeed)}&size=240';
+  String get _avatarUrl => generateBotttsAvatarUrl(_avatarSeed, size: 240);
 
   void _randomize() {
     final name = _randomUsername();
@@ -109,6 +68,7 @@ class _GuestProfileSetupFormState extends ConsumerState<GuestProfileSetupForm> {
     if (username.isEmpty) return;
     setState(() => _saving = true);
     await ref.read(guestUsernameProvider.notifier).setUsername(username);
+    await ref.read(avatarSeedProvider.notifier).setAvatarSeed(_avatarSeed);
     if (!mounted) return;
     setState(() => _saving = false);
     if (widget.isInitial) {

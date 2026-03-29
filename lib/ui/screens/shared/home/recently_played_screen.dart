@@ -5,11 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
+import 'package:tunify/ui/widgets/common/sheet.dart';
 import 'package:tunify/ui/widgets/library/song_list_tile.dart';
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
+import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
@@ -18,13 +21,6 @@ import 'package:tunify/ui/widgets/common/empty_state_placeholder.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
-class _RpShuffleNotifier extends Notifier<bool> {
-  @override
-  bool build() => false;
-  void toggle() => state = !state;
-}
-
-final _rpShuffleProvider = NotifierProvider<_RpShuffleNotifier, bool>(_RpShuffleNotifier.new);
 
 class RecentlyPlayedScreen extends ConsumerWidget {
   const RecentlyPlayedScreen({super.key});
@@ -43,7 +39,8 @@ class RecentlyPlayedScreen extends ConsumerWidget {
       }
     }
     final hasSong = ref.watch(currentSongProvider) != null;
-    final shuffleEnabled = ref.watch(_rpShuffleProvider);
+    final shuffleMode = ref.watch(recentlyPlayedShuffleModeProvider);
+    final shuffleEnabled = shuffleMode != ShuffleMode.none;
 
     return Scaffold(
       backgroundColor: AppColorsScheme.of(context).background,
@@ -68,17 +65,9 @@ class RecentlyPlayedScreen extends ConsumerWidget {
                   ),
                   child: Row(
                     children: [
-                      IconButton(
-                        icon: AppIcon(
-                          icon: AppIcons.shuffle,
-                          size: 24,
-                          color: shuffleEnabled
-                              ? AppColors.primary
-                              : AppColorsScheme.of(context).textMuted,
-                        ),
-                        onPressed: () {
-                          ref.read(_rpShuffleProvider.notifier).toggle();
-                        },
+                      _RecentlyPlayedShuffleButton(
+                        shuffleMode: shuffleMode,
+                        hasSongs: displaySongs.isNotEmpty,
                       ),
                       const Spacer(),
                       GestureDetector(
@@ -89,6 +78,7 @@ class RecentlyPlayedScreen extends ConsumerWidget {
                           ref.read(playerProvider.notifier).playSong(
                                 queue.first,
                                 queue: queue,
+                                queueSource: 'recently_played',
                               );
                         },
                         child: Container(
@@ -371,6 +361,168 @@ class _DateHeader extends StatelessWidget {
           letterSpacing: AppLetterSpacing.normal,
         ),
       ),
+    );
+  }
+}
+
+// ─── Shuffle Button ───────────────────────────────────────────────────────────
+
+class _RecentlyPlayedShuffleButton extends ConsumerWidget {
+  const _RecentlyPlayedShuffleButton({
+    required this.shuffleMode,
+    required this.hasSongs,
+  });
+
+  final ShuffleMode shuffleMode;
+  final bool hasSongs;
+
+  void _showShuffleModeSheet(BuildContext context, WidgetRef ref) {
+    showAppSheet(
+      context,
+      child: _RecentlyPlayedShuffleModeSheet(current: shuffleMode),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final shuffleEnabled = shuffleMode != ShuffleMode.none;
+
+    return AppIconButton(
+      icon: SizedBox(
+        width: 24,
+        height: 24,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            AppIcon(
+              icon: AppIcons.shuffle,
+              size: 24,
+              color: shuffleEnabled
+                  ? AppColors.primary
+                  : AppColorsScheme.of(context).textPrimary,
+            ),
+            if (shuffleMode == ShuffleMode.smart)
+              Positioned(
+                right: -6,
+                top: -6,
+                child: Icon(
+                  Icons.auto_awesome,
+                  size: 13,
+                  color: shuffleEnabled
+                      ? AppColors.primary
+                      : AppColorsScheme.of(context).textPrimary,
+                ),
+              ),
+          ],
+        ),
+      ),
+      onPressed: hasSongs ? () => _showShuffleModeSheet(context, ref) : null,
+      size: 40,
+      iconSize: 24,
+    );
+  }
+}
+
+// ─── Shuffle Mode Sheet ───────────────────────────────────────────────────────
+
+class _RecentlyPlayedShuffleModeSheet extends ConsumerWidget {
+  const _RecentlyPlayedShuffleModeSheet({required this.current});
+
+  final ShuffleMode current;
+
+  void _set(BuildContext context, WidgetRef ref, ShuffleMode mode) {
+    ref.read(libraryProvider.notifier).setRecentlyPlayedShuffleMode(mode);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+            kSheetHorizontalPadding, AppSpacing.lg, kSheetHorizontalPadding, AppSpacing.md),
+        child: Text('Shuffle',
+            style: TextStyle(
+                color: AppColorsScheme.of(context).textPrimary,
+                fontSize: AppFontSize.xl,
+                fontWeight: FontWeight.w700)),
+      ),
+      _ShuffleModeTile(
+        icon: AppIcons.shuffle,
+        label: 'Shuffle off',
+        selected: current == ShuffleMode.none,
+        onTap: () => _set(context, ref, ShuffleMode.none),
+      ),
+      _ShuffleModeTile(
+        icon: AppIcons.shuffle,
+        label: 'Regular Shuffle',
+        subtitle: 'Shuffle songs in recently played',
+        selected: current == ShuffleMode.regular,
+        onTap: () => _set(context, ref, ShuffleMode.regular),
+      ),
+      _ShuffleModeTile(
+        icon: AppIcons.shuffle,
+        label: 'Smart Shuffle',
+        subtitle: 'Shuffle + mix in recommended songs',
+        selected: current == ShuffleMode.smart,
+        isSmart: true,
+        onTap: () => _set(context, ref, ShuffleMode.smart),
+      ),
+      const SizedBox(height: AppSpacing.xl),
+    ]);
+  }
+}
+
+class _ShuffleModeTile extends StatelessWidget {
+  const _ShuffleModeTile({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.onTap,
+    this.subtitle,
+    this.isSmart = false,
+  });
+
+  final List<List<dynamic>> icon;
+  final String label;
+  final String? subtitle;
+  final bool selected;
+  final bool isSmart;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = selected ? AppColors.primary : AppColorsScheme.of(context).textSecondary;
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(
+          horizontal: kSheetHorizontalPadding, vertical: 4),
+      leading: isSmart
+          ? SizedBox(
+              width: 24,
+              height: 24,
+              child: Stack(children: [
+                AppIcon(icon: icon, size: 24, color: color),
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Icon(Icons.auto_awesome, size: 10, color: color),
+                ),
+              ]),
+            )
+          : AppIcon(icon: icon, size: 24, color: color),
+      title: Text(label,
+          style: TextStyle(
+              color: selected ? AppColors.primary : AppColorsScheme.of(context).textPrimary,
+              fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
+      subtitle: subtitle != null
+          ? Text(subtitle!,
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm))
+          : null,
+      trailing: selected
+          ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)
+          : null,
+      onTap: onTap,
     );
   }
 }

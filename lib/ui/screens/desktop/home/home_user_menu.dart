@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/features/settings/avatar_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/common/sheet_drag_handle.dart';
@@ -28,8 +29,7 @@ class HomeUserMenuSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final avatarUrl =
-        'https://api.dicebear.com/9.x/fun-emoji/png?seed=${Uri.encodeComponent(username)}&size=104';
+    final avatarUrl = generateBotttsAvatarUrl(username, size: 104);
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(
         top: Radius.circular(AppRadius.xl),

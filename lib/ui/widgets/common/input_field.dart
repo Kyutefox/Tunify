@@ -133,14 +133,14 @@ class AppInputField extends StatelessWidget {
               : null,
           suffixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
           filled: true,
-          fillColor: fillColor ?? AppColors.glassWhite,
+          fillColor: fillColor ?? AppColorsScheme.of(context).surfaceLight,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),
-            borderSide: const BorderSide(color: AppColors.glassBorder),
+            borderSide: BorderSide(color: AppColorsScheme.of(context).surfaceHighlight),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),
-            borderSide: const BorderSide(color: AppColors.glassBorder, width: 1),
+            borderSide: BorderSide(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),

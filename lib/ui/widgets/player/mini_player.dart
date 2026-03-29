@@ -10,6 +10,7 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/player/album_art_hero.dart';
 import '../player/../player/mini_player_play_button.dart';
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 void openFullPlayerRoute(BuildContext context) {
@@ -45,14 +46,8 @@ class MiniPlayer extends ConsumerStatefulWidget {
   ConsumerState<MiniPlayer> createState() => _MiniPlayerState();
 }
 
-// Static shadow that never changes — hoisted to avoid allocation in build().
-const List<BoxShadow> _kMiniPlayerStaticShadow = [
-  BoxShadow(
-    color: Color(0x47000000), // black @ ~28%
-    blurRadius: 16,
-    offset: Offset(0, 4),
-  ),
-];
+// No shadow - cleaner look for both light and dark modes
+List<BoxShadow> _kMiniPlayerStaticShadow(BuildContext context) => [];
 
 class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   double _dragY = 0;
@@ -63,7 +58,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   // Cached dynamic shadow — rebuilt only when dominantColor changes,
   // not on every AnimatedContainer animation frame.
   Color? _cachedShadowColor;
-  late List<BoxShadow> _boxShadows = _kMiniPlayerStaticShadow;
+  late List<BoxShadow> _boxShadows = _kMiniPlayerStaticShadow(context);
 
   // Drives a subtle scale-up (max 3%) as the user drags upward, giving
   // immediate tactile feedback before the full player opens.
@@ -121,19 +116,8 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
     final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
     final dominantColor = ref.watch(dominantColorProvider);
 
-    // Rebuild box shadows only when dominantColor changes — not on every
-    // AnimatedContainer tick (which would allocate 2 BoxShadow objects per frame).
-    if (dominantColor != _cachedShadowColor) {
-      _cachedShadowColor = dominantColor;
-      _boxShadows = [
-        BoxShadow(
-          color: dominantColor.withValues(alpha: 0.18),
-          blurRadius: 20,
-          offset: const Offset(0, 4),
-        ),
-        ..._kMiniPlayerStaticShadow,
-      ];
-    }
+    // No shadows - cleaner look for both light and dark modes
+    _boxShadows = [];
 
     // PERF: playbackPositionProvider is intentionally NOT watched here.
     // _MiniPlayerSeekBar is wrapped in RepaintBoundary and subscribes to

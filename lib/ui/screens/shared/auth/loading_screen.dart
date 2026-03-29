@@ -135,11 +135,11 @@ class _LoadingWavePainter extends CustomPainter {
       final height = (wave1 * 0.65 + wave2 * 0.35) * maxHeight + 8;
 
       final x = (i * 2 + 0.5) * barWidth + barWidth * 0.5;
-      final opacity = 0.12 + wave1 * 0.22;
+      final opacity = 0.25 + wave1 * 0.45;
 
       final paint = Paint()
         ..color = AppColors.primary.withValues(alpha: opacity)
-        ..strokeWidth = barWidth * 0.7
+        ..strokeWidth = barWidth * 1.2
         ..strokeCap = StrokeCap.round;
 
       canvas.drawLine(

@@ -85,7 +85,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           color: AppColorsScheme.of(context).surface,
           borderRadius: BorderRadius.circular(AppRadius.xxl),
           border: Border.all(
-            color: AppColors.glassBorder,
+            color: AppColorsScheme.of(context).surfaceHighlight,
             width: 0.5,
           ),
           boxShadow: [
@@ -218,7 +218,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
           color: AppColorsScheme.of(context).surface,
           borderRadius: BorderRadius.circular(AppRadius.xxl),
           border: Border.all(
-            color: AppColors.glassBorder,
+            color: AppColorsScheme.of(context).surfaceHighlight,
             width: 0.5,
           ),
           boxShadow: [
@@ -316,7 +316,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               Text(
                 'Continue as guest',
                 style: TextStyle(
-                  color: AppColorsScheme.of(context).textSecondary,
+                  color: AppColors.primary,
                   fontSize: AppFontSize.base,
                   fontWeight: FontWeight.w500,
                 ),
@@ -325,7 +325,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
               AppIcon(
                 icon: AppIcons.chevronRight,
                 size: 11,
-                color: AppColorsScheme.of(context).textSecondary,
+                color: AppColors.primary,
               ),
             ],
           ),
@@ -355,9 +355,9 @@ class _DesktopButton extends StatelessWidget {
           gradient: filled ? AppColors.primaryGradient : null,
           border: filled
               ? null
-              : Border.all(color: AppColors.glassBorder, width: 1),
+              : Border.all(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
           borderRadius: BorderRadius.circular(AppRadius.md),
-          color: filled ? null : AppColors.glassWhite,
+          color: filled ? null : AppColorsScheme.of(context).surfaceLight,
         ),
         alignment: Alignment.center,
         child: Text(
@@ -470,9 +470,9 @@ class _MobileButton extends StatelessWidget {
           gradient: filled ? AppColors.primaryGradient : null,
           border: filled
               ? null
-              : Border.all(color: AppColors.glassBorder, width: 1),
+              : Border.all(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
           borderRadius: BorderRadius.circular(AppRadius.input),
-          color: filled ? null : AppColors.glassWhite,
+          color: filled ? null : AppColorsScheme.of(context).surfaceLight,
         ),
         alignment: Alignment.center,
         child: Text(

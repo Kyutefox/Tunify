@@ -31,6 +31,7 @@ import 'package:tunify/ui/screens/shared/player/player_progress_bar.dart';
 import 'package:tunify/ui/screens/shared/player/player_shared.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/widgets/player/album_art_hero.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class PlayerScreen extends ConsumerStatefulWidget {
   const PlayerScreen({super.key});
@@ -157,6 +158,11 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
   void dispose() {
     _artScaleCtrl.dispose();
     _entryCtrl.dispose();
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+    ));
     super.dispose();
   }
 
@@ -170,10 +176,10 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
     if (song == null) {
       return const Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Color(0xFF121212),
         body: Center(
           child: Text('Nothing playing',
-              style: TextStyle(color: AppColors.textMuted)),
+              style: TextStyle(color: Colors.white54)),
         ),
       );
     }
@@ -214,7 +220,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
         },
         onVerticalDragCancel: () => _dragDy = 0,
         child: Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: const Color(0xFF121212),
           body: Stack(
             fit: StackFit.expand,
             children: [
@@ -225,7 +231,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                         dominantColor: dominantColor,
                       ),
                     )
-                  : Container(color: AppColors.background),
+                  : const ColoredBox(color: Color(0xFF121212)),
               SafeArea(
                 child: Padding(
                   padding:
@@ -389,7 +395,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               Text(
                 song.title,
                 style: const TextStyle(
-                  color: AppColors.textPrimary,
+                  color: Colors.white,
                   fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w700,
                   letterSpacing: AppLetterSpacing.heading,
@@ -402,7 +408,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               Text(
                 song.artist,
                 style: const TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColors.playerIconInactive,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w500,
                 ),
@@ -424,7 +430,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
               isLiked: isLiked,
               songId: song.id,
               size: 26,
-              emptyColor: AppColors.textSecondary,
+              emptyColor: AppColors.playerIconInactive,
             ),
           ),
         ),
@@ -511,8 +517,8 @@ void showLyricsSheet(
         colors: [
           dominantColor.withValues(
               alpha: PaletteTheme.playerQueueGradientAlpha),
-          AppColors.surface,
-          AppColors.surface,
+          AppColorsScheme.of(context).surface,
+          AppColorsScheme.of(context).surface,
         ],
         begin: Alignment.topCenter,
         end: Alignment.bottomCenter,
@@ -666,7 +672,7 @@ class _SleepTimerSheetContentState
           child: Text(
             'Sleep timer',
             style: TextStyle(
-              color: AppColors.textPrimary.withValues(alpha: 0.95),
+              color: AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.95),
               fontSize: AppFontSize.md,
               fontWeight: FontWeight.w600,
               letterSpacing: AppLetterSpacing.label,
@@ -760,18 +766,18 @@ class _SleepTimerSheetContentState
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => _setCustomTimer(),
                       autofocus: true,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.base,
                       ),
                       decoration: InputDecoration(
                         hintText: 'Minutes (e.g. 20)',
                         hintStyle: TextStyle(
-                          color: AppColors.textMuted.withValues(alpha: 0.6),
+                          color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.6),
                           fontSize: AppFontSize.base,
                         ),
                         filled: true,
-                        fillColor: AppColors.surfaceHighlight,
+                        fillColor: AppColorsScheme.of(context).surfaceHighlight,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: AppSpacing.md,
                           vertical: AppSpacing.sm,
@@ -830,16 +836,16 @@ class _SleepTimerHero extends StatelessWidget {
             spreadRadius: 0,
           ),
           BoxShadow(
-            color: AppColors.surface.withValues(alpha: 0.5),
+            color: AppColorsScheme.of(context).surface.withValues(alpha: 0.5),
             blurRadius: 40,
             spreadRadius: -8,
           ),
         ],
         gradient: LinearGradient(
           colors: [
-            AppColors.surfaceHighlight,
-            AppColors.surface,
-            AppColors.background,
+            AppColorsScheme.of(context).surfaceHighlight,
+            AppColorsScheme.of(context).surface,
+            AppColorsScheme.of(context).background,
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -858,7 +864,7 @@ class _SleepTimerHero extends StatelessWidget {
                   Text(
                     formatDuration(remaining!),
                     style: TextStyle(
-                      color: AppColors.textPrimary,
+                      color: AppColorsScheme.of(context).textPrimary,
                       fontSize: AppFontSize.display3,
                       fontWeight: FontWeight.w400,
                       letterSpacing: AppLetterSpacing.label,
@@ -869,7 +875,7 @@ class _SleepTimerHero extends StatelessWidget {
                   Text(
                     'remaining',
                     style: TextStyle(
-                      color: AppColors.textSecondary.withValues(alpha: 0.9),
+                      color: AppColorsScheme.of(context).textSecondary.withValues(alpha: 0.9),
                       fontSize: AppFontSize.xs,
                       fontWeight: FontWeight.w500,
                       letterSpacing: AppLetterSpacing.normal,
@@ -883,7 +889,7 @@ class _SleepTimerHero extends StatelessWidget {
                     children: [
                       AppIcon(
                         icon: AppIcons.musicNote,
-                        color: AppColors.textSecondary,
+                        color: AppColorsScheme.of(context).textSecondary,
                         size: 28,
                       ),
                       const SizedBox(height: AppSpacing.xs + 2),
@@ -891,7 +897,7 @@ class _SleepTimerHero extends StatelessWidget {
                         'End of song',
                         style: TextStyle(
                           color:
-                              AppColors.textSecondary.withValues(alpha: 0.95),
+                              AppColorsScheme.of(context).textSecondary.withValues(alpha: 0.95),
                           fontSize: AppFontSize.xs,
                           fontWeight: FontWeight.w500,
                         ),
@@ -900,7 +906,7 @@ class _SleepTimerHero extends StatelessWidget {
                   )
                 : AppIcon(
                     icon: AppIcons.bedtime,
-                    color: AppColors.textPrimary.withValues(alpha: 0.85),
+                    color: AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.85),
                     size: 44,
                   ),
       ),
@@ -933,11 +939,11 @@ class _SleepTimerChip extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(AppRadius.full),
             color: isCancel
-                ? AppColors.surfaceHighlight.withValues(alpha: 0.6)
-                : AppColors.surfaceHighlight,
+                ? AppColorsScheme.of(context).surfaceHighlight.withValues(alpha: 0.6)
+                : AppColorsScheme.of(context).surfaceHighlight,
             border: Border.all(
               color: isCancel
-                  ? AppColors.textMuted.withValues(alpha: 0.3)
+                  ? AppColorsScheme.of(context).textMuted.withValues(alpha: 0.3)
                   : AppColors.glassBorder.withValues(alpha: 0.4),
               width: 0.6,
             ),
@@ -946,8 +952,8 @@ class _SleepTimerChip extends StatelessWidget {
             label,
             style: TextStyle(
               color: isCancel
-                  ? AppColors.textMuted
-                  : AppColors.textPrimary.withValues(alpha: 0.95),
+                  ? AppColorsScheme.of(context).textMuted
+                  : AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.95),
               fontSize: AppFontSize.base,
               fontWeight: FontWeight.w500,
             ),
@@ -1036,14 +1042,14 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
             children: [
               AppIcon(
                   icon: AppIcons.speakerGroup,
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   size: 22),
               const SizedBox(width: AppSpacing.sm + 2),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Connect to a device',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.xxl,
                     fontWeight: FontWeight.w700,
                   ),
@@ -1080,8 +1086,8 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
           accentColor: AppColors.primary,
         ),
         const SizedBox(height: AppSpacing.xs),
-        const Divider(
-          color: AppColors.surfaceHighlight,
+        Divider(
+          color: AppColorsScheme.of(context).surfaceHighlight,
           indent: 24,
           endIndent: 24,
           height: 1,
@@ -1102,7 +1108,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
           ),
         ),
         if (_loadingBluetooth)
-          const Padding(
+          Padding(
             padding: EdgeInsets.symmetric(vertical: 20),
             child: Center(
               child: SizedBox(
@@ -1110,7 +1116,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                 ),
               ),
             ),
@@ -1131,8 +1137,8 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                 accentColor: AppColors.primary,
               )),
         const SizedBox(height: AppSpacing.xs),
-        const Divider(
-          color: AppColors.surfaceHighlight,
+        Divider(
+          color: AppColorsScheme.of(context).surfaceHighlight,
           indent: 24,
           endIndent: 24,
           height: 1,
@@ -1149,7 +1155,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                   icon: AppIcons.refresh,
                   size: 14,
                   color: _scanningNetwork
-                      ? AppColors.textMuted
+                      ? AppColorsScheme.of(context).textMuted
                       : AppColors.primary,
                 ),
                 const SizedBox(width: AppSpacing.xs),
@@ -1157,7 +1163,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
                   _scanningNetwork ? 'Scanning...' : 'Scan',
                   style: TextStyle(
                     color: _scanningNetwork
-                        ? AppColors.textMuted
+                        ? AppColorsScheme.of(context).textMuted
                         : AppColors.primary,
                     fontSize: AppFontSize.sm,
                     fontWeight: FontWeight.w600,
@@ -1205,8 +1211,8 @@ class _SectionLabel extends StatelessWidget {
           Expanded(
             child: Text(
               label,
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted,
                 fontSize: AppFontSize.xs,
                 fontWeight: FontWeight.w700,
                 letterSpacing: AppLetterSpacing.label,
@@ -1248,12 +1254,12 @@ class _DeviceTile extends StatelessWidget {
             decoration: BoxDecoration(
               color: isActive
                   ? accentColor.withValues(alpha: 0.15)
-                  : AppColors.surfaceHighlight,
+                  : AppColorsScheme.of(context).surfaceHighlight,
               borderRadius: BorderRadius.circular(AppRadius.md),
             ),
             child: AppIcon(
               icon: icon,
-              color: isActive ? accentColor : AppColors.textSecondary,
+              color: isActive ? accentColor : AppColorsScheme.of(context).textSecondary,
               size: 21,
             ),
           ),
@@ -1265,7 +1271,7 @@ class _DeviceTile extends StatelessWidget {
                 Text(
                   name,
                   style: TextStyle(
-                    color: isActive ? accentColor : AppColors.textPrimary,
+                    color: isActive ? accentColor : AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.lg,
                     fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
                   ),
@@ -1278,7 +1284,7 @@ class _DeviceTile extends StatelessWidget {
                   style: TextStyle(
                     color: isActive
                         ? accentColor.withValues(alpha: 0.7)
-                        : AppColors.textMuted,
+                        : AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.sm,
                   ),
                   maxLines: 1,
@@ -1292,7 +1298,7 @@ class _DeviceTile extends StatelessWidget {
           else
             AppIcon(
               icon: AppIcons.chevronRight,
-              color: AppColors.textMuted,
+              color: AppColorsScheme.of(context).textMuted,
               size: 20,
             ),
         ],
@@ -1344,7 +1350,7 @@ class _EmptySection extends StatelessWidget {
           horizontal: kSheetHorizontalPadding, vertical: 16),
       child: Row(
         children: [
-          AppIcon(icon: icon, color: AppColors.textMuted, size: 28),
+          AppIcon(icon: icon, color: AppColorsScheme.of(context).textMuted, size: 28),
           const SizedBox(width: AppSpacing.md + 2),
           Expanded(
             child: Column(
@@ -1352,8 +1358,8 @@ class _EmptySection extends StatelessWidget {
               children: [
                 Text(
                   message,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.md,
                   ),
                 ),
@@ -1400,10 +1406,10 @@ class _ScanningPlaceholder extends StatelessWidget {
             ),
           ),
           const SizedBox(width: AppSpacing.md + 2),
-          const Text(
+          Text(
             'Scanning your network...',
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: AppColorsScheme.of(context).textSecondary,
               fontSize: AppFontSize.md,
             ),
           ),
@@ -1460,10 +1466,10 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
                 size: 22,
               ),
               const SizedBox(height: AppSpacing.xs + 2),
-              const Text(
+              Text(
                 'On Device',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.micro,
                   fontWeight: FontWeight.w500,
                 ),
@@ -1527,7 +1533,7 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
                   painter: DownloadProgressRingPainter(
                     progress: progress,
                     rotation: _rotationController.value * 2 * 3.14159265359,
-                    trackColor: AppColors.textMuted,
+                    trackColor: AppColorsScheme.of(context).textMuted,
                     progressColor: AppColors.primary,
                     strokeWidth: 2,
                   ),
@@ -1536,7 +1542,7 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
             ),
             AppIcon(
               icon: AppIcons.download,
-              color: AppColors.textSecondary,
+              color: AppColorsScheme.of(context).textSecondary,
               size: 20,
             ),
           ],
@@ -1545,7 +1551,7 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
     } else {
       icon = AppIcon(
         icon: AppIcons.download,
-        color: AppColors.textSecondary,
+        color: AppColorsScheme.of(context).textSecondary,
         size: 22,
       );
     }
@@ -1567,8 +1573,8 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
             const SizedBox(height: AppSpacing.xs + 2),
             Text(
               isInQueue ? 'Downloading' : 'Download',
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted,
                 fontSize: AppFontSize.micro,
                 fontWeight: FontWeight.w500,
               ),
@@ -1608,13 +1614,13 @@ class QueuePanelContent extends ConsumerWidget {
             children: [
               AppIcon(
                   icon: AppIcons.queueMusic,
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   size: 22),
               const SizedBox(width: AppSpacing.sm + 2),
-              const Text(
+              Text(
                 'Queue',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.xxl,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1628,8 +1634,8 @@ class QueuePanelContent extends ConsumerWidget {
                 ),
                 child: Text(
                   '${queue.length}',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textSecondary,
                     fontSize: AppFontSize.sm,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1643,7 +1649,7 @@ class QueuePanelContent extends ConsumerWidget {
             child: EmptyStatePlaceholder(
               icon: AppIcon(
                 icon: AppIcons.queueMusic,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 size: 48,
               ),
               title: 'The queue is empty',
@@ -1659,8 +1665,8 @@ class QueuePanelContent extends ConsumerWidget {
                 children: [
                   Text(
                     'Playing ${currentSong.title}',
-                    style: const TextStyle(
-                      color: AppColors.textSecondary,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textSecondary,
                       fontSize: AppFontSize.md,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1810,7 +1816,7 @@ class QueuePanelContent extends ConsumerWidget {
                       padding: const EdgeInsets.only(right: 8),
                       child: AppIcon(
                         icon: AppIcons.dragHandle,
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         size: 22,
                       ),
                     ),
@@ -1908,7 +1914,7 @@ class _DesktopQueueOverlayState extends State<_DesktopQueueOverlay>
                 color: Colors.transparent,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
+                    color: AppColorsScheme.of(context).surfaceLight,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                     border: Border.all(
                       color: Colors.white.withValues(alpha: 0.08),
@@ -1975,8 +1981,8 @@ class _QueueItem extends ConsumerWidget {
                 children: [
                   Text(
                     song.durationFormatted,
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textMuted,
                       fontSize: AppFontSize.md,
                     ),
                   ),
@@ -1992,7 +1998,7 @@ class _QueueItem extends ConsumerWidget {
                   AppIconButton(
                     icon: AppIcon(
                       icon: AppIcons.moreVert,
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       size: 20,
                     ),
                     onPressedWithContext: (btnCtx) => showSongOptionsSheet(
@@ -2109,10 +2115,10 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
               AppIcon(
                   icon: AppIcons.lyrics, color: widget.dominantColor, size: 22),
               const SizedBox(width: AppSpacing.sm + 2),
-              const Text(
+              Text(
                 'Lyrics',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.xxl,
                   fontWeight: FontWeight.w700,
                 ),
@@ -2121,8 +2127,8 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
               if (lyricsState.hasLyrics && lyricsState.lyrics!.source != null)
                 Text(
                   lyricsState.lyrics!.source!,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.xs,
                   ),
                 ),
@@ -2138,10 +2144,10 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
 
   Widget _buildLyricsContent(LyricsState state) {
     if (state.isLoading) {
-      return const Center(
+      return Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation(AppColors.textSecondary),
+          valueColor: AlwaysStoppedAnimation(AppColorsScheme.of(context).textSecondary),
         ),
       );
     }
@@ -2155,22 +2161,22 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
             children: [
               AppIcon(
                   icon: AppIcons.lyrics,
-                  color: AppColors.textMuted.withValues(alpha: 0.4),
+                  color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.4),
                   size: 56),
               const SizedBox(height: AppSpacing.base),
-              const Text(
+              Text(
                 'Couldn\'t load lyrics',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: AppSpacing.xs + 2),
-              const Text(
+              Text(
                 'A network error occurred. Tap to retry.',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.md,
                 ),
                 textAlign: TextAlign.center,
@@ -2187,17 +2193,17 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceHighlight,
+                    color: AppColorsScheme.of(context).surfaceHighlight,
                     borderRadius: BorderRadius.circular(AppRadius.full),
                     border: Border.all(
                       color: AppColors.glassBorder.withValues(alpha: 0.4),
                       width: 0.6,
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Retry',
                     style: TextStyle(
-                      color: AppColors.textPrimary,
+                      color: AppColorsScheme.of(context).textPrimary,
                       fontSize: AppFontSize.base,
                       fontWeight: FontWeight.w600,
                     ),
@@ -2219,22 +2225,22 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
             children: [
               AppIcon(
                   icon: AppIcons.lyrics,
-                  color: AppColors.textMuted.withValues(alpha: 0.4),
+                  color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.4),
                   size: 56),
               const SizedBox(height: AppSpacing.base),
-              const Text(
+              Text(
                 'No lyrics available.',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w500,
                 ),
               ),
               const SizedBox(height: AppSpacing.xs + 2),
-              const Text(
+              Text(
                 'Lyrics are not available for this song',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.md,
                 ),
                 textAlign: TextAlign.center,
@@ -2272,9 +2278,9 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
       style: TextStyle(
         color: isSynced
             ? (isActive
-                ? AppColors.textPrimary
-                : AppColors.textPrimary.withValues(alpha: 0.3))
-            : AppColors.textPrimary,
+                ? AppColorsScheme.of(context).textPrimary
+                : AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.3))
+            : AppColorsScheme.of(context).textPrimary,
         fontSize: isActive ? 22 : 20,
         fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
         height: AppLineHeight.relaxed,
@@ -2316,7 +2322,7 @@ class _PlaybackSpeedSheetContent extends ConsumerWidget {
           child: Text(
             'Playback speed',
             style: TextStyle(
-              color: AppColors.textPrimary.withValues(alpha: 0.95),
+              color: AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.95),
               fontSize: AppFontSize.md,
               fontWeight: FontWeight.w600,
               letterSpacing: AppLetterSpacing.label,
@@ -2367,7 +2373,7 @@ class _SpeedTile extends StatelessWidget {
               child: Text(
                 label,
                 style: TextStyle(
-                  color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                  color: isSelected ? AppColors.primary : AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.lg,
                   fontWeight: isSelected ? FontWeight.w600 : FontWeight.w400,
                 ),

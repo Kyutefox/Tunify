@@ -11,6 +11,7 @@ import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/common/hover_tile.dart';
 import 'package:tunify/ui/screens/shared/home/home_shared.dart';
 import '../player/now_playing_indicator.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class SongListTile extends ConsumerWidget {
   const SongListTile({
@@ -133,7 +134,7 @@ class SongListTile extends ConsumerWidget {
                         style: TextStyle(
                           color: isNowPlaying
                               ? AppColors.primary
-                              : AppColors.textPrimary,
+                              : AppColorsScheme.of(context).textPrimary,
                           fontSize: t.font.base,
                           fontWeight: t.typography.titleWeight,
                           height: t.typography.bodyLineHeight,

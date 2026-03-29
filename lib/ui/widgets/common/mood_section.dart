@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/data/models/mood.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/player/mood_browse_sheet.dart';
 import 'package:tunify/ui/widgets/common/section_header.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Mood section: moods and genres from the main home feed API.
 /// Shows skeleton while home is loading; uses [moodsProvider] when loaded.
@@ -209,7 +209,7 @@ class _MoodSectionSkeleton extends StatelessWidget {
                             }
                             return Container(
                               decoration: BoxDecoration(
-                                color: AppColors.surfaceLight,
+                                color: AppColorsScheme.of(context).surfaceLight,
                                 borderRadius:
                                     BorderRadius.circular(AppRadius.md),
                               ),

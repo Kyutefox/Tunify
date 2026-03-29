@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Shows "No [emptyLabel] yet" when [query] is empty, otherwise
 /// "No results for \"[query]\"". Use for filtered list empty states.
@@ -23,7 +23,7 @@ class EmptyListMessage extends StatelessWidget {
     return Center(
       child: Text(
         text,
-        style: style ?? const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.base),
+        style: style ?? TextStyle(color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.base),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../screens/desktop/player/player_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -89,7 +90,7 @@ class _DesktopRightSidebarState extends ConsumerState<DesktopRightSidebar> {
     return SizedBox(
       width: kDesktopRightSidebarWidth,
       child: Container(
-        color: AppColors.surface,
+        color: AppColorsScheme.of(context).surface,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -145,7 +146,7 @@ class _SidebarTabBar extends ConsumerWidget {
     return Container(
       height: DesktopLayout.rightTabBarHeight,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColorsScheme.of(context).surface,
         border: Border(
           bottom: BorderSide(color: AppColors.glassBorder, width: 0.5),
         ),
@@ -171,7 +172,7 @@ class _SidebarTabBar extends ConsumerWidget {
               child: AppIcon(
                 icon: AppIcons.chevronRight,
                 size: DesktopIconSize.sm,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
               ),
             ),
           ),
@@ -194,7 +195,7 @@ class _TabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primary : AppColors.textMuted;
+    final color = isActive ? AppColors.primary : AppColorsScheme.of(context).textMuted;
 
     return GestureDetector(
       onTap: onTap,

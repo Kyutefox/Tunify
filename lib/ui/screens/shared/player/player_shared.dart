@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Blurred background for the player screen.
 ///
@@ -60,8 +61,8 @@ class _PlayerBlurredBackgroundState extends State<PlayerBlurredBackground>
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Solid background — always visible instantly, no delay.
-        Container(color: AppColors.background),
+        // Solid background — always dark regardless of theme; player is immersive.
+        const ColoredBox(color: Color(0xFF121212)),
         // Gradient overlay — visible immediately so the player never looks dim.
         if (hasArt)
           RepaintBoundary(
@@ -92,7 +93,7 @@ class _PlayerBlurredBackgroundState extends State<PlayerBlurredBackground>
                   fadeInDuration: Duration.zero,
                   fadeOutDuration: Duration.zero,
                   errorWidget: (_, __, ___) =>
-                      Container(color: AppColors.background),
+                      const ColoredBox(color: Color(0xFF121212)),
                 ),
               ),
             ),
@@ -148,14 +149,14 @@ class _PlayerGlassButtonState extends State<PlayerGlassButton> {
             height: 42,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.white.withValues(alpha: 0.08),
+              color: Colors.white.withValues(alpha: 0.15),
               border: Border.all(
-                color: Colors.white.withValues(alpha: 0.12),
+                color: Colors.white.withValues(alpha: 0.25),
                 width: 0.5,
               ),
             ),
             child: Center(
-              child: AppIcon(icon: widget.icon, color: AppColors.textPrimary, size: widget.size),
+              child: AppIcon(icon: widget.icon, color: Colors.white, size: widget.size),
             ),
           ),
         ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'button.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Shows a confirmation dialog. Returns a [Future] that completes with `true`
 /// when the user confirms, `false` when cancelled. Caller should perform the
@@ -17,20 +18,20 @@ Future<bool> showConfirmDialog(
   final result = await showDialog<bool>(
     context: context,
     builder: (ctx) => AlertDialog(
-      backgroundColor: AppColors.surface,
+      backgroundColor: AppColorsScheme.of(context).surface,
       title: Text(
         title,
-        style: const TextStyle(color: AppColors.textPrimary),
+        style: TextStyle(color: AppColorsScheme.of(context).textPrimary),
       ),
       content: Text(
         message,
-        style: const TextStyle(color: AppColors.textSecondary),
+        style: TextStyle(color: AppColorsScheme.of(context).textSecondary),
       ),
       actions: [
         AppButton(
           label: cancelLabel,
           variant: AppButtonVariant.text,
-          foregroundColor: AppColors.textMuted,
+          foregroundColor: AppColorsScheme.of(context).textMuted,
           onPressed: () => Navigator.pop(ctx, false),
           height: 40,
         ),

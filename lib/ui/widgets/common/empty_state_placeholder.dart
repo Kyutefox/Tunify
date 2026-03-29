@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'button.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Reusable empty state: icon, title, optional subtitle and action button.
 class EmptyStatePlaceholder extends StatelessWidget {
@@ -37,8 +37,8 @@ class EmptyStatePlaceholder extends StatelessWidget {
             SizedBox(height: iconSize >= 48 ? AppSpacing.lg : AppSpacing.sm),
             Text(
               title,
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted,
                 fontSize: AppFontSize.xl,
               ),
               textAlign: TextAlign.center,
@@ -48,7 +48,7 @@ class EmptyStatePlaceholder extends StatelessWidget {
               Text(
                 subtitle!,
                 style: TextStyle(
-                  color: AppColors.textMuted.withValues(alpha: 0.8),
+                  color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.8),
                   fontSize: AppFontSize.base,
                 ),
                 textAlign: TextAlign.center,

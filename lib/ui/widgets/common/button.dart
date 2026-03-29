@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 enum AppButtonVariant {
   filled,
@@ -111,7 +112,7 @@ class AppButton extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: effectiveForeground,
             side: BorderSide(
-              color: isDisabled ? AppColors.textMuted : AppColors.primary,
+              color: isDisabled ? AppColorsScheme.of(context).textMuted : AppColors.primary,
             ),
             shape: shape,
           ),
@@ -199,7 +200,7 @@ class AppIconButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effectiveColor = color ?? AppColors.textPrimary;
+    final effectiveColor = color ?? AppColorsScheme.of(context).textPrimary;
     
     // Wrap in Builder first so the context passed to _handleTap has the
     // button's full size and position for accurate dropdown positioning

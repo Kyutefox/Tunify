@@ -4,6 +4,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class SectionHeader extends StatelessWidget {
   final String title;
@@ -46,7 +47,7 @@ class SectionHeader extends StatelessWidget {
                 Text(
                   title,
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: titleFontSize,
                     fontWeight: FontWeight.w700,
                     letterSpacing: t.isDesktop
@@ -59,7 +60,7 @@ class SectionHeader extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: TextStyle(
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       fontSize: subtitleFontSize,
                     ),
                   ),
@@ -146,7 +147,7 @@ class GradientSectionHeader extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: TextStyle(
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       fontSize: t.font.md,
                     ),
                   ),

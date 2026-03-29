@@ -5,6 +5,7 @@ import 'package:tunify/core/constants/app_strings.dart';
 import 'package:tunify/ui/widgets/common/logo_loading_indicator.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Loading screen shown after login. Creative design: gradient background,
 /// breathing logo, green progress ring, and animated waveform background.
@@ -60,9 +61,9 @@ class _LoadingScreenState extends State<LoadingScreen>
                   gradient: LinearGradient(
                     colors: [
                       Colors.transparent,
-                      AppColors.background.withValues(alpha: 0.45),
-                      AppColors.background.withValues(alpha: 0.85),
-                      AppColors.background,
+                      AppColorsScheme.of(context).background.withValues(alpha: 0.45),
+                      AppColorsScheme.of(context).background.withValues(alpha: 0.85),
+                      AppColorsScheme.of(context).background,
                     ],
                     stops: const [0.0, 0.3, 0.6, 1.0],
                     begin: Alignment.topCenter,
@@ -80,7 +81,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                   Text(
                     AppStrings.appName,
                     style: TextStyle(
-                      color: AppColors.textPrimary,
+                      color: AppColorsScheme.of(context).textPrimary,
                       fontSize: AppFontSize.display3,
                       fontWeight: FontWeight.w800,
                       letterSpacing: AppLetterSpacing.display,
@@ -98,7 +99,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                   Text(
                     'Loading your music…',
                     style: TextStyle(
-                      color: AppColors.textSecondary.withValues(alpha: 0.95),
+                      color: AppColorsScheme.of(context).textSecondary.withValues(alpha: 0.95),
                       fontSize: AppFontSize.lg,
                       fontWeight: FontWeight.w500,
                       letterSpacing: AppLetterSpacing.normal,

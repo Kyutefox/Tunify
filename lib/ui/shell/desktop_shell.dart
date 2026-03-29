@@ -11,7 +11,6 @@ import 'package:tunify/ui/screens/desktop/home/home_screen.dart';
 import 'package:tunify/ui/screens/shared/library/create_library_item_screen.dart';
 import 'package:tunify/ui/screens/shared/library/library_screen.dart';
 import 'package:tunify/ui/screens/shared/search/search_screen.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'desktop_player_bar.dart';
@@ -19,6 +18,7 @@ import 'desktop_right_sidebar.dart';
 import 'desktop_search_dropdown.dart';
 import 'desktop_sidebar.dart';
 import 'desktop_top_bar.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Top-level shell for the macOS desktop layout.
 ///
@@ -293,7 +293,7 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(_radius),
                             child: ColoredBox(
-                              color: AppColors.desktopSurface,
+                              color: AppColorsScheme.of(context).desktopSurface,
                               child: Navigator(
                                 key: _contentNavKey,
                                 observers: [_contentNavObserver],
@@ -428,7 +428,7 @@ class _BrowsePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.desktopSurface,
+      backgroundColor: AppColorsScheme.of(context).desktopSurface,
       body: CustomScrollView(
         cacheExtent: 1000,
         physics: const BouncingScrollPhysics(),

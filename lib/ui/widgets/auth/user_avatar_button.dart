@@ -21,6 +21,7 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart';
 import '../common/adaptive_menu.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 void _refreshProvidersForSignOut(WidgetRef ref) {
   ref.read(homeProvider.notifier).onAuthChanged(null);
@@ -180,8 +181,8 @@ void _showDesktopMenu(
           children: [
             Text(
               username,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
@@ -191,8 +192,8 @@ void _showDesktopMenu(
             if (email != null)
               Text(
                 email,
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.xs,
                 ),
                 maxLines: 1,

@@ -31,6 +31,7 @@ import 'package:tunify/ui/screens/shared/library/create_library_options.dart';
 import 'package:tunify/ui/widgets/player/download_queue_sheet.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/device/device_music_provider.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
@@ -261,7 +262,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final isLoggedIn = ref.watch(currentUserProvider) != null;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       body: SafeArea(
         child: GestureDetector(
           onTap: _unfocus,
@@ -578,10 +579,10 @@ class _FollowedArtistsList extends ConsumerWidget {
                       errorWidget: (_, __, ___) => Container(
                         width: 52,
                         height: 52,
-                        color: AppColors.surfaceLight,
+                        color: AppColorsScheme.of(context).surfaceLight,
                         child: AppIcon(
                             icon: AppIcons.person,
-                            color: AppColors.textMuted,
+                            color: AppColorsScheme.of(context).textMuted,
                             size: 28),
                       ),
                     ),
@@ -593,18 +594,18 @@ class _FollowedArtistsList extends ConsumerWidget {
                       children: [
                         Text(
                           artist.name,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: TextStyle(
+                            color: AppColorsScheme.of(context).textPrimary,
                             fontSize: AppFontSize.lg,
                             fontWeight: FontWeight.w600,
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        const Text(
+                        Text(
                           'Artist',
                           style: TextStyle(
-                              color: AppColors.textMuted,
+                              color: AppColorsScheme.of(context).textMuted,
                               fontSize: AppFontSize.md),
                         ),
                       ],
@@ -670,7 +671,7 @@ class _FollowedArtistsGrid extends ConsumerWidget {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
+                    color: AppColorsScheme.of(context).surfaceLight,
                     shape: BoxShape.circle,
                   ),
                   child: ClipOval(
@@ -679,7 +680,7 @@ class _FollowedArtistsGrid extends ConsumerWidget {
                       fit: BoxFit.cover,
                       errorWidget: (_, __, ___) => AppIcon(
                         icon: AppIcons.person,
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         size: 40,
                       ),
                     ),
@@ -689,8 +690,8 @@ class _FollowedArtistsGrid extends ConsumerWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 artist.name,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.md,
                   fontWeight: FontWeight.w600,
                 ),
@@ -698,10 +699,10 @@ class _FollowedArtistsGrid extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
               ),
-              const Text(
+              Text(
                 'Artist',
                 style: TextStyle(
-                    color: AppColors.textMuted, fontSize: AppFontSize.xs),
+                    color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.xs),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -760,10 +761,10 @@ class _FollowedAlbumsList extends ConsumerWidget {
                       errorWidget: (_, __, ___) => Container(
                         width: 52,
                         height: 52,
-                        color: AppColors.surfaceLight,
+                        color: AppColorsScheme.of(context).surfaceLight,
                         child: AppIcon(
                             icon: AppIcons.album,
-                            color: AppColors.textMuted,
+                            color: AppColorsScheme.of(context).textMuted,
                             size: 28),
                       ),
                     ),
@@ -775,8 +776,8 @@ class _FollowedAlbumsList extends ConsumerWidget {
                       children: [
                         Text(
                           album.title,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: TextStyle(
+                            color: AppColorsScheme.of(context).textPrimary,
                             fontSize: AppFontSize.lg,
                             fontWeight: FontWeight.w600,
                           ),
@@ -785,8 +786,8 @@ class _FollowedAlbumsList extends ConsumerWidget {
                         ),
                         Text(
                           album.artistName,
-                          style: const TextStyle(
-                              color: AppColors.textMuted,
+                          style: TextStyle(
+                              color: AppColorsScheme.of(context).textMuted,
                               fontSize: AppFontSize.md),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -856,7 +857,7 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
                 child: Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: AppColors.surfaceLight,
+                    color: AppColorsScheme.of(context).surfaceLight,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: ClipRRect(
@@ -866,7 +867,7 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
                       fit: BoxFit.cover,
                       errorWidget: (_, __, ___) => AppIcon(
                         icon: AppIcons.album,
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         size: 40,
                       ),
                     ),
@@ -876,8 +877,8 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
               const SizedBox(height: AppSpacing.sm),
               Text(
                 album.title,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.md,
                   fontWeight: FontWeight.w600,
                 ),
@@ -886,8 +887,8 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
               ),
               Text(
                 album.artistName,
-                style: const TextStyle(
-                    color: AppColors.textMuted, fontSize: AppFontSize.xs),
+                style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.xs),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -921,7 +922,7 @@ class LibraryFilterPlaceholder extends StatelessWidget {
           children: [
             AppIcon(
               icon: icon,
-              color: AppColors.textMuted.withValues(alpha: 0.5),
+              color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5),
               size: 64,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -929,7 +930,7 @@ class LibraryFilterPlaceholder extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppColors.textMuted.withValues(alpha: 0.9),
+                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
                 fontSize: AppFontSize.lg,
               ),
             ),
@@ -1001,10 +1002,10 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                 size: 22,
               ),
               const SizedBox(width: AppSpacing.sm),
-              const Text(
+              Text(
                 'Add to folder',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.h3,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1012,8 +1013,8 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
               const Spacer(),
               Text(
                 '${widget.folders.length}',
-                style: const TextStyle(
-                  color: AppColors.textMuted,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.base,
                 ),
               ),
@@ -1027,7 +1028,7 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
           child: Container(
             height: 50,
             decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
+              color: AppColorsScheme.of(context).surfaceLight,
               borderRadius: BorderRadius.circular(AppRadius.input),
             ),
             child: Row(
@@ -1035,7 +1036,7 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                 const SizedBox(width: AppSpacing.base),
                 AppIcon(
                   icon: AppIcons.search,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 22,
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -1054,7 +1055,7 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                           const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       child: AppIcon(
                         icon: AppIcons.clear,
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         size: 20,
                       ),
                     ),
@@ -1102,12 +1103,12 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                       ),
                       title: Text(
                         f.name.capitalized,
-                        style: const TextStyle(color: AppColors.textPrimary),
+                        style: TextStyle(color: AppColorsScheme.of(context).textPrimary),
                       ),
                       subtitle: Text(
                         '${f.playlistCount} playlists',
-                        style: const TextStyle(
-                            color: AppColors.textMuted,
+                        style: TextStyle(
+                            color: AppColorsScheme.of(context).textMuted,
                             fontSize: AppFontSize.sm),
                       ),
                       trailing: hasPlaylist
@@ -1589,7 +1590,7 @@ class _BulkSelectBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: AppColors.surface,
+      color: AppColorsScheme.of(context).surface,
       child: SafeArea(
         top: false,
         child: Padding(
@@ -1598,7 +1599,7 @@ class _BulkSelectBar extends StatelessWidget {
           child: Row(
             children: [
               IconButton(
-                icon: const Icon(Icons.close, color: AppColors.textPrimary),
+                icon: Icon(Icons.close, color: AppColorsScheme.of(context).textPrimary),
                 onPressed: onCancel,
                 tooltip: 'Cancel',
               ),
@@ -1608,8 +1609,8 @@ class _BulkSelectBar extends StatelessWidget {
                   selectedCount == 0
                       ? 'Select items'
                       : '$selectedCount selected',
-                  style: const TextStyle(
-                    color: AppColors.textPrimary,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: AppFontSize.lg,
                     fontWeight: FontWeight.w600,
                   ),
@@ -1620,7 +1621,7 @@ class _BulkSelectBar extends StatelessWidget {
                   Icons.delete_outline,
                   color: onDelete != null
                       ? AppColors.accentRed
-                      : AppColors.textMuted,
+                      : AppColorsScheme.of(context).textMuted,
                 ),
                 onPressed: onDelete != null
                     ? () {

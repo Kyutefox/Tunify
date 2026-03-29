@@ -149,6 +149,8 @@ class AppIcons {
   static List<List<dynamic>> get bolt => HugeIcons.strokeRoundedFire02;
   static List<List<dynamic>> get bedtime => HugeIcons.strokeRoundedMoon02;
   static List<List<dynamic>> get playbackSpeed => HugeIcons.strokeRoundedTimer01;
+  static List<List<dynamic>> get sun => HugeIcons.strokeRoundedSun01;
+  static List<List<dynamic>> get moon => HugeIcons.strokeRoundedMoon01;
   static List<List<dynamic>> get github => HugeIcons.strokeRoundedGithub;
 }
 

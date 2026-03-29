@@ -25,6 +25,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class _SearchBarPlaceholder extends ConsumerWidget {
   const _SearchBarPlaceholder({required this.onTap});
@@ -39,7 +40,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
     return Container(
       height: 50,
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.input),
         border: Border.all(color: Colors.transparent, width: 1),
       ),
@@ -55,7 +56,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
                   const SizedBox(width: AppSpacing.base),
                   AppIcon(
                     icon: AppIcons.search,
-                    color: AppColors.textMuted,
+                    color: AppColorsScheme.of(context).textMuted,
                     size: 22,
                   ),
                   const SizedBox(width: AppSpacing.sm),
@@ -63,7 +64,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
                     child: Text(
                       'Search songs, artists, and more',
                       style: TextStyle(
-                        color: AppColors.textMuted.withValues(alpha: 0.7),
+                        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                         fontSize: AppFontSize.xl,
                         fontWeight: FontWeight.w500,
                       ),
@@ -78,7 +79,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
             Container(
               width: 1,
               height: 22,
-              color: AppColors.textMuted.withValues(alpha: 0.3),
+              color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.3),
             ),
             GestureDetector(
               onTap: () => showMoodBrowseSheet(context, moods: ref.read(moodsProvider)),
@@ -90,14 +91,14 @@ class _SearchBarPlaceholder extends ConsumerWidget {
                   children: [
                     AppIcon(
                       icon: AppIcons.gridView,
-                      color: AppColors.textSecondary,
+                      color: AppColorsScheme.of(context).textSecondary,
                       size: 18,
                     ),
                     const SizedBox(width: AppSpacing.xs + 2),
-                    const Text(
+                    Text(
                       'Browse',
                       style: TextStyle(
-                        color: AppColors.textSecondary,
+                        color: AppColorsScheme.of(context).textSecondary,
                         fontSize: AppFontSize.md,
                         fontWeight: FontWeight.w600,
                       ),
@@ -264,7 +265,7 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
         emptyStateIcon: AppIcon(
           icon: AppIcons.search,
           size: 64,
-          color: AppColors.textMuted,
+          color: AppColorsScheme.of(context).textMuted,
         ),
         emptyStateHeading: 'Play what you love',
         emptyStateSubheading: 'Search artist, songs, and more',
@@ -272,7 +273,7 @@ class _FullSearchScreenState extends ConsumerState<_FullSearchScreen> {
     );
     if (!hasSong) return searchPage;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         bottom: false,
@@ -373,23 +374,23 @@ class SearchResultsBody extends ConsumerWidget {
                 children: [
                   AppIcon(
                       icon: AppIcons.wifiOff,
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       size: 16),
                   const SizedBox(width: AppSpacing.xs),
-                  const Text(
+                  Text(
                     "You're offline — suggestions unavailable",
                     style: TextStyle(
-                        color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                        color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
                   ),
                 ],
               ),
             ),
-          const Expanded(
+          Expanded(
             child: Center(
               child: Text(
                 'No results found',
                 style: TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.lg,
                   fontWeight: FontWeight.w600,
                 ),
@@ -455,7 +456,7 @@ class SearchResultsBody extends ConsumerWidget {
 
     switch (filter) {
       case SearchFilter.artists:
-        if (artistResults.isEmpty) return _emptyFilterState('No artists found');
+        if (artistResults.isEmpty) return _emptyFilterState(context, 'No artists found');
         return ListView.builder(
           key: const ValueKey('artists'),
           physics: const BouncingScrollPhysics(),
@@ -465,7 +466,7 @@ class SearchResultsBody extends ConsumerWidget {
         );
 
       case SearchFilter.albums:
-        if (albumResults.isEmpty) return _emptyFilterState('No albums found');
+        if (albumResults.isEmpty) return _emptyFilterState(context, 'No albums found');
         return ListView.builder(
           key: const ValueKey('albums'),
           physics: const BouncingScrollPhysics(),
@@ -512,7 +513,7 @@ class SearchResultsBody extends ConsumerWidget {
                             child: Center(
                               child: AppIcon(
                                 icon: AppIcons.search,
-                                color: AppColors.textMuted,
+                                color: AppColorsScheme.of(context).textMuted,
                                 size: 24,
                               ),
                             ),
@@ -521,8 +522,8 @@ class SearchResultsBody extends ConsumerWidget {
                           Expanded(
                             child: Text(
                               s,
-                              style: const TextStyle(
-                                color: AppColors.textPrimary,
+                              style: TextStyle(
+                                color: AppColorsScheme.of(context).textPrimary,
                                 fontSize: AppFontSize.base,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -532,7 +533,7 @@ class SearchResultsBody extends ConsumerWidget {
                           ),
                           AppIcon(
                             icon: AppIcons.arrowUpLeft,
-                            color: AppColors.textMuted,
+                            color: AppColorsScheme.of(context).textMuted,
                             size: 20,
                           ),
                         ],
@@ -553,15 +554,15 @@ class SearchResultsBody extends ConsumerWidget {
                   children: [
                     Text(
                       song.durationFormatted,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.md,
                       ),
                     ),
                     AppIconButton(
                       icon: AppIcon(
                         icon: AppIcons.moreVert,
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         size: 20,
                       ),
                       onPressedWithContext: (btnCtx) => showSongOptionsSheet(
@@ -581,12 +582,12 @@ class SearchResultsBody extends ConsumerWidget {
     }
   }
 
-  Widget _emptyFilterState(String message) => Center(
+  Widget _emptyFilterState(BuildContext context, String message) => Center(
         key: ValueKey(message),
         child: Text(
           message,
-          style: const TextStyle(
-            color: AppColors.textSecondary,
+          style: TextStyle(
+            color: AppColorsScheme.of(context).textSecondary,
             fontSize: AppFontSize.lg,
             fontWeight: FontWeight.w600,
           ),
@@ -652,7 +653,7 @@ class RecentSearchSection extends ConsumerWidget {
             children: [
               AppIcon(
                 icon: AppIcons.search,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 size: compact ? 18 : 20,
               ),
               const SizedBox(width: AppSpacing.sm),
@@ -660,7 +661,7 @@ class RecentSearchSection extends ConsumerWidget {
                 child: Text(
                   'Recent searches',
                   style: TextStyle(
-                    color: AppColors.textPrimary,
+                    color: AppColorsScheme.of(context).textPrimary,
                     fontSize: compact ? 16 : 20,
                     fontWeight: FontWeight.w700,
                     letterSpacing: AppLetterSpacing.heading,
@@ -707,18 +708,18 @@ class RecentSearchSection extends ConsumerWidget {
                       vertical: AppSpacing.sm,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceLight.withValues(alpha: 0.8),
+                      color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.8),
                       borderRadius: BorderRadius.circular(AppRadius.xl),
                       border: Border.all(
-                        color: AppColors.textMuted.withValues(alpha: 0.2),
+                        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       query,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.base,
                         fontWeight: FontWeight.w500,
                       ),
@@ -839,7 +840,7 @@ class _SearchFilterChipState extends State<_SearchFilterChip>
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Color.lerp(
-                  AppColors.surfaceLight.withValues(alpha: 0.8),
+                  AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.8),
                   AppColors.primary.withValues(alpha: 0.2),
                   tv,
                 ),
@@ -852,7 +853,7 @@ class _SearchFilterChipState extends State<_SearchFilterChip>
               child: Text(
                 widget.label,
                 style: TextStyle(
-                  color: Color.lerp(AppColors.textSecondary, AppColors.primary, tv),
+                  color: Color.lerp(AppColorsScheme.of(context).textSecondary, AppColors.primary, tv),
                   fontSize: t.font.md,
                   fontWeight: tv > 0.5 ? FontWeight.w600 : FontWeight.w500,
                 ),
@@ -900,10 +901,10 @@ class _ArtistResultTile extends StatelessWidget {
                   errorBuilder: (_, __, ___) => Container(
                     width: 54,
                     height: 54,
-                    color: AppColors.surfaceLight,
+                    color: AppColorsScheme.of(context).surfaceLight,
                     child: AppIcon(
                       icon: AppIcons.person,
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       size: 28,
                     ),
                   ),
@@ -918,17 +919,17 @@ class _ArtistResultTile extends StatelessWidget {
                       artist.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.base,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
+                    Text(
                       'Artist',
                       style: TextStyle(
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.sm,
                         fontWeight: FontWeight.w400,
                       ),
@@ -982,10 +983,10 @@ class _AlbumResultTile extends StatelessWidget {
                   errorBuilder: (_, __, ___) => Container(
                     width: 54,
                     height: 54,
-                    color: AppColors.surfaceLight,
+                    color: AppColorsScheme.of(context).surfaceLight,
                     child: AppIcon(
                       icon: AppIcons.musicNote,
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       size: 28,
                     ),
                   ),
@@ -1000,8 +1001,8 @@ class _AlbumResultTile extends StatelessWidget {
                       album.name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.base,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1011,8 +1012,8 @@ class _AlbumResultTile extends StatelessWidget {
                       album.artist,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.sm,
                         fontWeight: FontWeight.w400,
                       ),
@@ -1034,8 +1035,8 @@ class _SkeletonResultTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Shimmer.fromColors(
-      baseColor: AppColors.surfaceLight,
-      highlightColor: AppColors.surfaceHighlight,
+      baseColor: AppColorsScheme.of(context).surfaceLight,
+      highlightColor: AppColorsScheme.of(context).surfaceHighlight,
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.base,
@@ -1045,7 +1046,7 @@ class _SkeletonResultTile extends StatelessWidget {
           width: 54,
           height: 54,
           decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
+            color: AppColorsScheme.of(context).surfaceLight,
             borderRadius: BorderRadius.circular(AppRadius.sm),
           ),
         ),
@@ -1053,7 +1054,7 @@ class _SkeletonResultTile extends StatelessWidget {
           height: 13,
           margin: const EdgeInsets.only(right: 60),
           decoration: BoxDecoration(
-            color: AppColors.surfaceLight,
+            color: AppColorsScheme.of(context).surfaceLight,
             borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
@@ -1062,7 +1063,7 @@ class _SkeletonResultTile extends StatelessWidget {
           width: 80,
           margin: const EdgeInsets.only(top: 6),
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColorsScheme.of(context).surface,
             borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
         ),
@@ -1082,7 +1083,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1097,12 +1098,12 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(bottom: AppSpacing.md),
                     child: Text(
                       'Search',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.display3,
                         fontWeight: FontWeight.w800,
                         letterSpacing: AppLetterSpacing.display,

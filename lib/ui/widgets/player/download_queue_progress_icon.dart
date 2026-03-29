@@ -5,6 +5,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'download_progress_ring.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Download icon with an averaged progress ring around it.
 /// Used for the Library app-bar "Download queue" button.
@@ -98,7 +99,7 @@ class _DownloadQueueProgressIconState
                   rotation: _rotationController!.value *
                       2 *
                       3.14159265359,
-                  trackColor: AppColors.textMuted,
+                  trackColor: AppColorsScheme.of(context).textMuted,
                   progressColor: AppColors.accentGreen,
                   strokeWidth: 2,
                 ),

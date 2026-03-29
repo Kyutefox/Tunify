@@ -9,12 +9,12 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/features/library/library_provider.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'library_playlist_screen.dart';
 import 'library_playlists_section.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Full-screen library search using [SharedSearchPage]. Filters playlists
 /// and folders by name; tap opens a playlist or opens a folder in the library.
@@ -68,7 +68,7 @@ class _LibrarySearchScreenState extends ConsumerState<LibrarySearchScreen> {
     );
     if (!hasSong) return searchPage;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         bottom: false,
@@ -109,7 +109,7 @@ class LibrarySearchBody extends ConsumerWidget {
         icon: AppIcon(
           icon: AppIcons.search,
           size: 64,
-          color: AppColors.textMuted,
+          color: AppColorsScheme.of(context).textMuted,
         ),
         heading: 'Search your library',
         subheading: 'Find playlists and folders by name',
@@ -137,8 +137,8 @@ class LibrarySearchBody extends ConsumerWidget {
       return EmptyListMessage(
         emptyLabel: 'results',
         query: query,
-        style: const TextStyle(
-          color: AppColors.textSecondary,
+        style: TextStyle(
+          color: AppColorsScheme.of(context).textSecondary,
           fontSize: AppFontSize.lg,
           fontWeight: FontWeight.w600,
         ),

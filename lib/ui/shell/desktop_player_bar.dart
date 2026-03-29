@@ -15,6 +15,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'desktop_right_sidebar.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Full-width persistent player bar matching the Spotify desktop layout.
 ///
@@ -38,8 +39,8 @@ class DesktopPlayerBar extends ConsumerWidget {
       height: DesktopLayout.playerBarHeight,
       decoration: BoxDecoration(
         color: hasSong
-            ? Color.lerp(AppColors.background, dominantColor, 0.10)!
-            : AppColors.background,
+            ? Color.lerp(AppColorsScheme.of(context).background, dominantColor, 0.10)!
+            : AppColorsScheme.of(context).background,
         border: Border(
           top: BorderSide(
             color: hasSong
@@ -59,11 +60,11 @@ class DesktopPlayerBar extends ConsumerWidget {
                 Expanded(flex: 4, child: _RightControls()),
               ],
             )
-          : const Center(
+          : Center(
               child: Text(
                 'Play a song to get started',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: DesktopFontSize.base,
                 ),
               ),
@@ -100,12 +101,12 @@ class _SongInfo extends ConsumerWidget {
             errorWidget: (_, __, ___) => Container(
               width: DesktopLayout.playerArtSize,
               height: DesktopLayout.playerArtSize,
-              color: AppColors.surfaceLight,
+              color: AppColorsScheme.of(context).surfaceLight,
               child: Center(
                 child: AppIcon(
                   icon: AppIcons.musicNote,
                   size: DesktopIconSize.md,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                 ),
               ),
             ),
@@ -123,8 +124,8 @@ class _SongInfo extends ConsumerWidget {
                 song.title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: DesktopFontSize.lg,
                   fontWeight: FontWeight.w600,
                 ),
@@ -134,8 +135,8 @@ class _SongInfo extends ConsumerWidget {
                 song.artist,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: AppColors.desktopTextSecondary,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).desktopTextSecondary,
                   fontSize: DesktopFontSize.sm,
                 ),
               ),
@@ -150,7 +151,7 @@ class _SongInfo extends ConsumerWidget {
             isLiked: isLiked,
             songId: song.id,
             size: DesktopIconSize.sm,
-            emptyColor: AppColors.textSecondary,
+            emptyColor: AppColorsScheme.of(context).textSecondary,
           ),
           onPressed: () =>
               ref.read(libraryProvider.notifier).toggleLiked(song),
@@ -166,7 +167,7 @@ class _SongInfo extends ConsumerWidget {
           inactiveIcon: AppIcon(
               icon: AppIcons.moreHoriz,
               size: DesktopIconSize.sm,
-              color: AppColors.textSecondary),
+              color: AppColorsScheme.of(context).textSecondary),
           onTap: (btnCtx) => showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
         ),
       ],
@@ -209,7 +210,7 @@ class _CenterControls extends ConsumerWidget {
                   size: DesktopIconSize.sm,
                   color: isShuffleEnabled
                       ? AppColors.primary
-                      : Colors.white.withValues(alpha: 0.75),
+                      : AppColorsScheme.of(context).textSecondary,
                 ),
                 onPressed: notifier.toggleShuffle,
                 size: DesktopButtonSize.sm,
@@ -221,8 +222,8 @@ class _CenterControls extends ConsumerWidget {
                   icon: AppIcons.skipPrevious,
                   size: DesktopIconSize.md,
                   color: canPrev
-                      ? Colors.white.withValues(alpha: 0.75)
-                      : Colors.white.withValues(alpha: 0.3),
+                      ? AppColorsScheme.of(context).textSecondary
+                      : AppColorsScheme.of(context).textMuted,
                 ),
                 onPressed: canPrev ? notifier.playPrevious : null,
                 size: DesktopButtonSize.md,
@@ -240,8 +241,8 @@ class _CenterControls extends ConsumerWidget {
                   icon: AppIcons.skipNext,
                   size: DesktopIconSize.md,
                   color: canNext
-                      ? Colors.white.withValues(alpha: 0.75)
-                      : Colors.white.withValues(alpha: 0.3),
+                      ? AppColorsScheme.of(context).textSecondary
+                      : AppColorsScheme.of(context).textMuted,
                 ),
                 onPressed: canNext ? notifier.playNext : null,
                 size: DesktopButtonSize.md,
@@ -254,7 +255,7 @@ class _CenterControls extends ConsumerWidget {
                   size: DesktopIconSize.sm,
                   color: isRepeat
                       ? AppColors.primary
-                      : Colors.white.withValues(alpha: 0.75),
+                      : AppColorsScheme.of(context).textSecondary,
                 ),
                 onPressed: notifier.cycleRepeatMode,
                 size: DesktopButtonSize.sm,
@@ -298,7 +299,7 @@ class _RightControlsState extends ConsumerState<_RightControls> {
     // Returns the icon color for a sidebar-toggle button.
     Color tabColor(RightSidebarTab tab) => activeTab == tab
         ? AppColors.primary
-        : Colors.white.withValues(alpha: 0.75);
+        : AppColorsScheme.of(context).textSecondary;
 
     void toggleTab(RightSidebarTab tab) {
       final notifier = ref.read(rightSidebarTabProvider.notifier);
@@ -314,7 +315,7 @@ class _RightControlsState extends ConsumerState<_RightControls> {
             size: DesktopIconSize.sm,
             color: sleepActive
                 ? AppColors.primary
-                : Colors.white.withValues(alpha: 0.75),
+                : AppColorsScheme.of(context).textSecondary,
           ),
           onPressed: () => showSleepTimerSheet(context),
           size: DesktopButtonSize.sm,
@@ -341,7 +342,7 @@ class _RightControlsState extends ConsumerState<_RightControls> {
             padding: const EdgeInsets.all(DesktopSpacing.xs),
             child: AppIcon(
               icon: volIcon,
-              color: Colors.white.withValues(alpha: 0.75),
+              color: AppColorsScheme.of(context).textSecondary,
               size: DesktopIconSize.sm,
             ),
           ),
@@ -422,12 +423,12 @@ class _PlayPauseBtn extends StatelessWidget {
         ),
         child: Center(
           child: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColors.background),
+                    valueColor: AlwaysStoppedAnimation<Color>(AppColorsScheme.of(context).background),
                   ),
                 )
               : SizedBox(
@@ -439,7 +440,7 @@ class _PlayPauseBtn extends StatelessWidget {
                       key: ValueKey(isPlaying),
                       icon: isPlaying ? AppIcons.pause : AppIcons.play,
                       size: DesktopIconSize.md,
-                      color: AppColors.background,
+                      color: AppColorsScheme.of(context).background,
                     ),
                   ),
                 ),

@@ -4,6 +4,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'back_title_app_bar.dart';
 import 'button.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Scaffold with back button and centered loading indicator.
 class LoadingScaffold extends StatelessWidget {
@@ -12,10 +13,10 @@ class LoadingScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       appBar: BackTitleAppBar(
         title: '',
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColorsScheme.of(context).background,
       ),
       body: const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
@@ -38,10 +39,10 @@ class ErrorScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       appBar: BackTitleAppBar(
         title: '',
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColorsScheme.of(context).background,
       ),
       body: Center(
         child: Column(
@@ -49,7 +50,7 @@ class ErrorScaffold extends StatelessWidget {
           children: [
             Text(
               message,
-              style: TextStyle(color: AppColors.textMuted),
+              style: TextStyle(color: AppColorsScheme.of(context).textMuted),
             ),
             if (onRetry != null) ...[
               const SizedBox(height: AppSpacing.md),

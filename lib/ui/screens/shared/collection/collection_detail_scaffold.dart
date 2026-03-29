@@ -7,6 +7,7 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 const double kCollectionActionRowHeight = 56;
 
@@ -118,14 +119,14 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     final hasPlayButton = widget.playButton != null && _useNewLayout;
 
     final pinnedBg = hasPalette
-        ? PaletteTheme.appBarBackground(widget.paletteColor!)
-        : AppColors.background;
+        ? PaletteTheme.appBarBackground(widget.paletteColor!, background: AppColorsScheme.of(context).background)
+        : AppColorsScheme.of(context).background;
 
     return Stack(
       key: _stackKey,
       children: [
         Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: AppColorsScheme.of(context).background,
           extendBodyBehindAppBar: hasPalette,
           appBar: _useNewLayout
               ? PreferredSize(
@@ -146,7 +147,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                           icon: AppIcon(
                             icon: AppIcons.back,
                             size: 22,
-                            color: AppColors.textPrimary,
+                            color: AppColorsScheme.of(context).textPrimary,
                           ),
                           onPressed: () => Navigator.of(context).pop(),
                           iconSize: 22,
@@ -157,8 +158,8 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                         builder: (_, opacity, __) => opacity >= 1.0
                             ? Text(
                                 widget.title!,
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
+                                style: TextStyle(
+                                  color: AppColorsScheme.of(context).textPrimary,
                                   fontSize: AppFontSize.xxl,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -179,7 +180,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                       icon: AppIcon(
                         icon: AppIcons.back,
                         size: 22,
-                        color: AppColors.textPrimary,
+                        color: AppColorsScheme.of(context).textPrimary,
                       ),
                       onPressed: () => Navigator.of(context).pop(),
                       iconSize: 22,
@@ -535,7 +536,7 @@ class CollectionDetailExpandedContent extends StatelessWidget {
             key: titleKey,
             title,
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: AppColorsScheme.of(context).textPrimary,
               fontSize: t.font.h2,
               fontWeight: FontWeight.w800,
             ),
@@ -574,7 +575,7 @@ class CollectionTrackListHeader extends StatelessWidget {
             child: Text(
               'Title',
               style: TextStyle(
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 fontSize: t.font.sm,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,
@@ -585,7 +586,7 @@ class CollectionTrackListHeader extends StatelessWidget {
             Text(
               'Duration',
               style: TextStyle(
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 fontSize: t.font.sm,
                 fontWeight: FontWeight.w600,
                 letterSpacing: 0.5,

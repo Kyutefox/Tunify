@@ -8,6 +8,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/player/now_playing_indicator.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Circular play button used in section headers and action rows.
 /// Provides consistent size, color, and press feedback everywhere.
@@ -121,9 +122,9 @@ class PlaceholderArt extends StatelessWidget {
     return Container(
       width: size,
       height: size,
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.surfaceHighlight, AppColors.surfaceLight],
+          colors: [AppColorsScheme.of(context).surfaceHighlight, AppColorsScheme.of(context).surfaceLight],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -131,7 +132,7 @@ class PlaceholderArt extends StatelessWidget {
       child: Center(
         child: AppIcon(
           icon: AppIcons.musicNote,
-          color: AppColors.textMuted,
+          color: AppColorsScheme.of(context).textMuted,
           size: 36,
         ),
       ),
@@ -156,7 +157,7 @@ class SkeletonBox extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: AppColors.surfaceHighlight,
+        color: AppColorsScheme.of(context).surfaceHighlight,
         borderRadius: BorderRadius.circular(radius),
       ),
     );
@@ -301,13 +302,13 @@ class ExplicitBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
       decoration: BoxDecoration(
-        color: AppColors.textMuted.withValues(alpha: 0.25),
+        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.25),
         borderRadius: BorderRadius.circular(AppRadius.xs),
       ),
-      child: const Text(
+      child: Text(
         'E',
         style: TextStyle(
-          color: AppColors.textMuted,
+          color: AppColorsScheme.of(context).textMuted,
           fontSize: AppFontSize.micro,
           fontWeight: FontWeight.w700,
         ),

@@ -28,9 +28,10 @@ import 'package:tunify/ui/shell/desktop_shell.dart';
 import 'package:tunify/ui/shell/mobile_shell.dart';
 import 'package:tunify/ui/screens/shared/auth/loading_screen.dart';
 import 'package:tunify/ui/screens/shared/auth/welcome_screen.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/features/settings/theme_provider.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_theme.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 final supabaseInitProvider = FutureProvider<void>((ref) async {
   try {
@@ -140,13 +141,16 @@ class _TunifyAppContent extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final themeMode = ref.watch(themeProvider);
     final init = ref.watch(supabaseInitProvider);
 
     if (init.isLoading) {
       return MaterialApp(
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
         builder: _noKeyboardShiftBuilder,
         home: const LoadingScreen(),
       );
@@ -156,7 +160,9 @@ class _TunifyAppContent extends ConsumerWidget {
       return MaterialApp(
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
         builder: _noKeyboardShiftBuilder,
         home: _InitErrorScreen(
           onRetry: () => ref.invalidate(supabaseInitProvider),
@@ -171,7 +177,9 @@ class _TunifyAppContent extends ConsumerWidget {
       return MaterialApp(
         title: AppStrings.appName,
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
+        theme: AppTheme.lightTheme,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
         builder: _noKeyboardShiftBuilder,
         home: const LoadingScreen(),
       );
@@ -253,7 +261,9 @@ class _TunifyAppContent extends ConsumerWidget {
     return MaterialApp(
       title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.darkTheme,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
       builder: _noKeyboardShiftBuilder,
       home: isGuest
           ? shell()
@@ -324,7 +334,7 @@ class _InitErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xl),
@@ -333,23 +343,23 @@ class _InitErrorScreen extends StatelessWidget {
             children: [
               AppIcon(
                 icon: AppIcons.cloudOff,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 size: 42,
               ),
               const SizedBox(height: AppSpacing.md),
-              const Text(
+              Text(
                 'Unable to initialize services',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
-              const Text(
+              Text(
                 'Please check your connection and try again.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColors.textSecondary),
+                style: TextStyle(color: AppColorsScheme.of(context).textSecondary),
               ),
               const SizedBox(height: AppSpacing.base),
               AppButton(

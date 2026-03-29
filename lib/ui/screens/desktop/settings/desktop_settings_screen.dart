@@ -5,6 +5,7 @@ import 'package:tunify/ui/screens/desktop/home/about_screen.dart';
 import 'package:tunify/ui/screens/desktop/home/home_settings_sheet.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 // ── Section enum ──────────────────────────────────────────────────────────────
 
@@ -86,12 +87,12 @@ class _DesktopSettingsScreenState extends State<DesktopSettingsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // ── Header ──────────────────────────────────────────────────────────
-        const Padding(
+        Padding(
           padding: EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, AppSpacing.base),
           child: Text(
             'Settings',
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: AppColorsScheme.of(context).textPrimary,
               fontSize: AppFontSize.h2,
               fontWeight: FontWeight.w700,
             ),
@@ -186,7 +187,7 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final labelColor =
-        isActive ? AppColors.primary : AppColors.textSecondary;
+        isActive ? AppColors.primary : AppColorsScheme.of(context).textSecondary;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
@@ -210,7 +211,7 @@ class _NavItem extends StatelessWidget {
                 AppIcon(
                   icon: section.icon,
                   size: 18,
-                  color: isActive ? section.iconColor : AppColors.textMuted,
+                  color: isActive ? section.iconColor : AppColorsScheme.of(context).textMuted,
                 ),
                 const SizedBox(width: AppSpacing.sm + 2),
                 Expanded(
@@ -229,8 +230,8 @@ class _NavItem extends StatelessWidget {
                       ),
                       Text(
                         section.subtitle,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
+                        style: TextStyle(
+                          color: AppColorsScheme.of(context).textMuted,
                           fontSize: AppFontSize.xs,
                         ),
                         maxLines: 1,

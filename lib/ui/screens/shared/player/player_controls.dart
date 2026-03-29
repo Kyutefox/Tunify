@@ -7,6 +7,7 @@ import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 // PERF: hoisted as file-level consts — no allocation per build.
 const Color _kIconInactive = AppColors.playerIconInactive;
@@ -262,14 +263,12 @@ class _PlayerBigPlayButtonState extends State<PlayerBigPlayButton>
           ),
           child: Center(
             child: widget.isLoading
-                ? SizedBox(
+                ? const SizedBox(
                     width: 26,
                     height: 26,
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppColors.background,
-                      ),
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF121212)),
                     ),
                   )
                 : AnimatedSwitcher(
@@ -280,7 +279,7 @@ class _PlayerBigPlayButtonState extends State<PlayerBigPlayButton>
                       key: ValueKey(widget.isPlaying),
                       icon: widget.isPlaying ? AppIcons.pause : AppIcons.play,
                       size: 38,
-                      color: AppColors.background,
+                      color: const Color(0xFF121212),
                     ),
                   ),
           ),

@@ -8,6 +8,7 @@ import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/player/download_queue_progress_icon.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 enum LibraryFilter {
   all,
@@ -109,10 +110,10 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
               AppSpacing.base, AppSpacing.sm, AppSpacing.base, 0),
           child: Row(
             children: [
-              const Text(
+              Text(
                 'Library',
                 style: TextStyle(
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.display3,
                   fontWeight: FontWeight.w800,
                   letterSpacing: AppLetterSpacing.display,
@@ -120,9 +121,9 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
               ),
               const Spacer(),
               AppIconButton(
-                icon: const DownloadQueueProgressIcon(
+                icon: DownloadQueueProgressIcon(
                   iconSize: 22,
-                  baseColor: AppColors.textPrimary,
+                  baseColor: AppColorsScheme.of(context).textPrimary,
                 ),
                 onPressed: widget.onDownloadQueueTap,
                 tooltip: 'Download queue',
@@ -133,7 +134,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                 icon: AppIcon(
                   icon: AppIcons.add,
                   size: 24,
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                 ),
                 onPressed: widget.onCreateTap,
                 tooltip: 'Create playlist or folder',
@@ -142,7 +143,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                 icon: AppIcon(
                   icon: AppIcons.search,
                   size: 24,
-                  color: AppColors.textPrimary,
+                  color: AppColorsScheme.of(context).textPrimary,
                 ),
                 onPressed: widget.onSearchTap,
                 tooltip: 'Search library',
@@ -183,14 +184,14 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                       children: [
                         AppIcon(
                           icon: AppIcons.sort,
-                          color: AppColors.textSecondary,
+                          color: AppColorsScheme.of(context).textSecondary,
                           size: _sortGridIconSize,
                         ),
                         const SizedBox(width: AppSpacing.xs),
                         Text(
                           widget.sortOrder.label,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
+                          style: TextStyle(
+                            color: AppColorsScheme.of(context).textSecondary,
                             fontSize: AppFontSize.md,
                             fontWeight: FontWeight.w500,
                           ),
@@ -205,7 +206,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                 tooltip: widget.viewMode == LibraryViewMode.list
                     ? 'Grid view'
                     : 'List view',
-                color: AppColors.textSecondary,
+                color: AppColorsScheme.of(context).textSecondary,
                 onPressed: () => widget.onViewModeChanged(
                   widget.viewMode == LibraryViewMode.list
                       ? LibraryViewMode.grid
@@ -216,7 +217,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                       ? AppIcons.gridView
                       : AppIcons.listView,
                   size: _sortGridIconSize,
-                  color: AppColors.textSecondary,
+                  color: AppColorsScheme.of(context).textSecondary,
                 ),
                 iconSize: _sortGridIconSize,
                 size: 36,

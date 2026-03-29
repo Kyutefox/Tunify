@@ -6,8 +6,8 @@ import 'package:tunify/core/utils/debouncer.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
 import 'package:tunify/ui/screens/shared/search/search_screen.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Floating dropdown search panel shown below the desktop top bar when the
 /// search field is focused. Reuses [SearchResultsBody] and [RecentSearchSection]
@@ -90,7 +90,7 @@ class _DesktopSearchDropdownState extends ConsumerState<DesktopSearchDropdown> {
       child: Container(
         constraints: const BoxConstraints(maxHeight: 400),
         decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
+          color: AppColorsScheme.of(context).surfaceLight,
           borderRadius: BorderRadius.circular(AppRadius.md),
           boxShadow: [
             BoxShadow(
@@ -118,7 +118,7 @@ class _DesktopSearchDropdownState extends ConsumerState<DesktopSearchDropdown> {
               },
               emptyStateIcon: AppIcon(
                 icon: AppIcons.search,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 size: 48,
               ),
               emptyStateHeading: 'Search Tunify',

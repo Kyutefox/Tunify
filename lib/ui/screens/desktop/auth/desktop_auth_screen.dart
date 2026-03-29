@@ -5,6 +5,7 @@ import 'package:tunify/ui/widgets/auth/auth_shared.dart';
 import 'package:tunify/ui/widgets/auth/desktop_auth_layout.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class DesktopAuthScreen extends StatelessWidget {
   const DesktopAuthScreen({super.key, this.initialSignUp = false});
@@ -17,7 +18,7 @@ class DesktopAuthScreen extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 400),
         child: Container(
           decoration: BoxDecoration(
-            color: AppColors.surface,
+            color: AppColorsScheme.of(context).surface,
             borderRadius: BorderRadius.circular(AppRadius.xxl),
             border: Border.all(
               color: AppColors.glassBorder,

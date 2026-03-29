@@ -9,6 +9,7 @@ import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class AuthForm extends ConsumerStatefulWidget {
   const AuthForm({
@@ -103,8 +104,8 @@ class AuthFormState extends ConsumerState<AuthForm> {
             child: Text(
               _title,
               key: ValueKey(_title),
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.h1,
                 fontWeight: FontWeight.w800,
                 letterSpacing: AppLetterSpacing.display,
@@ -118,8 +119,8 @@ class AuthFormState extends ConsumerState<AuthForm> {
             child: Text(
               _subtitle,
               key: ValueKey(_subtitle),
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textSecondary,
                 fontSize: AppFontSize.base,
               ),
             ),
@@ -168,7 +169,7 @@ class AuthFormState extends ConsumerState<AuthForm> {
       labelText: 'Username',
       prefixIcon: AppIcon(
         icon: AppIcons.personOutline,
-        color: AppColors.textMuted,
+        color: AppColorsScheme.of(context).textMuted,
         size: 18,
       ),
       validator: (v) {
@@ -189,7 +190,7 @@ class AuthFormState extends ConsumerState<AuthForm> {
       labelText: 'Email',
       prefixIcon: AppIcon(
         icon: AppIcons.mail,
-        color: AppColors.textMuted,
+        color: AppColorsScheme.of(context).textMuted,
         size: 18,
       ),
       keyboardType: TextInputType.emailAddress,
@@ -212,7 +213,7 @@ class AuthFormState extends ConsumerState<AuthForm> {
       labelText: 'Password',
       prefixIcon: AppIcon(
         icon: AppIcons.lock,
-        color: AppColors.textMuted,
+        color: AppColorsScheme.of(context).textMuted,
         size: 18,
       ),
       obscureText: _obscurePassword,
@@ -220,7 +221,7 @@ class AuthFormState extends ConsumerState<AuthForm> {
         onTap: () => setState(() => _obscurePassword = !_obscurePassword),
         child: AppIcon(
           icon: _obscurePassword ? AppIcons.visibility : AppIcons.visibilityOff,
-          color: AppColors.textMuted,
+          color: AppColorsScheme.of(context).textMuted,
           size: 18,
         ),
       ),
@@ -303,8 +304,8 @@ class AuthFormState extends ConsumerState<AuthForm> {
         onTap: _toggleMode,
         child: RichText(
           text: TextSpan(
-            style: const TextStyle(
-              color: AppColors.textSecondary,
+            style: TextStyle(
+              color: AppColorsScheme.of(context).textSecondary,
               fontSize: AppFontSize.base,
             ),
             children: [

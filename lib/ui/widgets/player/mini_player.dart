@@ -6,11 +6,11 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/player/playback_position_provider.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/screens/desktop/player/player_screen.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/player/album_art_hero.dart';
 import '../player/../player/mini_player_play_button.dart';
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 void openFullPlayerRoute(BuildContext context) {
   Navigator.of(context).push(
@@ -243,7 +243,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
             curve: Curves.easeOutCubic,
             height: 68,
             decoration: BoxDecoration(
-              color: Color.lerp(AppColors.surfaceLight, dominantColor, 0.18)!
+              color: Color.lerp(AppColorsScheme.of(context).surfaceLight, dominantColor, 0.18)!
                   .withValues(alpha: 0.97),
               borderRadius: BorderRadius.circular(AppRadius.xl),
               border: Border.all(
@@ -277,8 +277,8 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                             children: [
                               Text(
                                 song.title,
-                                style: const TextStyle(
-                                  color: AppColors.textPrimary,
+                                style: TextStyle(
+                                  color: AppColorsScheme.of(context).textPrimary,
                                   fontSize: AppFontSize.md,
                                   fontWeight: FontWeight.w600,
                                 ),
@@ -288,8 +288,8 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                               const SizedBox(height: 2),
                               Text(
                                 song.artist,
-                                style: const TextStyle(
-                                  color: AppColors.textMuted,
+                                style: TextStyle(
+                                  color: AppColorsScheme.of(context).textMuted,
                                   fontSize: AppFontSize.xs,
                                 ),
                                 maxLines: 1,
@@ -324,19 +324,19 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                               child: AnimatedOpacity(
                                 opacity: (_dragX / 50).clamp(0.0, 1.0),
                                 duration: const Duration(milliseconds: 100),
-                                child: const Row(
+                                child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Icon(
                                       Icons.skip_previous,
-                                      color: AppColors.textMuted,
+                                      color: AppColorsScheme.of(context).textMuted,
                                       size: 24,
                                     ),
                                     SizedBox(width: 8),
                                     Text(
                                       'Previous',
                                       style: TextStyle(
-                                        color: AppColors.textMuted,
+                                        color: AppColorsScheme.of(context).textMuted,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -352,13 +352,13 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                               child: AnimatedOpacity(
                                 opacity: (-_dragX / 50).clamp(0.0, 1.0),
                                 duration: const Duration(milliseconds: 100),
-                                child: const Row(
+                                child: Row(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
                                       'Next',
                                       style: TextStyle(
-                                        color: AppColors.textMuted,
+                                        color: AppColorsScheme.of(context).textMuted,
                                         fontSize: 12,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -366,7 +366,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                                     SizedBox(width: 8),
                                     Icon(
                                       Icons.skip_next,
-                                      color: AppColors.textMuted,
+                                      color: AppColorsScheme.of(context).textMuted,
                                       size: 24,
                                     ),
                                   ],
@@ -471,7 +471,7 @@ class _MiniPlayerUpNext extends ConsumerWidget {
         children: [
           AppIcon(
             icon: AppIcons.skipNext,
-            color: AppColors.textMuted.withValues(alpha: 0.6),
+            color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.6),
             size: 10,
           ),
           const SizedBox(width: 3),
@@ -479,7 +479,7 @@ class _MiniPlayerUpNext extends ConsumerWidget {
             child: Text(
               nextSong.title,
               style: TextStyle(
-                color: AppColors.textMuted.withValues(alpha: 0.7),
+                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                 fontSize: AppFontSize.micro,
                 fontWeight: FontWeight.w500,
               ),

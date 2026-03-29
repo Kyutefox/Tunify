@@ -2,8 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Shared Hero widget for the album art element transitioning between
 /// [MiniPlayer] and [PlayerScreen].
@@ -99,11 +99,11 @@ class _ArtImage extends StatelessWidget {
   Widget build(BuildContext context) {
     if (url.isEmpty) {
       return ColoredBox(
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         child: Center(
           child: AppIcon(
             icon: AppIcons.musicNote,
-            color: AppColors.textMuted,
+            color: AppColorsScheme.of(context).textMuted,
             size: iconSize,
           ),
         ),
@@ -115,11 +115,11 @@ class _ArtImage extends StatelessWidget {
       fadeInDuration: Duration.zero,
       fadeOutDuration: Duration.zero,
       errorWidget: (_, __, ___) => ColoredBox(
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         child: Center(
           child: AppIcon(
             icon: AppIcons.musicNote,
-            color: AppColors.textMuted,
+            color: AppColorsScheme.of(context).textMuted,
             size: iconSize,
           ),
         ),

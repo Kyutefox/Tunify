@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
@@ -15,6 +16,7 @@ import '../screens/shared/auth/loading_screen.dart';
 import '../screens/shared/search/search_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Standard mobile shell: bottom nav bar + mini player + IndexedStack.
 ///
@@ -47,20 +49,38 @@ class _MobileShellState extends ConsumerState<MobileShell> {
     final showGuestHomeFullScreenLoading =
         isGuest && _selectedIndex == 0 && homeIsInitialLoading && !homeIsLoaded;
 
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final overlayStyle = isDark
+        ? const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.light,
+            statusBarBrightness: Brightness.dark,
+          )
+        : const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark,
+            statusBarBrightness: Brightness.light,
+          );
+
     if (showGuestHomeFullScreenLoading) {
-      return ShellContext(
-        isDesktop: false,
-        child: const Scaffold(
-          backgroundColor: AppColors.background,
-          body: LoadingScreen(),
+      return AnnotatedRegion<SystemUiOverlayStyle>(
+        value: overlayStyle,
+        child: ShellContext(
+          isDesktop: false,
+          child: Scaffold(
+            backgroundColor: AppColorsScheme.of(context).background,
+            body: LoadingScreen(),
+          ),
         ),
       );
     }
 
-    return ShellContext(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: overlayStyle,
+      child: ShellContext(
       isDesktop: false,
       child: Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColorsScheme.of(context).background,
         body: Column(
           children: [
             const _OfflineBanner(),
@@ -90,7 +110,8 @@ class _MobileShellState extends ConsumerState<MobileShell> {
           ],
         ),
       ),
-    );
+      ), // ShellContext
+    );   // AnnotatedRegion
   }
 
   Widget _buildCurrentScreen() {
@@ -115,7 +136,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
     return Container(
       height: 56 + bottomPadding,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColorsScheme.of(context).surface,
         border: Border(
           top: BorderSide(color: AppColors.glassBorder, width: 0.5),
         ),
@@ -240,7 +261,7 @@ class _NavItem extends StatelessWidget {
                 child: Center(
                   child: AppIcon(
                     icon: icon,
-                    color: selected ? AppColors.primary : AppColors.textMuted,
+                    color: selected ? AppColors.primary : AppColorsScheme.of(context).textMuted,
                     size: _iconSize,
                   ),
                 ),

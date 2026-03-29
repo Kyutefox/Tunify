@@ -5,6 +5,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 import 'download_progress_ring.dart';
 
 class MultiDownloadButton extends ConsumerStatefulWidget {
@@ -42,10 +43,10 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
         icon: AppIcon(
           icon: AppIcons.download,
           size: widget.size,
-          color: AppColors.textPrimary,
+          color: AppColorsScheme.of(context).textPrimary,
         ),
         onPressed: null,
-        color: AppColors.textPrimary,
+        color: AppColorsScheme.of(context).textPrimary,
       );
     }
 
@@ -104,7 +105,7 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
                     progress: combinedProgress < 1.0 ? combinedProgress : null,
                     rotation:
                         _rotationController!.value * 2 * 3.14159265359,
-                    trackColor: AppColors.textMuted,
+                    trackColor: AppColorsScheme.of(context).textMuted,
                     progressColor: AppColors.accentGreen,
                     strokeWidth: 2,
                   ),
@@ -113,7 +114,7 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
             ),
             AppIcon(
               icon: AppIcons.download,
-              color: AppColors.textPrimary,
+              color: AppColorsScheme.of(context).textPrimary,
               size: widget.iconSize,
             ),
           ],
@@ -123,7 +124,7 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
       icon = AppIcon(
         icon: AppIcons.download,
         size: widget.size,
-        color: AppColors.textPrimary,
+        color: AppColorsScheme.of(context).textPrimary,
       );
     }
 
@@ -137,7 +138,7 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
     return IconButton(
       icon: icon,
       onPressed: onPressed,
-      color: AppColors.textPrimary,
+      color: AppColorsScheme.of(context).textPrimary,
     );
   }
 }

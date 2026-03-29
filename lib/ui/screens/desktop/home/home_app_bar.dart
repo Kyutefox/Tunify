@@ -6,6 +6,7 @@ import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/settings/guest_profile_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class HomeAppBar extends ConsumerWidget {
   const HomeAppBar({super.key, required this.greeting, this.asSliver = true});
@@ -58,7 +59,7 @@ class HomeAppBar extends ConsumerWidget {
 
     return Container(
       width: double.infinity,
-      color: AppColors.background,
+      color: AppColorsScheme.of(context).background,
       child: SafeArea(
         bottom: false,
         child: SizedBox(

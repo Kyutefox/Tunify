@@ -14,6 +14,7 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/core/utils/string_utils.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Shared playlist cover thumbnail used in both list and grid views.
 /// Respects [customImageUrl] first, then falls back to song art mosaic.
@@ -43,7 +44,7 @@ class PlaylistCoverThumbnail extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => _placeholder(size, radius),
+          errorWidget: (_, __, ___) => _placeholder(context, size, radius),
         ),
       );
     }
@@ -51,7 +52,7 @@ class PlaylistCoverThumbnail extends StatelessWidget {
     final songs = playlist.songs;
 
     // 2. No songs — placeholder
-    if (songs.isEmpty) return _placeholder(size, radius);
+    if (songs.isEmpty) return _placeholder(context, size, radius);
 
     // 3. Single song — single image
     if (songs.length == 1) {
@@ -62,7 +63,7 @@ class PlaylistCoverThumbnail extends StatelessWidget {
           width: size,
           height: size,
           fit: BoxFit.cover,
-          errorWidget: (_, __, ___) => _placeholder(size, radius),
+          errorWidget: (_, __, ___) => _placeholder(context, size, radius),
         ),
       );
     }
@@ -82,15 +83,15 @@ class PlaylistCoverThumbnail extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Row(children: [
-                _cell(urls[0], cell),
+                _cell(context, urls[0], cell),
                 SizedBox(width: gap),
-                _cell(urls.length > 1 ? urls[1] : null, cell),
+                _cell(context, urls.length > 1 ? urls[1] : null, cell),
               ]),
               SizedBox(height: gap),
               Row(children: [
-                _cell(urls.length > 2 ? urls[2] : null, cell),
+                _cell(context, urls.length > 2 ? urls[2] : null, cell),
                 SizedBox(width: gap),
-                _cell(urls.length > 3 ? urls[3] : null, cell),
+                _cell(context, urls.length > 3 ? urls[3] : null, cell),
               ]),
             ],
           ),
@@ -99,39 +100,39 @@ class PlaylistCoverThumbnail extends StatelessWidget {
     );
   }
 
-  Widget _cell(String? url, double s) {
-    if (url == null) return _placeholderCell(s);
+  Widget _cell(BuildContext context, String? url, double s) {
+    if (url == null) return _placeholderCell(context, s);
     return CachedNetworkImage(
       imageUrl: url,
       width: s,
       height: s,
       fit: BoxFit.cover,
-      errorWidget: (_, __, ___) => _placeholderCell(s),
+      errorWidget: (_, __, ___) => _placeholderCell(context, s),
     );
   }
 
-  Widget _placeholderCell(double s) => Container(
+  Widget _placeholderCell(BuildContext context, double s) => Container(
         width: s,
         height: s,
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         child: Center(
           child: AppIcon(
               icon: AppIcons.musicNote,
-              color: AppColors.textMuted,
+              color: AppColorsScheme.of(context).textMuted,
               size: s * 0.4),
         ),
       );
 
-  Widget _placeholder(double s, BorderRadius r) => ClipRRect(
+  Widget _placeholder(BuildContext context, double s, BorderRadius r) => ClipRRect(
         borderRadius: r,
         child: Container(
           width: s,
           height: s,
-          color: AppColors.surfaceLight,
+          color: AppColorsScheme.of(context).surfaceLight,
           child: Center(
             child: AppIcon(
                 icon: AppIcons.musicNote,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 size: s * 0.5),
           ),
         ),
@@ -222,7 +223,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
               child: Text(
                 'No playlists in this folder',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.lg,
                 ),
               ),
@@ -235,22 +236,22 @@ class LibraryPlaylistsSection extends StatelessWidget {
                   AppIcon(
                     icon: AppIcons.add,
                     size: 48,
-                    color: AppColors.textMuted.withValues(alpha: 0.6),
+                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.6),
                   ),
                   const SizedBox(height: AppSpacing.md),
-                  const Text(
+                  Text(
                     'Create your first playlist',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: AppColorsScheme.of(context).textSecondary,
                       fontSize: AppFontSize.lg,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: AppSpacing.xs),
-                  const Text(
+                  Text(
                     'Tap + to get started',
                     style: TextStyle(
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       fontSize: AppFontSize.md,
                     ),
                   ),
@@ -316,7 +317,7 @@ class _SectionEmptyState extends StatelessWidget {
       ),
       margin: const EdgeInsets.only(top: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight.withValues(alpha: 0.5),
+        color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Center(child: child),
@@ -369,7 +370,7 @@ class _LibrarySectionGrid extends StatelessWidget {
                 size: 40,
                 fillColor: Colors.white,
               ),
-              backgroundColor: AppColors.surfaceLight,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
               backgroundGradient: AppColors.loveThemeGradientFor('liked_songs'),
               title: 'Liked Songs',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
@@ -378,7 +379,7 @@ class _LibrarySectionGrid extends StatelessWidget {
           DownloadsEntry(:final songCount, :final onTap) => _StaticGridCard(
               icon: AppIcons.download,
               iconColor: Colors.white,
-              backgroundColor: AppColors.surfaceLight,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
               backgroundGradient: AppColors.downloadGradient,
               title: 'Downloads',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
@@ -387,7 +388,7 @@ class _LibrarySectionGrid extends StatelessWidget {
           LocalFilesEntry(:final songCount, :final onTap) => _StaticGridCard(
               icon: AppIcons.folder,
               iconColor: Colors.white,
-              backgroundColor: AppColors.surfaceLight,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
               backgroundGradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -488,8 +489,8 @@ class _StaticGridCardState extends State<_StaticGridCard> {
             const SizedBox(height: AppSpacing.sm),
             Text(
               widget.title,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.md,
                 fontWeight: FontWeight.w600,
               ),
@@ -498,8 +499,8 @@ class _StaticGridCardState extends State<_StaticGridCard> {
             ),
             Text(
               widget.subtitle,
-              style: const TextStyle(
-                color: AppColors.textMuted,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted,
                 fontSize: AppFontSize.xs,
               ),
               maxLines: 1,
@@ -591,8 +592,8 @@ class _LibraryPlaylistGridCardState extends State<_LibraryPlaylistGridCard> {
                     Expanded(
                       child: Text(
                         playlist.name.capitalized,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: AppColorsScheme.of(context).textPrimary,
                           fontSize: AppFontSize.md,
                           fontWeight: FontWeight.w600,
                         ),
@@ -613,7 +614,7 @@ class _LibraryPlaylistGridCardState extends State<_LibraryPlaylistGridCard> {
                           },
                           child: AppIcon(
                             icon: AppIcons.moreHoriz,
-                            color: AppColors.textMuted,
+                            color: AppColorsScheme.of(context).textMuted,
                             size: 20,
                           ),
                         ),
@@ -622,8 +623,8 @@ class _LibraryPlaylistGridCardState extends State<_LibraryPlaylistGridCard> {
                 ),
                 Text(
                   playlist.trackCountLabel,
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.xs,
                   ),
                   maxLines: 1,
@@ -715,7 +716,7 @@ class _LibraryFolderGridCardState extends State<_LibraryFolderGridCard> {
                   child: Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceLight,
+                      color: AppColorsScheme.of(context).surfaceLight,
                       borderRadius: BorderRadius.circular(AppRadius.md),
                     ),
                     child: Center(
@@ -742,8 +743,8 @@ class _LibraryFolderGridCardState extends State<_LibraryFolderGridCard> {
                     Expanded(
                       child: Text(
                         folder.name.capitalized,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
+                        style: TextStyle(
+                          color: AppColorsScheme.of(context).textPrimary,
                           fontSize: AppFontSize.md,
                           fontWeight: FontWeight.w600,
                         ),
@@ -764,7 +765,7 @@ class _LibraryFolderGridCardState extends State<_LibraryFolderGridCard> {
                           },
                           child: AppIcon(
                             icon: AppIcons.moreHoriz,
-                            color: AppColors.textMuted,
+                            color: AppColorsScheme.of(context).textMuted,
                             size: 20,
                           ),
                         ),
@@ -775,8 +776,8 @@ class _LibraryFolderGridCardState extends State<_LibraryFolderGridCard> {
                   folder.playlistCount == 0
                       ? 'No playlists'
                       : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
-                  style: const TextStyle(
-                    color: AppColors.textMuted,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
                     fontSize: AppFontSize.xs,
                   ),
                 ),
@@ -868,7 +869,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                       size: 22,
                       color: isSelected
                           ? AppColors.primary
-                          : AppColors.textMuted,
+                          : AppColorsScheme.of(context).textMuted,
                     ),
                   ),
                 ),
@@ -876,7 +877,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                 width: thumbSize,
                 height: thumbSize,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceLight,
+                  color: AppColorsScheme.of(context).surfaceLight,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Center(
@@ -894,7 +895,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                     Text(
                       folder.name.capitalized,
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.lg,
                         fontWeight:
                             t.isDesktop ? FontWeight.w700 : FontWeight.w600,
@@ -907,7 +908,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                           ? 'No playlists'
                           : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
                       style: TextStyle(
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.md,
                       ),
                     ),
@@ -926,7 +927,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                     icon: AppIcon(
                         icon: AppIcons.moreHoriz,
                         size: 22,
-                        color: AppColors.textMuted),
+                        color: AppColorsScheme.of(context).textMuted),
                     onPressedWithContext: (btnCtx) {
                       final box = btnCtx.findRenderObject() as RenderBox?;
                       onOptions(box != null && box.hasSize
@@ -1008,7 +1009,7 @@ class _LibrarySectionList extends StatelessWidget {
                 size: 28,
                 fillColor: Colors.white,
               ),
-              backgroundColor: AppColors.surfaceLight,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
               backgroundGradient: AppColors.loveThemeGradientFor('liked_songs'),
               title: 'Liked Songs',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
@@ -1017,7 +1018,7 @@ class _LibrarySectionList extends StatelessWidget {
           DownloadsEntry(:final songCount, :final onTap) => _StaticListTile(
               icon: AppIcons.download,
               iconColor: Colors.white,
-              backgroundColor: AppColors.surfaceLight,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
               backgroundGradient: AppColors.downloadGradient,
               title: 'Downloads',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
@@ -1026,7 +1027,7 @@ class _LibrarySectionList extends StatelessWidget {
           LocalFilesEntry(:final songCount, :final onTap) => _StaticListTile(
               icon: AppIcons.folder,
               iconColor: Colors.white,
-              backgroundColor: AppColors.surfaceLight,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
               backgroundGradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -1118,7 +1119,7 @@ class _StaticListTile extends StatelessWidget {
                     Text(
                       title,
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.lg,
                         fontWeight:
                             t.isDesktop ? FontWeight.w700 : FontWeight.w600,
@@ -1129,7 +1130,7 @@ class _StaticListTile extends StatelessWidget {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.md,
                       ),
                       maxLines: 1,
@@ -1207,7 +1208,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                       size: 22,
                       color: isSelected
                           ? AppColors.primary
-                          : AppColors.textMuted,
+                          : AppColorsScheme.of(context).textMuted,
                     ),
                   ),
                 ),
@@ -1220,7 +1221,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                     Text(
                       playlist.name.capitalized,
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.lg,
                         fontWeight:
                             t.isDesktop ? FontWeight.w700 : FontWeight.w600,
@@ -1231,7 +1232,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                     Text(
                       playlist.trackCountLabel,
                       style: TextStyle(
-                        color: AppColors.textMuted,
+                        color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.md,
                       ),
                       maxLines: 1,
@@ -1252,7 +1253,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                     icon: AppIcon(
                         icon: AppIcons.moreHoriz,
                         size: 22,
-                        color: AppColors.textMuted),
+                        color: AppColorsScheme.of(context).textMuted),
                     onPressedWithContext: (btnCtx) {
                       final box = btnCtx.findRenderObject() as RenderBox?;
                       onOptions(box != null && box.hasSize
@@ -1360,7 +1361,7 @@ class _LibrarySkeletonTile extends StatelessWidget {
         )
         .shimmer(
           duration: const Duration(milliseconds: 1400),
-          color: AppColors.surfaceHighlight,
+          color: AppColorsScheme.of(context).surfaceHighlight,
           curve: Curves.easeInOut,
         );
   }

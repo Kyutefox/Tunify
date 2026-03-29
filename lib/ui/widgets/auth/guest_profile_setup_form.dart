@@ -11,6 +11,7 @@ import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class GuestProfileSetupForm extends ConsumerStatefulWidget {
   const GuestProfileSetupForm({
@@ -182,7 +183,7 @@ class _GuestProfileSetupFormState extends ConsumerState<GuestProfileSetupForm> {
                   height: 32,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: AppColors.surfaceLight,
+                    color: AppColorsScheme.of(context).surfaceLight,
                     border: Border.all(
                       color: AppColors.glassBorder,
                       width: 1.5,
@@ -197,7 +198,7 @@ class _GuestProfileSetupFormState extends ConsumerState<GuestProfileSetupForm> {
                   child: Center(
                     child: AppIcon(
                       icon: AppIcons.shuffle,
-                      color: AppColors.textPrimary,
+                      color: AppColorsScheme.of(context).textPrimary,
                       size: 14,
                     ),
                   ),
@@ -209,18 +210,18 @@ class _GuestProfileSetupFormState extends ConsumerState<GuestProfileSetupForm> {
         const SizedBox(height: AppSpacing.lg),
         Text(
           widget.isInitial ? 'Choose your name' : 'Edit your profile',
-          style: const TextStyle(
-            color: AppColors.textPrimary,
+          style: TextStyle(
+            color: AppColorsScheme.of(context).textPrimary,
             fontSize: AppFontSize.h2,
             fontWeight: FontWeight.w700,
             letterSpacing: AppLetterSpacing.heading,
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
-        const Text(
+        Text(
           'Your avatar updates as you type.',
           style: TextStyle(
-            color: AppColors.textMuted,
+            color: AppColorsScheme.of(context).textMuted,
             fontSize: AppFontSize.md,
           ),
         ),
@@ -247,12 +248,12 @@ class _GuestProfileSetupFormState extends ConsumerState<GuestProfileSetupForm> {
           const SizedBox(height: AppSpacing.md),
           GestureDetector(
             onTap: widget.onBack,
-            child: const Padding(
+            child: Padding(
               padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
               child: Text(
                 'Back',
                 style: TextStyle(
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.base,
                   fontWeight: FontWeight.w500,
                 ),

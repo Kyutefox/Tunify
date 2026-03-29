@@ -6,9 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/search/search_provider.dart';
 import 'package:tunify/ui/widgets/auth/user_avatar_button.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Full-width top bar spanning both sidebar and content area.
 ///
@@ -210,7 +210,7 @@ class _NavArrowBtn extends StatelessWidget {
         width: DesktopLayout.navBtnSize,
         height: DesktopLayout.navBtnSize,
         decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
+          color: AppColorsScheme.of(context).surfaceLight,
           shape: BoxShape.circle,
         ),
         child: Center(
@@ -218,8 +218,8 @@ class _NavArrowBtn extends StatelessWidget {
             icon: icon,
             size: DesktopIconSize.md,
             color: enabled
-                ? Colors.white
-                : Colors.white.withValues(alpha: 0.3),
+                ? AppColorsScheme.of(context).textPrimary
+                : AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.3),
           ),
         ),
       ),
@@ -252,11 +252,11 @@ class _DesktopSearchBar extends StatelessWidget {
     return Container(
       height: 48,
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
           color: isActive
-              ? Colors.white.withValues(alpha: 0.55)
+              ? AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.35)
               : Colors.transparent,
           width: 1,
         ),
@@ -264,13 +264,13 @@ class _DesktopSearchBar extends StatelessWidget {
       child: Row(
         children: [
           const SizedBox(width: DesktopSpacing.md),
-          AppIcon(icon: AppIcons.search, size: DesktopIconSize.sm, color: AppColors.textMuted),
+          AppIcon(icon: AppIcons.search, size: DesktopIconSize.sm, color: AppColorsScheme.of(context).textMuted),
           const SizedBox(width: DesktopSpacing.sm),
           Expanded(
             child: Theme(
               data: Theme.of(context).copyWith(
-                textSelectionTheme: const TextSelectionThemeData(
-                  cursorColor: Colors.white,
+                textSelectionTheme: TextSelectionThemeData(
+                  cursorColor: AppColorsScheme.of(context).textPrimary,
                 ),
                 inputDecorationTheme: const InputDecorationTheme(
                   border: InputBorder.none,
@@ -280,15 +280,15 @@ class _DesktopSearchBar extends StatelessWidget {
               child: TextField(
                 controller: controller,
                 focusNode: focusNode,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: DesktopFontSize.base,
                   fontWeight: FontWeight.w500,
                 ),
                 decoration: InputDecoration(
                   hintText: 'What do you want to play?',
                   hintStyle: TextStyle(
-                    color: AppColors.textMuted.withValues(alpha: 0.7),
+                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                     fontSize: DesktopFontSize.base,
                   ),
                   border: InputBorder.none,
@@ -311,13 +311,13 @@ class _DesktopSearchBar extends StatelessWidget {
                 child: AppIcon(
                     icon: AppIcons.close,
                     size: DesktopIconSize.xs,
-                    color: AppColors.textSecondary),
+                    color: AppColorsScheme.of(context).textSecondary),
               ),
             ),
           Container(
             width: 1,
             height: 20,
-            color: AppColors.textMuted.withValues(alpha: 0.3),
+            color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.3),
           ),
           GestureDetector(
             onTap: onBrowse,
@@ -330,12 +330,12 @@ class _DesktopSearchBar extends StatelessWidget {
                   AppIcon(
                       icon: AppIcons.gridView,
                       size: DesktopIconSize.xs,
-                      color: AppColors.textSecondary),
+                      color: AppColorsScheme.of(context).textSecondary),
                   const SizedBox(width: DesktopSpacing.xs),
                   Text(
                     'Browse',
                     style: TextStyle(
-                      color: AppColors.textSecondary,
+                      color: AppColorsScheme.of(context).textSecondary,
                       fontSize: DesktopFontSize.sm,
                       fontWeight: FontWeight.w600,
                     ),
@@ -373,8 +373,8 @@ class _HomeBtn extends StatelessWidget {
             icon: AppIcons.home,
             size: DesktopIconSize.md,
             color: isActive
-                ? AppColors.background
-                : AppColors.background.withValues(alpha: 0.45),
+                ? AppColorsScheme.of(context).background
+                : AppColorsScheme.of(context).background.withValues(alpha: 0.45),
           ),
         ),
       ),

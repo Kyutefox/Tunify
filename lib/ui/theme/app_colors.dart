@@ -267,10 +267,10 @@ abstract final class PaletteTheme {
       );
 
   /// Builds the pinned AppBar background color by blending [paletteColor]
-  /// over [AppColors.background].
-  static Color appBarBackground(Color paletteColor) => Color.alphaBlend(
+  /// over [background] (defaults to [AppColors.background]).
+  static Color appBarBackground(Color paletteColor, {Color? background}) => Color.alphaBlend(
         paletteColor.withValues(alpha: appBarBlendAlpha),
-        AppColors.background,
+        background ?? AppColors.background,
       );
 
   /// Builds the dominant-color overlay gradient used in [PlayerBlurredBackground].

@@ -42,6 +42,7 @@ import '../player/song_options_sheet.dart';
 import 'library_downloaded_content.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 enum CollectionType { playlist, album, artist }
 
@@ -69,13 +70,13 @@ List<Song> _sortBySortOrder(List<Song> songs, PlaylistTrackSortOrder order) {
   }
 }
 
-Widget _thumbPlaceholder({double size = 48}) => Container(
+Widget _thumbPlaceholder(BuildContext context, {double size = 48}) => Container(
       width: size,
       height: size,
-      color: AppColors.surfaceLight,
+      color: AppColorsScheme.of(context).surfaceLight,
       child: Center(
           child: AppIcon(
-              icon: AppIcons.musicNote, color: AppColors.textMuted, size: 24)),
+              icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted, size: 24)),
     );
 
 enum _PersistKind { playlist, album, artist }
@@ -903,7 +904,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                     'Tap Download on a song to add it here.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppColors.textMuted.withValues(alpha: 0.7),
+                      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                       fontSize: AppFontSize.base,
                     ),
                   ),
@@ -1001,7 +1002,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                               textAlign: TextAlign.center,
                               style: TextStyle(
                                 color:
-                                    AppColors.textMuted.withValues(alpha: 0.7),
+                                    AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                                 fontSize: AppFontSize.base,
                               ),
                             ),
@@ -1025,7 +1026,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.folder_outlined,
-                        size: 14, color: AppColors.textSecondary),
+                        size: 14, color: AppColorsScheme.of(context).textSecondary),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -1033,7 +1034,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          color: AppColors.textSecondary,
+                          color: AppColorsScheme.of(context).textSecondary,
                           fontSize: AppFontSize.xs,
                         ),
                       ),
@@ -1068,7 +1069,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                         : 'No local files found',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppColors.textMuted.withValues(alpha: 0.7),
+                      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                       fontSize: AppFontSize.base,
                     ),
                   ),
@@ -1251,7 +1252,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                       : 'No songs match your filter',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    color: AppColors.textMuted.withValues(alpha: 0.7),
+                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
                     fontSize: AppFontSize.base,
                   ),
                 ),
@@ -1284,7 +1285,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
   Widget _buildSubtitle(LibraryPlaylist playlist) {
     final muted = TextStyle(
-        color: AppColors.textMuted.withValues(alpha: 0.9),
+        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
         fontSize: AppFontSize.base);
     final countDuration = Row(children: [
       Text(
@@ -1303,8 +1304,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       children: [
         if (artistLine != null)
           Text(artistLine,
-              style: const TextStyle(
-                  color: AppColors.textSecondary,
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w500)),
         const SizedBox(height: AppSpacing.sm),
@@ -1315,7 +1316,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
   Widget _buildCountDuration(List<Song> songs) {
     final muted = TextStyle(
-        color: AppColors.textMuted.withValues(alpha: 0.9),
+        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
         fontSize: AppFontSize.base);
     return Row(children: [
       Text('${songs.length} ${songs.length == 1 ? 'song' : 'songs'}',
@@ -1414,7 +1415,7 @@ class _PlaylistCover extends StatelessWidget {
           decoration: BoxDecoration(
             shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
             borderRadius: isCircle ? null : BorderRadius.circular(AppRadius.sm),
-            color: AppColors.surfaceLight.withValues(alpha: 0.6),
+            color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.6),
             boxShadow: [shadow],
           ),
           child: isCircle
@@ -1425,10 +1426,10 @@ class _PlaylistCover extends StatelessWidget {
                       height: _size,
                       fit: BoxFit.cover,
                       errorWidget: (_, __, ___) => Container(
-                          color: AppColors.surfaceLight,
+                          color: AppColorsScheme.of(context).surfaceLight,
                           child: AppIcon(
                               icon: AppIcons.person,
-                              color: AppColors.textMuted,
+                              color: AppColorsScheme.of(context).textMuted,
                               size: 64))))
               : Padding(
                   padding: const EdgeInsets.all(4),
@@ -1439,7 +1440,7 @@ class _PlaylistCover extends StatelessWidget {
                         width: _size - 8,
                         height: _size - 8,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => _mosaic(songs, _size - 8)),
+                        errorWidget: (errCtx, __, ___) => _mosaic(errCtx, songs, _size - 8)),
                   )),
         ),
       );
@@ -1472,7 +1473,7 @@ class _PlaylistCover extends StatelessWidget {
               width: _size,
               height: _size,
               decoration: BoxDecoration(
-                color: AppColors.surfaceLight,
+                color: AppColorsScheme.of(context).surfaceLight,
                 borderRadius: BorderRadius.circular(AppRadius.sm),
                 boxShadow: [
                   BoxShadow(
@@ -1484,7 +1485,7 @@ class _PlaylistCover extends StatelessWidget {
               child: Center(
                   child: AppIcon(
                       icon: AppIcons.musicNote,
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       size: 64))));
     }
 
@@ -1493,16 +1494,16 @@ class _PlaylistCover extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          color: AppColors.surfaceLight.withValues(alpha: 0.6),
+          color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.6),
           boxShadow: [shadow],
         ),
         child: Padding(
-            padding: const EdgeInsets.all(4), child: _mosaic(songs, _size - 8)),
+            padding: const EdgeInsets.all(4), child: _mosaic(context, songs, _size - 8)),
       ),
     );
   }
 
-  static Widget _mosaic(List<Song> songs, double size) {
+  static Widget _mosaic(BuildContext context, List<Song> songs, double size) {
     if (songs.length == 1) {
       return ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -1511,7 +1512,7 @@ class _PlaylistCover extends StatelessWidget {
               width: size,
               height: size,
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _cell(null, size)));
+              errorWidget: (errCtx, __, ___) => _cell(errCtx, null, size)));
     }
     final urls = songs.take(4).map((s) => s.thumbnailUrl).toList();
     const gap = 2.0;
@@ -1521,20 +1522,20 @@ class _PlaylistCover extends StatelessWidget {
         height: size,
         child: Column(children: [
           Row(children: [
-            _cell(urls.elementAtOrNull(0), cell),
+            _cell(context, urls.elementAtOrNull(0), cell),
             const SizedBox(width: gap),
-            _cell(urls.elementAtOrNull(1), cell)
+            _cell(context, urls.elementAtOrNull(1), cell)
           ]),
           const SizedBox(height: gap),
           Row(children: [
-            _cell(urls.elementAtOrNull(2), cell),
+            _cell(context, urls.elementAtOrNull(2), cell),
             const SizedBox(width: gap),
-            _cell(urls.elementAtOrNull(3), cell)
+            _cell(context, urls.elementAtOrNull(3), cell)
           ]),
         ]));
   }
 
-  static Widget _cell(String? url, double s) {
+  static Widget _cell(BuildContext context, String? url, double s) {
     return SizedBox(
         width: s,
         height: s,
@@ -1546,16 +1547,16 @@ class _PlaylistCover extends StatelessWidget {
                     fit: BoxFit.cover,
                     memCacheWidth: px,
                     memCacheHeight: px,
-                    errorWidget: (_, __, ___) => _placeholder(s: s));
+                    errorWidget: (errCtx, __, ___) => _placeholder(s: s, context: errCtx));
               })
-            : _placeholder(s: s));
+            : _placeholder(s: s, context: context));
   }
 
-  static Widget _placeholder({required double s}) => Container(
+  static Widget _placeholder({required double s, required BuildContext context}) => Container(
       width: s,
       height: s,
-      color: AppColors.surfaceLight,
-      child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted));
+      color: AppColorsScheme.of(context).surfaceLight,
+      child: AppIcon(icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted));
 }
 
 // ─── Liked Songs helpers (edit / add sheets) ─────────────────────────────────
@@ -1648,7 +1649,7 @@ class _ActionRow extends ConsumerWidget {
                     size: 24,
                     color: shuffleEnabled
                         ? AppColors.primary
-                        : AppColors.textPrimary,
+                        : AppColorsScheme.of(context).textPrimary,
                   ),
                   if (shuffleMode == ShuffleMode.smart)
                     Positioned(
@@ -1659,7 +1660,7 @@ class _ActionRow extends ConsumerWidget {
                         size: 13,
                         color: shuffleEnabled
                             ? AppColors.primary
-                            : AppColors.textPrimary,
+                            : AppColorsScheme.of(context).textPrimary,
                       ),
                     ),
                 ],
@@ -1676,11 +1677,11 @@ class _ActionRow extends ConsumerWidget {
           if (showLibraryStatus)
             AppIconButton(
               icon: addingToLibrary
-                  ? const SizedBox(
+                  ? SizedBox(
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppColors.textMuted))
+                          strokeWidth: 2, color: AppColorsScheme.of(context).textMuted))
                   : AppIcon(
                       icon: isInLibrary
                           ? AppIcons.checkCircle
@@ -1688,7 +1689,7 @@ class _ActionRow extends ConsumerWidget {
                       size: 24,
                       color: isInLibrary
                           ? AppColors.primary
-                          : AppColors.textPrimary),
+                          : AppColorsScheme.of(context).textPrimary),
               onPressed:
                   (!isInLibrary && !addingToLibrary) ? onAddToLibrary : null,
               size: 40,
@@ -1781,9 +1782,9 @@ class _ShuffleModeSheet extends ConsumerWidget {
       Padding(
         padding: const EdgeInsets.fromLTRB(
             kSheetHorizontalPadding, AppSpacing.lg, kSheetHorizontalPadding, AppSpacing.md),
-        child: const Text('Shuffle',
+        child: Text('Shuffle',
             style: TextStyle(
-                color: AppColors.textPrimary,
+                color: AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.xl,
                 fontWeight: FontWeight.w700)),
       ),
@@ -1832,7 +1833,7 @@ class _ShuffleModeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.textSecondary;
+    final color = selected ? AppColors.primary : AppColorsScheme.of(context).textSecondary;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
           horizontal: kSheetHorizontalPadding, vertical: 4),
@@ -1852,12 +1853,12 @@ class _ShuffleModeTile extends StatelessWidget {
           : AppIcon(icon: icon, size: 24, color: color),
       title: Text(label,
           style: TextStyle(
-              color: selected ? AppColors.primary : AppColors.textPrimary,
+              color: selected ? AppColors.primary : AppColorsScheme.of(context).textPrimary,
               fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
       subtitle: subtitle != null
           ? Text(subtitle!,
-              style: const TextStyle(
-                  color: AppColors.textMuted, fontSize: AppFontSize.sm))
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm))
           : null,
       trailing: selected
           ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)
@@ -1890,14 +1891,14 @@ class _MacOSFolderPrompt extends StatelessWidget {
         Icon(
           Icons.folder_open_outlined,
           size: 48,
-          color: AppColors.textMuted.withValues(alpha: 0.5),
+          color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
           'Choose a music folder',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: AppColors.textPrimary,
+            color: AppColorsScheme.of(context).textPrimary,
             fontSize: AppFontSize.lg,
             fontWeight: FontWeight.w600,
           ),
@@ -1907,7 +1908,7 @@ class _MacOSFolderPrompt extends StatelessWidget {
           'Select the folder on your Mac that contains\nyour local audio files.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            color: AppColors.textMuted.withValues(alpha: 0.7),
+            color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
             fontSize: AppFontSize.base,
           ),
         ),
@@ -1984,7 +1985,7 @@ class _DownloadsSortSheet extends ConsumerWidget {
             AppSpacing.base, AppSpacing.lg, AppSpacing.base, AppSpacing.md),
         child: Text('Sort downloads',
             style: TextStyle(
-                color: AppColors.textPrimary,
+                color: AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.xl,
                 fontWeight: FontWeight.w700)),
       ),
@@ -2094,15 +2095,15 @@ class _Pill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.textMuted.withValues(alpha: 0.5)),
+          border: Border.all(color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5)),
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          AppIcon(icon: icon, size: 18, color: AppColors.textSecondary),
+          AppIcon(icon: icon, size: 18, color: AppColorsScheme.of(context).textSecondary),
           const SizedBox(width: AppSpacing.xs),
           Text(label,
-              style: const TextStyle(
-                  color: AppColors.textSecondary,
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.md,
                   fontWeight: FontWeight.w500)),
         ]),
@@ -2214,13 +2215,13 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
             hintText: 'Search YouTube Music',
             style: InputFieldStyle.filled,
             prefixIcon: AppIcon(
-                icon: AppIcons.search, color: AppColors.textMuted, size: 20),
+                icon: AppIcons.search, color: AppColorsScheme.of(context).textMuted, size: 20),
             suffixIcon: _searchCtrl.text.trim().isNotEmpty
                 ? AppIconButton(
                     icon: AppIcon(
                         icon: AppIcons.clear,
                         size: 24,
-                        color: AppColors.textMuted),
+                        color: AppColorsScheme.of(context).textMuted),
                     onPressed: () {
                       _searchCtrl.clear();
                       setState(() => _results = []);
@@ -2247,7 +2248,7 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
               alignment: Alignment.centerLeft,
               child: Text('Recently played',
                   style: TextStyle(
-                      color: AppColors.textMuted,
+                      color: AppColorsScheme.of(context).textMuted,
                       fontSize: AppFontSize.sm,
                       fontWeight: FontWeight.w600))),
         ),
@@ -2266,7 +2267,7 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                                 : _searchCtrl.text.trim().isEmpty
                                     ? 'Type above to search for songs'
                                     : 'No results for "${_searchCtrl.text.trim()}"',
-                            style: const TextStyle(color: AppColors.textMuted),
+                            style: TextStyle(color: AppColorsScheme.of(context).textMuted),
                             textAlign: TextAlign.center)))
                 : ListView.builder(
                     cacheExtent: 1000,
@@ -2294,7 +2295,7 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                                 fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) => AppIcon(
                                     icon: AppIcons.musicNote,
-                                    color: AppColors.textMuted,
+                                    color: AppColorsScheme.of(context).textMuted,
                                     size: 28)),
                           ),
                         ),
@@ -2304,12 +2305,12 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                             style: TextStyle(
                                 color: isNowPlaying
                                     ? AppColors.accent
-                                    : AppColors.textPrimary)),
+                                    : AppColorsScheme.of(context).textPrimary)),
                         subtitle: Text(song.artist,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                                color: AppColors.textMuted,
+                            style: TextStyle(
+                                color: AppColorsScheme.of(context).textMuted,
                                 fontSize: AppFontSize.sm)),
                         trailing: AppIconButton(
                           icon: AppIcon(
@@ -2318,7 +2319,7 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                                   : AppIcons.addCircleOutline,
                               color: inPlaylist
                                   ? AppColors.primary
-                                  : AppColors.textSecondary,
+                                  : AppColorsScheme.of(context).textSecondary,
                               size: 24),
                           onPressed: () {
                             if (isLiked) {
@@ -2375,18 +2376,18 @@ class _SearchInPlaylistTap extends StatelessWidget {
         child: Container(
           height: 44,
           decoration: BoxDecoration(
-              color: AppColors.surfaceLight.withValues(alpha: 0.8),
+              color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(AppRadius.input)),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Row(children: [
             AppIcon(
                 icon: AppIcons.search,
-                color: AppColors.textMuted.withValues(alpha: 0.9),
+                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
                 size: 20),
             const SizedBox(width: AppSpacing.sm),
             Text('Find in playlist',
                 style: TextStyle(
-                    color: AppColors.textMuted.withValues(alpha: 0.9),
+                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
                     fontSize: AppFontSize.base)),
           ]),
         ),
@@ -2451,15 +2452,15 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
     final body = q.isEmpty
         ? SearchPageEmptyState(
             icon: AppIcon(
-                icon: AppIcons.search, size: 64, color: AppColors.textMuted),
+                icon: AppIcons.search, size: 64, color: AppColorsScheme.of(context).textMuted),
             heading: 'Find in playlist',
             subheading: 'Search by song title or artist')
         : filtered.isEmpty
             ? EmptyListMessage(
                 emptyLabel: 'matches',
                 query: q,
-                style: const TextStyle(
-                    color: AppColors.textSecondary,
+                style: TextStyle(
+                    color: AppColorsScheme.of(context).textSecondary,
                     fontSize: AppFontSize.lg,
                     fontWeight: FontWeight.w600))
             : ListView.builder(
@@ -2487,7 +2488,7 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
 
     if (!hasSong) return page;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
           bottom: false,
@@ -2529,11 +2530,11 @@ class _TrackTile extends ConsumerWidget {
           queue: songs, playlistId: playlistId, queueSource: queueSource),
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         Text(song.durationFormatted,
-            style: const TextStyle(
-                color: AppColors.textMuted, fontSize: AppFontSize.md)),
+            style: TextStyle(
+                color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.md)),
         AppIconButton(
           icon: AppIcon(
-              icon: AppIcons.moreVert, color: AppColors.textMuted, size: 20),
+              icon: AppIcons.moreVert, color: AppColorsScheme.of(context).textMuted, size: 20),
           onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
               song: song,
               ref: ref,
@@ -2624,10 +2625,10 @@ class _EditSongsSheetState extends ConsumerState<_EditSongsSheet> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       appBar: BackTitleAppBar(
         title: _isLiked ? 'Edit Liked Songs' : 'Edit playlist',
-        backgroundColor: AppColors.background,
+        backgroundColor: AppColorsScheme.of(context).background,
         actions: [
           AppButton(
               label: 'Save',
@@ -2656,14 +2657,14 @@ class _EditSongsSheetState extends ConsumerState<_EditSongsSheet> {
                           isLiked: !marked,
                           songId: song.id,
                           size: 22,
-                          emptyColor: AppColors.textMuted)
+                          emptyColor: AppColorsScheme.of(context).textMuted)
                       : AppIcon(
                           icon: marked
                               ? AppIcons.removeCircle
                               : AppIcons.removeCircleOutline,
                           color: marked
                               ? AppColors.accentRed
-                              : AppColors.textMuted,
+                              : AppColorsScheme.of(context).textMuted,
                           size: 22),
                   onPressed: () => _toggleRemove(song),
                   size: 40,
@@ -2679,28 +2680,28 @@ class _EditSongsSheetState extends ConsumerState<_EditSongsSheet> {
                       width: 48,
                       height: 48,
                       fit: BoxFit.cover,
-                      placeholder: (_, __) => _thumbPlaceholder(),
-                      errorWidget: (_, __, ___) => _thumbPlaceholder()),
+                      placeholder: (_, __) => _thumbPlaceholder(context),
+                      errorWidget: (_, __, ___) => _thumbPlaceholder(context)),
                 ),
               ),
             ]),
             title: Text(song.title,
                 style: TextStyle(
                     color: marked
-                        ? AppColors.textMuted
+                        ? AppColorsScheme.of(context).textMuted
                         : isNowPlaying
                             ? AppColors.primary
-                            : AppColors.textPrimary,
+                            : AppColorsScheme.of(context).textPrimary,
                     decoration: marked ? TextDecoration.lineThrough : null)),
             subtitle: Text(song.artist,
                 style: TextStyle(
-                    color: AppColors.textMuted,
+                    color: AppColorsScheme.of(context).textMuted,
                     decoration: marked ? TextDecoration.lineThrough : null)),
             trailing: ReorderableDragStartListener(
                 index: index,
                 child: AppIcon(
                     icon: AppIcons.dragHandle,
-                    color: AppColors.textMuted,
+                    color: AppColorsScheme.of(context).textMuted,
                     size: 22)),
           );
         },
@@ -2723,9 +2724,9 @@ class _SortPlaylistSheet extends ConsumerWidget {
       Padding(
         padding: const EdgeInsets.symmetric(
             horizontal: kSheetHorizontalPadding, vertical: AppSpacing.xl),
-        child: const Text('Sort by',
+        child: Text('Sort by',
             style: TextStyle(
-                color: AppColors.textPrimary,
+                color: AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.xxl,
                 fontWeight: FontWeight.w700)),
       ),
@@ -2774,7 +2775,7 @@ class _SortTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
           horizontal: kSheetHorizontalPadding, vertical: 8),
-      title: Text(label, style: const TextStyle(color: AppColors.textPrimary)),
+      title: Text(label, style: TextStyle(color: AppColorsScheme.of(context).textPrimary)),
       trailing: selected
           ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)
           : null,
@@ -2857,7 +2858,7 @@ class _NameAndDetailsSheetState extends ConsumerState<_NameAndDetailsSheet> {
                 icon: AppIcon(
                     icon: AppIcons.back,
                     size: 22,
-                    color: AppColors.textPrimary),
+                    color: AppColorsScheme.of(context).textPrimary),
                 onPressed: () => Navigator.of(context).pop(),
                 size: 40,
                 iconSize: 22),
@@ -2880,11 +2881,11 @@ class _NameAndDetailsSheetState extends ConsumerState<_NameAndDetailsSheet> {
               AppButton(
                   label: 'Change',
                   variant: AppButtonVariant.text,
-                  foregroundColor: AppColors.textSecondary,
+                  foregroundColor: AppColorsScheme.of(context).textSecondary,
                   icon: AppIcon(
                       icon: AppIcons.edit,
                       size: 18,
-                      color: AppColors.textSecondary),
+                      color: AppColorsScheme.of(context).textSecondary),
                   onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                           content: Text(
@@ -2933,9 +2934,9 @@ class _NameDetailsCover extends StatelessWidget {
           width: size,
           height: size,
           decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
+              color: AppColorsScheme.of(context).surfaceLight,
               borderRadius: BorderRadius.circular(AppRadius.sm)),
-          child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted));
+          child: AppIcon(icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted));
     }
     if (songs.length == 1) {
       return ClipRRect(
@@ -2946,7 +2947,7 @@ class _NameDetailsCover extends StatelessWidget {
               height: size,
               fit: BoxFit.cover,
               errorWidget: (_, __, ___) => AppIcon(
-                  icon: AppIcons.musicNote, color: AppColors.textMuted)));
+                  icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted)));
     }
     final urls = songs.take(4).map((s) => s.thumbnailUrl).toList();
     const gap = 2.0;
@@ -2956,32 +2957,32 @@ class _NameDetailsCover extends StatelessWidget {
         height: size,
         child: Column(children: [
           Row(children: [
-            _cell(urls.elementAtOrNull(0), cell),
+            _cell(context, urls.elementAtOrNull(0), cell),
             SizedBox(width: gap),
-            _cell(urls.elementAtOrNull(1), cell),
+            _cell(context, urls.elementAtOrNull(1), cell),
           ]),
           const SizedBox(height: gap),
           Row(children: [
-            _cell(urls.elementAtOrNull(2), cell),
+            _cell(context, urls.elementAtOrNull(2), cell),
             SizedBox(width: gap),
-            _cell(urls.elementAtOrNull(3), cell),
+            _cell(context, urls.elementAtOrNull(3), cell),
           ]),
         ]));
   }
 
-  Widget _cell(String? url, double s) => SizedBox(
+  Widget _cell(BuildContext context, String? url, double s) => SizedBox(
       width: s,
       height: s,
       child: url != null
           ? CachedNetworkImage(
               imageUrl: url,
               fit: BoxFit.cover,
-              errorWidget: (_, __, ___) => _place(s))
-          : _place(s));
+              errorWidget: (ctx, __, ___) => _place(ctx, s))
+          : _place(context, s));
 
-  Widget _place(double s) => Container(
+  Widget _place(BuildContext context, double s) => Container(
       width: s,
       height: s,
-      color: AppColors.surfaceLight,
-      child: AppIcon(icon: AppIcons.musicNote, color: AppColors.textMuted));
+      color: AppColorsScheme.of(context).surfaceLight,
+      child: AppIcon(icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted));
 }

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Centered empty state for [SharedSearchPage] with icon, heading and subheading.
 /// Use when there is no query or no results so each page can customize the message.
@@ -33,8 +33,8 @@ class SearchPageEmptyState extends StatelessWidget {
             Text(
               heading,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textPrimary,
                 fontSize: AppFontSize.h2,
                 fontWeight: FontWeight.w700,
                 letterSpacing: AppLetterSpacing.heading,
@@ -44,8 +44,8 @@ class SearchPageEmptyState extends StatelessWidget {
             Text(
               subheading,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSecondary,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textSecondary,
                 fontSize: AppFontSize.lg,
                 fontWeight: FontWeight.w500,
               ),
@@ -80,7 +80,7 @@ class SharedSearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       resizeToAvoidBottomInset: false,
       body: SafeArea(
         bottom: false,
@@ -104,7 +104,7 @@ class SharedSearchPage extends StatelessWidget {
                         icon: AppIcon(
                           icon: AppIcons.back,
                           size: 24,
-                          color: AppColors.textPrimary,
+                          color: AppColorsScheme.of(context).textPrimary,
                         ),
                         onPressed: onBack,
                         size: 48,
@@ -126,7 +126,7 @@ class SharedSearchPage extends StatelessWidget {
                           icon: AppIcon(
                             icon: AppIcons.clear,
                             size: 20,
-                            color: AppColors.textMuted,
+                            color: AppColorsScheme.of(context).textMuted,
                           ),
                           onPressed: () {
                             controller.clear();

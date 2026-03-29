@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 const _kAppName = 'Tunify';
 const _kAppTagline = 'Music for every moment';
@@ -62,7 +63,7 @@ class _AboutScreenState extends State<AboutScreen> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColorsScheme.of(context).background,
       body: CustomScrollView(
         cacheExtent: 1000,
         slivers: [
@@ -190,7 +191,7 @@ class _HeroHeader extends StatelessWidget {
                 child: IconButton(
                   icon: AppIcon(
                     icon: AppIcons.back,
-                    color: AppColors.textPrimary,
+                    color: AppColorsScheme.of(context).textPrimary,
                     size: 24,
                   ),
                   onPressed: () => Navigator.of(context).pop(),
@@ -224,8 +225,8 @@ class _HeroHeader extends StatelessWidget {
               const SizedBox(height: AppSpacing.base),
               Text(
                 _kAppName,
-                style: const TextStyle(
-                  color: AppColors.textPrimary,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.display3,
                   fontWeight: FontWeight.w800,
                   letterSpacing: AppLetterSpacing.display,
@@ -234,8 +235,8 @@ class _HeroHeader extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 _kAppTagline,
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.base,
                 ),
               ),
@@ -252,8 +253,8 @@ class _HeroHeader extends StatelessWidget {
                 ),
                 child: Text(
                   version.isEmpty ? '' : 'v$version (build $buildNumber)',
-                  style: const TextStyle(
-                    color: AppColors.textSecondary,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textSecondary,
                     fontSize: AppFontSize.sm,
                     fontWeight: FontWeight.w500,
                   ),
@@ -280,7 +281,7 @@ class _SectionCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.base),
       decoration: BoxDecoration(
-        color: AppColors.surfaceLight,
+        color: AppColorsScheme.of(context).surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.lg),
         border: Border.all(color: AppColors.glassBorder, width: 1),
       ),
@@ -313,8 +314,8 @@ class _AppInfoCard extends StatelessWidget {
       title: 'About the App',
       child: Text(
         _kAppDescription,
-        style: const TextStyle(
-          color: AppColors.textSecondary,
+        style: TextStyle(
+          color: AppColorsScheme.of(context).textSecondary,
           fontSize: AppFontSize.base,
           height: AppLineHeight.relaxed,
         ),
@@ -375,8 +376,8 @@ class _PersonCard extends StatelessWidget {
                   children: [
                     Text(
                       name,
-                      style: const TextStyle(
-                        color: AppColors.textPrimary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.xl,
                         fontWeight: FontWeight.w700,
                       ),
@@ -384,8 +385,8 @@ class _PersonCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       role,
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textSecondary,
                         fontSize: AppFontSize.md,
                       ),
                     ),
@@ -538,8 +539,8 @@ class _IconLink extends StatelessWidget {
                       ),
                       Text(
                         sublabel,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
+                        style: TextStyle(
+                          color: AppColorsScheme.of(context).textMuted,
                           fontSize: AppFontSize.micro,
                         ),
                         maxLines: 1,
@@ -674,20 +675,20 @@ class _AboutScreenBodyState extends State<AboutScreenBody> {
             ),
           ),
           const SizedBox(height: AppSpacing.base),
-          const Text(
+          Text(
             _kAppName,
             style: TextStyle(
-              color: AppColors.textPrimary,
+              color: AppColorsScheme.of(context).textPrimary,
               fontSize: AppFontSize.h1,
               fontWeight: FontWeight.w800,
               letterSpacing: AppLetterSpacing.display,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             _kAppTagline,
             style: TextStyle(
-              color: AppColors.textSecondary,
+              color: AppColorsScheme.of(context).textSecondary,
               fontSize: AppFontSize.md,
             ),
           ),
@@ -705,8 +706,8 @@ class _AboutScreenBodyState extends State<AboutScreenBody> {
               ),
               child: Text(
                 'v$_version (build $_build)',
-                style: const TextStyle(
-                  color: AppColors.textSecondary,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textSecondary,
                   fontSize: AppFontSize.sm,
                   fontWeight: FontWeight.w500,
                 ),
@@ -777,7 +778,7 @@ class _FooterText extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         Text(
           '© $_kReleaseYear $_kOrgName. All rights reserved.',
-          style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
+          style: TextStyle(color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 4),
@@ -785,7 +786,7 @@ class _FooterText extends StatelessWidget {
           textAlign: TextAlign.center,
           text: TextSpan(
             style: TextStyle(
-              color: AppColors.textMuted.withValues(alpha: 0.6),
+              color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.6),
               fontSize: AppFontSize.xs,
             ),
             children: const [

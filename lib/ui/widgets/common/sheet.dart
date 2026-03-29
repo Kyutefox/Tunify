@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Use this for a consistent horizontal gutter when building sheet content.
 /// The sheet itself applies no content padding; content fills the sheet and
@@ -43,8 +43,8 @@ class SheetOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = this.iconColor ?? AppColors.textSecondary;
-    final labelColor = this.labelColor ?? AppColors.textPrimary;
+    final iconColor = this.iconColor ?? AppColorsScheme.of(context).textSecondary;
+    final labelColor = this.labelColor ?? AppColorsScheme.of(context).textPrimary;
     final vertical = verticalPadding ?? kSheetTileVerticalPadding;
     return Material(
       color: Colors.transparent,
@@ -76,7 +76,7 @@ class SheetOptionTile extends StatelessWidget {
               if (showChevron)
                 AppIcon(
                   icon: AppIcons.chevronRight,
-                  color: AppColors.textMuted,
+                  color: AppColorsScheme.of(context).textMuted,
                   size: 20,
                 ),
             ],
@@ -117,14 +117,14 @@ class AppSheet extends StatelessWidget {
           ? BoxConstraints(maxHeight: maxHeight!)
           : null,
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColorsScheme.of(context).surface,
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(AppRadius.xxl),
         ),
         border: showTopBorder
             ? Border(
                 top: BorderSide(
-                  color: Colors.white.withValues(alpha: 0.08),
+                  color: AppColorsScheme.of(context).surfaceHighlight,
                   width: 1,
                 ),
               )
@@ -144,7 +144,7 @@ class AppSheet extends StatelessWidget {
               width: _handleWidth,
               height: _handleHeight,
               decoration: BoxDecoration(
-                color: AppColors.textMuted.withValues(alpha: 0.4),
+                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
@@ -196,7 +196,7 @@ class AppDraggableSheet extends StatelessWidget {
         return Container(
           decoration: decoration ??
               BoxDecoration(
-                color: AppColors.surface,
+                color: AppColorsScheme.of(context).surface,
                 borderRadius: const BorderRadius.vertical(
                   top: Radius.circular(AppRadius.xxl),
                 ),
@@ -217,7 +217,7 @@ class AppDraggableSheet extends StatelessWidget {
                   width: _handleWidth,
                   height: _handleHeight,
                   decoration: BoxDecoration(
-                    color: AppColors.textMuted.withValues(alpha: 0.4),
+                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                 ),

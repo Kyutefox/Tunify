@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tunify/core/constants/app_strings.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Reusable logo + circular loading indicator: radial glow, progress ring, and
 /// app logo, all centered. Use for loading states (e.g. splash, post-login).
@@ -96,7 +97,7 @@ class _LogoLoadingIndicatorState extends State<LogoLoadingIndicator>
                   progress: _progressController.value,
                   gradient: AppColors.primaryGradient,
                   strokeWidth: 3,
-                  backgroundColor: AppColors.surfaceLight,
+                  backgroundColor: AppColorsScheme.of(context).surfaceLight,
                 ),
               );
             },

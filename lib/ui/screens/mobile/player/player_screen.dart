@@ -75,10 +75,10 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
 
     if (song == null) {
       return const Scaffold(
-        backgroundColor: AppColors.background,
+        backgroundColor: Color(0xFF121212),
         body: Center(
           child: Text('Nothing playing',
-              style: TextStyle(color: AppColors.textMuted)),
+              style: TextStyle(color: Colors.white54)),
         ),
       );
     }
@@ -105,8 +105,6 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
           ),
         );
       },
-      child: AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
       child: GestureDetector(
         onVerticalDragUpdate: (d) {
           if (d.delta.dy > 0) {
@@ -148,7 +146,7 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
           );
         },
         child: Scaffold(
-          backgroundColor: AppColors.background,
+          backgroundColor: const Color(0xFF121212),
           body: Stack(
             fit: StackFit.expand,
             children: [
@@ -185,7 +183,6 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
           ),
         ),      // Scaffold
       ),        // GestureDetector
-      ),        // AnnotatedRegion
     );          // AnimatedBuilder
   }
 
@@ -286,7 +283,7 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
               Text(
                 song.title,
                 style: const TextStyle(
-                  color: AppColors.textPrimary,
+                  color: Colors.white,
                   fontSize: AppFontSize.h2,
                   fontWeight: FontWeight.w700,
                   letterSpacing: AppLetterSpacing.heading,
@@ -299,7 +296,7 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
               Text(
                 song.artist,
                 style: const TextStyle(
-                  color: AppColors.textSecondary,
+                  color: AppColors.playerIconInactive,
                   fontSize: AppFontSize.xl,
                   fontWeight: FontWeight.w500,
                 ),
@@ -324,7 +321,7 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
               isLiked: isLiked,
               songId: song.id,
               size: 26,
-              emptyColor: AppColors.textSecondary,
+              emptyColor: AppColors.playerIconInactive,
             ),
           ),
         ),

@@ -19,11 +19,11 @@ import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/screens/shared/library/library_playlists_section.dart';
 import 'package:tunify/ui/screens/shared/library/library_search_screen.dart';
 import 'package:tunify/ui/screens/shared/library/library_screen.dart';
-import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/player/download_queue_progress_icon.dart';
 import 'package:tunify/ui/widgets/player/download_queue_sheet.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 const double kDesktopSidebarWidth = 340.0;
 
@@ -214,7 +214,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
       width: kDesktopSidebarWidth,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.background,
+          color: AppColorsScheme.of(context).background,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -225,11 +225,11 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                   DesktopSpacing.lg, DesktopSpacing.sm, DesktopSpacing.md),
               child: Row(
                 children: [
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Library',
                       style: TextStyle(
-                        color: AppColors.textPrimary,
+                        color: AppColorsScheme.of(context).textPrimary,
                         fontSize: DesktopFontSize.h2,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
@@ -237,9 +237,9 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                     ),
                   ),
                   AppIconButton(
-                    icon: const DownloadQueueProgressIcon(
+                    icon: DownloadQueueProgressIcon(
                       iconSize: 20,
-                      baseColor: AppColors.textSecondary,
+                      baseColor: AppColorsScheme.of(context).textSecondary,
                     ),
                     onPressed: () => showDownloadQueueSheet(context),
                     tooltip: 'Download queue',
@@ -284,7 +284,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                       child: Container(
                         height: 36,
                         decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
+                          color: AppColorsScheme.of(context).surfaceLight,
                           borderRadius: BorderRadius.circular(AppRadius.sm),
                         ),
                         child: Row(
@@ -293,7 +293,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                               icon: AppIcon(
                                 icon: AppIcons.back,
                                 size: 18,
-                                color: AppColors.textSecondary,
+                                color: AppColorsScheme.of(context).textSecondary,
                               ),
                               onPressed: _toggleSearch,
                               size: 36,
@@ -302,7 +302,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                             AppIcon(
                               icon: AppIcons.search,
                               size: 15,
-                              color: AppColors.textMuted,
+                              color: AppColorsScheme.of(context).textMuted,
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -331,7 +331,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                 icon: AppIcon(
                                   icon: AppIcons.clear,
                                   size: 15,
-                                  color: AppColors.textMuted,
+                                  color: AppColorsScheme.of(context).textMuted,
                                 ),
                                 onPressed: () {
                                   _searchController.clear();
@@ -381,14 +381,14 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                   children: [
                                     AppIcon(
                                       icon: AppIcons.sort,
-                                      color: AppColors.textSecondary,
+                                      color: AppColorsScheme.of(context).textSecondary,
                                       size: DesktopIconSize.xs,
                                     ),
                                     const SizedBox(width: DesktopSpacing.xs),
                                     Text(
                                       sortOrder.label,
-                                      style: const TextStyle(
-                                        color: AppColors.desktopTextSecondary,
+                                      style: TextStyle(
+                                        color: AppColorsScheme.of(context).desktopTextSecondary,
                                         fontSize: DesktopFontSize.sm,
                                         fontWeight: FontWeight.w500,
                                       ),
@@ -403,7 +403,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                             icon: AppIcon(
                               icon: AppIcons.search,
                               size: DesktopIconSize.xs,
-                              color: AppColors.textSecondary,
+                              color: AppColorsScheme.of(context).textSecondary,
                             ),
                             onPressed: _toggleSearch,
                             size: DesktopButtonSize.sm,
@@ -417,7 +417,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                   ? AppIcons.gridView
                                   : AppIcons.listView,
                               size: DesktopIconSize.xs,
-                              color: AppColors.textSecondary,
+                              color: AppColorsScheme.of(context).textSecondary,
                             ),
                             onPressed: () =>
                                 ref.read(libraryProvider.notifier).setViewMode(
@@ -496,13 +496,13 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                 // Folder open: show only that folder's playlists
                                 if (folderEntries != null) ...[
                                   if (folderEntries.isEmpty)
-                                    const Padding(
+                                    Padding(
                                       padding: EdgeInsets.all(AppSpacing.xl),
                                       child: Text(
                                         'No playlists in this folder.',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                            color: AppColors.textMuted,
+                                            color: AppColorsScheme.of(context).textMuted,
                                             fontSize: AppFontSize.md),
                                       ),
                                     )
@@ -621,7 +621,7 @@ class _CreateMenuButton extends StatelessWidget {
       ],
       child: AppIconButton(
         icon:
-            AppIcon(icon: AppIcons.add, size: 20, color: AppColors.textPrimary),
+            AppIcon(icon: AppIcons.add, size: 20, color: AppColorsScheme.of(context).textPrimary),
         onPressed: null, // tap handled by AdaptiveMenuAnchor
         size: 36,
         iconSize: 20,
@@ -643,8 +643,8 @@ class _SectionLabel extends StatelessWidget {
           AppSpacing.base, AppSpacing.md, AppSpacing.base, AppSpacing.xs),
       child: Text(
         label,
-        style: const TextStyle(
-          color: AppColors.textMuted,
+        style: TextStyle(
+          color: AppColorsScheme.of(context).textMuted,
           fontSize: DesktopFontSize.xs,
           fontWeight: FontWeight.w700,
           letterSpacing: AppLetterSpacing.label,

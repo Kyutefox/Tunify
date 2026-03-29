@@ -6,6 +6,7 @@ import 'package:tunify/data/models/artist.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/screens/shared/home/home_shared.dart';
+import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class ArtistAvatar extends StatefulWidget {
   final Artist artist;
@@ -69,7 +70,7 @@ class _ArtistAvatarState extends State<ArtistAvatar>
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: widget.compact ? AppColors.textSecondary : AppColors.textPrimary,
+                  color: widget.compact ? AppColorsScheme.of(context).textSecondary : AppColorsScheme.of(context).textPrimary,
                   fontSize: widget.compact ? AppFontSize.xs : AppFontSize.md,
                   fontWeight: FontWeight.w500,
                 ),
@@ -89,8 +90,8 @@ class _ArtistAvatarState extends State<ArtistAvatar>
                         widget.artist.genre ?? widget.artist.listenersFormatted,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
+                        style: TextStyle(
+                          color: AppColorsScheme.of(context).textMuted,
                           fontSize: AppFontSize.xs,
                         ),
                       ),
@@ -113,8 +114,8 @@ class _ArtistAvatarState extends State<ArtistAvatar>
   }
 
   Widget get _avatarFallback => Container(
-        color: AppColors.surfaceHighlight,
-        child: AppIcon(icon: AppIcons.person, color: AppColors.textMuted),
+        color: AppColorsScheme.of(context).surfaceHighlight,
+        child: AppIcon(icon: AppIcons.person, color: AppColorsScheme.of(context).textMuted),
       );
 
   Widget _buildAvatar() {
@@ -135,10 +136,10 @@ class _ArtistAvatarState extends State<ArtistAvatar>
             fadeInDuration: Duration.zero,
             fadeOutDuration: Duration.zero,
             errorWidget: (_, __, ___) => Container(
-              color: AppColors.surface,
+              color: AppColorsScheme.of(context).surface,
               child: AppIcon(
                 icon: AppIcons.person,
-                color: AppColors.textMuted,
+                color: AppColorsScheme.of(context).textMuted,
                 size: widget.size * 0.44,
               ),
             ),
@@ -173,13 +174,13 @@ class _ArtistAvatarState extends State<ArtistAvatar>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: widget.artist.isVerified ? AppColors.primaryGradient : null,
-          color: widget.artist.isVerified ? null : AppColors.surfaceHighlight,
+          color: widget.artist.isVerified ? null : AppColorsScheme.of(context).surfaceHighlight,
         ),
         padding: const EdgeInsets.all(2),
         child: Container(
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppColors.background,
+            color: AppColorsScheme.of(context).background,
           ),
           padding: const EdgeInsets.all(2),
           child: ClipOval(
@@ -219,7 +220,7 @@ class ArtistCard extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: AppColors.cardGradient,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColors.surfaceHighlight, width: 1),
+          border: Border.all(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
         ),
         child: Row(
           children: [
@@ -231,7 +232,7 @@ class ArtistCard extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: artist.isVerified ? AppColors.primaryGradient : null,
-                  color: artist.isVerified ? null : AppColors.surfaceHighlight,
+                  color: artist.isVerified ? null : AppColorsScheme.of(context).surfaceHighlight,
                 ),
                 padding: const EdgeInsets.all(2),
                 child: ClipOval(
@@ -252,8 +253,8 @@ class ArtistCard extends StatelessWidget {
                           artist.name,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
+                          style: TextStyle(
+                            color: AppColorsScheme.of(context).textPrimary,
                             fontSize: AppFontSize.lg,
                             fontWeight: FontWeight.w600,
                           ),
@@ -268,7 +269,7 @@ class ArtistCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     artist.listenersFormatted,
-                    style: const TextStyle(color: AppColors.textMuted, fontSize: AppFontSize.sm),
+                    style: TextStyle(color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
                   ),
                   if (artist.latestRelease != null) ...[
                     const SizedBox(height: 4),
@@ -288,8 +289,8 @@ class ArtistCard extends StatelessWidget {
                             'Latest: ${artist.latestRelease}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              color: AppColors.textSecondary,
+                            style: TextStyle(
+                              color: AppColorsScheme.of(context).textSecondary,
                               fontSize: AppFontSize.xs,
                             ),
                           ),

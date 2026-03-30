@@ -5,6 +5,7 @@ import 'package:tunify/data/models/podcast.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/data/models/track.dart';
 import 'package:tunify/data/repositories/podcast_repository.dart';
+import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify_database/tunify_database.dart';
 
@@ -21,6 +22,7 @@ class PodcastState {
     this.subscriptions = const [],
     this.savedAudiobooks = const [],
     this.episodesForLater = const [],
+    this.episodesForLaterSortOrder = PlaylistTrackSortOrder.recentlyAdded,
     this.positions = const {},
     this.isLoading = false,
   });
@@ -28,6 +30,7 @@ class PodcastState {
   final List<Podcast> subscriptions;
   final List<Audiobook> savedAudiobooks;
   final List<Song> episodesForLater;
+  final PlaylistTrackSortOrder episodesForLaterSortOrder;
   final Map<String, PlaybackPosition> positions;
   final bool isLoading;
 
@@ -44,6 +47,7 @@ class PodcastState {
     List<Podcast>? subscriptions,
     List<Audiobook>? savedAudiobooks,
     List<Song>? episodesForLater,
+    PlaylistTrackSortOrder? episodesForLaterSortOrder,
     Map<String, PlaybackPosition>? positions,
     bool? isLoading,
   }) =>
@@ -51,6 +55,7 @@ class PodcastState {
         subscriptions: subscriptions ?? this.subscriptions,
         savedAudiobooks: savedAudiobooks ?? this.savedAudiobooks,
         episodesForLater: episodesForLater ?? this.episodesForLater,
+        episodesForLaterSortOrder: episodesForLaterSortOrder ?? this.episodesForLaterSortOrder,
         positions: positions ?? this.positions,
         isLoading: isLoading ?? this.isLoading,
       );
@@ -159,6 +164,11 @@ class PodcastNotifier extends Notifier<PodcastState> {
       );
       await _repo.saveEpisodeForLater(song);
     }
+  }
+
+  Future<void> setEpisodesForLaterSortOrder(PlaylistTrackSortOrder order) async {
+    state = state.copyWith(episodesForLaterSortOrder: order);
+    // Optionally persist to database/settings if needed
   }
 }
 

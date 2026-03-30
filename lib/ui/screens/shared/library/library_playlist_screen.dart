@@ -1194,16 +1194,21 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         : widget.playlistId == 'liked'
             ? ref.watch(libraryProvider.select((s) => s.likedPlaylist))
             : (widget.playlistId == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater')
-                ? LibraryPlaylist(
-                    id: 'episodesForLater',
-                    name: 'Episodes For Later',
-                    description: 'Your saved podcast episodes',
-                    createdAt: DateTime.now(),
-                    updatedAt: DateTime.now(),
-                    songs: ref.watch(podcastProvider.select((s) => s.episodesForLater)),
-                    customImageUrl: null,
-                    isImported: false,
-                  )
+                ? () {
+                    final episodes = ref.watch(podcastProvider.select((s) => s.episodesForLater));
+                    final sortOrder = ref.watch(podcastProvider.select((s) => s.episodesForLaterSortOrder));
+                    final sortedEpisodes = _sortBySortOrder(episodes, sortOrder);
+                    return LibraryPlaylist(
+                      id: 'episodesForLater',
+                      name: 'Episodes For Later',
+                      description: 'Your saved podcast episodes',
+                      createdAt: DateTime.now(),
+                      updatedAt: DateTime.now(),
+                      songs: sortedEpisodes,
+                      customImageUrl: null,
+                      isImported: false,
+                    );
+                  }()
                 : ref.watch(libraryPlaylistByIdProvider(widget.playlistId));
 
     if (playlist == null) {
@@ -2246,6 +2251,251 @@ class _DownloadsSortSheet extends ConsumerWidget {
 }
 
 // ─── Pills ────────────────────────────────────────────────────────────────────
+
+class _EpisodesForLaterPillRow extends ConsumerWidget {
+  const _EpisodesForLaterPillRow({
+    required this.songs,
+    required this.onPlaylistUpdated,
+  });
+
+  final List<Song> songs;
+  final VoidCallback onPlaylistUpdated;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(children: [
+          if (songs.isNotEmpty) ...[
+            _Pill(
+              icon: AppIcons.edit,
+              label: 'Edit',
+              onTap: () => _openEditEpisodesForLaterSheet(context, songs, ref),
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            _Pill(
+              icon: AppIcons.sort,
+              label: 'Sort',
+              onTap: () => _openEpisodesForLaterSortSheet(context, ref),
+            ),
+          ],
+        ]),
+      ),
+    );
+  }
+}
+
+void _openEditEpisodesForLaterSheet(BuildContext context, List<Song> songs, WidgetRef ref) {
+  FocusManager.instance.primaryFocus?.unfocus();
+  Navigator.of(context).push(appPageRoute<void>(
+      builder: (_) => _EditEpisodesForLaterSheet(initialSongs: songs)));
+}
+
+void _openEpisodesForLaterSortSheet(BuildContext context, WidgetRef ref) {
+  FocusManager.instance.primaryFocus?.unfocus();
+  showAppSheet(
+    context,
+    child: const _EpisodesForLaterSortSheet(),
+  );
+}
+
+class _EpisodesForLaterSortSheet extends ConsumerWidget {
+  const _EpisodesForLaterSortSheet();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Get current sort order from podcast provider (we'll add this state)
+    final sortOrder = ref.watch(podcastProvider.select((s) => s.episodesForLaterSortOrder));
+    
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.base, AppSpacing.lg, AppSpacing.base, AppSpacing.md),
+        child: Text('Sort episodes',
+            style: TextStyle(
+                color: AppColorsScheme.of(context).textPrimary,
+                fontSize: AppFontSize.xl,
+                fontWeight: FontWeight.w700)),
+      ),
+      _SortTile(
+        label: 'Custom order',
+        selected: sortOrder == PlaylistTrackSortOrder.customOrder,
+        onTap: () async {
+          await ref
+              .read(podcastProvider.notifier)
+              .setEpisodesForLaterSortOrder(PlaylistTrackSortOrder.customOrder);
+          if (context.mounted) Navigator.pop(context);
+        },
+      ),
+      _SortTile(
+        label: 'Title',
+        selected: sortOrder == PlaylistTrackSortOrder.title,
+        onTap: () async {
+          await ref
+              .read(podcastProvider.notifier)
+              .setEpisodesForLaterSortOrder(PlaylistTrackSortOrder.title);
+          if (context.mounted) Navigator.pop(context);
+        },
+      ),
+      _SortTile(
+        label: 'Recently added',
+        selected: sortOrder == PlaylistTrackSortOrder.recentlyAdded,
+        onTap: () async {
+          await ref
+              .read(podcastProvider.notifier)
+              .setEpisodesForLaterSortOrder(PlaylistTrackSortOrder.recentlyAdded);
+          if (context.mounted) Navigator.pop(context);
+        },
+      ),
+      const SizedBox(height: AppSpacing.xl),
+    ]);
+  }
+}
+
+class _EditEpisodesForLaterSheet extends ConsumerStatefulWidget {
+  const _EditEpisodesForLaterSheet({required this.initialSongs});
+  final List<Song> initialSongs;
+
+  @override
+  ConsumerState<_EditEpisodesForLaterSheet> createState() => _EditEpisodesForLaterSheetState();
+}
+
+class _EditEpisodesForLaterSheetState extends ConsumerState<_EditEpisodesForLaterSheet> {
+  late List<Song> _items;
+  final Set<String> _pendingRemoveIds = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _items = List<Song>.from(widget.initialSongs);
+  }
+
+  void _toggleRemove(Song song) => setState(() {
+        if (_pendingRemoveIds.contains(song.id)) {
+          _pendingRemoveIds.remove(song.id);
+        } else {
+          _pendingRemoveIds.add(song.id);
+        }
+      });
+
+  void _onReorder(int oldIndex, int newIndex) => setState(() {
+        if (newIndex > oldIndex) newIndex -= 1;
+        _items.insert(newIndex, _items.removeAt(oldIndex));
+      });
+
+  Future<void> _save() async {
+    final toRemove = _pendingRemoveIds.length;
+    if (toRemove > 0) {
+      final confirmed = await showConfirmDialog(context,
+          title: 'Remove $toRemove ${toRemove == 1 ? 'episode' : 'episodes'}?',
+          message: 'These episodes will be removed from Episodes For Later.',
+          confirmLabel: 'Remove');
+      if (!confirmed) return;
+    }
+    
+    // Remove episodes
+    for (final id in _pendingRemoveIds) {
+      final song = _items.firstWhere((s) => s.id == id);
+      await ref.read(podcastProvider.notifier).toggleEpisodeForLater(song);
+    }
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Episodes For Later updated'),
+          behavior: SnackBarBehavior.floating));
+      Navigator.of(context).pop();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColorsScheme.of(context).background,
+      appBar: BackTitleAppBar(
+        title: 'Edit Episodes For Later',
+        backgroundColor: AppColorsScheme.of(context).background,
+        actions: [
+          AppButton(
+              label: 'Save',
+              variant: AppButtonVariant.text,
+              foregroundColor: AppColors.primary,
+              onPressed: _save,
+              height: 40),
+        ],
+      ),
+      body: ReorderableListView.builder(
+        buildDefaultDragHandles: false,
+        cacheExtent: 1000,
+        itemCount: _items.length,
+        onReorder: _onReorder,
+        itemBuilder: (context, index) {
+          final song = _items[index];
+          final marked = _pendingRemoveIds.contains(song.id);
+          final isNowPlaying = ref.watch(currentSongProvider)?.id == song.id;
+          final isActuallyPlaying = ref.watch(isPlayingProvider);
+          return ListTile(
+            key: ValueKey(song.id),
+            leading: Row(mainAxisSize: MainAxisSize.min, children: [
+              AppIconButton(
+                  icon: AppIcon(
+                      icon: marked
+                          ? AppIcons.removeCircle
+                          : AppIcons.removeCircleOutline,
+                      color: marked
+                          ? AppColors.accentRed
+                          : AppColorsScheme.of(context).textMuted,
+                      size: 22),
+                  onPressed: () => _toggleRemove(song),
+                  size: 40,
+                  iconSize: 22),
+              const SizedBox(width: AppSpacing.xs),
+              NowPlayingThumbnail(
+                isPlaying: isNowPlaying,
+                isActuallyPlaying: isActuallyPlaying,
+                size: 48,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
+                  child: CachedNetworkImage(
+                      imageUrl: song.thumbnailUrl,
+                      width: 48,
+                      height: 48,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => _thumbPlaceholder(context)),
+                ),
+              ),
+            ]),
+            title: Text(song.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: isNowPlaying
+                        ? AppColors.accent
+                        : marked
+                            ? AppColorsScheme.of(context).textMuted
+                            : AppColorsScheme.of(context).textPrimary,
+                    decoration: marked ? TextDecoration.lineThrough : null)),
+            subtitle: Text(song.artist,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
+                    fontSize: AppFontSize.sm,
+                    decoration: marked ? TextDecoration.lineThrough : null)),
+            trailing: ReorderableDragStartListener(
+              index: index,
+              child: AppIcon(
+                  icon: AppIcons.dragHandle,
+                  color: AppColorsScheme.of(context).textMuted,
+                  size: 20),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
 
 class _PlaylistPillRow extends ConsumerWidget {
   const _PlaylistPillRow({

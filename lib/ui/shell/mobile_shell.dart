@@ -8,12 +8,14 @@ import 'package:tunify/features/settings/connectivity_provider.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
+import 'package:tunify/features/podcast/podcast_provider.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/screens/desktop/home/home_screen.dart';
 import '../screens/shared/library/library_screen.dart';
 import '../screens/shared/auth/loading_screen.dart';
 import '../screens/shared/search/search_screen.dart';
+import '../screens/shared/podcast/podcast_screen.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
@@ -30,13 +32,14 @@ class MobileShell extends ConsumerStatefulWidget {
 }
 
 class _MobileShellState extends ConsumerState<MobileShell> {
-  /// Page index: 0=Home, 1=Search, 2=Library
+  /// Page index: 0=Home, 1=Search, 2=Library, 3=Podcasts
   int _selectedIndex = 0;
 
   static final _navIcons = [
     AppIcons.home,
     AppIcons.search,
     AppIcons.library,
+    AppIcons.podcast,
   ];
 
   @override
@@ -126,6 +129,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
         HomeScreen(),
         SearchScreen(),
         LibraryScreen(),
+        PodcastScreen(),
       ],
     );
   }
@@ -146,7 +150,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: List.generate(3, (i) {
+          children: List.generate(4, (i) {
             final selected = _selectedIndex == i;
             return Expanded(
               child: _NavItem(
@@ -155,6 +159,9 @@ class _MobileShellState extends ConsumerState<MobileShell> {
                 onTap: () {
                   if (_selectedIndex == 1 && i != 1) {
                     ref.read(searchProvider.notifier).search('');
+                  }
+                  if (i == 3 && _selectedIndex != 3) {
+                    ref.read(podcastProvider.notifier).load();
                   }
                   final wasOnHome = _selectedIndex == 0;
                   setState(() => _selectedIndex = i);

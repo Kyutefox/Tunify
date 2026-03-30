@@ -79,4 +79,52 @@ class SearchApi {
       return {'artistBrowseId': null, 'albumBrowseId': null};
     }
   }
+
+  /// Performs a search for podcasts matching [query].
+  ///
+  /// The search is restricted to podcasts by using [YtConstants.searchFilterPodcasts].
+  Future<List<Map<String, dynamic>>> searchPodcasts(String query, {int maxResults = 24}) async {
+    try {
+      final payload = _client.basePayload();
+      payload['query'] = query;
+      payload['params'] = YtConstants.searchFilterPodcasts;
+
+      final data = await _client.post('search', payload);
+      return SearchFormatter.parsePodcastResults(data, maxResults: maxResults);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Performs a search for podcast episodes matching [query].
+  ///
+  /// The search is restricted to episodes by using [YtConstants.searchFilterEpisodes].
+  Future<List<Map<String, dynamic>>> searchEpisodes(String query, {int maxResults = 24}) async {
+    try {
+      final payload = _client.basePayload();
+      payload['query'] = query;
+      payload['params'] = YtConstants.searchFilterEpisodes;
+
+      final data = await _client.post('search', payload);
+      return SearchFormatter.parseEpisodeResults(data, maxResults: maxResults);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Performs a search for audiobooks matching [query].
+  ///
+  /// The search is restricted to audiobooks by using [YtConstants.searchFilterAudiobooks].
+  Future<List<Map<String, dynamic>>> searchAudiobooks(String query, {int maxResults = 24}) async {
+    try {
+      final payload = _client.basePayload();
+      payload['query'] = query;
+      payload['params'] = YtConstants.searchFilterAudiobooks;
+
+      final data = await _client.post('search', payload);
+      return SearchFormatter.parseAudiobookResults(data, maxResults: maxResults);
+    } catch (e) {
+      return [];
+    }
+  }
 }

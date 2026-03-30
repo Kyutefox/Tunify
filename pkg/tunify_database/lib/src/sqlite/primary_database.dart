@@ -1,6 +1,7 @@
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite/sqlite_api.dart' show ConflictAlgorithm;
 
 import 'create.controller.dart';
 import 'delete.controller.dart';
@@ -12,7 +13,7 @@ import 'update.controller.dart';
 /// delegated to get/create/update/delete controllers.
 class PrimaryDatabase {
   static const String _dbName = 'tunify_primary.db';
-  static const int _version = 1;
+  static const int _version = 2;
 
   static final PrimaryDatabase _instance = PrimaryDatabase._internal();
   factory PrimaryDatabase() => _instance;
@@ -38,8 +39,49 @@ class PrimaryDatabase {
       version: _version,
       onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
     return _db!;
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await _createPodcastTables(db);
+    }
+  }
+
+  Future<void> _createPodcastTables(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS podcast_subscriptions (
+        id            TEXT PRIMARY KEY,
+        title         TEXT NOT NULL,
+        author        TEXT NOT NULL DEFAULT '',
+        thumbnail_url TEXT,
+        browse_id     TEXT,
+        subscribed_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS playback_positions (
+        content_id       TEXT NOT NULL,
+        content_type     TEXT NOT NULL,
+        position_seconds INTEGER NOT NULL DEFAULT 0,
+        duration_seconds INTEGER NOT NULL DEFAULT 0,
+        completed        INTEGER NOT NULL DEFAULT 0,
+        last_played_at   TEXT NOT NULL,
+        PRIMARY KEY (content_id, content_type)
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS saved_audiobooks (
+        id            TEXT PRIMARY KEY,
+        title         TEXT NOT NULL,
+        author        TEXT NOT NULL DEFAULT '',
+        thumbnail_url TEXT,
+        browse_id     TEXT,
+        saved_at      TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -138,6 +180,7 @@ class PrimaryDatabase {
       )
     ''');
     await _createController.runOnCreate(db);
+    await _createPodcastTables(db);
   }
 
 
@@ -437,6 +480,75 @@ class PrimaryDatabase {
   Future<void> clearCacheOnlyPlaylists() async {
     final db = await _getDb();
     await _deleteController.clearCacheOnlyPlaylists(db);
+  }
+
+  // ── Podcast Subscriptions ─────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> loadPodcastSubscriptions() async {
+    final db = await _getDb();
+    return db.query('podcast_subscriptions', orderBy: 'subscribed_at DESC');
+  }
+
+  Future<void> upsertPodcastSubscription(Map<String, dynamic> data) async {
+    final db = await _getDb();
+    await db.insert('podcast_subscriptions', data,
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> deletePodcastSubscription(String id) async {
+    final db = await _getDb();
+    await db.delete('podcast_subscriptions', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ── Saved Audiobooks ──────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> loadSavedAudiobooks() async {
+    final db = await _getDb();
+    return db.query('saved_audiobooks', orderBy: 'saved_at DESC');
+  }
+
+  Future<void> upsertSavedAudiobook(Map<String, dynamic> data) async {
+    final db = await _getDb();
+    await db.insert('saved_audiobooks', data,
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> deleteSavedAudiobook(String id) async {
+    final db = await _getDb();
+    await db.delete('saved_audiobooks', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ── Playback Positions ────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>?> getPlaybackPosition(
+      String contentId, String contentType) async {
+    final db = await _getDb();
+    final rows = await db.query(
+      'playback_positions',
+      where: 'content_id = ? AND content_type = ?',
+      whereArgs: [contentId, contentType],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  Future<List<Map<String, dynamic>>> loadAllPlaybackPositions() async {
+    final db = await _getDb();
+    return db.query('playback_positions', orderBy: 'last_played_at DESC');
+  }
+
+  Future<void> upsertPlaybackPosition(Map<String, dynamic> data) async {
+    final db = await _getDb();
+    await db.insert('playback_positions', data,
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> deletePlaybackPosition(
+      String contentId, String contentType) async {
+    final db = await _getDb();
+    await db.delete('playback_positions',
+        where: 'content_id = ? AND content_type = ?',
+        whereArgs: [contentId, contentType]);
   }
 
 }

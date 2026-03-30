@@ -107,6 +107,107 @@ class BrowseFormatter {
     );
   }
 
+  /// Extract a Track from a `musicMultiRowListItemRenderer` node (used in podcast show pages).
+  static Track? parseTrackFromMultiRowItem(Map<String, dynamic> item) {
+    // Try navigationEndpoint first
+    final nav = item['navigationEndpoint'] as Map<String, dynamic>?;
+    final navWatch = nav?['watchEndpoint'] as Map<String, dynamic>?;
+    String? videoId = navWatch?['videoId'] as String?;
+    
+    // If no videoId in nav, try overlay play button
+    if (videoId == null || videoId.isEmpty) {
+      final overlay = item['overlay']?['musicItemThumbnailOverlayRenderer']?['content']?['musicPlayButtonRenderer']?['playNavigationEndpoint']?['watchEndpoint'] as Map<String, dynamic>?;
+      videoId = overlay?['videoId'] as String?;
+    }
+    
+    if (videoId == null || videoId.isEmpty) return null;
+
+    // Title is directly in the 'title' field (runs format)
+    final title = p.extractRunsText(item['title']) ?? 'Unknown title';
+    
+    // Subtitle contains date info (e.g., "1d ago", "Mar 21")
+    final subtitle = p.extractRunsText(item['subtitle']) ?? '';
+    
+    // Description
+    final description = p.extractRunsText(item['description']);
+    
+    // Thumbnail
+    final thumb = item['thumbnail'] as Map<String, dynamic>?;
+    final thumbnail = p.extractThumbnailUrl(thumb) ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
+
+    // Get duration from playbackProgress
+    final playbackProgress = item['playbackProgress']?['musicPlaybackProgressRenderer'];
+    final durationText = p.extractRunsText(playbackProgress?['durationText']);
+    final duration = _parseDurationText(durationText);
+
+    return Track(
+      id: videoId,
+      title: title,
+      artist: subtitle.isNotEmpty ? subtitle : 'Unknown',
+      artistBrowseId: null,
+      albumName: description,
+      albumBrowseId: null,
+      thumbnailUrl: thumbnail,
+      duration: duration,
+      isExplicit: false,
+    );
+  }
+
+  /// Parse duration from text like "1 hr 44 min" or "45 min" or "30 sec"
+  static Duration _parseDurationText(String? text) {
+    if (text == null || text.isEmpty) return ParserConstants.defaultTrackDuration;
+    
+    int hours = 0;
+    int minutes = 0;
+    int seconds = 0;
+    
+    // Match patterns like "1 hr 44 min", "45 min", "30 sec"
+    final hrMatch = RegExp(r'(\d+)\s*hr').firstMatch(text);
+    final minMatch = RegExp(r'(\d+)\s*min').firstMatch(text);
+    final secMatch = RegExp(r'(\d+)\s*sec').firstMatch(text);
+    
+    if (hrMatch != null) {
+      hours = int.parse(hrMatch.group(1)!);
+    }
+    if (minMatch != null) {
+      minutes = int.parse(minMatch.group(1)!);
+    }
+    if (secMatch != null) {
+      seconds = int.parse(secMatch.group(1)!);
+    }
+    
+    if (hours > 0 || minutes > 0 || seconds > 0) {
+      return Duration(hours: hours, minutes: minutes, seconds: seconds);
+    }
+    
+    return ParserConstants.defaultTrackDuration;
+  }
+
+  /// Parse duration from subtitle text (e.g., "2 days ago · 45:30")
+  static Duration _parseDurationFromSubtitle(String subtitle) {
+    // Look for time pattern like "45:30" or "1:23:45"
+    final timePattern = RegExp(r'(\d+):(\d{2})(?::(\d{2}))?');
+    final match = timePattern.firstMatch(subtitle);
+    if (match != null) {
+      final groups = match.groups([1, 2, 3]);
+      if (groups[2] != null) {
+        // HH:MM:SS
+        return Duration(
+          hours: int.parse(groups[0]!),
+          minutes: int.parse(groups[1]!),
+          seconds: int.parse(groups[2]!),
+        );
+      } else {
+        // MM:SS
+        return Duration(
+          minutes: int.parse(groups[0]!),
+          seconds: int.parse(groups[1]!),
+        );
+      }
+    }
+    return ParserConstants.defaultTrackDuration;
+  }
+
   /// Walk through browse data and extract tracks until maxResults is reached.
   static List<Track> extractTracksFromBrowseData(
     Map<String, dynamic> browseData, {
@@ -137,6 +238,11 @@ class BrowseFormatter {
           collect(parseTrackFromTwoRowItem(twoRow));
         }
 
+        final multiRow = node['musicMultiRowListItemRenderer'];
+        if (multiRow is Map<String, dynamic>) {
+          collect(parseTrackFromMultiRowItem(multiRow));
+        }
+
         for (final value in node.values) {
           walk(value);
           if (tracks.length >= maxResults) return;
@@ -149,7 +255,27 @@ class BrowseFormatter {
       }
     }
 
-    walk(browseData);
+    // Handle both singleColumn and twoColumn browse results
+    final contents = browseData['contents'];
+    if (contents is Map<String, dynamic>) {
+      // Try singleColumnBrowseResultsRenderer first
+      final singleColumn = contents['singleColumnBrowseResultsRenderer'];
+      if (singleColumn != null) {
+        walk(singleColumn);
+      }
+      
+      // Try twoColumnBrowseResultsRenderer for podcast/show pages
+      final twoColumn = contents['twoColumnBrowseResultsRenderer'];
+      if (twoColumn != null) {
+        walk(twoColumn);
+      }
+    }
+    
+    // Also walk the entire data as fallback
+    if (tracks.isEmpty) {
+      walk(browseData);
+    }
+    
     return tracks;
   }
 

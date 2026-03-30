@@ -666,6 +666,46 @@ class MusicStreamManager {
     }
   }
 
+  Future<List<Map<String, dynamic>>> searchPodcasts(String query,
+      {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search
+          .searchPodcasts(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchAudiobooks(String query,
+      {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search
+          .searchAudiobooks(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Track>> fetchPodcastShowContent(String browseId, {int maxTracks = 50}) async {
+    try {
+      final raw = await _ytMusic.browse.fetchPodcastShowContent(browseId, maxTracks: maxTracks);
+      return raw.map(_scrapperTrackToApp).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Track>> fetchPlaylistTracks(String browseId,
+      {int maxTracks = 200}) async {
+    try {
+      final raw = await _ytMusic.browse
+          .fetchPlaylistOrAlbum(browseId, maxTracks: maxTracks);
+      return raw.map(_scrapperTrackToApp).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<List<Track>> getRecommendedQueue(
     String videoId, {
     String? playlistId,

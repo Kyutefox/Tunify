@@ -256,4 +256,184 @@ class SearchFormatter {
 
     return null;
   }
+
+  /// Parses podcast search results from a `search` API response.
+  ///
+  /// Returns a list of podcast data maps containing id, title, author, thumbnail, etc.
+  static List<Map<String, dynamic>> parsePodcastResults(Map<String, dynamic> data, {int maxResults = 24}) {
+    final results = <Map<String, dynamic>>[];
+    final sections = _extractSearchSections(data);
+    print('PODCAST PARSE: Found ${sections.length} sections');
+
+    for (final section in sections) {
+      final shelf = section['musicShelfRenderer'] as Map<String, dynamic>?;
+      if (shelf == null) continue;
+
+      final contents = shelf['contents'] as List<dynamic>?;
+      print('PODCAST PARSE: Shelf has ${contents?.length ?? 0} items');
+      if (contents == null) continue;
+
+      for (final item in contents.whereType<Map<String, dynamic>>()) {
+        final podcast = _parsePodcastItem(item);
+        print('PODCAST PARSE ITEM: ${podcast != null ? 'success' : 'failed'}');
+        if (podcast != null) {
+          results.add(podcast);
+          if (results.length >= maxResults) return results;
+        }
+      }
+    }
+    return results;
+  }
+
+  /// Parses episode search results from a `search` API response.
+  static List<Map<String, dynamic>> parseEpisodeResults(Map<String, dynamic> data, {int maxResults = 24}) {
+    final results = <Map<String, dynamic>>[];
+    final sections = _extractSearchSections(data);
+
+    for (final section in sections) {
+      final shelf = section['musicShelfRenderer'] as Map<String, dynamic>?;
+      if (shelf == null) continue;
+
+      final contents = shelf['contents'] as List<dynamic>?;
+      if (contents == null) continue;
+
+      for (final item in contents.whereType<Map<String, dynamic>>()) {
+        final episode = _parseEpisodeItem(item);
+        if (episode != null) {
+          results.add(episode);
+          if (results.length >= maxResults) return results;
+        }
+      }
+    }
+    return results;
+  }
+
+  /// Parses audiobook search results from a `search` API response.
+  static List<Map<String, dynamic>> parseAudiobookResults(Map<String, dynamic> data, {int maxResults = 24}) {
+    final results = <Map<String, dynamic>>[];
+    final sections = _extractSearchSections(data);
+
+    for (final section in sections) {
+      final shelf = section['musicShelfRenderer'] as Map<String, dynamic>?;
+      if (shelf == null) continue;
+
+      final contents = shelf['contents'] as List<dynamic>?;
+      if (contents == null) continue;
+
+      for (final item in contents.whereType<Map<String, dynamic>>()) {
+        final audiobook = _parseAudiobookItem(item);
+        if (audiobook != null) {
+          results.add(audiobook);
+          if (results.length >= maxResults) return results;
+        }
+      }
+    }
+    return results;
+  }
+
+  static Map<String, dynamic>? _parsePodcastItem(Map<String, dynamic> item) {
+    final renderer = item['musicResponsiveListItemRenderer'] as Map<String, dynamic>?;
+    if (renderer == null) return null;
+
+    final flexColumns = renderer['flexColumns'] as List<dynamic>?;
+    if (flexColumns == null || flexColumns.isEmpty) return null;
+
+    // Get videoId first (for direct playback), fallback to browseId
+    String? videoId = _extractVideoId(renderer);
+    
+    // Try to get browseId for reference
+    String? browseId = renderer['navigationEndpoint']?['browseEndpoint']?['browseId'] as String?;
+    if (browseId == null) {
+      browseId = renderer['overlay']?['musicItemThumbnailOverlayRenderer']?['content']?['musicPlayButtonRenderer']?['playNavigationEndpoint']?['watchPlaylistEndpoint']?['playlistId'] as String?;
+    }
+    
+    // Use videoId as primary ID for playback, fallback to browseId
+    final id = videoId ?? browseId;
+    if (id == null) return null;
+
+    final title = p.extractColumnRunsText(flexColumns, 0) ?? 'Unknown Podcast';
+    String? author;
+    if (flexColumns.length > 1) {
+      author = p.extractColumnRunsText(flexColumns, 1);
+    }
+    
+    String? thumbnailUrl = p.extractThumbnailUrl(renderer['thumbnail']);
+    if (thumbnailUrl == null && videoId != null) {
+      thumbnailUrl = 'https://i.ytimg.com/vi/$videoId/mqdefault.jpg';
+    }
+
+    return {
+      'id': id,
+      'title': title,
+      'author': author ?? 'Unknown Author',
+      'thumbnailUrl': thumbnailUrl ?? '',
+      'browseId': browseId,
+      'videoId': videoId,
+    };
+  }
+
+  static Map<String, dynamic>? _parseEpisodeItem(Map<String, dynamic> item) {
+    final renderer = item['musicResponsiveListItemRenderer'] as Map<String, dynamic>?;
+    if (renderer == null) return null;
+
+    final flexColumns = renderer['flexColumns'] as List<dynamic>?;
+    if (flexColumns == null) return null;
+
+    final videoId = _extractVideoId(renderer);
+    if (videoId == null) return null;
+
+    final title = p.extractColumnRunsText(flexColumns, 0) ?? 'Unknown Episode';
+    final podcastTitle = p.extractColumnRunsText(flexColumns, 1) ?? 'Unknown Podcast';
+    final thumbnailUrl = p.extractOrFallbackThumbnail(renderer['thumbnail'], videoId);
+    final duration = p.parseDuration(p.extractFixedColumnText(renderer['fixedColumns'] as List?, 0));
+
+    return {
+      'id': videoId,
+      'title': title,
+      'podcastTitle': podcastTitle,
+      'thumbnailUrl': thumbnailUrl,
+      'durationSeconds': duration?.inSeconds,
+    };
+  }
+
+  static Map<String, dynamic>? _parseAudiobookItem(Map<String, dynamic> item) {
+    final renderer = item['musicResponsiveListItemRenderer'] as Map<String, dynamic>?;
+    if (renderer == null) return null;
+
+    final flexColumns = renderer['flexColumns'] as List<dynamic>?;
+    if (flexColumns == null || flexColumns.isEmpty) return null;
+
+    // Get videoId first (for direct playback), fallback to browseId
+    String? videoId = _extractVideoId(renderer);
+    
+    // Try to get browseId for reference
+    String? browseId = renderer['navigationEndpoint']?['browseEndpoint']?['browseId'] as String?;
+    if (browseId == null) {
+      browseId = renderer['overlay']?['musicItemThumbnailOverlayRenderer']?['content']?['musicPlayButtonRenderer']?['playNavigationEndpoint']?['watchPlaylistEndpoint']?['playlistId'] as String?;
+    }
+    
+    // Use videoId as primary ID for playback, fallback to browseId
+    final id = videoId ?? browseId;
+    if (id == null) return null;
+
+    final title = p.extractColumnRunsText(flexColumns, 0) ?? 'Unknown Audiobook';
+    String? author;
+    if (flexColumns.length > 1) {
+      author = p.extractColumnRunsText(flexColumns, 1);
+    }
+    
+    String? thumbnailUrl = p.extractThumbnailUrl(renderer['thumbnail']);
+    if (thumbnailUrl == null && videoId != null) {
+      thumbnailUrl = 'https://i.ytimg.com/vi/$videoId/mqdefault.jpg';
+    }
+
+    return {
+      'id': id,
+      'title': title,
+      'author': author ?? 'Unknown Author',
+      'thumbnailUrl': thumbnailUrl ?? '',
+      'browseId': browseId,
+      'videoId': videoId,
+    };
+  }
 }

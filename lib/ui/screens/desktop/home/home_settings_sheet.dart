@@ -30,6 +30,8 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'about_screen.dart';
+import 'package:tunify/ui/screens/shared/import_export/backup_restore_screen.dart';
+import 'package:tunify/ui/screens/shared/import_export/import_export_screen.dart';
 import 'package:tunify/ui/widgets/common/sheet_drag_handle.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
@@ -113,6 +115,36 @@ class HomeSettingsSheet extends ConsumerWidget {
                 Navigator.of(context).push(
                   appPageRoute<void>(
                     builder: (_) => const _DataSettingsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SettingsCard(
+              icon: AppIcons.fileExport,
+              iconColor: AppColors.accentCyan,
+              iconBgColor: AppColors.accentCyan.withValues(alpha: 0.15),
+              title: 'Backup & Restore',
+              subtitle: 'Export or restore your entire library',
+              onTap: () {
+                Navigator.of(context).push(
+                  appPageRoute<void>(
+                    builder: (_) => const BackupRestoreScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SettingsCard(
+              icon: AppIcons.playlistAdd,
+              iconColor: AppColors.accentOrange,
+              iconBgColor: AppColors.accentOrange.withValues(alpha: 0.2),
+              title: 'Import & Export',
+              subtitle: 'Import M3U / JSON playlists or export yours',
+              onTap: () {
+                Navigator.of(context).push(
+                  appPageRoute<void>(
+                    builder: (_) => const ImportExportScreen(),
                   ),
                 );
               },

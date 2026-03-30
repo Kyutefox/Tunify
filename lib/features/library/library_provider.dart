@@ -336,6 +336,9 @@ class LibraryNotifier extends Notifier<LibraryState> {
     );
     state = state.copyWith(playlists: [exported, ...state.playlists]);
     await _repo.createPlaylist(exported);
+    if (exported.songs.isNotEmpty) {
+      await _repo.replacePlaylistSongs(newId, exported.songs);
+    }
     return newId;
   }
 

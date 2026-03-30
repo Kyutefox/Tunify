@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,10 +9,12 @@ import 'package:tunify/features/podcast/podcast_provider.dart';
 import 'package:tunify/ui/screens/shared/podcast/podcast_detail_screen.dart';
 import 'package:tunify/ui/screens/shared/podcast/audiobook_detail_screen.dart';
 import 'package:tunify/ui/screens/shared/podcast/podcast_search_screen.dart';
+import 'package:tunify/ui/screens/shared/podcast/podcast_options_sheet.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/widgets/library/library_item_tile.dart';
 
 class PodcastScreen extends ConsumerStatefulWidget {
   const PodcastScreen({super.key});
@@ -158,10 +159,27 @@ class _PodcastsTab extends ConsumerWidget {
 
     return ListView.builder(
       padding: const EdgeInsets.only(
-          top: AppSpacing.sm, bottom: AppSpacing.xxl + 80),
+          top: AppSpacing.sm, left: AppSpacing.base, right: AppSpacing.base, bottom: AppSpacing.xxl + 80),
       itemCount: subscriptions.length,
-      itemBuilder: (context, i) =>
-          _PodcastTile(podcast: subscriptions[i]),
+      itemBuilder: (context, i) {
+        final podcast = subscriptions[i];
+        return LibraryItemTile(
+          title: podcast.title,
+          subtitle: podcast.author ?? 'Podcast',
+          thumbnailUrl: podcast.thumbnailUrl,
+          placeholderIcon: AppIcons.podcast,
+          showPinIndicator: podcast.isPinned,
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => PodcastDetailScreen(podcast: podcast),
+          )),
+          onOptions: (rect) => showPodcastOptionsSheet(
+            context,
+            podcast: podcast,
+            ref: ref,
+            anchorRect: rect,
+          ),
+        );
+      },
     );
   }
 }
@@ -183,123 +201,29 @@ class _AudiobooksTab extends ConsumerWidget {
       );
     }
 
-    return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(
-          AppSpacing.base, AppSpacing.sm, AppSpacing.base, AppSpacing.xxl + 80),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.75,
-        crossAxisSpacing: AppSpacing.sm,
-        mainAxisSpacing: AppSpacing.sm,
-      ),
+    return ListView.builder(
+      padding: const EdgeInsets.only(
+          top: AppSpacing.sm, left: AppSpacing.base, right: AppSpacing.base, bottom: AppSpacing.xxl + 80),
       itemCount: audiobooks.length,
-      itemBuilder: (context, i) => _AudiobookCard(audiobook: audiobooks[i]),
-    );
-  }
-}
-
-// ── Podcast tile ──────────────────────────────────────────────────────────────
-
-class _PodcastTile extends StatelessWidget {
-  const _PodcastTile({required this.podcast});
-  final Podcast podcast;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.base, vertical: AppSpacing.xs),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.sm),
-        child: podcast.thumbnailUrl != null
-            ? CachedNetworkImage(
-                imageUrl: podcast.thumbnailUrl!,
-                width: 56,
-                height: 56,
-                fit: BoxFit.cover,
-                errorWidget: (_, __, ___) =>
-                    _PlaceholderIcon(icon: AppIcons.podcast, size: 56),
-              )
-            : _PlaceholderIcon(icon: AppIcons.podcast, size: 56),
-      ),
-      title: Text(
-        podcast.title,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: TextStyle(
-          color: AppColorsScheme.of(context).textPrimary,
-          fontWeight: FontWeight.w600,
-          fontSize: AppFontSize.md,
-        ),
-      ),
-      subtitle: podcast.author != null
-          ? Text(
-              podcast.author!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  color: AppColorsScheme.of(context).textMuted,
-                  fontSize: AppFontSize.sm),
-            )
-          : null,
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => PodcastDetailScreen(podcast: podcast),
-      )),
-    );
-  }
-}
-
-// ── Audiobook card ────────────────────────────────────────────────────────────
-
-class _AudiobookCard extends StatelessWidget {
-  const _AudiobookCard({required this.audiobook});
-  final Audiobook audiobook;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => AudiobookDetailScreen(audiobook: audiobook),
-      )),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: audiobook.thumbnailUrl != null
-                  ? CachedNetworkImage(
-                      imageUrl: audiobook.thumbnailUrl!,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) =>
-                          _PlaceholderIcon(icon: AppIcons.bookOpen, size: 80),
-                    )
-                  : _PlaceholderIcon(icon: AppIcons.bookOpen, size: 80),
-            ),
+      itemBuilder: (context, i) {
+        final audiobook = audiobooks[i];
+        return LibraryItemTile(
+          title: audiobook.title,
+          subtitle: audiobook.author ?? 'Audiobook',
+          thumbnailUrl: audiobook.thumbnailUrl,
+          placeholderIcon: AppIcons.bookOpen,
+          showPinIndicator: audiobook.isPinned,
+          onTap: () => Navigator.of(context).push(MaterialPageRoute(
+            builder: (_) => AudiobookDetailScreen(audiobook: audiobook),
+          )),
+          onOptions: (rect) => showAudiobookOptionsSheet(
+            context,
+            audiobook: audiobook,
+            ref: ref,
+            anchorRect: rect,
           ),
-          const SizedBox(height: AppSpacing.xs),
-          Text(
-            audiobook.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: AppColorsScheme.of(context).textPrimary,
-              fontWeight: FontWeight.w600,
-              fontSize: AppFontSize.sm,
-            ),
-          ),
-          if (audiobook.author != null)
-            Text(
-              audiobook.author!,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                  color: AppColorsScheme.of(context).textMuted,
-                  fontSize: AppFontSize.xs),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -344,30 +268,6 @@ class _EmptyState extends StatelessWidget {
                   fontSize: AppFontSize.md),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Placeholder icon ──────────────────────────────────────────────────────────
-
-class _PlaceholderIcon extends StatelessWidget {
-  const _PlaceholderIcon({required this.icon, required this.size});
-  final List<List<dynamic>> icon;
-  final double size;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      color: AppColorsScheme.of(context).surfaceHighlight,
-      child: Center(
-        child: AppIcon(
-          icon: icon,
-          size: size * 0.4,
-          color: AppColorsScheme.of(context).textMuted,
         ),
       ),
     );

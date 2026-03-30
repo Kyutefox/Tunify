@@ -122,6 +122,22 @@ class PodcastNotifier extends Notifier<PodcastState> {
     state = state.copyWith(positions: updated);
     await _repo.clearPosition(contentId, type);
   }
+
+  Future<void> togglePodcastPin(String podcastId) async {
+    final podcast = state.subscriptions.firstWhere((p) => p.id == podcastId);
+    final updated = podcast.copyWith(isPinned: !podcast.isPinned);
+    final newList = state.subscriptions.map((p) => p.id == podcastId ? updated : p).toList();
+    state = state.copyWith(subscriptions: newList);
+    await _repo.updatePodcast(updated);
+  }
+
+  Future<void> toggleAudiobookPin(String audiobookId) async {
+    final audiobook = state.savedAudiobooks.firstWhere((a) => a.id == audiobookId);
+    final updated = audiobook.copyWith(isPinned: !audiobook.isPinned);
+    final newList = state.savedAudiobooks.map((a) => a.id == audiobookId ? updated : a).toList();
+    state = state.copyWith(savedAudiobooks: newList);
+    await _repo.updateAudiobook(updated);
+  }
 }
 
 // ── Providers ─────────────────────────────────────────────────────────────────
@@ -130,11 +146,29 @@ final podcastProvider =
     NotifierProvider<PodcastNotifier, PodcastState>(PodcastNotifier.new);
 
 final podcastSubscriptionsProvider = Provider<List<Podcast>>(
-  (ref) => ref.watch(podcastProvider.select((s) => s.subscriptions)),
+  (ref) {
+    final subs = ref.watch(podcastProvider.select((s) => s.subscriptions));
+    final sorted = List<Podcast>.from(subs);
+    sorted.sort((a, b) {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
+    return sorted;
+  },
 );
 
 final savedAudiobooksProvider = Provider<List<Audiobook>>(
-  (ref) => ref.watch(podcastProvider.select((s) => s.savedAudiobooks)),
+  (ref) {
+    final books = ref.watch(podcastProvider.select((s) => s.savedAudiobooks));
+    final sorted = List<Audiobook>.from(books);
+    sorted.sort((a, b) {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
+    return sorted;
+  },
 );
 
 // ── Search providers ──────────────────────────────────────────────────────────

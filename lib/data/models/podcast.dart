@@ -11,6 +11,7 @@ class Podcast {
     this.episodes = const [],
     this.totalEpisodes,
     this.browseId,
+    this.isPinned = false,
   });
 
   final String id;
@@ -21,6 +22,7 @@ class Podcast {
   final List<Episode> episodes;
   final int? totalEpisodes;
   final String? browseId;
+  final bool isPinned;
 
   factory Podcast.fromJson(Map<String, dynamic> json) => Podcast(
         id: json['id'] as String,
@@ -29,6 +31,7 @@ class Podcast {
         thumbnailUrl: json['thumbnailUrl'] as String?,
         author: json['author'] as String?,
         browseId: json['browseId'] as String?,
+        isPinned: json['isPinned'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
@@ -38,6 +41,7 @@ class Podcast {
         if (thumbnailUrl != null) 'thumbnailUrl': thumbnailUrl,
         if (author != null) 'author': author,
         if (browseId != null) 'browseId': browseId,
+        'isPinned': isPinned,
       };
 
   Podcast copyWith({
@@ -49,6 +53,7 @@ class Podcast {
     List<Episode>? episodes,
     int? totalEpisodes,
     String? browseId,
+    bool? isPinned,
   }) =>
       Podcast(
         id: id ?? this.id,
@@ -59,6 +64,7 @@ class Podcast {
         episodes: episodes ?? this.episodes,
         totalEpisodes: totalEpisodes ?? this.totalEpisodes,
         browseId: browseId ?? this.browseId,
+        isPinned: isPinned ?? this.isPinned,
       );
 }
 
@@ -163,5 +169,15 @@ extension EpisodeDuration on Episode {
         artist: podcastTitle ?? 'Podcast',
         thumbnailUrl: thumbnailUrl ?? '',
         duration: Duration(seconds: durationSeconds ?? 0),
+      );
+}
+
+extension PodcastToSong on Podcast {
+  Song toSong() => Song(
+        id: id,
+        title: title,
+        artist: author ?? 'Podcast',
+        thumbnailUrl: thumbnailUrl ?? '',
+        duration: Duration.zero,
       );
 }

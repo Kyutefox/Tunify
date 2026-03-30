@@ -1,3 +1,5 @@
+import 'package:tunify/data/models/song.dart';
+
 /// Audiobook model for audiobooks
 class Audiobook {
   const Audiobook({
@@ -11,6 +13,7 @@ class Audiobook {
     this.chapters = const [],
     this.browseId,
     this.publishedDate,
+    this.isPinned = false,
   });
 
   final String id;
@@ -23,6 +26,7 @@ class Audiobook {
   final List<AudiobookChapter> chapters;
   final String? browseId;
   final String? publishedDate;
+  final bool isPinned;
 
   factory Audiobook.fromJson(Map<String, dynamic> json) => Audiobook(
         id: json['id'] as String,
@@ -34,6 +38,7 @@ class Audiobook {
         durationSeconds: json['durationSeconds'] as int?,
         browseId: json['browseId'] as String?,
         publishedDate: json['publishedDate'] as String?,
+        isPinned: json['isPinned'] as bool? ?? false,
       );
 
   Map<String, dynamic> toJson() => {
@@ -46,6 +51,7 @@ class Audiobook {
         if (durationSeconds != null) 'durationSeconds': durationSeconds,
         if (browseId != null) 'browseId': browseId,
         if (publishedDate != null) 'publishedDate': publishedDate,
+        'isPinned': isPinned,
       };
 
   Audiobook copyWith({
@@ -59,6 +65,7 @@ class Audiobook {
     List<AudiobookChapter>? chapters,
     String? browseId,
     String? publishedDate,
+    bool? isPinned,
   }) =>
       Audiobook(
         id: id ?? this.id,
@@ -71,6 +78,7 @@ class Audiobook {
         chapters: chapters ?? this.chapters,
         browseId: browseId ?? this.browseId,
         publishedDate: publishedDate ?? this.publishedDate,
+        isPinned: isPinned ?? this.isPinned,
       );
 }
 
@@ -136,4 +144,12 @@ extension AudiobookDuration on Audiobook {
       return '${minutes}m';
     }
   }
+
+  Song toSong() => Song(
+        id: id,
+        title: title,
+        artist: author ?? 'Audiobook',
+        thumbnailUrl: thumbnailUrl ?? '',
+        duration: Duration(seconds: durationSeconds ?? 0),
+      );
 }

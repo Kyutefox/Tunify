@@ -31,6 +31,18 @@ class PodcastRepository {
     await _bridge.deletePodcastSubscription(id);
   }
 
+  Future<void> updatePodcast(Podcast podcast) async {
+    await _bridge.upsertPodcastSubscription({
+      'id': podcast.id,
+      'title': podcast.title,
+      'author': podcast.author ?? '',
+      'thumbnail_url': podcast.thumbnailUrl,
+      'browse_id': podcast.browseId,
+      'is_pinned': podcast.isPinned ? 1 : 0,
+      'subscribed_at': DateTime.now().toUtc().toIso8601String(),
+    });
+  }
+
   // ── Saved Audiobooks ──────────────────────────────────────────────────────
 
   Future<List<Audiobook>> loadSavedAudiobooks() async {
@@ -51,6 +63,18 @@ class PodcastRepository {
 
   Future<void> removeSavedAudiobook(String id) async {
     await _bridge.deleteSavedAudiobook(id);
+  }
+
+  Future<void> updateAudiobook(Audiobook audiobook) async {
+    await _bridge.upsertSavedAudiobook({
+      'id': audiobook.id,
+      'title': audiobook.title,
+      'author': audiobook.author ?? '',
+      'thumbnail_url': audiobook.thumbnailUrl,
+      'browse_id': audiobook.browseId,
+      'is_pinned': audiobook.isPinned ? 1 : 0,
+      'saved_at': DateTime.now().toUtc().toIso8601String(),
+    });
   }
 
   // ── Playback Positions ────────────────────────────────────────────────────
@@ -94,6 +118,7 @@ class PodcastRepository {
         author: row['author'] as String?,
         thumbnailUrl: row['thumbnail_url'] as String?,
         browseId: row['browse_id'] as String?,
+        isPinned: (row['is_pinned'] as int?) == 1,
       );
 
   static Audiobook _rowToAudiobook(Map<String, dynamic> row) => Audiobook(
@@ -102,6 +127,7 @@ class PodcastRepository {
         author: row['author'] as String?,
         thumbnailUrl: row['thumbnail_url'] as String?,
         browseId: row['browse_id'] as String?,
+        isPinned: (row['is_pinned'] as int?) == 1,
       );
 
   static PlaybackPosition _rowToPosition(Map<String, dynamic> row) =>

@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/data/models/audiobook.dart';
+import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/data/models/playback_position.dart';
 import 'package:tunify/data/models/podcast.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/data/models/track.dart';
 import 'package:tunify/data/repositories/podcast_repository.dart';
-import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify_database/tunify_database.dart';
 

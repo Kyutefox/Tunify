@@ -263,19 +263,16 @@ class SearchFormatter {
   static List<Map<String, dynamic>> parsePodcastResults(Map<String, dynamic> data, {int maxResults = 24}) {
     final results = <Map<String, dynamic>>[];
     final sections = _extractSearchSections(data);
-    print('PODCAST PARSE: Found ${sections.length} sections');
 
     for (final section in sections) {
       final shelf = section['musicShelfRenderer'] as Map<String, dynamic>?;
       if (shelf == null) continue;
 
       final contents = shelf['contents'] as List<dynamic>?;
-      print('PODCAST PARSE: Shelf has ${contents?.length ?? 0} items');
       if (contents == null) continue;
 
       for (final item in contents.whereType<Map<String, dynamic>>()) {
         final podcast = _parsePodcastItem(item);
-        print('PODCAST PARSE ITEM: ${podcast != null ? 'success' : 'failed'}');
         if (podcast != null) {
           results.add(podcast);
           if (results.length >= maxResults) return results;
@@ -343,9 +340,7 @@ class SearchFormatter {
     
     // Try to get browseId for reference
     String? browseId = renderer['navigationEndpoint']?['browseEndpoint']?['browseId'] as String?;
-    if (browseId == null) {
-      browseId = renderer['overlay']?['musicItemThumbnailOverlayRenderer']?['content']?['musicPlayButtonRenderer']?['playNavigationEndpoint']?['watchPlaylistEndpoint']?['playlistId'] as String?;
-    }
+    browseId ??= renderer['overlay']?['musicItemThumbnailOverlayRenderer']?['content']?['musicPlayButtonRenderer']?['playNavigationEndpoint']?['watchPlaylistEndpoint']?['playlistId'] as String?;
     
     // Use videoId as primary ID for playback, fallback to browseId
     final id = videoId ?? browseId;
@@ -408,9 +403,7 @@ class SearchFormatter {
     
     // Try to get browseId for reference
     String? browseId = renderer['navigationEndpoint']?['browseEndpoint']?['browseId'] as String?;
-    if (browseId == null) {
-      browseId = renderer['overlay']?['musicItemThumbnailOverlayRenderer']?['content']?['musicPlayButtonRenderer']?['playNavigationEndpoint']?['watchPlaylistEndpoint']?['playlistId'] as String?;
-    }
+    browseId ??= renderer['overlay']?['musicItemThumbnailOverlayRenderer']?['content']?['musicPlayButtonRenderer']?['playNavigationEndpoint']?['watchPlaylistEndpoint']?['playlistId'] as String?;
     
     // Use videoId as primary ID for playback, fallback to browseId
     final id = videoId ?? browseId;

@@ -509,9 +509,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   /// Provides media items for Android Auto/CarPlay browsing
   Future<List<MediaItem>> _getMediaLibraryForCar() async {
-    final libraryState = ref.read(libraryProvider);
     final recentSongs = ref.read(recentlyPlayedProvider);
-    final downloads = ref.read(downloadServiceProvider).downloadedSongs;
 
     // Convert songs to MediaItems for car browsing
     return recentSongs.map((song) => MediaItem(

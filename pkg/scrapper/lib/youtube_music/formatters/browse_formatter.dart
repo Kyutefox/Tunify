@@ -183,31 +183,6 @@ class BrowseFormatter {
     return ParserConstants.defaultTrackDuration;
   }
 
-  /// Parse duration from subtitle text (e.g., "2 days ago · 45:30")
-  static Duration _parseDurationFromSubtitle(String subtitle) {
-    // Look for time pattern like "45:30" or "1:23:45"
-    final timePattern = RegExp(r'(\d+):(\d{2})(?::(\d{2}))?');
-    final match = timePattern.firstMatch(subtitle);
-    if (match != null) {
-      final groups = match.groups([1, 2, 3]);
-      if (groups[2] != null) {
-        // HH:MM:SS
-        return Duration(
-          hours: int.parse(groups[0]!),
-          minutes: int.parse(groups[1]!),
-          seconds: int.parse(groups[2]!),
-        );
-      } else {
-        // MM:SS
-        return Duration(
-          minutes: int.parse(groups[0]!),
-          seconds: int.parse(groups[1]!),
-        );
-      }
-    }
-    return ParserConstants.defaultTrackDuration;
-  }
-
   /// Walk through browse data and extract tracks until maxResults is reached.
   static List<Track> extractTracksFromBrowseData(
     Map<String, dynamic> browseData, {

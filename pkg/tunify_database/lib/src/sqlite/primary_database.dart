@@ -1,7 +1,6 @@
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:sqflite/sqlite_api.dart' show ConflictAlgorithm;
 
 import 'create.controller.dart';
 import 'delete.controller.dart';

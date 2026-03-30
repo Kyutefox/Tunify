@@ -1,8 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/data/models/audiobook.dart';
+import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/data/models/playback_position.dart';
 import 'package:tunify/data/models/podcast.dart';
-import 'package:tunify/data/models/track.dart';
+import 'package:tunify/data/models/song.dart';
 import 'package:tunify/data/repositories/podcast_repository.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify_database/tunify_database.dart';
@@ -19,12 +20,16 @@ class PodcastState {
   const PodcastState({
     this.subscriptions = const [],
     this.savedAudiobooks = const [],
+    this.episodesForLater = const [],
+    this.episodesForLaterSortOrder = PlaylistTrackSortOrder.recentlyAdded,
     this.positions = const {},
     this.isLoading = false,
   });
 
   final List<Podcast> subscriptions;
   final List<Audiobook> savedAudiobooks;
+  final List<Song> episodesForLater;
+  final PlaylistTrackSortOrder episodesForLaterSortOrder;
   final Map<String, PlaybackPosition> positions;
   final bool isLoading;
 
@@ -40,12 +45,16 @@ class PodcastState {
   PodcastState copyWith({
     List<Podcast>? subscriptions,
     List<Audiobook>? savedAudiobooks,
+    List<Song>? episodesForLater,
+    PlaylistTrackSortOrder? episodesForLaterSortOrder,
     Map<String, PlaybackPosition>? positions,
     bool? isLoading,
   }) =>
       PodcastState(
         subscriptions: subscriptions ?? this.subscriptions,
         savedAudiobooks: savedAudiobooks ?? this.savedAudiobooks,
+        episodesForLater: episodesForLater ?? this.episodesForLater,
+        episodesForLaterSortOrder: episodesForLaterSortOrder ?? this.episodesForLaterSortOrder,
         positions: positions ?? this.positions,
         isLoading: isLoading ?? this.isLoading,
       );
@@ -67,10 +76,24 @@ class PodcastNotifier extends Notifier<PodcastState> {
     state = state.copyWith(isLoading: true);
     final subs = await _repo.loadSubscriptions();
     final books = await _repo.loadSavedAudiobooks();
+    final episodes = await _repo.loadEpisodesForLater();
     final positions = await _repo.loadAllPositions();
+    
+    // Load sort order from settings
+    final bridge = DatabaseBridge();
+    final sortOrderStr = await bridge.getSetting('episodes_for_later_sort_order');
+    final sortOrder = sortOrderStr != null
+        ? PlaylistTrackSortOrder.values.firstWhere(
+            (e) => e.name == sortOrderStr,
+            orElse: () => PlaylistTrackSortOrder.recentlyAdded,
+          )
+        : PlaylistTrackSortOrder.recentlyAdded;
+    
     state = PodcastState(
       subscriptions: subs,
       savedAudiobooks: books,
+      episodesForLater: episodes,
+      episodesForLaterSortOrder: sortOrder,
       positions: positions,
       isLoading: false,
     );
@@ -122,6 +145,50 @@ class PodcastNotifier extends Notifier<PodcastState> {
     state = state.copyWith(positions: updated);
     await _repo.clearPosition(contentId, type);
   }
+
+  Future<void> togglePodcastPin(String podcastId) async {
+    final podcast = state.subscriptions.firstWhere((p) => p.id == podcastId);
+    final updated = podcast.copyWith(isPinned: !podcast.isPinned);
+    final newList = state.subscriptions.map((p) => p.id == podcastId ? updated : p).toList();
+    state = state.copyWith(subscriptions: newList);
+    await _repo.updatePodcast(updated);
+  }
+
+  Future<void> toggleAudiobookPin(String audiobookId) async {
+    final audiobook = state.savedAudiobooks.firstWhere((a) => a.id == audiobookId);
+    final updated = audiobook.copyWith(isPinned: !audiobook.isPinned);
+    final newList = state.savedAudiobooks.map((a) => a.id == audiobookId ? updated : a).toList();
+    state = state.copyWith(savedAudiobooks: newList);
+    await _repo.updateAudiobook(updated);
+  }
+
+  Future<void> toggleEpisodeForLater(Song song) async {
+    final isAlreadySaved = state.episodesForLater.any((s) => s.id == song.id);
+    if (isAlreadySaved) {
+      state = state.copyWith(
+        episodesForLater: state.episodesForLater.where((s) => s.id != song.id).toList(),
+      );
+      await _repo.removeEpisodeForLater(song.id);
+    } else {
+      state = state.copyWith(
+        episodesForLater: [song, ...state.episodesForLater],
+      );
+      await _repo.saveEpisodeForLater(song);
+    }
+  }
+
+  Future<void> setEpisodesForLaterSortOrder(PlaylistTrackSortOrder order) async {
+    state = state.copyWith(episodesForLaterSortOrder: order);
+    // Persist sort order to settings
+    final bridge = DatabaseBridge();
+    await bridge.setSetting('episodes_for_later_sort_order', order.name);
+  }
+
+  Future<void> updateEpisodesForLaterOrder(List<Song> orderedEpisodes) async {
+    final orderedIds = orderedEpisodes.map((s) => s.id).toList();
+    state = state.copyWith(episodesForLater: orderedEpisodes);
+    await _repo.updateEpisodesForLaterOrder(orderedIds);
+  }
 }
 
 // ── Providers ─────────────────────────────────────────────────────────────────
@@ -130,11 +197,29 @@ final podcastProvider =
     NotifierProvider<PodcastNotifier, PodcastState>(PodcastNotifier.new);
 
 final podcastSubscriptionsProvider = Provider<List<Podcast>>(
-  (ref) => ref.watch(podcastProvider.select((s) => s.subscriptions)),
+  (ref) {
+    final subs = ref.watch(podcastProvider.select((s) => s.subscriptions));
+    final sorted = List<Podcast>.from(subs);
+    sorted.sort((a, b) {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
+    return sorted;
+  },
 );
 
 final savedAudiobooksProvider = Provider<List<Audiobook>>(
-  (ref) => ref.watch(podcastProvider.select((s) => s.savedAudiobooks)),
+  (ref) {
+    final books = ref.watch(podcastProvider.select((s) => s.savedAudiobooks));
+    final sorted = List<Audiobook>.from(books);
+    sorted.sort((a, b) {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return 0;
+    });
+    return sorted;
+  },
 );
 
 // ── Search providers ──────────────────────────────────────────────────────────
@@ -171,34 +256,4 @@ final audiobookSearchResultsProvider =
       .toList();
 });
 
-final podcastEpisodesProvider =
-    FutureProvider.family<List<Episode>, String>((ref, browseId) async {
-  if (browseId.isEmpty) return [];
-  final mgr = ref.watch(streamManagerProvider);
-  
-  // Use appropriate fetch method based on browseId type
-  List<Track> tracks;
-  if (browseId.startsWith('MPED')) {
-    tracks = await mgr.fetchPodcastShowContent(browseId);
-  } else if (browseId.startsWith('MPSPPL')) {
-    tracks = await mgr.fetchPlaylistTracks(browseId);
-  } else {
-    tracks = await mgr.fetchPlaylistTracks(browseId);
-  }
-  
-  return tracks
-      .map((t) {
-        // Parse date from artist field (contains date like "1d ago", "Mar 21")
-        final dateStr = t.artist;
-        return Episode(
-          id: t.id,
-          title: t.title,
-          thumbnailUrl: t.thumbnailUrl,
-          podcastTitle: null, // Could extract actual podcast name if available
-          description: t.albumName, // Contains description
-          publishedDate: dateStr, // Contains date like "1d ago", "Mar 21"
-          durationSeconds: t.duration.inSeconds,
-        );
-      })
-      .toList();
-});
+

@@ -116,7 +116,7 @@ class TunifyAudioHandler extends BaseAudioHandler with SeekHandler, QueueHandler
   ValueStream<Map<String, dynamic>> subscribeToChildren(String parentMediaId) {
     // Return stream - library updates handled via UI refresh
     final controller = BehaviorSubject<Map<String, dynamic>>.seeded({});
-    return controller.stream as ValueStream<Map<String, dynamic>>;
+    return controller.stream;
   }
 
   List<MediaItem> _getRootMenu() {

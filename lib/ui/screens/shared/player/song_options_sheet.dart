@@ -40,6 +40,10 @@ void showSongOptionsSheet(
   required WidgetRef ref,
   List<SongOptionExtra> extraOptions = const [],
   bool showAddToPlaylist = true,
+  bool showLike = true,
+  bool showAddToQueue = true,
+  bool showGoToArtist = true,
+  bool showGoToAlbum = true,
   VoidCallback? onRemoveFromPlaylist,
   int? queueIndex,
   Rect? anchorRect,
@@ -54,6 +58,10 @@ void showSongOptionsSheet(
       song: song,
       extraOptions: extraOptions,
       showAddToPlaylist: showAddToPlaylist,
+      showLike: showLike,
+      showAddToQueue: showAddToQueue,
+      showGoToArtist: showGoToArtist,
+      showGoToAlbum: showGoToAlbum,
       onRemoveFromPlaylist: onRemoveFromPlaylist,
       queueIndex: queueIndex,
       anchorRect: anchorRect ?? _rectFromContext(buttonContext ?? context),
@@ -66,6 +74,10 @@ void showSongOptionsSheet(
       song: song,
       extraOptions: extraOptions,
       showAddToPlaylist: showAddToPlaylist,
+      showLike: showLike,
+      showAddToQueue: showAddToQueue,
+      showGoToArtist: showGoToArtist,
+      showGoToAlbum: showGoToAlbum,
       onRemoveFromPlaylist: onRemoveFromPlaylist,
       queueIndex: queueIndex,
       isDownloads: isDownloads,
@@ -80,6 +92,10 @@ void _showDesktopSongMenu(
   required Song song,
   List<SongOptionExtra> extraOptions = const [],
   bool showAddToPlaylist = true,
+  bool showLike = true,
+  bool showAddToQueue = true,
+  bool showGoToArtist = true,
+  bool showGoToAlbum = true,
   VoidCallback? onRemoveFromPlaylist,
   int? queueIndex,
   Rect? anchorRect,
@@ -150,12 +166,13 @@ void _showDesktopSongMenu(
   ];
 
   final entries = <AppMenuEntry>[
-    AppMenuEntry(
-      icon: AppIcons.favourite,
-      label: isLiked ? 'Unlike' : 'Like',
-      color: isLiked ? AppColors.loveThemeColorFor(song.id) : null,
-      onTap: () => ref.read(libraryProvider.notifier).toggleLiked(song),
-    ),
+    if (showLike)
+      AppMenuEntry(
+        icon: AppIcons.favourite,
+        label: isLiked ? 'Unlike' : 'Like',
+        color: isLiked ? AppColors.loveThemeColorFor(song.id) : null,
+        onTap: () => ref.read(libraryProvider.notifier).toggleLiked(song),
+      ),
     if (showAddToPlaylist || onRemoveFromPlaylist != null)
       AppMenuEntry(
         icon: onRemoveFromPlaylist != null
@@ -169,19 +186,20 @@ void _showDesktopSongMenu(
         onTap: onRemoveFromPlaylist ?? () {},
         subEntries: onRemoveFromPlaylist == null ? playlistSubEntries : null,
       ),
-    AppMenuEntry(
-      icon: isInQueue ? AppIcons.removeCircleOutline : AppIcons.queueMusic,
-      label: isInQueue ? 'Remove from queue' : 'Add to queue',
-      onTap: () {
-        if (isInQueue) {
-          ref
-              .read(playerProvider.notifier)
-              .removeFromQueue(effectiveQueueIndex);
-        } else {
-          ref.read(playerProvider.notifier).addToQueue(song);
-        }
-      },
-    ),
+    if (showAddToQueue)
+      AppMenuEntry(
+        icon: isInQueue ? AppIcons.removeCircleOutline : AppIcons.queueMusic,
+        label: isInQueue ? 'Remove from queue' : 'Add to queue',
+        onTap: () {
+          if (isInQueue) {
+            ref
+                .read(playerProvider.notifier)
+                .removeFromQueue(effectiveQueueIndex);
+          } else {
+            ref.read(playerProvider.notifier).addToQueue(song);
+          }
+        },
+      ),
     if (!isLocalSong)
       AppMenuEntry(
         icon: isDownloaded ? AppIcons.checkCircle : AppIcons.download,
@@ -195,9 +213,10 @@ void _showDesktopSongMenu(
         },
       ),
     const AppMenuEntry.divider(),
-    AppMenuEntry(
-      icon: AppIcons.artist,
-      label: 'Go to Artist',
+    if (showGoToArtist)
+      AppMenuEntry(
+        icon: AppIcons.artist,
+        label: 'Go to Artist',
       showChevron: true,
       onTap: () {
         final page = LibraryPlaylistScreen.artist(
@@ -212,23 +231,24 @@ void _showDesktopSongMenu(
         }
       },
     ),
-    AppMenuEntry(
-      icon: AppIcons.album,
-      label: 'Go to Album',
-      showChevron: true,
-      onTap: () {
-        final page = LibraryPlaylistScreen.album(
-          songTitle: song.title,
-          artistName: song.artist,
-          thumbnailUrl: song.thumbnailUrl,
-          browseId: song.albumBrowseId,
-          name: song.albumName,
-          songId: song.id,
-        );
-        if (pushDetail != null) {
-          pushDetail(page);
-        } else {
-          navigator.push(appPageRoute<void>(builder: (_) => page));
+    if (showGoToAlbum)
+      AppMenuEntry(
+        icon: AppIcons.album,
+        label: 'Go to Album',
+        showChevron: true,
+        onTap: () {
+          final page = LibraryPlaylistScreen.album(
+            songTitle: song.title,
+            artistName: song.artist,
+            thumbnailUrl: song.thumbnailUrl,
+            browseId: song.albumBrowseId,
+            name: song.albumName,
+            songId: song.id,
+          );
+          if (pushDetail != null) {
+            pushDetail(page);
+          } else {
+            navigator.push(appPageRoute<void>(builder: (_) => page));
         }
       },
     ),
@@ -259,6 +279,10 @@ class _SongOptionsContent extends ConsumerWidget {
     required this.song,
     this.extraOptions = const [],
     this.showAddToPlaylist = true,
+    this.showLike = true,
+    this.showAddToQueue = true,
+    this.showGoToArtist = true,
+    this.showGoToAlbum = true,
     this.onRemoveFromPlaylist,
     this.queueIndex,
     this.isDownloads = false,
@@ -268,6 +292,10 @@ class _SongOptionsContent extends ConsumerWidget {
   final Song song;
   final List<SongOptionExtra> extraOptions;
   final bool showAddToPlaylist;
+  final bool showLike;
+  final bool showAddToQueue;
+  final bool showGoToArtist;
+  final bool showGoToAlbum;
   final VoidCallback? onRemoveFromPlaylist;
   final int? queueIndex;
   final bool isDownloads;
@@ -354,6 +382,7 @@ class _SongOptionsContent extends ConsumerWidget {
             isDownloaded: isDownloaded,
             isLocalSong: isLocalSong,
             isLiked: isLiked,
+            showLike: showLike,
             showPlaylist: showAddToPlaylist ||
                 onRemoveFromPlaylist != null ||
                 isDownloads ||
@@ -405,57 +434,60 @@ class _SongOptionsContent extends ConsumerWidget {
             height: 1,
           ),
           const SizedBox(height: AppSpacing.sm),
-          SheetOptionTile(
-            icon: AppIcons.artist,
-            label: 'Go to Artist',
-            onTap: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                appPageRoute<void>(
-                  builder: (_) => LibraryPlaylistScreen.artist(
-                    artistName: songForNav.artist,
-                    thumbnailUrl: songForNav.thumbnailUrl,
-                    browseId: songForNav.artistBrowseId,
+          if (showGoToArtist)
+            SheetOptionTile(
+              icon: AppIcons.artist,
+              label: 'Go to Artist',
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  appPageRoute<void>(
+                    builder: (_) => LibraryPlaylistScreen.artist(
+                      artistName: songForNav.artist,
+                      thumbnailUrl: songForNav.thumbnailUrl,
+                      browseId: songForNav.artistBrowseId,
+                    ),
                   ),
-                ),
-              );
-            },
+                );
+              },
           ),
-          SheetOptionTile(
-            icon: AppIcons.album,
-            label: 'Go to Album',
-            onTap: () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                appPageRoute<void>(
-                  builder: (_) => LibraryPlaylistScreen.album(
-                    songTitle: songForNav.title,
-                    artistName: songForNav.artist,
-                    thumbnailUrl: songForNav.thumbnailUrl,
-                    browseId: songForNav.albumBrowseId,
-                    name: songForNav.albumName,
-                    songId: songForNav.id,
+          if (showGoToAlbum)
+            SheetOptionTile(
+              icon: AppIcons.album,
+              label: 'Go to Album',
+              onTap: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).push(
+                  appPageRoute<void>(
+                    builder: (_) => LibraryPlaylistScreen.album(
+                      songTitle: songForNav.title,
+                      artistName: songForNav.artist,
+                      thumbnailUrl: songForNav.thumbnailUrl,
+                      browseId: songForNav.albumBrowseId,
+                      name: songForNav.albumName,
+                      songId: songForNav.id,
+                    ),
                   ),
-                ),
-              );
-            },
-          ),
-          SheetOptionTile(
-            icon:
-                isInQueue ? AppIcons.removeCircleOutline : AppIcons.queueMusic,
-            label: isInQueue ? 'Remove from queue' : 'Add to queue',
-            onTap: () {
-              Navigator.of(context).pop();
-              if (isInQueue) {
-                ref
-                    .read(playerProvider.notifier)
-                    .removeFromQueue(effectiveQueueIndex);
-              } else {
-                ref.read(playerProvider.notifier).addToQueue(song);
-              }
-            },
-            showChevron: false,
-          ),
+                );
+              },
+            ),
+          if (showAddToQueue)
+            SheetOptionTile(
+              icon:
+                  isInQueue ? AppIcons.removeCircleOutline : AppIcons.queueMusic,
+              label: isInQueue ? 'Remove from queue' : 'Add to queue',
+              onTap: () {
+                Navigator.of(context).pop();
+                if (isInQueue) {
+                  ref
+                      .read(playerProvider.notifier)
+                      .removeFromQueue(effectiveQueueIndex);
+                } else {
+                  ref.read(playerProvider.notifier).addToQueue(song);
+                }
+              },
+              showChevron: false,
+            ),
           for (final extra in extraOptions)
             SheetOptionTile(
               icon: extra.icon,
@@ -477,6 +509,7 @@ class _QuickActionRow extends StatelessWidget {
     required this.isDownloaded,
     required this.isLocalSong,
     required this.isLiked,
+    required this.showLike,
     required this.showPlaylist,
     this.isRemoveFromPlaylist = false,
     this.isDownloads = false,
@@ -490,6 +523,7 @@ class _QuickActionRow extends StatelessWidget {
   final bool isDownloaded;
   final bool isLocalSong;
   final bool isLiked;
+  final bool showLike;
   final bool showPlaylist;
   final bool isRemoveFromPlaylist;
   final bool isDownloads;
@@ -536,19 +570,20 @@ class _QuickActionRow extends StatelessWidget {
               onTap: onPlaylist,
             ),
           ),
-        Expanded(
-          child: _QuickActionButton(
-            iconWidget: FavouriteIcon(
-              isLiked: isLiked,
-              songId: songId,
-              size: 26,
-              emptyColor: AppColorsScheme.of(context).textSecondary,
+        if (showLike)
+          Expanded(
+            child: _QuickActionButton(
+              iconWidget: FavouriteIcon(
+                isLiked: isLiked,
+                songId: songId,
+                size: 26,
+                emptyColor: AppColorsScheme.of(context).textSecondary,
+              ),
+              label: isLiked ? 'Liked' : 'Like',
+              isActive: isLiked,
+              onTap: onLiked,
             ),
-            label: isLiked ? 'Liked' : 'Like',
-            isActive: isLiked,
-            onTap: onLiked,
           ),
-        ),
       ],
     );
   }

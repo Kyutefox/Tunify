@@ -185,25 +185,47 @@ class BrowseApi {
   /// The [browseId] corresponds to a playlist or album page and [params]
   /// carries additional server‑side filters. The number of returned [Track]s
   /// is capped by [maxTracks].
-  Future<List<Track>> fetchPlaylistOrAlbum(
+  Future<({List<Track> tracks, String? continuationToken})> fetchPlaylistOrAlbumWithContinuation(
     String browseId, {
     String? params,
+    String? continuationToken,
     int maxTracks = 500,
   }) async {
     try {
       final payload = <String, dynamic>{
         'context': _client.context(),
-        'browseId': browseId,
       };
-      if (params != null && params.isNotEmpty) {
-        payload['params'] = params;
+      
+      if (continuationToken != null && continuationToken.isNotEmpty) {
+        payload['continuation'] = continuationToken;
+      } else {
+        payload['browseId'] = browseId;
+        if (params != null && params.isNotEmpty) {
+          payload['params'] = params;
+        }
       }
+      
       final data = await _client.post('browse', payload);
-      return BrowseFormatter.extractTracksFromBrowseData(data,
-          maxResults: maxTracks);
+      final tracks = BrowseFormatter.extractTracksFromBrowseData(data, maxResults: maxTracks);
+      final nextToken = BrowseFormatter.extractBrowseContinuationToken(data);
+      
+      return (tracks: tracks, continuationToken: nextToken);
     } catch (e) {
-      return [];
+      return (tracks: <Track>[], continuationToken: null);
     }
+  }
+
+  Future<List<Track>> fetchPlaylistOrAlbum(
+    String browseId, {
+    String? params,
+    int maxTracks = 500,
+  }) async {
+    final result = await fetchPlaylistOrAlbumWithContinuation(
+      browseId,
+      params: params,
+      maxTracks: maxTracks,
+    );
+    return result.tracks;
   }
 
   /// Fetches content from a podcast show page and extracts videos as episodes.

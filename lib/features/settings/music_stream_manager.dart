@@ -695,15 +695,30 @@ class MusicStreamManager {
     }
   }
 
+  Future<({List<Track> tracks, String? continuationToken})> fetchPlaylistTracksWithContinuation(
+    String browseId, {
+    String? continuationToken,
+    int maxTracks = 200,
+  }) async {
+    try {
+      final result = await _ytMusic.browse.fetchPlaylistOrAlbumWithContinuation(
+        browseId,
+        continuationToken: continuationToken,
+        maxTracks: maxTracks,
+      );
+      return (
+        tracks: result.tracks.map(_scrapperTrackToApp).toList(),
+        continuationToken: result.continuationToken,
+      );
+    } catch (_) {
+      return (tracks: <Track>[], continuationToken: null);
+    }
+  }
+
   Future<List<Track>> fetchPlaylistTracks(String browseId,
       {int maxTracks = 200}) async {
-    try {
-      final raw = await _ytMusic.browse
-          .fetchPlaylistOrAlbum(browseId, maxTracks: maxTracks);
-      return raw.map(_scrapperTrackToApp).toList();
-    } catch (_) {
-      return [];
-    }
+    final result = await fetchPlaylistTracksWithContinuation(browseId, maxTracks: maxTracks);
+    return result.tracks;
   }
 
   Future<List<Track>> getRecommendedQueue(

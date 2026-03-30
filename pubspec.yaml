@@ -1,7 +1,7 @@
 name: tunify
 description: A Flutter music app that streams from YouTube Music.
 publish_to: "none"
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.6.0

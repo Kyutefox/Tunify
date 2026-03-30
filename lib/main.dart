@@ -20,8 +20,9 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
 import 'package:tunify/data/repositories/database_repository.dart';
 import 'package:tunify/features/player/audio/audio_handler.dart';
-import 'package:tunify/features/player/audio/audio_player_service.dart';
 import 'package:tunify/features/player/audio/crossfade_engine.dart';
+import 'package:tunify/features/player/audio/audio_player_service.dart';
+import 'package:tunify/features/carplay/carplay_provider.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 import 'package:tunify/data/databases/supabase/supabase_prefs.dart';
 import 'package:tunify/ui/shell/desktop_shell.dart';
@@ -142,6 +143,12 @@ class _TunifyAppContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
+    
+    // Initialize CarPlay service for iOS
+    if (Platform.isIOS) {
+      ref.read(carPlayProvider);
+    }
+    
     final init = ref.watch(supabaseInitProvider);
 
     if (init.isLoading) {

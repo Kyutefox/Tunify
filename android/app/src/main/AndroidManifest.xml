@@ -49,6 +49,12 @@
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
         </service>
+
+        <!-- Android Auto metadata -->
+        <meta-data android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+        <meta-data android:name="com.google.android.gms.car.notification.SmallIcon"
+            android:resource="@mipmap/ic_launcher_foreground" />
         <receiver
             android:name="com.ryanheise.audioservice.MediaButtonReceiver"
             android:exported="true">

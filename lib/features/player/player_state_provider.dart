@@ -19,7 +19,7 @@ import 'package:tunify/features/player/audio/crossfade_engine.dart';
 import 'package:tunify/features/player/audio/audio_handler.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 
-import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode, ShuffleModeX;
+import 'package:tunify/data/models/library_playlist.dart'; 
 import 'package:tunify/features/device/device_music_provider.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
@@ -501,6 +501,66 @@ class PlayerNotifier extends Notifier<PlayerState> {
       );
     };
     handler.onSeek = (pos) => seekTo(pos);
+
+    // Android Auto / CarPlay media browsing callbacks
+    handler.onGetMediaLibrary = () => _getMediaLibraryForCar();
+    handler.onPlayFromMediaId = (mediaId) => _playFromMediaId(mediaId);
+  }
+
+  /// Provides media items for Android Auto/CarPlay browsing
+  Future<List<MediaItem>> _getMediaLibraryForCar() async {
+    final libraryState = ref.read(libraryProvider);
+    final recentSongs = ref.read(recentlyPlayedProvider);
+    final downloads = ref.read(downloadServiceProvider).downloadedSongs;
+
+    // Convert songs to MediaItems for car browsing
+    return recentSongs.map((song) => MediaItem(
+      id: song.id,
+      title: song.title,
+      artist: song.artist,
+      artUri: Uri.parse(song.thumbnailUrl),
+      duration: song.duration,
+      playable: true,
+    )).toList();
+  }
+
+  /// Plays media selected from Android Auto/CarPlay browser
+  Future<void> _playFromMediaId(String mediaId) async {
+    if (mediaId.startsWith(MediaItemId.playlistPrefix)) {
+      final playlistId = mediaId.replaceFirst(MediaItemId.playlistPrefix, '');
+      final libraryState = ref.read(libraryProvider);
+      LibraryPlaylist? playlist;
+      for (final p in libraryState.playlists) {
+        if (p.id == playlistId) {
+          playlist = p;
+          break;
+        }
+      }
+      if (playlist != null && playlist.songs.isNotEmpty) {
+        await playSong(playlist.songs.first, queueSource: 'android_auto');
+      }
+    } else if (mediaId == MediaItemId.likedSongs) {
+      final liked = ref.read(libraryProvider).likedPlaylist.songs;
+      if (liked.isNotEmpty) {
+        await playSong(liked.first, queueSource: 'android_auto');
+      }
+    } else if (mediaId == MediaItemId.downloads) {
+      final downloads = ref.read(downloadServiceProvider).downloadedSongs;
+      if (downloads.isNotEmpty) {
+        final song = downloads.first;
+        await playSong(song, queueSource: 'android_auto');
+      }
+    } else {
+      // Assume it's a song ID
+      final allSongs = <Song>[
+        ...ref.read(libraryProvider).likedPlaylist.songs,
+        ...ref.read(downloadServiceProvider).downloadedSongs,
+      ];
+      final song = allSongs.where((s) => s.id == mediaId).firstOrNull;
+      if (song != null) {
+        await playSong(song, queueSource: 'android_auto');
+      }
+    }
   }
 
   void _syncMediaNotification(Song song) {

@@ -666,6 +666,182 @@ class MusicStreamManager {
     }
   }
 
+  /// Returns first page of song results + continuation token for [loadMore].
+  Future<({List<Track> items, String? continuation})> searchSongsPage(String query) async {
+    try {
+      final page = await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterSongs,
+        scrapper.SearchFormatter.parseSearchResults,
+      );
+      return (
+        items: page.items.map(_scrapperTrackToApp).toList(),
+        continuation: page.continuation,
+      );
+    } catch (_) {
+      return (items: <Track>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of video results + continuation token.
+  Future<({List<Track> items, String? continuation})> searchVideosPage(String query) async {
+    try {
+      final page = await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterVideos,
+        scrapper.SearchFormatter.parseVideoResults,
+      );
+      return (
+        items: page.items.map(_scrapperTrackToApp).toList(),
+        continuation: page.continuation,
+      );
+    } catch (_) {
+      return (items: <Track>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of artist results + continuation token.
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchArtistsPage(String query) async {
+    try {
+      return await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterArtists,
+        scrapper.SearchFormatter.parseArtistResults,
+      );
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of album results + continuation token.
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchAlbumsPage(String query) async {
+    try {
+      return await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterAlbums,
+        scrapper.SearchFormatter.parseAlbumResults,
+      );
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of community playlist results + continuation token.
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchCommunityPlaylistsPage(String query) async {
+    try {
+      return await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterCommunityPlaylists,
+        scrapper.SearchFormatter.parsePlaylistResults,
+      );
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of featured playlist results + continuation token.
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchFeaturedPlaylistsPage(String query) async {
+    try {
+      return await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterFeaturedPlaylists,
+        scrapper.SearchFormatter.parsePlaylistResults,
+      );
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of profile results + continuation token.
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchProfilesPage(String query) async {
+    try {
+      return await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterProfiles,
+        scrapper.SearchFormatter.parseProfileResults,
+      );
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  /// Continues a song/video search from a [continuationToken].
+  Future<({List<Track> items, String? continuation})> continueTrackSearch(String continuationToken) async {
+    try {
+      final page = await _ytMusic.search.continuePage(
+        continuationToken,
+        scrapper.SearchFormatter.parseSearchResults,
+      );
+      return (
+        items: page.items.map(_scrapperTrackToApp).toList(),
+        continuation: page.continuation,
+      );
+    } catch (_) {
+      return (items: <Track>[], continuation: null);
+    }
+  }
+
+  /// Continues a map-based search (artists/albums/playlists/profiles) from a [continuationToken].
+  Future<({List<Map<String, dynamic>> items, String? continuation})> continueMapSearch(
+    String continuationToken,
+    List<Map<String, dynamic>> Function(Map<String, dynamic>) parseResults,
+  ) async {
+    try {
+      return await _ytMusic.search.continuePage(continuationToken, parseResults);
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  Future<List<Track>> searchVideos(String query, {int maxResults = 24}) async {
+    try {
+      final list = await _ytMusic.search.searchVideos(query, maxResults: maxResults);
+      return list.map(_scrapperTrackToApp).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchAlbums(String query, {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search.searchAlbums(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchArtists(String query, {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search.searchArtists(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchCommunityPlaylists(String query, {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search.searchCommunityPlaylists(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchFeaturedPlaylists(String query, {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search.searchFeaturedPlaylists(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchProfiles(String query, {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search.searchProfiles(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> searchPodcasts(String query,
       {int maxResults = 24}) async {
     try {

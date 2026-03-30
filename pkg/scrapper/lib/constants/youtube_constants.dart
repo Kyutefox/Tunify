@@ -20,15 +20,32 @@ class YtConstants {
   // --- Search filters ---
   /// InnerTube `params` value that filters search results to Songs only.
   static const String searchFilterSongs = 'EgWKAQIIAWoKEAkQBRAKEAMQBA%3D%3D';
-  
+
+  /// InnerTube `params` value that filters search results to Videos only.
+  static const String searchFilterVideos = 'EgWKAQIQAWoKEAkQBRAKEAMQBA%3D%3D';
+
+  /// InnerTube `params` value that filters search results to Albums only.
+  static const String searchFilterAlbums = 'EgWKAQIYAWoKEAkQBRAKEAMQBA%3D%3D';
+
+  /// InnerTube `params` value that filters search results to Artists only.
+  static const String searchFilterArtists = 'EgWKAQIgAWoKEAkQBRAKEAMQBA%3D%3D';
+
+  /// InnerTube `params` value that filters search results to Community Playlists only.
+  static const String searchFilterCommunityPlaylists = 'EgWKAQIoAWoKEAkQBRAKEAMQBA%3D%3D';
+
+  /// InnerTube `params` value that filters search results to Featured Playlists only.
+  static const String searchFilterFeaturedPlaylists = 'EgWKAQIoAWoKEAkQBRAKEAMQBA%3D%3D';
+
+  /// InnerTube `params` value that filters search results to Profiles only.
+  static const String searchFilterProfiles = 'EgWKAQJYAWoKEAkQBRAKEAMQBA%3D%3D';
+
   /// InnerTube `params` value that filters search results to Podcasts only.
   static const String searchFilterPodcasts = 'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
-  
+
   /// InnerTube `params` value that filters search results to Episodes only.
   static const String searchFilterEpisodes = 'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
-  
+
   /// InnerTube `params` value that filters search results to Audiobooks only.
-  /// Note: Using same as podcasts filter for now - will update with correct value when available
   static const String searchFilterAudiobooks = 'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
 
   // --- Player ---

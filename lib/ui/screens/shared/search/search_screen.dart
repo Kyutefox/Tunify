@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/connectivity_provider.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
@@ -318,9 +319,7 @@ class SearchResultsBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(searchProvider);
     final showExplicit = ref.watch(showExplicitContentProvider);
-    final displayResults = filterByExplicitSetting(state.results, showExplicit);
     final isSearching = state.query.isNotEmpty;
-    final hasResults = displayResults.isNotEmpty;
     final showInlineSuggestions = isSearching &&
         inlineSuggestionsForQuery == state.query &&
         inlineSuggestions.isNotEmpty;
@@ -359,60 +358,37 @@ class SearchResultsBody extends ConsumerWidget {
       );
     }
 
-    final hasContent = state.isLoading || hasResults;
-
-    if (!hasContent) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (isOffline)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.xl, vertical: AppSpacing.md),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AppIcon(
-                      icon: AppIcons.wifiOff,
-                      color: AppColorsScheme.of(context).textMuted,
-                      size: 16),
-                  const SizedBox(width: AppSpacing.xs),
-                  Text(
-                    "You're offline — suggestions unavailable",
-                    style: TextStyle(
-                        color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
-                  ),
-                ],
-              ),
-            ),
-          Expanded(
-            child: Center(
-              child: Text(
-                'No results found',
-                style: TextStyle(
-                  color: AppColorsScheme.of(context).textSecondary,
-                  fontSize: AppFontSize.lg,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
     final filter = state.filter;
-    final artistResults = state.artistResults;
-    final albumResults = state.albumResults;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // ── Filter tab bar — only shown when results are available ──
-        if (!state.isLoading && hasResults)
+        // ── Filter tab bar — always show once user has typed a query ──
+        if (isSearching)
           _SearchFilterBar(
             selected: filter,
             onSelect: (f) => ref.read(searchProvider.notifier).setFilter(f),
+          ),
+        if (isOffline && !state.isLoading)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl, vertical: AppSpacing.sm),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AppIcon(
+                    icon: AppIcons.wifiOff,
+                    color: AppColorsScheme.of(context).textMuted,
+                    size: 16),
+                const SizedBox(width: AppSpacing.xs),
+                Text(
+                  "You're offline — suggestions unavailable",
+                  style: TextStyle(
+                      color: AppColorsScheme.of(context).textMuted,
+                      fontSize: AppFontSize.sm),
+                ),
+              ],
+            ),
           ),
         // ── Results list ──
         Expanded(
@@ -423,9 +399,7 @@ class SearchResultsBody extends ConsumerWidget {
               ref: ref,
               state: state,
               filter: filter,
-              displayResults: displayResults,
-              artistResults: artistResults,
-              albumResults: albumResults,
+              showExplicit: showExplicit,
               showInlineSuggestions: showInlineSuggestions,
             ),
           ),
@@ -439,12 +413,9 @@ class SearchResultsBody extends ConsumerWidget {
     required WidgetRef ref,
     required SearchState state,
     required SearchFilter filter,
-    required List<Song> displayResults,
-    required List<ArtistSearchResult> artistResults,
-    required List<AlbumSearchResult> albumResults,
+    required bool showExplicit,
     required bool showInlineSuggestions,
   }) {
-    // Loading state — always show skeletons regardless of filter
     if (state.isLoading) {
       return ListView.builder(
         key: const ValueKey('loading'),
@@ -456,41 +427,116 @@ class SearchResultsBody extends ConsumerWidget {
 
     switch (filter) {
       case SearchFilter.artists:
-        if (artistResults.isEmpty) return _emptyFilterState(context, 'No artists found');
-        return ListView.builder(
-          key: const ValueKey('artists'),
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: AppSpacing.max),
-          itemCount: artistResults.length,
-          itemBuilder: (_, i) => _ArtistResultTile(artist: artistResults[i]),
+        if (state.artistResults.isEmpty) return _emptyFilterState(context, 'No artists found');
+        return _PaginatedList(
+          listKey: const ValueKey('artists'),
+          isLoadingMore: state.isLoadingMore,
+          hasMore: state.continuationFor(SearchFilter.artists) != null,
+          onLoadMore: () => ref.read(searchProvider.notifier).loadMore(),
+          itemCount: state.artistResults.length,
+          itemBuilder: (_, i) => _ArtistResultTile(artist: state.artistResults[i]),
         );
 
       case SearchFilter.albums:
-        if (albumResults.isEmpty) return _emptyFilterState(context, 'No albums found');
-        return ListView.builder(
-          key: const ValueKey('albums'),
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(bottom: AppSpacing.max),
-          itemCount: albumResults.length,
-          itemBuilder: (_, i) => _AlbumResultTile(album: albumResults[i]),
+        if (state.albumResults.isEmpty) return _emptyFilterState(context, 'No albums found');
+        return _PaginatedList(
+          listKey: const ValueKey('albums'),
+          isLoadingMore: state.isLoadingMore,
+          hasMore: state.continuationFor(SearchFilter.albums) != null,
+          onLoadMore: () => ref.read(searchProvider.notifier).loadMore(),
+          itemCount: state.albumResults.length,
+          itemBuilder: (_, i) => _AlbumResultTile(album: state.albumResults[i]),
+        );
+
+      case SearchFilter.videos:
+        final videos = filterByExplicitSetting(state.videoResults, showExplicit);
+        if (videos.isEmpty) return _emptyFilterState(context, 'No videos found');
+        return _PaginatedList(
+          listKey: const ValueKey('videos'),
+          isLoadingMore: state.isLoadingMore,
+          hasMore: state.continuationFor(SearchFilter.videos) != null,
+          onLoadMore: () => ref.read(searchProvider.notifier).loadMore(),
+          itemCount: videos.length,
+          itemBuilder: (_, i) {
+            final song = videos[i];
+            return RepaintBoundary(
+              child: SongListTile(
+                song: song,
+                thumbnailSize: 54,
+                onTap: () => onOpenPlayer(song),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      song.durationFormatted,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
+                        fontSize: AppFontSize.md,
+                      ),
+                    ),
+                    AppIconButton(
+                      icon: AppIcon(
+                        icon: AppIcons.moreVert,
+                        color: AppColorsScheme.of(context).textMuted,
+                        size: 20,
+                      ),
+                      onPressedWithContext: (btnCtx) => showSongOptionsSheet(
+                          context, song: song, ref: ref, buttonContext: btnCtx),
+                      iconSize: 20,
+                      size: 40,
+                      iconAlignment: Alignment.centerRight,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+
+      case SearchFilter.communityPlaylists:
+        if (state.playlistResults.isEmpty) return _emptyFilterState(context, 'No playlists found');
+        return _PaginatedList(
+          listKey: const ValueKey('playlists'),
+          isLoadingMore: state.isLoadingMore,
+          hasMore: state.continuationFor(SearchFilter.communityPlaylists) != null,
+          onLoadMore: () => ref.read(searchProvider.notifier).loadMore(),
+          itemCount: state.playlistResults.length,
+          itemBuilder: (_, i) => _PlaylistResultTile(playlist: state.playlistResults[i]),
+        );
+
+      case SearchFilter.featuredPlaylists:
+        if (state.featuredPlaylistResults.isEmpty) return _emptyFilterState(context, 'No featured playlists found');
+        return _PaginatedList(
+          listKey: const ValueKey('featuredPlaylists'),
+          isLoadingMore: state.isLoadingMore,
+          hasMore: state.continuationFor(SearchFilter.featuredPlaylists) != null,
+          onLoadMore: () => ref.read(searchProvider.notifier).loadMore(),
+          itemCount: state.featuredPlaylistResults.length,
+          itemBuilder: (_, i) => _PlaylistResultTile(playlist: state.featuredPlaylistResults[i]),
+        );
+
+      case SearchFilter.profiles:
+        if (state.profileResults.isEmpty) return _emptyFilterState(context, 'No profiles found');
+        return _PaginatedList(
+          listKey: const ValueKey('profiles'),
+          isLoadingMore: state.isLoadingMore,
+          hasMore: state.continuationFor(SearchFilter.profiles) != null,
+          onLoadMore: () => ref.read(searchProvider.notifier).loadMore(),
+          itemCount: state.profileResults.length,
+          itemBuilder: (_, i) => _ArtistResultTile(artist: state.profileResults[i]),
         );
 
       case SearchFilter.all:
       case SearchFilter.songs:
-        final suggestionCount =
-            showInlineSuggestions ? inlineSuggestions.length : 0;
+        final displayResults = filterByExplicitSetting(state.songResults, showExplicit);
+        final suggestionCount = showInlineSuggestions ? inlineSuggestions.length : 0;
         final totalCount = suggestionCount + displayResults.length;
-        return ListView.builder(
-          key: ValueKey('songs_${state.query}'),
-          cacheExtent: 1000,
-          addAutomaticKeepAlives: true,
-          addRepaintBoundaries: true,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.only(
-            left: AppSpacing.base,
-            right: AppSpacing.base,
-            bottom: AppSpacing.max,
-          ),
+        if (totalCount == 0) return _emptyFilterState(context, 'No results found');
+        return _PaginatedList(
+          listKey: ValueKey('songs_${state.query}'),
+          isLoadingMore: state.isLoadingMore,
+          hasMore: state.continuationFor(filter) != null,
+          onLoadMore: () => ref.read(searchProvider.notifier).loadMore(),
           itemCount: totalCount,
           itemBuilder: (context, index) {
             if (index < suggestionCount) {
@@ -503,18 +549,18 @@ class SearchResultsBody extends ConsumerWidget {
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                         horizontal: AppSpacing.base,
-                        vertical: AppSpacing.xs,
+                        vertical: AppSpacing.md,
                       ),
                       child: Row(
                         children: [
                           SizedBox(
                             width: 54,
-                            height: 54,
-                            child: Center(
+                            child: Align(
+                              alignment: Alignment.centerLeft,
                               child: AppIcon(
                                 icon: AppIcons.search,
                                 color: AppColorsScheme.of(context).textMuted,
-                                size: 24,
+                                size: 20,
                               ),
                             ),
                           ),
@@ -531,10 +577,11 @@ class SearchResultsBody extends ConsumerWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          const SizedBox(width: AppSpacing.sm),
                           AppIcon(
                             icon: AppIcons.arrowUpLeft,
                             color: AppColorsScheme.of(context).textMuted,
-                            size: 20,
+                            size: 18,
                           ),
                         ],
                       ),
@@ -572,6 +619,7 @@ class SearchResultsBody extends ConsumerWidget {
                           buttonContext: btnCtx),
                       iconSize: 20,
                       size: 40,
+                      iconAlignment: Alignment.centerRight,
                     ),
                   ],
                 ),
@@ -767,8 +815,12 @@ class _SearchFilterBar extends StatelessWidget {
                 label: switch (f) {
                   SearchFilter.all => 'All',
                   SearchFilter.songs => 'Songs',
-                  SearchFilter.artists => 'Artists',
+                  SearchFilter.videos => 'Videos',
                   SearchFilter.albums => 'Albums',
+                  SearchFilter.artists => 'Artists',
+                  SearchFilter.communityPlaylists => 'Community playlists',
+                  SearchFilter.featuredPlaylists => 'Featured playlists',
+                  SearchFilter.profiles => 'Profiles',
                 },
                 selected: f == selected,
                 onTap: () => onSelect(f),
@@ -1024,6 +1076,163 @@ class _AlbumResultTile extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PlaylistResultTile extends StatelessWidget {
+  const _PlaylistResultTile({required this.playlist});
+
+  final PlaylistSearchResult playlist;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          if (playlist.browseId == null) return;
+          Navigator.of(context).push(
+            appPageRoute<void>(
+              builder: (_) => LibraryPlaylistScreen.remote(
+                playlist: Playlist(
+                  id: playlist.browseId!,
+                  title: playlist.title,
+                  description: playlist.author,
+                  coverUrl: playlist.thumbnailUrl,
+                ),
+              ),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.sm,
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: Image.network(
+                  playlist.thumbnailUrl,
+                  width: 54,
+                  height: 54,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 54,
+                    height: 54,
+                    color: AppColorsScheme.of(context).surfaceLight,
+                    child: AppIcon(
+                      icon: AppIcons.playlist,
+                      color: AppColorsScheme.of(context).textMuted,
+                      size: 28,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      playlist.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.base,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        if (playlist.author.isNotEmpty) playlist.author,
+                        if (playlist.songCount != null) playlist.songCount!,
+                      ].join(' • '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
+                        fontSize: AppFontSize.sm,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// A ListView that fires [onLoadMore] when the user scrolls within 200px of
+/// the bottom, and appends a loading spinner when [isLoadingMore] is true.
+class _PaginatedList extends StatelessWidget {
+  const _PaginatedList({
+    required this.listKey,
+    required this.itemCount,
+    required this.itemBuilder,
+    required this.isLoadingMore,
+    required this.hasMore,
+    required this.onLoadMore,
+  });
+
+  final Key listKey;
+  final int itemCount;
+  final Widget Function(BuildContext, int) itemBuilder;
+  final bool isLoadingMore;
+  final bool hasMore;
+  final VoidCallback onLoadMore;
+
+  @override
+  Widget build(BuildContext context) {
+    // +1 for the footer (spinner or end-of-list spacer)
+    final footerIndex = itemCount;
+    final totalCount = itemCount + 1;
+
+    return NotificationListener<ScrollNotification>(
+      onNotification: (n) {
+        if (hasMore &&
+            !isLoadingMore &&
+            n is ScrollUpdateNotification &&
+            n.metrics.pixels >= n.metrics.maxScrollExtent - 200) {
+          onLoadMore();
+        }
+        return false;
+      },
+      child: ListView.builder(
+        key: listKey,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: AppSpacing.max),
+        itemCount: totalCount,
+        itemBuilder: (ctx, i) {
+          if (i == footerIndex) {
+            if (isLoadingMore) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                child: Center(
+                  child: SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColorsScheme.of(ctx).textMuted,
+                    ),
+                  ),
+                ),
+              );
+            }
+            return const SizedBox(height: AppSpacing.lg);
+          }
+          return itemBuilder(ctx, i);
+        },
       ),
     );
   }

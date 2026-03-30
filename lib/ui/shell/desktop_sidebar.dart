@@ -340,6 +340,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                 },
                                 size: 36,
                                 iconSize: 15,
+                                iconAlignment: Alignment.centerRight,
                               )
                             else
                               const SizedBox(width: 8),

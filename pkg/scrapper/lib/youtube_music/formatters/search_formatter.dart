@@ -257,6 +257,259 @@ class SearchFormatter {
     return null;
   }
 
+  /// Parses artist search results from a filtered `search` API response.
+  ///
+  /// Returns a list of maps with: id (browseId), name, subscriberCount, thumbnailUrl.
+  static List<Map<String, dynamic>> parseArtistResults(Map<String, dynamic> data, {int maxResults = 24}) {
+    final results = <Map<String, dynamic>>[];
+    final sections = _extractSearchSections(data);
+
+    for (final section in sections) {
+      final shelf = section['musicShelfRenderer'] as Map<String, dynamic>?;
+      if (shelf == null) continue;
+      final contents = shelf['contents'] as List<dynamic>?;
+      if (contents == null) continue;
+
+      for (final item in contents.whereType<Map<String, dynamic>>()) {
+        final artist = _parseArtistItem(item);
+        if (artist != null) {
+          results.add(artist);
+          if (results.length >= maxResults) return results;
+        }
+      }
+    }
+    return results;
+  }
+
+  /// Parses album search results from a filtered `search` API response.
+  ///
+  /// Returns a list of maps with: id (browseId), title, artist, year, thumbnailUrl.
+  static List<Map<String, dynamic>> parseAlbumResults(Map<String, dynamic> data, {int maxResults = 24}) {
+    final results = <Map<String, dynamic>>[];
+    final sections = _extractSearchSections(data);
+
+    for (final section in sections) {
+      final shelf = section['musicShelfRenderer'] as Map<String, dynamic>?;
+      if (shelf == null) continue;
+      final contents = shelf['contents'] as List<dynamic>?;
+      if (contents == null) continue;
+
+      for (final item in contents.whereType<Map<String, dynamic>>()) {
+        final album = _parseAlbumItem(item);
+        if (album != null) {
+          results.add(album);
+          if (results.length >= maxResults) return results;
+        }
+      }
+    }
+    return results;
+  }
+
+  /// Parses video search results from a filtered `search` API response.
+  ///
+  /// Returns [Track] objects — videos are playable by videoId just like songs.
+  static List<Track> parseVideoResults(Map<String, dynamic> data, {int maxResults = 24}) {
+    final results = <Track>[];
+    final seen = <String>{};
+    final sections = _extractSearchSections(data);
+
+    for (final section in sections) {
+      final shelf = section['musicShelfRenderer'] as Map<String, dynamic>?;
+      if (shelf == null) continue;
+      final contents = shelf['contents'] as List<dynamic>?;
+      if (contents == null) continue;
+
+      for (final item in contents.whereType<Map<String, dynamic>>()) {
+        final track = _parseSearchItem(item);
+        if (track != null && seen.add(track.id)) {
+          results.add(track);
+          if (results.length >= maxResults) return results;
+        }
+      }
+    }
+    return results;
+  }
+
+  /// Parses community/featured playlist results from a filtered `search` API response.
+  ///
+  /// Returns a list of maps with: id (browseId/playlistId), title, author, songCount, thumbnailUrl.
+  static List<Map<String, dynamic>> parsePlaylistResults(Map<String, dynamic> data, {int maxResults = 24}) {
+    final results = <Map<String, dynamic>>[];
+    final sections = _extractSearchSections(data);
+
+    for (final section in sections) {
+      final shelf = section['musicShelfRenderer'] as Map<String, dynamic>?;
+      if (shelf == null) continue;
+      final contents = shelf['contents'] as List<dynamic>?;
+      if (contents == null) continue;
+
+      for (final item in contents.whereType<Map<String, dynamic>>()) {
+        final playlist = _parsePlaylistItem(item);
+        if (playlist != null) {
+          results.add(playlist);
+          if (results.length >= maxResults) return results;
+        }
+      }
+    }
+    return results;
+  }
+
+  static Map<String, dynamic>? _parseArtistItem(Map<String, dynamic> item) {
+    final renderer = item['musicResponsiveListItemRenderer'] as Map<String, dynamic>?;
+    if (renderer == null) return null;
+
+    final flexColumns = renderer['flexColumns'] as List<dynamic>?;
+    if (flexColumns == null || flexColumns.isEmpty) return null;
+
+    final browseId = renderer['navigationEndpoint']?['browseEndpoint']?['browseId'] as String?;
+    if (browseId == null) return null;
+
+    final name = p.extractColumnRunsText(flexColumns, 0) ?? 'Unknown Artist';
+    final subscriberCount = flexColumns.length > 1 ? p.extractColumnRunsText(flexColumns, 1) : null;
+    final thumbnailUrl = p.extractThumbnailUrl(renderer['thumbnail']);
+
+    return {
+      'id': browseId,
+      'name': name,
+      'subscriberCount': subscriberCount,
+      'thumbnailUrl': thumbnailUrl ?? '',
+    };
+  }
+
+  static Map<String, dynamic>? _parseAlbumItem(Map<String, dynamic> item) {
+    final renderer = item['musicResponsiveListItemRenderer'] as Map<String, dynamic>?;
+    if (renderer == null) return null;
+
+    final flexColumns = renderer['flexColumns'] as List<dynamic>?;
+    if (flexColumns == null || flexColumns.isEmpty) return null;
+
+    final browseId = renderer['navigationEndpoint']?['browseEndpoint']?['browseId'] as String?;
+    if (browseId == null) return null;
+
+    final title = p.extractColumnRunsText(flexColumns, 0) ?? 'Unknown Album';
+    final thumbnailUrl = p.extractThumbnailUrl(renderer['thumbnail']);
+
+    String? artist;
+    String? year;
+    if (flexColumns.length > 1) {
+      final col = flexColumns[1] as Map<String, dynamic>?;
+      final text = col?['musicResponsiveListItemFlexColumnRenderer']?['text'];
+      final runs = (text?['runs'] as List<dynamic>?)?.whereType<Map<String, dynamic>>().toList();
+      if (runs != null) {
+        for (final run in runs) {
+          final t = run['text'] as String?;
+          if (t == null || t.trim() == '•') continue;
+          final browse = run['navigationEndpoint']?['browseEndpoint'];
+          final pageType = p.extractBrowsePageType(browse as Map<String, dynamic>?);
+          if (pageType == 'MUSIC_PAGE_TYPE_ARTIST' || pageType == 'MUSIC_PAGE_TYPE_USER_CHANNEL') {
+            artist ??= t;
+          } else if (RegExp(r'^\d{4}$').hasMatch(t.trim())) {
+            year ??= t.trim();
+          } else {
+            artist ??= t;
+          }
+        }
+      }
+    }
+
+    return {
+      'id': browseId,
+      'title': title,
+      'artist': artist ?? 'Unknown Artist',
+      'year': year,
+      'thumbnailUrl': thumbnailUrl ?? '',
+    };
+  }
+
+  static Map<String, dynamic>? _parsePlaylistItem(Map<String, dynamic> item) {
+    final renderer = item['musicResponsiveListItemRenderer'] as Map<String, dynamic>?;
+    if (renderer == null) return null;
+
+    final flexColumns = renderer['flexColumns'] as List<dynamic>?;
+    if (flexColumns == null || flexColumns.isEmpty) return null;
+
+    // Prefer browseId, fallback to playlistId from navigation endpoint
+    String? browseId = renderer['navigationEndpoint']?['browseEndpoint']?['browseId'] as String?;
+    browseId ??= renderer['navigationEndpoint']?['watchPlaylistEndpoint']?['playlistId'] as String?;
+    if (browseId == null) return null;
+
+    final title = p.extractColumnRunsText(flexColumns, 0) ?? 'Unknown Playlist';
+    final thumbnailUrl = p.extractThumbnailUrl(renderer['thumbnail']);
+
+    String? author;
+    String? songCountStr;
+    if (flexColumns.length > 1) {
+      final col = flexColumns[1] as Map<String, dynamic>?;
+      final runs = (col?['musicResponsiveListItemFlexColumnRenderer']?['text']?['runs'] as List<dynamic>?)
+          ?.whereType<Map<String, dynamic>>().toList();
+      if (runs != null) {
+        for (final run in runs) {
+          final t = run['text'] as String?;
+          if (t == null || t.trim() == '•') continue;
+          if (t.contains('song') || RegExp(r'^\d+$').hasMatch(t.trim())) {
+            songCountStr ??= t.trim();
+          } else {
+            author ??= t;
+          }
+        }
+      }
+    }
+
+    return {
+      'id': browseId,
+      'title': title,
+      'author': author ?? '',
+      'songCount': songCountStr,
+      'thumbnailUrl': thumbnailUrl ?? '',
+    };
+  }
+
+  /// Parses profile search results from a filtered `search` API response.
+  ///
+  /// Returns a list of maps with: id (browseId), name, handle, thumbnailUrl.
+  static List<Map<String, dynamic>> parseProfileResults(Map<String, dynamic> data, {int maxResults = 24}) {
+    final results = <Map<String, dynamic>>[];
+    final sections = _extractSearchSections(data);
+
+    for (final section in sections) {
+      final shelf = section['musicShelfRenderer'] as Map<String, dynamic>?;
+      if (shelf == null) continue;
+      final contents = shelf['contents'] as List<dynamic>?;
+      if (contents == null) continue;
+
+      for (final item in contents.whereType<Map<String, dynamic>>()) {
+        final profile = _parseProfileItem(item);
+        if (profile != null) {
+          results.add(profile);
+          if (results.length >= maxResults) return results;
+        }
+      }
+    }
+    return results;
+  }
+
+  static Map<String, dynamic>? _parseProfileItem(Map<String, dynamic> item) {
+    final renderer = item['musicResponsiveListItemRenderer'] as Map<String, dynamic>?;
+    if (renderer == null) return null;
+
+    final flexColumns = renderer['flexColumns'] as List<dynamic>?;
+    if (flexColumns == null || flexColumns.isEmpty) return null;
+
+    final browseId = renderer['navigationEndpoint']?['browseEndpoint']?['browseId'] as String?;
+    if (browseId == null) return null;
+
+    final name = p.extractColumnRunsText(flexColumns, 0) ?? 'Unknown Profile';
+    final handle = flexColumns.length > 1 ? p.extractColumnRunsText(flexColumns, 1) : null;
+    final thumbnailUrl = p.extractThumbnailUrl(renderer['thumbnail']);
+
+    return {
+      'id': browseId,
+      'name': name,
+      'handle': handle,
+      'thumbnailUrl': thumbnailUrl ?? '',
+    };
+  }
+
   /// Parses podcast search results from a `search` API response.
   ///
   /// Returns a list of podcast data maps containing id, title, author, thumbnail, etc.

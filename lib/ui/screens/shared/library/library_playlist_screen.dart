@@ -3211,6 +3211,7 @@ class _TrackTile extends ConsumerWidget {
                         }),
           size: 40,
           iconSize: 20,
+          iconAlignment: Alignment.centerRight,
         ),
       ]),
     );

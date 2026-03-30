@@ -206,6 +206,28 @@ class BrowseApi {
     }
   }
 
+  /// Fetches content from a podcast show page and extracts videos as episodes.
+  ///
+  /// Podcast shows (browseIds starting with MPED) don't have structured episode lists
+  /// like playlists. This method browses the show page and extracts any videos found
+  /// as "episodes" for playback.
+  Future<List<Track>> fetchPodcastShowContent(
+    String browseId, {
+    int maxTracks = 50,
+  }) async {
+    try {
+      final payload = <String, dynamic>{
+        'context': _client.context(),
+        'browseId': browseId,
+      };
+      final data = await _client.post('browse', payload);
+      return BrowseFormatter.extractTracksFromBrowseData(data,
+          maxResults: maxTracks);
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// Fetches lyrics payload for a track using a lyrics browse ID.
   ///
   /// Only browse IDs starting with the `MPLYt` prefix are considered valid

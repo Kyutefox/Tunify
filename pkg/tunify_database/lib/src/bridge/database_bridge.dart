@@ -231,4 +231,41 @@ class DatabaseBridge {
     await _db.clearCacheOnlyPlaylists();
     await _db.clearAllStreamUrlCache();
   }
+
+  // ── Podcast Subscriptions ─────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> loadPodcastSubscriptions() =>
+      _db.loadPodcastSubscriptions();
+
+  Future<void> upsertPodcastSubscription(Map<String, dynamic> data) =>
+      _db.upsertPodcastSubscription(data);
+
+  Future<void> deletePodcastSubscription(String id) =>
+      _db.deletePodcastSubscription(id);
+
+  // ── Saved Audiobooks ──────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> loadSavedAudiobooks() =>
+      _db.loadSavedAudiobooks();
+
+  Future<void> upsertSavedAudiobook(Map<String, dynamic> data) =>
+      _db.upsertSavedAudiobook(data);
+
+  Future<void> deleteSavedAudiobook(String id) =>
+      _db.deleteSavedAudiobook(id);
+
+  // ── Playback Positions ────────────────────────────────────────────────────
+
+  Future<Map<String, dynamic>?> getPlaybackPosition(
+          String contentId, String contentType) =>
+      _db.getPlaybackPosition(contentId, contentType);
+
+  Future<List<Map<String, dynamic>>> loadAllPlaybackPositions() =>
+      _db.loadAllPlaybackPositions();
+
+  Future<void> upsertPlaybackPosition(Map<String, dynamic> data) =>
+      _db.upsertPlaybackPosition(data);
+
+  Future<void> deletePlaybackPosition(String contentId, String contentType) =>
+      _db.deletePlaybackPosition(contentId, contentType);
 }

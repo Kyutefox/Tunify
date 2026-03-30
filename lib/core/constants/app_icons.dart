@@ -135,6 +135,10 @@ class AppIcons {
   static List<List<dynamic>> get radar => HugeIcons.strokeRoundedRadar01;
   static List<List<dynamic>> get share => HugeIcons.strokeRoundedShare01;
   static List<List<dynamic>> get fileExport => HugeIcons.strokeRoundedFileExport;
+  static List<List<dynamic>> get podcast => HugeIcons.strokeRoundedPodcast;
+  static List<List<dynamic>> get bookOpen => HugeIcons.strokeRoundedBookOpen01;
+  static List<List<dynamic>> get bookmark => HugeIcons.strokeRoundedBookmark01;
+  static List<List<dynamic>> get bookmarkOutline => HugeIcons.strokeRoundedBookmark02;
 
   static List<List<dynamic>> get cloudOff =>
       HugeIcons.strokeRoundedWifiNoSignal;

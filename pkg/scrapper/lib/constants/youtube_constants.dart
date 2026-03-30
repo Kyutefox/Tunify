@@ -20,6 +20,16 @@ class YtConstants {
   // --- Search filters ---
   /// InnerTube `params` value that filters search results to Songs only.
   static const String searchFilterSongs = 'EgWKAQIIAWoKEAkQBRAKEAMQBA%3D%3D';
+  
+  /// InnerTube `params` value that filters search results to Podcasts only.
+  static const String searchFilterPodcasts = 'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
+  
+  /// InnerTube `params` value that filters search results to Episodes only.
+  static const String searchFilterEpisodes = 'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
+  
+  /// InnerTube `params` value that filters search results to Audiobooks only.
+  /// Note: Using same as podcasts filter for now - will update with correct value when available
+  static const String searchFilterAudiobooks = 'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
 
   // --- Player ---
   static const int playerSignatureTimestamp = 20515;

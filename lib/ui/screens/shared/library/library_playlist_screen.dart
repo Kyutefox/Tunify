@@ -34,6 +34,8 @@ import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/device/device_music_provider.dart';
+import 'package:tunify/features/podcast/podcast_provider.dart';
+import 'package:tunify/data/models/podcast.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
@@ -44,7 +46,7 @@ import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
-enum CollectionType { playlist, album, artist }
+enum CollectionType { playlist, album, artist, podcast }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -171,6 +173,17 @@ class LibraryPlaylistScreen extends ConsumerStatefulWidget {
         albumSongId = null,
         collectionType = CollectionType.playlist;
 
+  const LibraryPlaylistScreen.podcast({super.key, required Playlist playlist})
+      : playlistId = '',
+        remotePlaylist = playlist,
+        albumSongTitle = null,
+        albumArtistName = null,
+        albumThumbnailUrl = null,
+        albumBrowseId = null,
+        albumName = null,
+        albumSongId = null,
+        collectionType = CollectionType.podcast;
+
   final String playlistId;
   final Playlist? remotePlaylist;
   final CollectionType collectionType;
@@ -180,6 +193,7 @@ class LibraryPlaylistScreen extends ConsumerStatefulWidget {
   bool get _isAlbum => collectionType == CollectionType.album;
   bool get _isArtist => collectionType == CollectionType.artist;
   bool get _isRemotePlaylist => remotePlaylist != null;
+  bool get _isPodcast => collectionType == CollectionType.podcast;
 
   @override
   ConsumerState<LibraryPlaylistScreen> createState() =>
@@ -200,7 +214,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   bool _exporting = false;
 
   bool get _isRemote =>
-      widget._isRemotePlaylist ||
+      (widget._isRemotePlaylist && widget.remotePlaylist?.id != 'episodesForLater') ||
       widget._isAlbum ||
       widget._isArtist ||
       _isImportedLocal;
@@ -242,6 +256,12 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
     // Local Files — always local, never needs loading
     if (widget.playlistId == 'localFiles') {
+      return;
+    }
+
+    // Episodes For Later — always local, never needs loading
+    if (widget.playlistId == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater') {
+      _paletteColor = const Color(0xFF9333EA); // Purple color for episodes
       return;
     }
 
@@ -306,6 +326,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     if (widget.playlistId == 'liked') return;
     // Downloads — purely local, no fetching needed
     if (widget.playlistId == 'downloads') return;
+    // Episodes For Later — purely local, no fetching needed
+    if (widget.playlistId == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater') return;
 
     // For imported local playlists: read from provider now that ref is available,
     // pre-populate palette and kick off the track fetch.
@@ -782,7 +804,17 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final imageUrl = playlist.customImageUrl ?? 
                      playlist.songs.firstOrNull?.thumbnailUrl;
     
-    if (widget._isAlbum) {
+    if (widget._isPodcast) {
+      // For podcasts/audiobooks, subscribe using podcast provider
+      final podcast = Podcast(
+        id: widget.remotePlaylist!.id,
+        title: widget.remotePlaylist!.title,
+        author: widget.remotePlaylist!.description,
+        thumbnailUrl: widget.remotePlaylist!.coverUrl,
+        browseId: widget.remotePlaylist!.id,
+      );
+      await ref.read(podcastProvider.notifier).toggleSubscription(podcast);
+    } else if (widget._isAlbum) {
       final albumId = _resolvedBrowseId ??
                       widget.albumBrowseId ??
                       widget.albumName ??
@@ -959,6 +991,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   queueSource: 'downloads',
                   isImported: false,
                   isDownloads: true,
+                  isPodcast: false,
                 );
               },
               childCount: filteredSongs.length,
@@ -1124,6 +1157,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   queueSource: 'localFiles',
                   isImported: false,
                   isLocalFiles: true,
+                  isPodcast: false,
                 );
               },
               childCount: filteredSongs.length,
@@ -1159,7 +1193,18 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         ? _remoteAsLocal
         : widget.playlistId == 'liked'
             ? ref.watch(libraryProvider.select((s) => s.likedPlaylist))
-            : ref.watch(libraryPlaylistByIdProvider(widget.playlistId));
+            : (widget.playlistId == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater')
+                ? LibraryPlaylist(
+                    id: 'episodesForLater',
+                    name: 'Episodes For Later',
+                    description: 'Your saved podcast episodes',
+                    createdAt: DateTime.now(),
+                    updatedAt: DateTime.now(),
+                    songs: ref.watch(podcastProvider.select((s) => s.episodesForLater)),
+                    customImageUrl: null,
+                    isImported: false,
+                  )
+                : ref.watch(libraryPlaylistByIdProvider(widget.playlistId));
 
     if (playlist == null) {
       // Local playlist not found in DB — show loading briefly while provider initialises
@@ -1169,14 +1214,18 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final isInLibrary = _isRemote
         ? (_isImportedLocal
             ? true
-            : widget._isAlbum
-                ? ref.watch(libraryProvider.select(
-                    (s) => s.followedAlbums.any((a) => a.id == playlist.id)))
-                : widget._isArtist
-                    ? ref.watch(libraryProvider.select((s) =>
-                        s.followedArtists.any((a) => a.id == playlist.id)))
-                    : ref.watch(libraryProvider.select(
-                        (s) => s.playlists.any((p) => p.id == playlist.id))))
+            : widget._isPodcast
+                ? ref.watch(podcastProvider.select((s) =>
+                    s.subscriptions.any((p) => p.id == playlist.id) ||
+                    s.savedAudiobooks.any((a) => a.id == playlist.id)))
+                : widget._isAlbum
+                    ? ref.watch(libraryProvider.select(
+                        (s) => s.followedAlbums.any((a) => a.id == playlist.id)))
+                    : widget._isArtist
+                        ? ref.watch(libraryProvider.select((s) =>
+                            s.followedArtists.any((a) => a.id == playlist.id)))
+                        : ref.watch(libraryProvider.select(
+                            (s) => s.playlists.any((p) => p.id == playlist.id))))
         : true;
 
     final isImported = _isRemote || playlist.isImported;
@@ -1220,61 +1269,78 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         : playlist.customImageUrl;
 
     final isLiked = playlist.id == 'liked';
+    final isEpisodesForLater = playlist.id == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater';
 
     return CollectionDetailScaffold(
       isEmpty: songs.isEmpty,
       paletteColor: isLiked
           ? const Color(0xFFE91E8C)
-          : (songs.isEmpty ? const Color(0xFF404040) : _paletteColor),
-      title: isLiked ? 'Liked Songs' : playlist.name.capitalized,
+          : isEpisodesForLater
+              ? const Color(0xFF9333EA)
+              : (songs.isEmpty ? const Color(0xFF404040) : _paletteColor),
+      title: isLiked ? 'Liked Songs' : isEpisodesForLater ? 'Episodes For Later' : playlist.name.capitalized,
       headerExpandedChild: CollectionDetailExpandedContent(
         cover: isLiked
             ? _PlaylistCover(songs: songs, isLiked: true)
-            : _PlaylistCover(
-                songs: songs, imageUrl: coverUrl, isCircle: widget._isArtist),
-        title: isLiked ? 'Liked Songs' : playlist.name.capitalized,
+            : isEpisodesForLater
+                ? _PlaylistCover(songs: songs, isEpisodesForLater: true)
+                : _PlaylistCover(
+                    songs: songs, imageUrl: coverUrl, isCircle: widget._isArtist),
+        title: isLiked ? 'Liked Songs' : isEpisodesForLater ? 'Episodes For Later' : playlist.name.capitalized,
         subtitle: _buildSubtitle(playlist),
       ),
       actionRow: _ActionRow(
         playlistId: playlist.id,
         songs: songs,
         filteredSongs: filteredSongs,
-        showLibraryStatus: !isLiked && isImported,
+        showLibraryStatus: !isLiked && !isEpisodesForLater && isImported,
         isInLibrary: isInLibrary,
         onAddToLibrary: _addToLibrary,
-        onExportToLibrary: (_isRemote && !widget._isAlbum && !widget._isArtist)
+        onExportToLibrary: (_isRemote && !widget._isAlbum && !widget._isArtist && !widget._isPodcast)
             ? _exportToLibrary
             : null,
         addingToLibrary: _addingToLibrary,
         exporting: _exporting,
+        isPodcast: widget._isPodcast || isEpisodesForLater,
         externalShuffleMode:
             (_isRemote && !isInLibrary) ? _ephemeralShuffleMode : null,
         onShuffleModeChanged: (_isRemote && !isInLibrary)
             ? (m) => setState(() => _ephemeralShuffleMode = m)
             : null,
       ),
-      playButton: _CollectionPlayButton(
-        playlistId: playlist.id,
-        songs: songs,
-        filteredSongs: filteredSongs,
-        queueSource:
-            isLiked ? 'liked' : (widget._isAlbum ? 'album' : 'playlist'),
-        externalShuffleEnabled: (_isRemote && !isInLibrary)
-            ? (_ephemeralShuffleMode != ShuffleMode.none)
-            : null,
-      ),
+      playButton: widget._isPodcast && !isEpisodesForLater
+          ? _PodcastSubscribeButton(
+              podcastId: playlist.id,
+              isSubscribed: isInLibrary,
+              onToggle: _addToLibrary,
+            )
+          : _CollectionPlayButton(
+              playlistId: playlist.id,
+              songs: songs,
+              filteredSongs: filteredSongs,
+              queueSource:
+                  isLiked ? 'liked' : isEpisodesForLater ? 'episodesForLater' : (widget._isAlbum ? 'album' : 'playlist'),
+              externalShuffleEnabled: (_isRemote && !isInLibrary)
+                  ? (_ephemeralShuffleMode != ShuffleMode.none)
+                  : null,
+            ),
       pills: (widget._isAlbum || widget._isArtist || isImported)
           ? null
-          : _PlaylistPillRow(
-              playlistId: widget.playlistId.isNotEmpty
-                  ? widget.playlistId
-                  : playlist.id,
-              playlist: playlist,
-              onPlaylistUpdated: () => setState(() {}),
-              showNameDetails: !isLiked,
-              isEmpty: songs.isEmpty,
-            ),
-      searchField: _SearchInPlaylistTap(songs: songs, playlistId: playlist.id),
+          : isEpisodesForLater
+              ? _EpisodesForLaterPillRow(
+                  songs: songs,
+                  onPlaylistUpdated: () => setState(() {}),
+                )
+              : _PlaylistPillRow(
+                  playlistId: widget.playlistId.isNotEmpty
+                      ? widget.playlistId
+                      : playlist.id,
+                  playlist: playlist,
+                  onPlaylistUpdated: () => setState(() {}),
+                  showNameDetails: !isLiked,
+                  isEmpty: songs.isEmpty,
+                ),
+      searchField: _SearchInPlaylistTap(songs: songs, playlistId: playlist.id, isPodcast: widget._isPodcast || isEpisodesForLater),
       bodySlivers: [
         if (filteredSongs.isEmpty)
           SliverFillRemaining(
@@ -1286,9 +1352,11 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   songs.isEmpty
                       ? (isLiked
                           ? 'Your liked songs will appear here.'
-                          : isImported || widget._isAlbum || widget._isArtist
-                              ? 'Nothing here yet — check back soon'
-                              : 'Your playlist is empty.\nAdd songs to get started.')
+                          : isEpisodesForLater
+                              ? 'Your saved podcast episodes will appear here.\nTap "Add to Episodes For Later" from episode options.'
+                              : isImported || widget._isAlbum || widget._isArtist
+                                  ? 'Nothing here yet — check back soon'
+                                  : 'Your playlist is empty.\nAdd songs to get started.')
                       : 'No songs match your filter',
                   textAlign: TextAlign.center,
                   style: TextStyle(
@@ -1312,6 +1380,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                     ? 'liked'
                     : (widget._isAlbum ? 'album' : 'playlist'),
                 isImported: isImported,
+                isPodcast: widget._isPodcast || isEpisodesForLater,
               );
             },
             childCount: filteredSongs.length,
@@ -1327,9 +1396,18 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final muted = TextStyle(
         color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
         fontSize: AppFontSize.base);
+    
+    // Determine the item type label
+    String itemLabel;
+    if (widget._isPodcast) {
+      itemLabel = playlist.songs.length == 1 ? 'episode' : 'episodes';
+    } else {
+      itemLabel = playlist.songs.length == 1 ? 'song' : 'songs';
+    }
+    
     final countDuration = Row(children: [
       Text(
-          '${playlist.songs.length} ${playlist.songs.length == 1 ? 'song' : 'songs'}',
+          '${playlist.songs.length} $itemLabel',
           style: muted),
       if (playlist.songs.isNotEmpty) ...[
         Text(' • ', style: muted),
@@ -1378,7 +1456,8 @@ class _PlaylistCover extends StatelessWidget {
       this.isCircle = false,
       this.isLiked = false,
       this.isDownloads = false,
-      this.isLocalFiles = false});
+      this.isLocalFiles = false,
+      this.isEpisodesForLater = false});
 
   final List<Song> songs;
   final String? imageUrl;
@@ -1386,6 +1465,7 @@ class _PlaylistCover extends StatelessWidget {
   final bool isLiked;
   final bool isDownloads;
   final bool isLocalFiles;
+  final bool isEpisodesForLater;
 
   static const double _size = 200.0;
 
@@ -1505,6 +1585,31 @@ class _PlaylistCover extends StatelessWidget {
             child: const Center(
                 child: FavouriteIcon(
                     isLiked: true, size: 56, fillColor: Colors.white)),
+          ),
+        );
+      }
+      if (isEpisodesForLater) {
+        return Center(
+          child: Container(
+            width: _size,
+            height: _size,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+              ),
+              borderRadius: BorderRadius.circular(AppRadius.sm),
+              boxShadow: [
+                BoxShadow(
+                    color: const Color(0xFF9333EA).withValues(alpha: 0.35),
+                    blurRadius: 20,
+                    offset: const Offset(0, 6))
+              ],
+            ),
+            child: Center(
+                child: AppIcon(
+                    icon: AppIcons.bookmark, color: Colors.white, size: 56)),
           ),
         );
       }
@@ -1632,6 +1737,7 @@ class _ActionRow extends ConsumerWidget {
     this.exporting = false,
     this.isDownloads = false,
     this.isLocalFiles = false,
+    this.isPodcast = false,
     this.externalShuffleMode,
     this.onShuffleModeChanged,
   });
@@ -1643,7 +1749,8 @@ class _ActionRow extends ConsumerWidget {
       addingToLibrary,
       exporting,
       isDownloads,
-      isLocalFiles;
+      isLocalFiles,
+      isPodcast;
   final VoidCallback? onAddToLibrary;
   final VoidCallback? onExportToLibrary;
   final ShuffleMode? externalShuffleMode;
@@ -1681,45 +1788,47 @@ class _ActionRow extends ConsumerWidget {
         padding:
             const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          AppIconButton(
-            icon: SizedBox(
-              width: 24,
-              height: 24,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  AppIcon(
-                    icon: AppIcons.shuffle,
-                    size: 24,
-                    color: shuffleEnabled
-                        ? AppColors.primary
-                        : AppColorsScheme.of(context).textPrimary,
-                  ),
-                  if (shuffleMode == ShuffleMode.smart)
-                    Positioned(
-                      right: -6,
-                      top: -6,
-                      child: Icon(
-                        Icons.auto_awesome,
-                        size: 13,
-                        color: shuffleEnabled
-                            ? AppColors.primary
-                            : AppColorsScheme.of(context).textPrimary,
-                      ),
+          // Hide shuffle button for podcasts
+          if (!isPodcast)
+            AppIconButton(
+              icon: SizedBox(
+                width: 24,
+                height: 24,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    AppIcon(
+                      icon: AppIcons.shuffle,
+                      size: 24,
+                      color: shuffleEnabled
+                          ? AppColors.primary
+                          : AppColorsScheme.of(context).textPrimary,
                     ),
-                ],
+                    if (shuffleMode == ShuffleMode.smart)
+                      Positioned(
+                        right: -6,
+                        top: -6,
+                        child: Icon(
+                          Icons.auto_awesome,
+                          size: 13,
+                          color: shuffleEnabled
+                              ? AppColors.primary
+                              : AppColorsScheme.of(context).textPrimary,
+                        ),
+                      ),
+                  ],
+                ),
               ),
+              onPressed: filteredSongs.isNotEmpty
+                  ? () => _showShuffleModeSheet(context, ref, shuffleMode)
+                  : null,
+              size: 40,
+              iconSize: 24,
             ),
-            onPressed: filteredSongs.isNotEmpty
-                ? () => _showShuffleModeSheet(context, ref, shuffleMode)
-                : null,
-            size: 40,
-            iconSize: 24,
-          ),
           if (!isDownloads && !isLocalFiles)
             MultiDownloadButton(songs: songs, size: 24, iconSize: 20),
-          if (showLibraryStatus) ...[
-            // Export to library button - creates a custom playlist with songs saved locally
+          if (showLibraryStatus && !isPodcast) ...[
+            // Hide export button for podcasts
             if (songs.isNotEmpty && onExportToLibrary != null)
               AppIconButton(
                 icon: exporting
@@ -1736,6 +1845,7 @@ class _ActionRow extends ConsumerWidget {
                 size: 40,
                 iconSize: 24,
               ),
+            // Hide add/check button for podcasts
             AppIconButton(
               icon: addingToLibrary
                   ? SizedBox(
@@ -1808,6 +1918,55 @@ class _CollectionPlayButton extends ConsumerWidget {
           : () {},
       size: 56,
       iconSize: 28,
+    );
+  }
+}
+
+// ─── Podcast Subscribe Button ─────────────────────────────────────────────────
+
+class _PodcastSubscribeButton extends StatelessWidget {
+  const _PodcastSubscribeButton({
+    required this.podcastId,
+    required this.isSubscribed,
+    required this.onToggle,
+  });
+
+  final String podcastId;
+  final bool isSubscribed;
+  final VoidCallback? onToggle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 56,
+      height: 56,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: isSubscribed
+            ? AppColors.primary
+            : AppColors.primary,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.4),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onToggle,
+          customBorder: const CircleBorder(),
+          child: Center(
+            child: AppIcon(
+              icon: isSubscribed ? AppIcons.checkCircle : AppIcons.bookmark,
+              size: 24,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -2417,11 +2576,13 @@ class _SearchInPlaylistTap extends StatelessWidget {
     required this.playlistId,
     this.isDownloads = false,
     this.isLocalFiles = false,
+    this.isPodcast = false,
   });
   final List<Song> songs;
   final String playlistId;
   final bool isDownloads;
   final bool isLocalFiles;
+  final bool isPodcast;
 
   @override
   Widget build(BuildContext context) {
@@ -2434,6 +2595,7 @@ class _SearchInPlaylistTap extends StatelessWidget {
                   playlistId: playlistId,
                   isDownloads: isDownloads,
                   isLocalFiles: isLocalFiles,
+                  isPodcast: isPodcast,
                 ))),
         child: Container(
           height: 44,
@@ -2464,11 +2626,13 @@ class _PlaylistSearchPage extends ConsumerStatefulWidget {
     required this.playlistId,
     this.isDownloads = false,
     this.isLocalFiles = false,
+    this.isPodcast = false,
   });
   final List<Song> songs;
   final String playlistId;
   final bool isDownloads;
   final bool isLocalFiles;
+  final bool isPodcast;
 
   @override
   ConsumerState<_PlaylistSearchPage> createState() =>
@@ -2537,7 +2701,8 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
                     songs: widget.songs,
                     playlistId: widget.playlistId,
                     isDownloads: widget.isDownloads,
-                    isLocalFiles: widget.isLocalFiles));
+                    isLocalFiles: widget.isLocalFiles,
+                    isPodcast: widget.isPodcast));
 
     final page = SharedSearchPage(
         controller: _ctrl,
@@ -2575,6 +2740,7 @@ class _TrackTile extends ConsumerWidget {
     this.isImported = false,
     this.isDownloads = false,
     this.isLocalFiles = false,
+    this.isPodcast = false,
   });
   final Song song;
   final List<Song> songs;
@@ -2582,6 +2748,12 @@ class _TrackTile extends ConsumerWidget {
   final bool isImported;
   final bool isDownloads;
   final bool isLocalFiles;
+  final bool isPodcast;
+
+  bool _isEpisodeSavedForLater(WidgetRef ref, String songId) {
+    final state = ref.watch(podcastProvider);
+    return state.episodesForLater.any((s) => s.id == songId);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2601,22 +2773,51 @@ class _TrackTile extends ConsumerWidget {
               song: song,
               ref: ref,
               buttonContext: btnCtx,
-              showAddToPlaylist: !isImported && !isDownloads && !isLocalFiles,
+              showAddToPlaylist: isPodcast || (!isImported && !isDownloads && !isLocalFiles),
+              showGoToArtist: !isPodcast,
+              showGoToAlbum: !isPodcast,
+              extraOptions: isPodcast
+                  ? [
+                      SongOptionExtra(
+                        icon: AppIcons.bookmark,
+                        label: _isEpisodeSavedForLater(ref, song.id)
+                            ? 'Remove from Episodes For Later'
+                            : 'Add to Episodes For Later',
+                        onTap: () {
+                          ref
+                              .read(podcastProvider.notifier)
+                              .toggleEpisodeForLater(song);
+                        },
+                      ),
+                    ]
+                  : [],
               isDownloads: isDownloads,
               isLocalFiles: isLocalFiles,
               onRemoveFromPlaylist: isImported || isDownloads || isLocalFiles
                   ? null
-                  : () {
-                      ref
-                          .read(libraryProvider.notifier)
-                          .removeSongFromPlaylist(playlistId, song.id);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                                content: Text('Removed from playlist'),
-                                behavior: SnackBarBehavior.floating));
-                      }
-                    }),
+                  : playlistId == 'episodesForLater'
+                      ? () {
+                          ref
+                              .read(podcastProvider.notifier)
+                              .toggleEpisodeForLater(song);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Removed from Episodes For Later'),
+                                    behavior: SnackBarBehavior.floating));
+                          }
+                        }
+                      : () {
+                          ref
+                              .read(libraryProvider.notifier)
+                              .removeSongFromPlaylist(playlistId, song.id);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                    content: Text('Removed from playlist'),
+                                    behavior: SnackBarBehavior.floating));
+                          }
+                        }),
           size: 40,
           iconSize: 20,
         ),

@@ -254,6 +254,17 @@ class DatabaseBridge {
   Future<void> deleteSavedAudiobook(String id) =>
       _db.deleteSavedAudiobook(id);
 
+  // ── Episodes For Later ────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> loadEpisodesForLater() =>
+      _db.loadEpisodesForLater();
+
+  Future<void> upsertEpisodeForLater(Map<String, dynamic> data) =>
+      _db.upsertEpisodeForLater(data);
+
+  Future<void> deleteEpisodeForLater(String id) =>
+      _db.deleteEpisodeForLater(id);
+
   // ── Playback Positions ────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>?> getPlaybackPosition(

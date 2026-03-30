@@ -3,11 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/data/models/audiobook.dart';
-import 'package:tunify/data/models/podcast.dart';
+import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/features/podcast/podcast_provider.dart';
-import 'package:tunify/ui/screens/shared/podcast/podcast_detail_screen.dart';
-import 'package:tunify/ui/screens/shared/podcast/audiobook_detail_screen.dart';
+import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/screens/shared/podcast/podcast_search_screen.dart';
 import 'package:tunify/ui/screens/shared/podcast/podcast_options_sheet.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
@@ -148,6 +146,7 @@ class _PodcastsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final subscriptions = ref.watch(podcastSubscriptionsProvider);
+    final episodesForLater = ref.watch(podcastProvider.select((s) => s.episodesForLater));
 
     if (subscriptions.isEmpty) {
       return _EmptyState(
@@ -160,18 +159,107 @@ class _PodcastsTab extends ConsumerWidget {
     return ListView.builder(
       padding: const EdgeInsets.only(
           top: AppSpacing.sm, left: AppSpacing.base, right: AppSpacing.base, bottom: AppSpacing.xxl + 80),
-      itemCount: subscriptions.length,
+      itemCount: subscriptions.length + 1, // Always show Episodes For Later
       itemBuilder: (context, i) {
-        final podcast = subscriptions[i];
+        // Episodes For Later tile (always first)
+        if (i == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  final playlist = Playlist(
+                    id: 'episodesForLater',
+                    title: 'Episodes For Later',
+                    description: 'Your saved podcast episodes',
+                    coverUrl: '',
+                    trackCount: episodesForLater.length,
+                  );
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+                  ));
+                },
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Center(
+                          child: AppIcon(
+                            icon: AppIcons.bookmark,
+                            size: 28,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Episodes For Later',
+                              style: TextStyle(
+                                color: AppColorsScheme.of(context).textPrimary,
+                                fontSize: AppFontSize.lg,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              '${episodesForLater.length} ${episodesForLater.length == 1 ? 'episode' : 'episodes'}',
+                              style: TextStyle(
+                                color: AppColorsScheme.of(context).textMuted,
+                                fontSize: AppFontSize.md,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        
+        // Adjust index for podcast subscriptions
+        final podcastIndex = i - 1;
+        final podcast = subscriptions[podcastIndex];
         return LibraryItemTile(
           title: podcast.title,
           subtitle: podcast.author ?? 'Podcast',
           thumbnailUrl: podcast.thumbnailUrl,
           placeholderIcon: AppIcons.podcast,
           showPinIndicator: podcast.isPinned,
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => PodcastDetailScreen(podcast: podcast),
-          )),
+          onTap: () {
+            final playlist = Playlist(
+              id: podcast.browseId ?? podcast.id,
+              title: podcast.title,
+              description: podcast.author ?? '',
+              coverUrl: podcast.thumbnailUrl ?? '',
+              trackCount: 0,
+            );
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+            ));
+          },
           onOptions: (rect) => showPodcastOptionsSheet(
             context,
             podcast: podcast,
@@ -213,9 +301,18 @@ class _AudiobooksTab extends ConsumerWidget {
           thumbnailUrl: audiobook.thumbnailUrl,
           placeholderIcon: AppIcons.bookOpen,
           showPinIndicator: audiobook.isPinned,
-          onTap: () => Navigator.of(context).push(MaterialPageRoute(
-            builder: (_) => AudiobookDetailScreen(audiobook: audiobook),
-          )),
+          onTap: () {
+            final playlist = Playlist(
+              id: audiobook.browseId ?? audiobook.id,
+              title: audiobook.title,
+              description: audiobook.author ?? '',
+              coverUrl: audiobook.thumbnailUrl ?? '',
+              trackCount: 0,
+            );
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+            ));
+          },
           onOptions: (rect) => showAudiobookOptionsSheet(
             context,
             audiobook: audiobook,
@@ -248,7 +345,11 @@ class _EmptyState extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AppIcon(icon: icon, size: 56, color: AppColorsScheme.of(context).textMuted),
+            AppIcon(
+              icon: icon,
+              size: 56,
+              color: AppColorsScheme.of(context).textMuted,
+            ),
             const SizedBox(height: AppSpacing.md),
             Text(
               title,

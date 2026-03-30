@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/data/models/audiobook.dart';
 import 'package:tunify/data/models/playback_position.dart';
 import 'package:tunify/data/models/podcast.dart';
+import 'package:tunify/data/models/song.dart';
 import 'package:tunify/data/models/track.dart';
 import 'package:tunify/data/repositories/podcast_repository.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
@@ -19,12 +20,14 @@ class PodcastState {
   const PodcastState({
     this.subscriptions = const [],
     this.savedAudiobooks = const [],
+    this.episodesForLater = const [],
     this.positions = const {},
     this.isLoading = false,
   });
 
   final List<Podcast> subscriptions;
   final List<Audiobook> savedAudiobooks;
+  final List<Song> episodesForLater;
   final Map<String, PlaybackPosition> positions;
   final bool isLoading;
 
@@ -40,12 +43,14 @@ class PodcastState {
   PodcastState copyWith({
     List<Podcast>? subscriptions,
     List<Audiobook>? savedAudiobooks,
+    List<Song>? episodesForLater,
     Map<String, PlaybackPosition>? positions,
     bool? isLoading,
   }) =>
       PodcastState(
         subscriptions: subscriptions ?? this.subscriptions,
         savedAudiobooks: savedAudiobooks ?? this.savedAudiobooks,
+        episodesForLater: episodesForLater ?? this.episodesForLater,
         positions: positions ?? this.positions,
         isLoading: isLoading ?? this.isLoading,
       );
@@ -67,10 +72,12 @@ class PodcastNotifier extends Notifier<PodcastState> {
     state = state.copyWith(isLoading: true);
     final subs = await _repo.loadSubscriptions();
     final books = await _repo.loadSavedAudiobooks();
+    final episodes = await _repo.loadEpisodesForLater();
     final positions = await _repo.loadAllPositions();
     state = PodcastState(
       subscriptions: subs,
       savedAudiobooks: books,
+      episodesForLater: episodes,
       positions: positions,
       isLoading: false,
     );
@@ -137,6 +144,21 @@ class PodcastNotifier extends Notifier<PodcastState> {
     final newList = state.savedAudiobooks.map((a) => a.id == audiobookId ? updated : a).toList();
     state = state.copyWith(savedAudiobooks: newList);
     await _repo.updateAudiobook(updated);
+  }
+
+  Future<void> toggleEpisodeForLater(Song song) async {
+    final isAlreadySaved = state.episodesForLater.any((s) => s.id == song.id);
+    if (isAlreadySaved) {
+      state = state.copyWith(
+        episodesForLater: state.episodesForLater.where((s) => s.id != song.id).toList(),
+      );
+      await _repo.removeEpisodeForLater(song.id);
+    } else {
+      state = state.copyWith(
+        episodesForLater: [song, ...state.episodesForLater],
+      );
+      await _repo.saveEpisodeForLater(song);
+    }
   }
 }
 

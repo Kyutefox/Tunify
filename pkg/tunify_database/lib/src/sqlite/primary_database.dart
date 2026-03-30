@@ -13,7 +13,7 @@ import 'update.controller.dart';
 /// delegated to get/create/update/delete controllers.
 class PrimaryDatabase {
   static const String _dbName = 'tunify_primary.db';
-  static const int _version = 2;
+  static const int _version = 4;
 
   static final PrimaryDatabase _instance = PrimaryDatabase._internal();
   factory PrimaryDatabase() => _instance;
@@ -48,6 +48,34 @@ class PrimaryDatabase {
     if (oldVersion < 2) {
       await _createPodcastTables(db);
     }
+    if (oldVersion < 3) {
+      await _addPinnedColumnsToPodcastTables(db);
+    }
+    if (oldVersion < 4) {
+      await _createEpisodesForLaterTable(db);
+    }
+  }
+
+  Future<void> _addPinnedColumnsToPodcastTables(Database db) async {
+    await db.execute('''
+      ALTER TABLE podcast_subscriptions ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0
+    ''');
+    await db.execute('''
+      ALTER TABLE saved_audiobooks ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0
+    ''');
+  }
+
+  Future<void> _createEpisodesForLaterTable(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS episodes_for_later (
+        id               TEXT PRIMARY KEY,
+        title            TEXT NOT NULL,
+        artist           TEXT NOT NULL DEFAULT '',
+        thumbnail_url    TEXT,
+        duration_seconds INTEGER NOT NULL DEFAULT 0,
+        saved_at         TEXT NOT NULL
+      )
+    ''');
   }
 
   Future<void> _createPodcastTables(Database db) async {
@@ -58,7 +86,8 @@ class PrimaryDatabase {
         author        TEXT NOT NULL DEFAULT '',
         thumbnail_url TEXT,
         browse_id     TEXT,
-        subscribed_at TEXT NOT NULL
+        subscribed_at TEXT NOT NULL,
+        is_pinned     INTEGER NOT NULL DEFAULT 0
       )
     ''');
     await db.execute('''
@@ -79,7 +108,8 @@ class PrimaryDatabase {
         author        TEXT NOT NULL DEFAULT '',
         thumbnail_url TEXT,
         browse_id     TEXT,
-        saved_at      TEXT NOT NULL
+        saved_at      TEXT NOT NULL,
+        is_pinned     INTEGER NOT NULL DEFAULT 0
       )
     ''');
   }
@@ -516,6 +546,24 @@ class PrimaryDatabase {
   Future<void> deleteSavedAudiobook(String id) async {
     final db = await _getDb();
     await db.delete('saved_audiobooks', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // ── Episodes For Later ────────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> loadEpisodesForLater() async {
+    final db = await _getDb();
+    return db.query('episodes_for_later', orderBy: 'saved_at DESC');
+  }
+
+  Future<void> upsertEpisodeForLater(Map<String, dynamic> data) async {
+    final db = await _getDb();
+    await db.insert('episodes_for_later', data,
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<void> deleteEpisodeForLater(String id) async {
+    final db = await _getDb();
+    await db.delete('episodes_for_later', where: 'id = ?', whereArgs: [id]);
   }
 
   // ── Playback Positions ────────────────────────────────────────────────────

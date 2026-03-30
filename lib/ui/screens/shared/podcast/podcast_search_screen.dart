@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/data/models/audiobook.dart';
-import 'package:tunify/data/models/podcast.dart';
+import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/features/podcast/podcast_provider.dart';
-import 'package:tunify/ui/screens/shared/podcast/podcast_detail_screen.dart';
-import 'package:tunify/ui/screens/shared/podcast/audiobook_detail_screen.dart';
+import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/screens/shared/podcast/podcast_options_sheet.dart';
 import 'package:tunify/ui/screens/shared/search/search_page.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
@@ -135,9 +133,18 @@ class _PodcastSearchResults extends ConsumerWidget {
               thumbnailUrl: podcast.thumbnailUrl,
               placeholderIcon: AppIcons.podcast,
               showPinIndicator: podcast.isPinned,
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => PodcastDetailScreen(podcast: podcast),
-              )),
+              onTap: () {
+                final playlist = Playlist(
+                  id: podcast.browseId ?? podcast.id,
+                  title: podcast.title,
+                  description: podcast.author ?? '',
+                  coverUrl: podcast.thumbnailUrl ?? '',
+                  trackCount: 0,
+                );
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+                ));
+              },
               onOptions: (rect) => showPodcastOptionsSheet(
                 context,
                 podcast: podcast,
@@ -195,9 +202,18 @@ class _AudiobookSearchResults extends ConsumerWidget {
               thumbnailUrl: audiobook.thumbnailUrl,
               placeholderIcon: AppIcons.bookOpen,
               showPinIndicator: audiobook.isPinned,
-              onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                builder: (_) => AudiobookDetailScreen(audiobook: audiobook),
-              )),
+              onTap: () {
+                final playlist = Playlist(
+                  id: audiobook.browseId ?? audiobook.id,
+                  title: audiobook.title,
+                  description: audiobook.author ?? '',
+                  coverUrl: audiobook.thumbnailUrl ?? '',
+                  trackCount: 0,
+                );
+                Navigator.of(context).push(MaterialPageRoute(
+                  builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+                ));
+              },
               onOptions: (rect) => showAudiobookOptionsSheet(
                 context,
                 audiobook: audiobook,

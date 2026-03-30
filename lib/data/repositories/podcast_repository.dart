@@ -1,6 +1,8 @@
 import 'package:tunify/data/models/audiobook.dart';
 import 'package:tunify/data/models/playback_position.dart';
 import 'package:tunify/data/models/podcast.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/data/models/track.dart';
 import 'package:tunify_database/tunify_database.dart';
 
 /// Repository for podcast subscriptions, saved audiobooks, and playback positions.
@@ -77,6 +79,28 @@ class PodcastRepository {
     });
   }
 
+  // ── Episodes For Later ────────────────────────────────────────────────────
+
+  Future<List<Song>> loadEpisodesForLater() async {
+    final rows = await _bridge.loadEpisodesForLater();
+    return rows.map(_rowToSong).toList();
+  }
+
+  Future<void> saveEpisodeForLater(Song song) async {
+    await _bridge.upsertEpisodeForLater({
+      'id': song.id,
+      'title': song.title,
+      'artist': song.artist,
+      'thumbnail_url': song.thumbnailUrl,
+      'duration_seconds': song.duration.inSeconds,
+      'saved_at': DateTime.now().toUtc().toIso8601String(),
+    });
+  }
+
+  Future<void> removeEpisodeForLater(String id) async {
+    await _bridge.deleteEpisodeForLater(id);
+  }
+
   // ── Playback Positions ────────────────────────────────────────────────────
 
   Future<PlaybackPosition?> getPosition(
@@ -140,4 +164,12 @@ class PodcastRepository {
         completed: (row['completed'] as int) == 1,
         lastPlayedAt: DateTime.parse(row['last_played_at'] as String),
       );
+
+  static Song _rowToSong(Map<String, dynamic> row) => Song.fromTrack(Track(
+        id: row['id'] as String,
+        title: row['title'] as String,
+        artist: row['artist'] as String? ?? '',
+        thumbnailUrl: row['thumbnail_url'] as String? ?? '',
+        duration: Duration(seconds: row['duration_seconds'] as int? ?? 0),
+      ));
 }

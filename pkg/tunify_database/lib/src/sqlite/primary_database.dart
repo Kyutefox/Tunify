@@ -12,7 +12,7 @@ import 'update.controller.dart';
 /// delegated to get/create/update/delete controllers.
 class PrimaryDatabase {
   static const String _dbName = 'tunify_primary.db';
-  static const int _version = 5;
+  static const int _version = 1;
 
   static final PrimaryDatabase _instance = PrimaryDatabase._internal();
   factory PrimaryDatabase() => _instance;
@@ -38,100 +38,8 @@ class PrimaryDatabase {
       version: _version,
       onConfigure: (db) async => db.execute('PRAGMA foreign_keys = ON'),
       onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
     );
     return _db!;
-  }
-
-  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await _createPodcastTables(db);
-    }
-    if (oldVersion < 3) {
-      await _addPinnedColumnsToPodcastTables(db);
-    }
-    if (oldVersion < 4) {
-      await _createEpisodesForLaterTable(db);
-    } else if (oldVersion < 5) {
-      // Only add column if table already existed (was created in v4)
-      await _addSortOrderToEpisodesForLater(db);
-    }
-  }
-
-  Future<void> _addPinnedColumnsToPodcastTables(Database db) async {
-    await db.execute('''
-      ALTER TABLE podcast_subscriptions ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0
-    ''');
-    await db.execute('''
-      ALTER TABLE saved_audiobooks ADD COLUMN is_pinned INTEGER NOT NULL DEFAULT 0
-    ''');
-  }
-
-  Future<void> _createEpisodesForLaterTable(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS episodes_for_later (
-        id               TEXT PRIMARY KEY,
-        title            TEXT NOT NULL,
-        artist           TEXT NOT NULL DEFAULT '',
-        thumbnail_url    TEXT,
-        duration_seconds INTEGER NOT NULL DEFAULT 0,
-        saved_at         TEXT NOT NULL,
-        sort_order_sequence INTEGER NOT NULL DEFAULT 0
-      )
-    ''');
-  }
-
-  Future<void> _addSortOrderToEpisodesForLater(Database db) async {
-    // Check if table exists first
-    final tableCheck = await db.rawQuery(
-      "SELECT name FROM sqlite_master WHERE type='table' AND name='episodes_for_later'"
-    );
-    if (tableCheck.isEmpty) return; // Table doesn't exist yet, will be created with column
-    
-    // Check if column already exists (for databases created at v4)
-    final result = await db.rawQuery("PRAGMA table_info(episodes_for_later)");
-    final hasColumn = result.any((col) => col['name'] == 'sort_order_sequence');
-    if (!hasColumn) {
-      await db.execute('''
-        ALTER TABLE episodes_for_later ADD COLUMN sort_order_sequence INTEGER NOT NULL DEFAULT 0
-      ''');
-    }
-  }
-
-  Future<void> _createPodcastTables(Database db) async {
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS podcast_subscriptions (
-        id            TEXT PRIMARY KEY,
-        title         TEXT NOT NULL,
-        author        TEXT NOT NULL DEFAULT '',
-        thumbnail_url TEXT,
-        browse_id     TEXT,
-        subscribed_at TEXT NOT NULL,
-        is_pinned     INTEGER NOT NULL DEFAULT 0
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS playback_positions (
-        content_id       TEXT NOT NULL,
-        content_type     TEXT NOT NULL,
-        position_seconds INTEGER NOT NULL DEFAULT 0,
-        duration_seconds INTEGER NOT NULL DEFAULT 0,
-        completed        INTEGER NOT NULL DEFAULT 0,
-        last_played_at   TEXT NOT NULL,
-        PRIMARY KEY (content_id, content_type)
-      )
-    ''');
-    await db.execute('''
-      CREATE TABLE IF NOT EXISTS saved_audiobooks (
-        id            TEXT PRIMARY KEY,
-        title         TEXT NOT NULL,
-        author        TEXT NOT NULL DEFAULT '',
-        thumbnail_url TEXT,
-        browse_id     TEXT,
-        saved_at      TEXT NOT NULL,
-        is_pinned     INTEGER NOT NULL DEFAULT 0
-      )
-    ''');
   }
 
   Future<void> _onCreate(Database db, int version) async {
@@ -229,9 +137,54 @@ class PrimaryDatabase {
         expires_at TEXT NOT NULL
       )
     ''');
+    
+    // Podcast tables
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS podcast_subscriptions (
+        id            TEXT PRIMARY KEY,
+        title         TEXT NOT NULL,
+        author        TEXT NOT NULL DEFAULT '',
+        thumbnail_url TEXT,
+        browse_id     TEXT,
+        subscribed_at TEXT NOT NULL,
+        is_pinned     INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS playback_positions (
+        content_id       TEXT NOT NULL,
+        content_type     TEXT NOT NULL,
+        position_seconds INTEGER NOT NULL DEFAULT 0,
+        duration_seconds INTEGER NOT NULL DEFAULT 0,
+        completed        INTEGER NOT NULL DEFAULT 0,
+        last_played_at   TEXT NOT NULL,
+        PRIMARY KEY (content_id, content_type)
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS saved_audiobooks (
+        id            TEXT PRIMARY KEY,
+        title         TEXT NOT NULL,
+        author        TEXT NOT NULL DEFAULT '',
+        thumbnail_url TEXT,
+        browse_id     TEXT,
+        saved_at      TEXT NOT NULL,
+        is_pinned     INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS episodes_for_later (
+        id                  TEXT PRIMARY KEY,
+        title               TEXT NOT NULL,
+        artist              TEXT NOT NULL DEFAULT '',
+        thumbnail_url       TEXT,
+        duration_seconds    INTEGER NOT NULL DEFAULT 0,
+        saved_at            TEXT NOT NULL,
+        sort_order_sequence INTEGER NOT NULL DEFAULT 0
+      )
+    ''');
+    
     await _createController.runOnCreate(db);
-    await _createPodcastTables(db);
-    await _createEpisodesForLaterTable(db);
   }
 
 

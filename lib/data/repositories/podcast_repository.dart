@@ -101,6 +101,10 @@ class PodcastRepository {
     await _bridge.deleteEpisodeForLater(id);
   }
 
+  Future<void> updateEpisodesForLaterOrder(List<String> orderedIds) async {
+    await _bridge.updateEpisodesForLaterOrder(orderedIds);
+  }
+
   // ── Playback Positions ────────────────────────────────────────────────────
 
   Future<PlaybackPosition?> getPosition(

@@ -27,6 +27,7 @@ class CollectionDetailScaffold extends StatefulWidget {
     this.headerSliver,
     this.paletteColor,
     this.playButton,
+    this.scrollController,
   });
 
   final bool isEmpty;
@@ -42,6 +43,7 @@ class CollectionDetailScaffold extends StatefulWidget {
   final Widget? headerSliver;
   final Color? paletteColor;
   final Widget? playButton;
+  final ScrollController? scrollController;
 
   @override
   State<CollectionDetailScaffold> createState() =>
@@ -49,7 +51,8 @@ class CollectionDetailScaffold extends StatefulWidget {
 }
 
 class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
-  final ScrollController _scrollController = ScrollController();
+  ScrollController? _internalScrollController;
+  ScrollController get _scrollController => widget.scrollController ?? _internalScrollController!;
   final ValueNotifier<double> _appBarOpacity = ValueNotifier(0.0);
   final GlobalKey _actionRowKey = GlobalKey();
   final GlobalKey _titleKey = GlobalKey();
@@ -70,6 +73,9 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
   @override
   void initState() {
     super.initState();
+    if (widget.scrollController == null) {
+      _internalScrollController = ScrollController();
+    }
     if (_useNewLayout) {
       _scrollController.addListener(_onScroll);
       WidgetsBinding.instance.addPostFrameCallback((_) => _measureTitleOffset());
@@ -105,7 +111,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
   @override
   void dispose() {
     if (_useNewLayout) _scrollController.removeListener(_onScroll);
-    _scrollController.dispose();
+    _internalScrollController?.dispose();
     _appBarOpacity.dispose();
     super.dispose();
   }
@@ -192,7 +198,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
             behavior: HitTestBehavior.translucent,
             child: CustomScrollView(
               cacheExtent: 1000,
-              controller: _useNewLayout ? _scrollController : null,
+              controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               slivers: _useNewLayout
                   ? _buildSlivers(appBarHeight, hasPalette)

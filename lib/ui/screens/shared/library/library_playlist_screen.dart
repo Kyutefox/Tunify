@@ -212,6 +212,12 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   bool _importedFetchTriggered = false;
   ShuffleMode _ephemeralShuffleMode = ShuffleMode.none;
   bool _exporting = false;
+  
+  // Pagination state for podcasts
+  String? _continuationToken;
+  bool _loadingMore = false;
+  bool _hasMore = true;
+  final ScrollController _scrollController = ScrollController();
 
   bool get _isRemote =>
       (widget._isRemotePlaylist && widget.remotePlaylist?.id != 'episodesForLater') ||
@@ -234,9 +240,34 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     // Synchronously pre-populate data from cache/DB so the first build
     // never shows a loading screen for already-available data.
     _initSync();
+    
+    // Setup scroll listener for pagination (podcasts only)
+    if (widget._isPodcast) {
+      _scrollController.addListener(_onScroll);
+    }
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startAfterTransition();
     });
+  }
+  
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+  
+  void _onScroll() {
+    if (!widget._isPodcast || !_hasMore || _loadingMore) return;
+    
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    final currentScroll = _scrollController.position.pixels;
+    final delta = maxScroll - currentScroll;
+    
+    // Load more when within 500 pixels of the bottom
+    if (delta < 500) {
+      _loadMoreEpisodes();
+    }
   }
 
   /// Runs synchronously in initState (before first build).
@@ -467,35 +498,120 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             ? entry.songs.firstOrNull?.thumbnailUrl
             : pl.coverUrl);
       }
+      
+      // For podcasts, even if cached, we need to check if there's more content
+      // Cache might only have the first 100 episodes
+      if (widget._isPodcast && entry.songs.length >= 100) {
+        // Assume there might be more if we have exactly 100 or more
+        _hasMore = true;
+        // We'll need to fetch with continuation to get the token
+        _fetchContinuationToken(pl.id);
+      }
       return;
     }
     if (!silent) _setLoading();
     try {
-      final result =
-          await ref.read(streamManagerProvider).getCollectionTracks(pl.id);
-      if (!mounted) return;
-      final songs = result.tracks.map(Song.fromTrack).toList();
-      final imageUrl = pl.coverUrl.isEmpty ? null : pl.coverUrl;
-      CollectionTrackCache.instance.put(pl.id, songs, imageUrl: imageUrl);
-      // Extract palette before revealing content so gradient is ready on first frame.
-      final color = await _extractPaletteColor(
-          imageUrl ?? songs.firstOrNull?.thumbnailUrl);
-      if (!mounted) return;
-      setState(() {
-        if (color != null) _paletteColor = color;
-        _remoteAsLocal = _makePlaylist(
-          id: pl.id,
-          name: pl.title,
-          description: pl.curatorName ?? pl.description,
-          songs: songs,
-          imageUrl: imageUrl,
-        );
-      });
-      if (color != null) {
-        CollectionTrackCache.instance.updatePalette(pl.id, color);
+      // For podcasts, use pagination-aware fetching
+      if (widget._isPodcast) {
+        final result = await ref.read(streamManagerProvider).fetchPlaylistTracksWithContinuation(pl.id, maxTracks: 200);
+        if (!mounted) return;
+        final songs = result.tracks.map(Song.fromTrack).toList();
+        final imageUrl = pl.coverUrl.isEmpty ? null : pl.coverUrl;
+        
+        // Store continuation token for pagination
+        _continuationToken = result.continuationToken;
+        _hasMore = result.continuationToken != null;
+        
+        CollectionTrackCache.instance.put(pl.id, songs, imageUrl: imageUrl);
+        final color = await _extractPaletteColor(imageUrl ?? songs.firstOrNull?.thumbnailUrl);
+        if (!mounted) return;
+        setState(() {
+          if (color != null) _paletteColor = color;
+          _remoteAsLocal = _makePlaylist(
+            id: pl.id,
+            name: pl.title,
+            description: pl.curatorName ?? pl.description,
+            songs: songs,
+            imageUrl: imageUrl,
+          );
+        });
+        if (color != null) {
+          CollectionTrackCache.instance.updatePalette(pl.id, color);
+        }
+      } else {
+        // Regular playlist/album fetching
+        final result = await ref.read(streamManagerProvider).getCollectionTracks(pl.id);
+        if (!mounted) return;
+        final songs = result.tracks.map(Song.fromTrack).toList();
+        final imageUrl = pl.coverUrl.isEmpty ? null : pl.coverUrl;
+        CollectionTrackCache.instance.put(pl.id, songs, imageUrl: imageUrl);
+        final color = await _extractPaletteColor(imageUrl ?? songs.firstOrNull?.thumbnailUrl);
+        if (!mounted) return;
+        setState(() {
+          if (color != null) _paletteColor = color;
+          _remoteAsLocal = _makePlaylist(
+            id: pl.id,
+            name: pl.title,
+            description: pl.curatorName ?? pl.description,
+            songs: songs,
+            imageUrl: imageUrl,
+          );
+        });
+        if (color != null) {
+          CollectionTrackCache.instance.updatePalette(pl.id, color);
+        }
       }
     } catch (e) {
       if (!silent) _setError(e);
+    }
+  }
+  
+  Future<void> _fetchContinuationToken(String browseId) async {
+    try {
+      // Fetch just to get the continuation token
+      final result = await ref.read(streamManagerProvider).fetchPlaylistTracksWithContinuation(browseId, maxTracks: 100);
+      if (mounted) {
+        setState(() {
+          _continuationToken = result.continuationToken;
+          _hasMore = result.continuationToken != null;
+        });
+      }
+    } catch (e) {
+      // Failed to fetch continuation token
+    }
+  }
+  
+  Future<void> _loadMoreEpisodes() async {
+    if (_loadingMore || !_hasMore || _continuationToken == null || !widget._isPodcast) return;
+    
+    setState(() => _loadingMore = true);
+    
+    try {
+      final pl = widget.remotePlaylist!;
+      final result = await ref.read(streamManagerProvider).fetchPlaylistTracksWithContinuation(
+        pl.id,
+        continuationToken: _continuationToken,
+        maxTracks: 100,
+      );
+      
+      if (!mounted) return;
+      
+      final newSongs = result.tracks.map(Song.fromTrack).toList();
+      _continuationToken = result.continuationToken;
+      _hasMore = result.continuationToken != null;
+      
+      setState(() {
+        if (_remoteAsLocal != null) {
+          _remoteAsLocal = _remoteAsLocal!.copyWith(
+            songs: [..._remoteAsLocal!.songs, ...newSongs],
+          );
+        }
+        _loadingMore = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() => _loadingMore = false);
+      }
     }
   }
 
@@ -1390,10 +1506,27 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             },
             childCount: filteredSongs.length,
           )),
+        if (widget._isPodcast && _loadingMore)
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSpacing.xl),
+              child: Center(
+                child: SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColorsScheme.of(context).textMuted,
+                  ),
+                ),
+              ),
+            ),
+          ),
         const SliverToBoxAdapter(child: SizedBox(height: 160)),
       ],
       hasSong: hasSong,
       miniPlayerKey: ValueKey('${playlist.id}-mini-player'),
+      scrollController: widget._isPodcast ? _scrollController : null,
     );
   }
 
@@ -2399,6 +2532,14 @@ class _EditEpisodesForLaterSheetState extends ConsumerState<_EditEpisodesForLate
     for (final id in _pendingRemoveIds) {
       final song = _items.firstWhere((s) => s.id == id);
       await ref.read(podcastProvider.notifier).toggleEpisodeForLater(song);
+    }
+    
+    // Update order for remaining episodes
+    final remainingEpisodes = _items.where((s) => !_pendingRemoveIds.contains(s.id)).toList();
+    if (remainingEpisodes.isNotEmpty) {
+      await ref.read(podcastProvider.notifier).updateEpisodesForLaterOrder(remainingEpisodes);
+      // Set sort order to custom after reordering
+      await ref.read(podcastProvider.notifier).setEpisodesForLaterSortOrder(PlaylistTrackSortOrder.customOrder);
     }
     
     if (mounted) {

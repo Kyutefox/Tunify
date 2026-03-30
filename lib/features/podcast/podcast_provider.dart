@@ -4,7 +4,6 @@ import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/data/models/playback_position.dart';
 import 'package:tunify/data/models/podcast.dart';
 import 'package:tunify/data/models/song.dart';
-import 'package:tunify/data/models/track.dart';
 import 'package:tunify/data/repositories/podcast_repository.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify_database/tunify_database.dart';
@@ -79,10 +78,22 @@ class PodcastNotifier extends Notifier<PodcastState> {
     final books = await _repo.loadSavedAudiobooks();
     final episodes = await _repo.loadEpisodesForLater();
     final positions = await _repo.loadAllPositions();
+    
+    // Load sort order from settings
+    final bridge = DatabaseBridge();
+    final sortOrderStr = await bridge.getSetting('episodes_for_later_sort_order');
+    final sortOrder = sortOrderStr != null
+        ? PlaylistTrackSortOrder.values.firstWhere(
+            (e) => e.name == sortOrderStr,
+            orElse: () => PlaylistTrackSortOrder.recentlyAdded,
+          )
+        : PlaylistTrackSortOrder.recentlyAdded;
+    
     state = PodcastState(
       subscriptions: subs,
       savedAudiobooks: books,
       episodesForLater: episodes,
+      episodesForLaterSortOrder: sortOrder,
       positions: positions,
       isLoading: false,
     );
@@ -168,7 +179,15 @@ class PodcastNotifier extends Notifier<PodcastState> {
 
   Future<void> setEpisodesForLaterSortOrder(PlaylistTrackSortOrder order) async {
     state = state.copyWith(episodesForLaterSortOrder: order);
-    // Optionally persist to database/settings if needed
+    // Persist sort order to settings
+    final bridge = DatabaseBridge();
+    await bridge.setSetting('episodes_for_later_sort_order', order.name);
+  }
+
+  Future<void> updateEpisodesForLaterOrder(List<Song> orderedEpisodes) async {
+    final orderedIds = orderedEpisodes.map((s) => s.id).toList();
+    state = state.copyWith(episodesForLater: orderedEpisodes);
+    await _repo.updateEpisodesForLaterOrder(orderedIds);
   }
 }
 
@@ -237,34 +256,4 @@ final audiobookSearchResultsProvider =
       .toList();
 });
 
-final podcastEpisodesProvider =
-    FutureProvider.family<List<Episode>, String>((ref, browseId) async {
-  if (browseId.isEmpty) return [];
-  final mgr = ref.watch(streamManagerProvider);
-  
-  // Use appropriate fetch method based on browseId type
-  List<Track> tracks;
-  if (browseId.startsWith('MPED')) {
-    tracks = await mgr.fetchPodcastShowContent(browseId);
-  } else if (browseId.startsWith('MPSPPL')) {
-    tracks = await mgr.fetchPlaylistTracks(browseId);
-  } else {
-    tracks = await mgr.fetchPlaylistTracks(browseId);
-  }
-  
-  return tracks
-      .map((t) {
-        // Parse date from artist field (contains date like "1d ago", "Mar 21")
-        final dateStr = t.artist;
-        return Episode(
-          id: t.id,
-          title: t.title,
-          thumbnailUrl: t.thumbnailUrl,
-          podcastTitle: null, // Could extract actual podcast name if available
-          description: t.albumName, // Contains description
-          publishedDate: dateStr, // Contains date like "1d ago", "Mar 21"
-          durationSeconds: t.duration.inSeconds,
-        );
-      })
-      .toList();
-});
+

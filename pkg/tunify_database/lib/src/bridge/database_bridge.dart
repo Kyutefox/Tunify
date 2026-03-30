@@ -265,6 +265,9 @@ class DatabaseBridge {
   Future<void> deleteEpisodeForLater(String id) =>
       _db.deleteEpisodeForLater(id);
 
+  Future<void> updateEpisodesForLaterOrder(List<String> orderedIds) =>
+      _db.updateEpisodesForLaterOrder(orderedIds);
+
   // ── Playback Positions ────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>?> getPlaybackPosition(

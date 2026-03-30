@@ -149,10 +149,95 @@ class _PodcastsTab extends ConsumerWidget {
     final episodesForLater = ref.watch(podcastProvider.select((s) => s.episodesForLater));
 
     if (subscriptions.isEmpty) {
-      return _EmptyState(
-        icon: AppIcons.podcast,
-        title: 'No subscriptions yet',
-        subtitle: 'Search for podcasts and subscribe to them here.',
+      // Show Episodes For Later even when no subscriptions
+      return Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(
+              top: AppSpacing.sm,
+              left: AppSpacing.base,
+              right: AppSpacing.base,
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  final playlist = Playlist(
+                    id: 'episodesForLater',
+                    title: 'Episodes For Later',
+                    description: 'Your saved podcast episodes',
+                    coverUrl: '',
+                    trackCount: episodesForLater.length,
+                  );
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+                  ));
+                },
+                borderRadius: BorderRadius.circular(AppRadius.sm),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+                          ),
+                          borderRadius: BorderRadius.circular(AppRadius.sm),
+                        ),
+                        child: Center(
+                          child: AppIcon(
+                            icon: AppIcons.bookmark,
+                            size: 28,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Episodes For Later',
+                              style: TextStyle(
+                                color: AppColorsScheme.of(context).textPrimary,
+                                fontSize: AppFontSize.lg,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              '${episodesForLater.length} ${episodesForLater.length == 1 ? 'episode' : 'episodes'}',
+                              style: TextStyle(
+                                color: AppColorsScheme.of(context).textMuted,
+                                fontSize: AppFontSize.md,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Expanded(
+            child: _EmptyState(
+              icon: AppIcons.podcast,
+              title: 'No subscriptions yet',
+              subtitle: 'Search for podcasts and subscribe to them here.',
+            ),
+          ),
+        ],
       );
     }
 

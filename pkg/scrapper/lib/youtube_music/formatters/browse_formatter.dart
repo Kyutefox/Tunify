@@ -246,12 +246,89 @@ class BrowseFormatter {
       }
     }
     
+    // Handle continuation contents
+    final continuationContents = browseData['continuationContents'];
+    if (continuationContents is Map<String, dynamic>) {
+      walk(continuationContents);
+    }
+    
     // Also walk the entire data as fallback
     if (tracks.isEmpty) {
       walk(browseData);
     }
     
     return tracks;
+  }
+
+  /// Extracts the continuation token from a browse response for playlists/albums.
+  /// Returns null if no continuation is available.
+  static String? extractBrowseContinuationToken(Map<String, dynamic> browseData) {
+    try {
+      // Try to find continuation in the main contents
+      final contents = browseData['contents'];
+      if (contents is Map<String, dynamic>) {
+        final singleColumn = contents['singleColumnBrowseResultsRenderer'];
+        final twoColumn = contents['twoColumnBrowseResultsRenderer'];
+        
+        if (singleColumn != null) {
+          final tabs = singleColumn['tabs'] as List?;
+          if (tabs != null && tabs.isNotEmpty) {
+            final tabRenderer = tabs[0]['tabRenderer'];
+            final content = tabRenderer?['content'];
+            final sectionList = content?['sectionListRenderer'];
+            final contentsList = sectionList?['contents'] as List?;
+            if (contentsList != null) {
+              for (final item in contentsList) {
+                final shelf = item['musicShelfRenderer'] ?? item['musicPlaylistShelfRenderer'];
+                if (shelf != null) {
+                  final continuations = shelf['continuations'] as List?;
+                  if (continuations != null && continuations.isNotEmpty) {
+                    final token = continuations[0]?['nextContinuationData']?['continuation'] as String?;
+                    if (token != null) return token;
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        // Try twoColumnBrowseResultsRenderer for podcast pages
+        if (twoColumn != null) {
+          final secondaryContents = twoColumn['secondaryContents'];
+          final sectionList = secondaryContents?['sectionListRenderer'];
+          final contentsList = sectionList?['contents'] as List?;
+          if (contentsList != null) {
+            for (final item in contentsList) {
+              final shelf = item['musicShelfRenderer'] ?? item['musicPlaylistShelfRenderer'];
+              if (shelf != null) {
+                final continuations = shelf['continuations'] as List?;
+                if (continuations != null && continuations.isNotEmpty) {
+                  final token = continuations[0]?['nextContinuationData']?['continuation'] as String?;
+                  if (token != null) return token;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // Try continuation contents (for continuation responses)
+      final continuationContents = browseData['continuationContents'];
+      if (continuationContents is Map<String, dynamic>) {
+        final shelf = continuationContents['musicPlaylistShelfContinuation'] ?? 
+                      continuationContents['musicShelfContinuation'];
+        if (shelf != null) {
+          final continuations = shelf['continuations'] as List?;
+          if (continuations != null && continuations.isNotEmpty) {
+            final token = continuations[0]?['nextContinuationData']?['continuation'] as String?;
+            if (token != null) return token;
+          }
+        }
+      }
+    } catch (_) {
+      // Ignore parsing errors
+    }
+    return null;
   }
 
   /// Parses the entire browse data into a unified `RelatedHomeFeed` payload.

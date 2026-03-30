@@ -32,6 +32,17 @@
 		<false/>
 		<key>UISceneConfigurations</key>
 		<dict>
+			<key>CPTemplateApplicationSceneSessionRoleApplication</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>CPTemplateApplicationScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>CarPlay</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate</string>
+				</dict>
+			</array>
 			<key>UIWindowSceneSessionRoleApplication</key>
 			<array>
 				<dict>
@@ -68,6 +79,8 @@
 	</array>
 	<key>NSAppleMusicUsageDescription</key>
 	<string>Tunify needs access to your music library to play songs stored on your device.</string>
+	<key>NSCarPlayUsageDescription</key>
+	<string>Tunify uses CarPlay for safe music playback while driving.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

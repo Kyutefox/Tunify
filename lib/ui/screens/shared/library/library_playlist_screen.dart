@@ -2083,13 +2083,6 @@ class _PodcastSubscribeButton extends StatelessWidget {
         color: isSubscribed
             ? AppColors.primary
             : AppColors.primary,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.4),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Material(
         color: Colors.transparent,

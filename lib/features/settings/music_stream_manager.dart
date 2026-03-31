@@ -897,6 +897,65 @@ class MusicStreamManager {
     return result.tracks;
   }
 
+  /// Fetches the first page of a playlist/album/artist immediately, calls
+  /// [onFirstPage] with that initial batch so the UI can render right away,
+  /// then continues fetching all remaining continuation pages in the
+  /// background — calling [onMoreLoaded] with each new batch as it arrives.
+  ///
+  /// [onDone] is called when all pages have been exhausted (or on error after
+  /// partial load).  Both callbacks are no-ops after the returned [Future]
+  /// completes — callers must guard against widget disposal themselves.
+  Future<void> fetchCollectionTracksProgressive(
+    String browseId, {
+    String? params,
+    required void Function(List<Track> firstBatch, String? continuationToken) onFirstPage,
+    required void Function(List<Track> batch, String? continuationToken) onMoreLoaded,
+    required void Function() onDone,
+    int maxTracks = 5000,
+  }) async {
+    try {
+      // First page — shown immediately.
+      final firstResult = await _ytMusic.browse.fetchPlaylistOrAlbumWithContinuation(
+        browseId,
+        params: params,
+        maxTracks: maxTracks,
+      );
+      final firstBatch = firstResult.tracks.map(_scrapperTrackToApp).toList();
+      onFirstPage(firstBatch, firstResult.continuationToken);
+
+      // Background continuation loop.
+      var token = firstResult.continuationToken;
+      final seenIds = <String>{...firstBatch.map((t) => t.id)};
+      int totalLoaded = firstBatch.length;
+
+      while (token != null && token.isNotEmpty && totalLoaded < maxTracks) {
+        try {
+          final contResult = await _ytMusic.browse.fetchPlaylistOrAlbumWithContinuation(
+            browseId,
+            continuationToken: token,
+            maxTracks: maxTracks - totalLoaded,
+          );
+          final batch = contResult.tracks
+              .map(_scrapperTrackToApp)
+              .where((t) => seenIds.add(t.id))
+              .toList();
+          if (batch.isEmpty && contResult.continuationToken == null) break;
+          if (batch.isNotEmpty) {
+            totalLoaded += batch.length;
+            onMoreLoaded(batch, contResult.continuationToken);
+          }
+          token = contResult.continuationToken;
+          if (batch.isEmpty) break; // empty page but had token — avoid infinite loop
+        } catch (e) {
+          break;
+        }
+      }
+    } catch (e) {
+    } finally {
+      onDone();
+    }
+  }
+
   Future<List<Track>> getRecommendedQueue(
     String videoId, {
     String? playlistId,
@@ -971,7 +1030,10 @@ class MusicStreamManager {
     int maxResults = 0,
   }) async {
     try {
-      final maxTracks = maxResults > 0 ? maxResults : 500;
+      // fetchPlaylistOrAlbum now follows all continuation pages internally.
+      // maxResults > 0 allows callers to impose an explicit cap; otherwise the
+      // scrapper's own safety limit (5000) applies.
+      final maxTracks = maxResults > 0 ? maxResults : 5000;
       final tracks = await _ytMusic.browse.fetchPlaylistOrAlbum(
         browseId,
         params: params,

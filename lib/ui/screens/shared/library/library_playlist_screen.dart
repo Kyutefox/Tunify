@@ -213,10 +213,11 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   ShuffleMode _ephemeralShuffleMode = ShuffleMode.none;
   bool _exporting = false;
   
-  // Pagination state for podcasts
+  // Pagination state (podcasts = manual load-more; others = background auto-load)
   String? _continuationToken;
   bool _loadingMore = false;
   bool _hasMore = true;
+  bool _backgroundLoadCancelled = false;
   final ScrollController _scrollController = ScrollController();
 
   bool get _isRemote =>
@@ -437,6 +438,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   }
 
   void _startFetches({bool silent = false}) {
+    _backgroundLoadCancelled = true; // cancel any in-progress background load
     if (widget._isRemotePlaylist) _fetchRemoteTracks(silent: silent);
     if (widget._isAlbum) _fetchAlbumTracks(silent: silent);
     if (widget._isArtist) _fetchArtistTracks(silent: silent);
@@ -500,14 +502,18 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
       
       // For podcasts, even if cached, we need to check if there's more content
-      // Cache might only have the first 100 episodes
       if (widget._isPodcast && entry.songs.length >= 100) {
-        // Assume there might be more if we have exactly 100 or more
         _hasMore = true;
-        // We'll need to fetch with continuation to get the token
         _fetchContinuationToken(pl.id);
       }
-      return;
+      // For regular playlists: cache may have been populated with fewer tracks
+      // (e.g. from a previous version). Invalidate and do a silent full re-fetch.
+      if (!widget._isPodcast) {
+        CollectionTrackCache.instance.invalidate(pl.id);
+        // fall through to fresh fetch below (silent so no loading spinner)
+      } else {
+        return;
+      }
     }
     if (!silent) _setLoading();
     try {
@@ -539,27 +545,45 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           CollectionTrackCache.instance.updatePalette(pl.id, color);
         }
       } else {
-        // Regular playlist/album fetching
-        final result = await ref.read(streamManagerProvider).getCollectionTracks(pl.id);
-        if (!mounted) return;
-        final songs = result.tracks.map(Song.fromTrack).toList();
+        // Regular playlist — progressive loading: show first page immediately,
+        // then append remaining pages in background.
+        _backgroundLoadCancelled = false;
         final imageUrl = pl.coverUrl.isEmpty ? null : pl.coverUrl;
-        CollectionTrackCache.instance.put(pl.id, songs, imageUrl: imageUrl);
-        final color = await _extractPaletteColor(imageUrl ?? songs.firstOrNull?.thumbnailUrl);
-        if (!mounted) return;
-        setState(() {
-          if (color != null) _paletteColor = color;
-          _remoteAsLocal = _makePlaylist(
-            id: pl.id,
-            name: pl.title,
-            description: pl.curatorName ?? pl.description,
-            songs: songs,
-            imageUrl: imageUrl,
-          );
-        });
-        if (color != null) {
-          CollectionTrackCache.instance.updatePalette(pl.id, color);
-        }
+        await ref.read(streamManagerProvider).fetchCollectionTracksProgressive(
+          pl.id,
+          onFirstPage: (firstBatch, token) async {
+            if (!mounted || _backgroundLoadCancelled) return;
+            final songs = firstBatch.map(Song.fromTrack).toList();
+            CollectionTrackCache.instance.put(pl.id, songs, imageUrl: imageUrl);
+            final color = await _extractPaletteColor(imageUrl ?? songs.firstOrNull?.thumbnailUrl);
+            if (!mounted || _backgroundLoadCancelled) return;
+            setState(() {
+              if (color != null) _paletteColor = color;
+              _remoteAsLocal = _makePlaylist(
+                id: pl.id,
+                name: pl.title,
+                description: pl.curatorName ?? pl.description,
+                songs: songs,
+                imageUrl: imageUrl,
+              );
+            });
+            if (color != null) {
+              CollectionTrackCache.instance.updatePalette(pl.id, color);
+            }
+          },
+          onMoreLoaded: (batch, token) {
+            if (!mounted || _backgroundLoadCancelled) return;
+            final newSongs = batch.map(Song.fromTrack).toList();
+            setState(() {
+              if (_remoteAsLocal != null) {
+                final updated = [..._remoteAsLocal!.songs, ...newSongs];
+                _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
+                CollectionTrackCache.instance.put(pl.id, updated, imageUrl: imageUrl);
+              }
+            });
+          },
+          onDone: () {},
+        );
       }
     } catch (e) {
       if (!silent) _setError(e);
@@ -636,6 +660,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
       // BrowseId resolved — check Hive before deciding to show loading.
       final entry = await CollectionTrackCache.instance.getEntryFromCache(_resolvedBrowseId!);
+      final hadAlbumCache = entry != null;
       if (entry != null && mounted) {
         if (!silent || _remoteAsLocal == null) {
           setState(() {
@@ -657,46 +682,62 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               persistId: isInLib ? _resolvedBrowseId : null,
               persistKind: isInLib ? _PersistKind.album : null);
         }
-        return;
+        // Invalidate cache so a fresh full fetch replaces any stale partial data.
+        CollectionTrackCache.instance.invalidate(_resolvedBrowseId!);
+        // fall through to progressive fetch below (silent — UI already populated)
       }
-      if (!silent) _setLoading();
+      if (!silent && !hadAlbumCache) _setLoading();
 
-      final result = await sm.getCollectionTracks(_resolvedBrowseId!);
-      if (!mounted) return;
-      final meta = result.metadata.hasData ? result.metadata : null;
-      final songs = result.tracks.map(Song.fromTrack).toList();
-      final imageUrl = meta?.thumbnailUrl?.isNotEmpty == true
-          ? meta!.thumbnailUrl
-          : widget.albumThumbnailUrl;
-      CollectionTrackCache.instance
-          .put(_resolvedBrowseId!, songs, imageUrl: imageUrl);
-      // Extract palette before revealing content so gradient is ready on first frame.
+      // Progressive loading — show first page immediately, background-load rest.
+      _backgroundLoadCancelled = false;
+      final resolvedId = _resolvedBrowseId!;
       final isInLib = ref.read(libraryProvider).followedAlbums.any(
-          (a) => a.id == _resolvedBrowseId || a.browseId == _resolvedBrowseId);
-      final color = _paletteColor ?? await _extractPaletteColor(imageUrl);
-      if (!mounted) return;
-      setState(() {
-        if (color != null) _paletteColor = color;
-        _albumSubtitle = meta?.subtitle ?? widget.albumArtistName;
-        _remoteAsLocal = _makePlaylist(
-          id: _resolvedBrowseId!,
-          name: meta?.title ?? widget.albumName ?? widget.albumSongTitle ?? '',
-          description: meta?.subtitle ?? widget.albumArtistName ?? '',
-          songs: songs,
-          imageUrl: imageUrl,
-        );
-      });
-      if (color != null) {
-        _persistPalette(color, _resolvedBrowseId!, _PersistKind.album);
-      }
-      if (isInLib && _resolvedBrowseId != null) {
-        ref.read(libraryProvider.notifier).refreshAlbumMeta(
-              _resolvedBrowseId!,
-              title: meta?.title,
-              artistName: meta?.subtitle ?? widget.albumArtistName,
-              thumbnailUrl: imageUrl,
+          (a) => a.id == resolvedId || a.browseId == resolvedId);
+      await sm.fetchCollectionTracksProgressive(
+        resolvedId,
+        onFirstPage: (firstBatch, token) async {
+          if (!mounted || _backgroundLoadCancelled) return;
+          final songs = firstBatch.map(Song.fromTrack).toList();
+          final imageUrl = widget.albumThumbnailUrl;
+          CollectionTrackCache.instance.put(resolvedId, songs, imageUrl: imageUrl);
+          final color = _paletteColor ?? await _extractPaletteColor(imageUrl);
+          if (!mounted || _backgroundLoadCancelled) return;
+          setState(() {
+            if (color != null) _paletteColor = color;
+            _albumSubtitle = widget.albumArtistName;
+            _remoteAsLocal = _makePlaylist(
+              id: resolvedId,
+              name: widget.albumName ?? widget.albumSongTitle ?? '',
+              description: widget.albumArtistName ?? '',
+              songs: songs,
+              imageUrl: imageUrl,
             );
-      }
+          });
+          if (color != null) {
+            _persistPalette(color, resolvedId, _PersistKind.album);
+          }
+          if (isInLib) {
+            ref.read(libraryProvider.notifier).refreshAlbumMeta(
+                  resolvedId,
+                  artistName: widget.albumArtistName,
+                  thumbnailUrl: imageUrl,
+                );
+          }
+        },
+        onMoreLoaded: (batch, token) {
+          if (!mounted || _backgroundLoadCancelled) return;
+          final newSongs = batch.map(Song.fromTrack).toList();
+          setState(() {
+            if (_remoteAsLocal != null) {
+              final updated = [..._remoteAsLocal!.songs, ...newSongs];
+              _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
+              CollectionTrackCache.instance.put(resolvedId, updated,
+                  imageUrl: widget.albumThumbnailUrl);
+            }
+          });
+        },
+        onDone: () {},
+      );
     } catch (e, s) {
       logError('Album load failed: $e\n$s', tag: 'AlbumScreen');
       if (!silent) _setError(e);
@@ -717,6 +758,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
       final entry =
           await CollectionTrackCache.instance.getEntryFromCache(_resolvedBrowseId!);
+      final hadArtistCache = entry != null;
       if (entry != null && mounted) {
         // Cache hit — update if first load or non-silent refresh
         if (!silent || _remoteAsLocal == null) {
@@ -740,42 +782,59 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 persistKind: isInLib ? _PersistKind.artist : null);
           }
         }
-        return;
+        // Invalidate cache so a fresh full fetch replaces any stale partial data.
+        CollectionTrackCache.instance.invalidate(_resolvedBrowseId!);
+        // fall through to progressive fetch below (silent — UI already populated)
       }
+      if (!silent && !hadArtistCache) _setLoading();
 
-      final result = await sm.getCollectionTracks(_resolvedBrowseId!);
-      if (!mounted) return;
-      final meta = result.metadata.hasData ? result.metadata : null;
-      final songs = result.tracks.map(Song.fromTrack).toList();
-      final imageUrl = meta?.thumbnailUrl?.isNotEmpty == true
-          ? meta!.thumbnailUrl
-          : widget.albumThumbnailUrl;
-      CollectionTrackCache.instance
-          .put(_resolvedBrowseId!, songs, imageUrl: imageUrl);
-      // Extract palette before revealing content so gradient is ready on first frame.
+      // Progressive loading — show first page immediately, background-load rest.
+      _backgroundLoadCancelled = false;
+      final resolvedId = _resolvedBrowseId!;
       final isInLib = ref.read(libraryProvider).followedArtists.any(
-          (a) => a.id == _resolvedBrowseId || a.browseId == _resolvedBrowseId);
-      final color = _paletteColor ?? await _extractPaletteColor(imageUrl);
-      if (!mounted) return;
-      setState(() {
-        if (color != null) _paletteColor = color;
-        _remoteAsLocal = _makePlaylist(
-          id: _resolvedBrowseId!,
-          name: meta?.title ?? widget.albumName ?? '',
-          songs: songs,
-          imageUrl: imageUrl,
-        );
-      });
-      if (color != null) {
-        _persistPalette(color, _resolvedBrowseId!, _PersistKind.artist);
-      }
-      if (isInLib && _resolvedBrowseId != null) {
-        ref.read(libraryProvider.notifier).refreshArtistMeta(
-              _resolvedBrowseId!,
-              name: meta?.title,
-              thumbnailUrl: imageUrl,
+          (a) => a.id == resolvedId || a.browseId == resolvedId);
+      await sm.fetchCollectionTracksProgressive(
+        resolvedId,
+        onFirstPage: (firstBatch, token) async {
+          if (!mounted || _backgroundLoadCancelled) return;
+          final songs = firstBatch.map(Song.fromTrack).toList();
+          final imageUrl = widget.albumThumbnailUrl;
+          CollectionTrackCache.instance.put(resolvedId, songs, imageUrl: imageUrl);
+          final color = _paletteColor ?? await _extractPaletteColor(imageUrl);
+          if (!mounted || _backgroundLoadCancelled) return;
+          setState(() {
+            if (color != null) _paletteColor = color;
+            _remoteAsLocal = _makePlaylist(
+              id: resolvedId,
+              name: widget.albumName ?? '',
+              songs: songs,
+              imageUrl: imageUrl,
             );
-      }
+          });
+          if (color != null) {
+            _persistPalette(color, resolvedId, _PersistKind.artist);
+          }
+          if (isInLib) {
+            ref.read(libraryProvider.notifier).refreshArtistMeta(
+                  resolvedId,
+                  thumbnailUrl: imageUrl,
+                );
+          }
+        },
+        onMoreLoaded: (batch, token) {
+          if (!mounted || _backgroundLoadCancelled) return;
+          final newSongs = batch.map(Song.fromTrack).toList();
+          setState(() {
+            if (_remoteAsLocal != null) {
+              final updated = [..._remoteAsLocal!.songs, ...newSongs];
+              _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
+              CollectionTrackCache.instance.put(resolvedId, updated,
+                  imageUrl: widget.albumThumbnailUrl);
+            }
+          });
+        },
+        onDone: () {},
+      );
     } catch (e, s) {
       logError('Artist load failed: $e\n$s', tag: 'ArtistScreen');
       if (!silent) _setError(e);
@@ -791,7 +850,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     }
     final browseId = local.browseId ?? local.id;
 
-    // Cache hit — populate without loading screen
+    // Cache hit — populate UI immediately, then invalidate and re-fetch fully.
     final cached = await CollectionTrackCache.instance.getSongs(browseId);
     if (cached != null) {
       if (!mounted) return;
@@ -812,54 +871,60 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           local.customImageUrl ?? cached.firstOrNull?.thumbnailUrl,
           persistId: local.id,
           persistKind: _PersistKind.playlist);
-      return;
+      // Invalidate so fresh full fetch replaces any stale partial data.
+      CollectionTrackCache.instance.invalidate(browseId);
+      // fall through to progressive fetch below (silent — UI already populated)
     }
 
-    // No cache — fresh fetch
+    // Fresh fetch with progressive loading (always silent when UI is already populated).
+    final hadCache = cached != null;
     logInfo(
-        'Fetching imported playlist tracks: id=${local.id} browseId=$browseId',
+        'Fetching imported playlist tracks: id=${local.id} browseId=$browseId hadCache=$hadCache',
         tag: 'PlaylistScreen');
-    if (!silent) _setLoading();
+    if (!silent && !hadCache) _setLoading();
     try {
-      final result =
-          await ref.read(streamManagerProvider).getCollectionTracks(browseId);
-      if (!mounted) return;
-      final meta = result.metadata.hasData ? result.metadata : null;
-      final songs = result.tracks.map(Song.fromTrack).toList();
-      logInfo('Fetched ${songs.length} songs for imported playlist ${local.id}',
-          tag: 'PlaylistScreen');
-      final imageUrl = meta?.thumbnailUrl?.isNotEmpty == true
-          ? meta!.thumbnailUrl
-          : local.customImageUrl;
-      CollectionTrackCache.instance.put(browseId, songs, imageUrl: imageUrl);
-      // Extract palette before revealing content so gradient is ready on first frame.
-      final color = _paletteColor ??
-          await _extractPaletteColor(
-              imageUrl ?? songs.firstOrNull?.thumbnailUrl);
-      if (!mounted) return;
-      setState(() {
-        if (color != null) _paletteColor = color;
-        _remoteAsLocal = _makePlaylist(
-          id: local.id,
-          name: meta?.title ?? local.name,
-          description: meta?.subtitle ?? local.description,
-          songs: songs,
-          imageUrl: imageUrl,
-          browseId: browseId,
-          createdAt: local.createdAt,
-        );
-      });
-      if (color != null) {
-        _persistPalette(color, local.id, _PersistKind.playlist);
-      }
-      ref.read(libraryProvider.notifier).refreshPlaylistMeta(
-            local.id,
-            name: meta?.title,
-            description: meta?.subtitle,
-            imageUrl: meta?.thumbnailUrl?.isNotEmpty == true
-                ? meta!.thumbnailUrl
-                : null,
-          );
+      _backgroundLoadCancelled = false;
+      final imageUrl = local.customImageUrl;
+      await ref.read(streamManagerProvider).fetchCollectionTracksProgressive(
+        browseId,
+        onFirstPage: (firstBatch, token) async {
+          if (!mounted || _backgroundLoadCancelled) return;
+          final songs = firstBatch.map(Song.fromTrack).toList();
+          logInfo('Fetched first page: ${songs.length} songs for imported playlist ${local.id}',
+              tag: 'PlaylistScreen');
+          CollectionTrackCache.instance.put(browseId, songs, imageUrl: imageUrl);
+          final color = _paletteColor ??
+              await _extractPaletteColor(imageUrl ?? songs.firstOrNull?.thumbnailUrl);
+          if (!mounted || _backgroundLoadCancelled) return;
+          setState(() {
+            if (color != null) _paletteColor = color;
+            _remoteAsLocal = _makePlaylist(
+              id: local.id,
+              name: local.name,
+              description: local.description,
+              songs: songs,
+              imageUrl: imageUrl,
+              browseId: browseId,
+              createdAt: local.createdAt,
+            );
+          });
+          if (color != null) {
+            _persistPalette(color, local.id, _PersistKind.playlist);
+          }
+        },
+        onMoreLoaded: (batch, token) {
+          if (!mounted || _backgroundLoadCancelled) return;
+          final newSongs = batch.map(Song.fromTrack).toList();
+          setState(() {
+            if (_remoteAsLocal != null) {
+              final updated = [..._remoteAsLocal!.songs, ...newSongs];
+              _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
+              CollectionTrackCache.instance.put(browseId, updated, imageUrl: imageUrl);
+            }
+          });
+        },
+        onDone: () {},
+      );
     } catch (e, s) {
       logError('_fetchImportedPlaylistTracks failed: $e\n$s',
           tag: 'PlaylistScreen');

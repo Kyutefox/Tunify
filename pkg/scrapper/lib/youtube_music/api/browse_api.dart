@@ -180,11 +180,15 @@ class BrowseApi {
     }
   }
 
-  /// Fetches all tracks from a playlist or album browse page.
+  /// Fetches a single page of tracks from a playlist or album browse page.
+  ///
+  /// Returns the tracks from that one page and the continuation token for
+  /// the next page (if any). Use this for manual/incremental pagination
+  /// (e.g. podcasts where the user triggers "load more").
   ///
   /// The [browseId] corresponds to a playlist or album page and [params]
   /// carries additional server‑side filters. The number of returned [Track]s
-  /// is capped by [maxTracks].
+  /// per page is capped by [maxTracks].
   Future<({List<Track> tracks, String? continuationToken})> fetchPlaylistOrAlbumWithContinuation(
     String browseId, {
     String? params,
@@ -208,24 +212,75 @@ class BrowseApi {
       final data = await _client.post('browse', payload);
       final tracks = BrowseFormatter.extractTracksFromBrowseData(data, maxResults: maxTracks);
       final nextToken = BrowseFormatter.extractBrowseContinuationToken(data);
-      
       return (tracks: tracks, continuationToken: nextToken);
     } catch (e) {
       return (tracks: <Track>[], continuationToken: null);
     }
   }
 
+  /// Fetches ALL tracks from a playlist, album, or artist page by automatically
+  /// following every continuation token until exhausted.
+  ///
+  /// YouTube Music returns ~100 tracks per page. This method keeps fetching
+  /// continuation pages until no more tokens are returned, giving you the full
+  /// content regardless of size. [maxTracks] acts as an absolute safety cap
+  /// (defaults to 5000) to prevent unbounded loops on pathological responses.
   Future<List<Track>> fetchPlaylistOrAlbum(
     String browseId, {
     String? params,
-    int maxTracks = 500,
+    int maxTracks = 5000,
   }) async {
-    final result = await fetchPlaylistOrAlbumWithContinuation(
-      browseId,
-      params: params,
-      maxTracks: maxTracks,
-    );
-    return result.tracks;
+    final allTracks = <Track>[];
+    final seenIds = <String>{};
+
+    try {
+      // Fetch the first page.
+      final firstPayload = <String, dynamic>{
+        'context': _client.context(),
+        'browseId': browseId,
+      };
+      if (params != null && params.isNotEmpty) {
+        firstPayload['params'] = params;
+      }
+      final firstData = await _client.post('browse', firstPayload);
+      final firstTracks = BrowseFormatter.extractTracksFromBrowseData(
+        firstData,
+        maxResults: maxTracks,
+      );
+      for (final t in firstTracks) {
+        if (seenIds.add(t.id)) allTracks.add(t);
+      }
+      String? nextToken = BrowseFormatter.extractBrowseContinuationToken(firstData);
+
+      // Follow every continuation page until there are no more tokens or we hit
+      // the safety cap.
+      while (nextToken != null && nextToken.isNotEmpty && allTracks.length < maxTracks) {
+        try {
+          final contPayload = <String, dynamic>{
+            'context': _client.context(),
+            'continuation': nextToken,
+          };
+          final contData = await _client.post('browse', contPayload);
+          final contTracks = BrowseFormatter.extractTracksFromBrowseData(
+            contData,
+            maxResults: maxTracks - allTracks.length,
+          );
+          // If a continuation page comes back empty, stop to avoid infinite loops.
+          if (contTracks.isEmpty) break;
+          for (final t in contTracks) {
+            if (seenIds.add(t.id)) allTracks.add(t);
+          }
+          nextToken = BrowseFormatter.extractBrowseContinuationToken(contData);
+        } catch (_) {
+          // Stop pagination on any error mid-loop but keep what we have so far.
+          break;
+        }
+      }
+    } catch (_) {
+      // Return whatever we collected before the failure.
+    }
+
+    return allTracks;
   }
 
   /// Fetches content from a podcast show page and extracts videos as episodes.

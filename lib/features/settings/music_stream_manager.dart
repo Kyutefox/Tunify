@@ -1063,6 +1063,64 @@ class MusicStreamManager {
     return _scrapperFeedToApp(feed);
   }
 
+  /// Fetches dynamic related/recommended content for a specific browse page
+  /// (artist, album or playlist). Returns shelves like "Albums", "Singles &
+  /// EPs", "Featured on", "Fans also like", "Similar playlists", etc.
+  ///
+  /// For **artists** (browseId starts with `UC`) the artist page is browsed
+  /// directly — it already contains all relevant shelves.
+  ///
+  /// For **albums and playlists** we must go through the `next` endpoint to
+  /// resolve the "Related" tab browse ID (`tabs[2]`), then browse that.
+  /// We use the browseId itself as the `playlistId` seed (YouTube Music
+  /// accepts `VL`-prefixed playlist IDs as well as raw ones).
+  Future<RelatedHomeFeed> getPageRelatedFeed(
+    String browseId, {
+    String? seedVideoId,
+  }) async {
+    try {
+      final isArtist = browseId.startsWith('UC');
+
+      if (isArtist) {
+        final feed = await _ytMusic.browse.fetchRelatedFeed(browseId);
+        return _scrapperFeedToApp(feed);
+      }
+
+      // For albums/playlists: resolve the related browse ID via next endpoint.
+      // We need a seed videoId. If not provided, grab the first track.
+      String? videoId = seedVideoId;
+      if (videoId == null || videoId.isEmpty) {
+        final firstPage = await _ytMusic.browse.fetchPlaylistOrAlbumWithContinuation(
+          browseId,
+          maxTracks: 1,
+        );
+        videoId = firstPage.tracks.firstOrNull?.id;
+      }
+
+      if (videoId == null || videoId.isEmpty) return const RelatedHomeFeed();
+
+      // Resolve tabs[2] browse ID from the next endpoint.
+      final playlistId = browseId.startsWith('VL')
+          ? browseId.substring(2)
+          : browseId;
+      final relatedBrowseId = await _ytMusic.next.getRelatedBrowseId(
+        videoId,
+        playlistId: playlistId,
+      );
+      if (relatedBrowseId == null || relatedBrowseId.isEmpty) {
+        return const RelatedHomeFeed();
+      }
+
+      final feed = await _ytMusic.browse.fetchRelatedFeed(
+        browseId,
+        relatedBrowseId: relatedBrowseId,
+      );
+      return _scrapperFeedToApp(feed);
+    } catch (_) {
+      return const RelatedHomeFeed();
+    }
+  }
+
   /// Fetches the full moods and genres list from YouTube Music.
   Future<RelatedHomeFeed> getMoodsAndGenresFeed() async {
     final feed = await _ytMusic.browse.fetchMoodsAndGenresFeed();

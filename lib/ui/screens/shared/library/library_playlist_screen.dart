@@ -45,6 +45,14 @@ import 'library_downloaded_content.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
+import 'package:tunify/data/models/artist.dart';
+import 'package:tunify/data/models/related_feed.dart';
+import 'package:tunify/ui/widgets/common/section_header.dart';
+import 'package:tunify/ui/widgets/common/artist_avatar.dart';
+import 'package:tunify/ui/screens/shared/home/home_sections.dart';
+import 'package:tunify/ui/screens/shared/home/home_skeletons.dart';
+import 'package:tunify/ui/shell/shell_context.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 
 enum CollectionType { playlist, album, artist, podcast }
 
@@ -219,6 +227,10 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   bool _hasMore = true;
   bool _backgroundLoadCancelled = false;
   final ScrollController _scrollController = ScrollController();
+
+  // Recommendations
+  RelatedHomeFeed? _relatedFeed;
+  bool _loadingRelated = false;
 
   bool get _isRemote =>
       (widget._isRemotePlaylist && widget.remotePlaylist?.id != 'episodesForLater') ||
@@ -442,6 +454,33 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     if (widget._isRemotePlaylist) _fetchRemoteTracks(silent: silent);
     if (widget._isAlbum) _fetchAlbumTracks(silent: silent);
     if (widget._isArtist) _fetchArtistTracks(silent: silent);
+    // Fetch recommendations for all remote content (not podcasts)
+    if (_isRemote && !widget._isPodcast) _fetchRelatedContent();
+  }
+
+  Future<void> _fetchRelatedContent() async {
+    final browseId = widget.albumBrowseId ??
+        widget.remotePlaylist?.id ??
+        _resolvedBrowseId;
+    if (browseId == null || browseId.isEmpty) return;
+    if (_loadingRelated) return;
+    if (mounted) setState(() => _loadingRelated = true);
+    try {
+      // Pass the first track's videoId as a seed so MusicStreamManager
+      // can skip the extra browse call when we already have tracks loaded.
+      final seedVideoId = _remoteAsLocal?.songs.firstOrNull?.id;
+      final feed = await ref
+          .read(streamManagerProvider)
+          .getPageRelatedFeed(browseId, seedVideoId: seedVideoId);
+      if (!mounted) return;
+      final hasContent = feed.trackShelves.isNotEmpty ||
+          feed.playlistShelves.isNotEmpty ||
+          feed.artistShelves.isNotEmpty;
+      if (hasContent) setState(() => _relatedFeed = feed);
+    } catch (_) {
+    } finally {
+      if (mounted) setState(() => _loadingRelated = false);
+    }
   }
 
   void _setLoading() => setState(() {
@@ -1587,7 +1626,17 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               ),
             ),
           ),
-        const SliverToBoxAdapter(child: SizedBox(height: 160)),
+        if (_isRemote && !widget._isPodcast)
+          _RecommendationsSliver(
+            feed: _relatedFeed,
+            loading: _loadingRelated,
+            isArtist: widget._isArtist,
+          ),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: (_relatedFeed != null) ? AppSpacing.base : 160,
+          ),
+        ),
       ],
       hasSong: hasSong,
       miniPlayerKey: ValueKey('${playlist.id}-mini-player'),
@@ -3698,4 +3747,394 @@ class _NameDetailsCover extends StatelessWidget {
       height: s,
       color: AppColorsScheme.of(context).surfaceLight,
       child: AppIcon(icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted));
+}
+
+// ─── Recommendations ──────────────────────────────────────────────────────────
+
+/// Prev/next arrow buttons copied from home_content.dart pattern.
+class _NavButtonPair extends StatelessWidget {
+  const _NavButtonPair({
+    required this.pageCtrl,
+    required this.currentPage,
+    this.totalPages = 2,
+  });
+  final PageController pageCtrl;
+  final int currentPage;
+  final int totalPages;
+
+  void _go(int page) => pageCtrl.animateToPage(
+        page,
+        duration: AppDuration.normal,
+        curve: Curves.easeInOut,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        _NavButton(
+            icon: AppIcons.back,
+            enabled: currentPage > 0,
+            onTap: () => _go(currentPage - 1)),
+        const SizedBox(width: AppSpacing.xs),
+        _NavButton(
+            icon: AppIcons.forward,
+            enabled: currentPage < totalPages - 1,
+            onTap: () => _go(currentPage + 1)),
+      ],
+    );
+  }
+}
+
+class _NavButton extends StatelessWidget {
+  const _NavButton(
+      {required this.icon, required this.onTap, this.enabled = true});
+  final List<List<dynamic>> icon;
+  final VoidCallback onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppTokens.of(context);
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: t.spacing.xxl,
+        height: t.spacing.xxl,
+        decoration: BoxDecoration(
+          color: enabled
+              ? AppColorsScheme.of(context).surfaceLight
+              : AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.4),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: AppIcon(
+            icon: icon,
+            size: t.icon.xs,
+            color: enabled ? AppColorsScheme.of(context).textPrimary : AppColorsScheme.of(context).textMuted,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Stable PageView wrapper - copied from home_sections.dart pattern
+class _StablePager extends StatelessWidget {
+  const _StablePager({
+    required this.height,
+    required this.controller,
+    required this.pages,
+  });
+  final double height;
+  final PageController controller;
+  final List<Widget> pages;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: height,
+      child: PageView(controller: controller, children: pages),
+    );
+  }
+}
+/// Keeps the original ID (including VL prefix) for proper navigation.
+Playlist _mapToPlaylist(RelatedPlaylist r) => Playlist(
+      id: r.id,
+      title: r.title,
+      description: '',
+      coverUrl: r.thumbnailUrl,
+      curatorName: r.curatorName,
+      trackCount: r.trackCount ?? 0,
+    );
+
+/// Maps a [RelatedArtist] to the app [Artist] model.
+Artist _mapToArtist(RelatedArtist r) => Artist(
+      id: r.id,
+      name: r.name,
+      avatarUrl: r.thumbnailUrl,
+      genre: r.subtitle,
+    );
+
+/// A single playlist shelf with pagination — follows home page _SectionWithNav pattern.
+class _PlaylistShelfSection extends ConsumerStatefulWidget {
+  const _PlaylistShelfSection({
+    required this.title,
+    this.subtitle,
+    required this.playlists,
+  });
+  final String title;
+  final String? subtitle;
+  final List<Playlist> playlists;
+
+  @override
+  ConsumerState<_PlaylistShelfSection> createState() => _PlaylistShelfSectionState();
+}
+
+class _PlaylistShelfSectionState extends ConsumerState<_PlaylistShelfSection>
+    with PagedSectionMixin {
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final layout = ContentLayout.of(context, ref, itemWidth: 200, maxCols: 6);
+    final totalPages = (widget.playlists.length / layout.cols).ceil();
+    final hasOverflow = totalPages > 1;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: widget.title,
+          subtitle: widget.subtitle,
+          useCompactStyle: true,
+          trailing: hasOverflow
+              ? _NavButtonPair(
+                  pageCtrl: pageCtrl,
+                  currentPage: currentPage,
+                  totalPages: totalPages)
+              : null,
+        ),
+        PlaylistsRow(playlists: widget.playlists, pageController: pageCtrl),
+        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+      ],
+    );
+  }
+}
+
+/// A single artist shelf with pagination and navigation.
+class _ArtistShelfSection extends ConsumerStatefulWidget {
+  const _ArtistShelfSection({
+    required this.title,
+    this.subtitle,
+    required this.artists,
+  });
+  final String title;
+  final String? subtitle;
+  final List<Artist> artists;
+
+  @override
+  ConsumerState<_ArtistShelfSection> createState() => _ArtistShelfSectionState();
+}
+
+class _ArtistShelfSectionState extends ConsumerState<_ArtistShelfSection>
+    with PagedSectionMixin {
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final layout = ContentLayout.of(context, ref, itemWidth: 200, maxCols: 6);
+    const gap = AppSpacing.xl;
+    const rows = 1;
+    final avatarSize = layout.cols > 2 ? 88.0 : 72.0;
+    final rowH = avatarSize + 28.0;
+    final gridH = rowH * rows + gap * (rows - 1);
+
+    final pageSize = layout.cols * rows;
+    final totalPages = (widget.artists.length / pageSize).ceil();
+    final hasOverflow = totalPages > 1;
+
+    final itemW = ((layout.maxWidth - gap * (layout.cols - 1)) / layout.cols)
+        .floorToDouble();
+
+    void openArtist(Artist artist) {
+      Navigator.of(context).push(
+        appPageRoute<void>(
+          builder: (_) => LibraryPlaylistScreen.artist(
+            artistName: artist.name,
+            thumbnailUrl: artist.avatarUrl,
+            browseId: artist.id,
+          ),
+        ),
+      );
+    }
+
+    List<List<Artist>> toRows(List<Artist> items) {
+      final r = <List<Artist>>[];
+      for (var i = 0; i < items.length; i += layout.cols) {
+        r.add(items.sublist(i, (i + layout.cols).clamp(0, items.length)));
+      }
+      return r;
+    }
+
+    Widget buildGrid(List<Artist> items) {
+      final gridRows = toRows(items);
+      return SizedBox(
+        height: gridH,
+        child: OverflowBox(
+          maxHeight: double.infinity,
+          alignment: Alignment.topCenter,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var r = 0; r < gridRows.length; r++) ...[
+                if (r > 0) const SizedBox(height: gap),
+                Row(
+                  children: [
+                    for (var c = 0; c < gridRows[r].length; c++) ...[
+                      if (c > 0) const SizedBox(width: gap),
+                      SizedBox(
+                        width: itemW,
+                        height: rowH,
+                        child: ArtistAvatar(
+                          artist: gridRows[r][c],
+                          size: avatarSize,
+                          compact: true,
+                          onTap: () => openArtist(gridRows[r][c]),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      );
+    }
+
+    List<Widget> buildPages() {
+      final pages = <Widget>[];
+      for (var i = 0; i < widget.artists.length; i += pageSize) {
+        final end = (i + pageSize).clamp(0, widget.artists.length);
+        pages.add(buildGrid(widget.artists.sublist(i, end)));
+      }
+      return pages;
+    }
+
+    final content = Padding(
+      padding: EdgeInsets.symmetric(horizontal: layout.hPad),
+      child: hasOverflow
+          ? _StablePager(height: gridH, controller: pageCtrl, pages: buildPages())
+          : buildGrid(widget.artists),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SectionHeader(
+          title: widget.title,
+          subtitle: widget.subtitle,
+          useCompactStyle: true,
+          trailing: hasOverflow
+              ? _NavButtonPair(
+                  pageCtrl: pageCtrl,
+                  currentPage: currentPage,
+                  totalPages: totalPages)
+              : null,
+        ),
+        content,
+        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+      ],
+    );
+  }
+}
+
+/// Main recommendations sliver — orchestrates all shelf sections with SectionAsyncSwap.
+class _RecommendationsSliver extends StatelessWidget {
+  const _RecommendationsSliver({
+    required this.feed,
+    required this.loading,
+    required this.isArtist,
+  });
+
+  final RelatedHomeFeed? feed;
+  final bool loading;
+  final bool isArtist;
+
+  @override
+  Widget build(BuildContext context) {
+    final f = feed;
+    final hasData = f != null && (isArtist
+        ? (f.playlistShelves.isNotEmpty || f.artistShelves.isNotEmpty)
+        : f.playlistShelves.any((s) => s.playlists.isNotEmpty));
+
+    if (!loading && !hasData) return const SliverToBoxAdapter(child: SizedBox.shrink());
+
+    final isDesktop = ShellContext.isDesktopOf(context);
+
+    // Build loaded content
+    Widget loadedContent;
+    if (f != null && hasData) {
+      final sections = <Widget>[];
+      if (isArtist) {
+        for (final shelf in f.playlistShelves) {
+          if (shelf.playlists.isEmpty) continue;
+          final mapped = shelf.playlists.map(_mapToPlaylist).toList();
+          sections.add(_PlaylistShelfSection(
+            title: shelf.title,
+            subtitle: shelf.subtitle,
+            playlists: mapped,
+          ));
+        }
+        for (final shelf in f.artistShelves) {
+          if (shelf.artists.isEmpty) continue;
+          final mapped = shelf.artists.map(_mapToArtist).toList();
+          sections.add(_ArtistShelfSection(
+            title: shelf.title,
+            subtitle: shelf.subtitle,
+            artists: mapped,
+          ));
+        }
+      } else {
+        final shelf = f.playlistShelves.firstWhere(
+          (s) => s.playlists.isNotEmpty,
+          orElse: () => const RelatedPlaylistShelf(title: '', playlists: []),
+        );
+        if (shelf.playlists.isNotEmpty) {
+          final mapped = shelf.playlists.map(_mapToPlaylist).toList();
+          sections.add(_PlaylistShelfSection(
+            title: shelf.title,
+            subtitle: shelf.subtitle,
+            playlists: mapped,
+          ));
+        }
+      }
+      loadedContent = Column(children: sections);
+    } else {
+      loadedContent = const SizedBox.shrink();
+    }
+
+    // Build skeleton content matching home page pattern
+    Widget skeletonContent;
+    if (isArtist) {
+      skeletonContent = Column(
+        children: [
+          const SectionSkeleton(titleWidth: 140, child: PlaylistsRowSkeleton()),
+          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+          const SectionSkeleton(titleWidth: 120, child: ArtistsRowSkeleton()),
+          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+        ],
+      );
+    } else {
+      skeletonContent = Column(
+        children: [
+          const SectionSkeleton(titleWidth: 140, child: PlaylistsRowSkeleton()),
+          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+        ],
+      );
+    }
+
+    return SliverToBoxAdapter(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: AppSpacing.md),
+          Divider(
+            height: 1,
+            thickness: 0.5,
+            indent: AppSpacing.base,
+            endIndent: AppSpacing.base,
+            color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.15),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          SectionAsyncSwap(
+            isLoading: loading,
+            hasData: hasData,
+            loadedChild: loadedContent,
+            loadingChild: skeletonContent,
+          ),
+        ],
+      ),
+    );
+  }
 }

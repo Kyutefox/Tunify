@@ -283,6 +283,36 @@ class BrowseApi {
     return allTracks;
   }
 
+  /// Fetches related/recommended content for a given browse ID.
+  ///
+  /// For **artists** pass the artist channel ID directly — browsing it returns
+  /// the full artist page including all shelves.
+  ///
+  /// For **albums and playlists** the caller must first resolve the related
+  /// browse ID via the `next` endpoint (`tabs[2]`) and pass it as
+  /// [relatedBrowseId]. If [relatedBrowseId] is provided it is used instead of
+  /// [browseId].
+  Future<RelatedHomeFeed> fetchRelatedFeed(
+    String browseId, {
+    String? relatedBrowseId,
+  }) async {
+    final id = relatedBrowseId ?? browseId;
+    try {
+      final data = await _client.post('browse', {
+        'context': _client.context(),
+        'browseId': id,
+      });
+      return BrowseFormatter.parseRelatedFeed(
+        data,
+        maxTracks: 20,
+        maxPlaylists: 20,
+        maxArtists: 20,
+      );
+    } catch (_) {
+      return const RelatedHomeFeed();
+    }
+  }
+
   /// Fetches content from a podcast show page and extracts videos as episodes.
   ///
   /// Podcast shows (browseIds starting with MPED) don't have structured episode lists

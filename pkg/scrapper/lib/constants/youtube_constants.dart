@@ -34,7 +34,7 @@ class YtConstants {
   static const String searchFilterCommunityPlaylists = 'EgWKAQIoAWoKEAkQBRAKEAMQBA%3D%3D';
 
   /// InnerTube `params` value that filters search results to Featured Playlists only.
-  static const String searchFilterFeaturedPlaylists = 'EgWKAQIoAWoKEAkQBRAKEAMQBA%3D%3D';
+  static const String searchFilterFeaturedPlaylists = 'EgeKAQQoADgMABCAggBagoQBBADEAkQBRAK%3D%3D';
 
   /// InnerTube `params` value that filters search results to Profiles only.
   static const String searchFilterProfiles = 'EgWKAQJYAWoKEAkQBRAKEAMQBA%3D%3D';

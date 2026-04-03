@@ -6,7 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:palette_generator/palette_generator.dart';
+import 'package:tunify/features/player/palette_service.dart';
 
 import 'package:tunify/features/library/collection_track_cache.dart';
 import 'package:tunify/ui/screens/shared/collection/collection_detail_scaffold.dart';
@@ -215,6 +215,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   String? _resolvedBrowseId;
   String? _albumSubtitle;
   Color? _paletteColor;
+  LinearGradient? _paletteGradient;
   String? _lastPaletteUrl;
   LibraryPlaylist? _localPlaylistCache;
   bool _importedFetchTriggered = false;
@@ -290,7 +291,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   void _initSync() {
     // Liked songs — pre-load its fixed pink color for smooth transition
     if (widget.playlistId == 'liked') {
-      _paletteColor = const Color(0xFFF59E0B);
+      _paletteColor = const Color(0xFFFF5E8A);
       return;
     }
 
@@ -306,7 +307,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
     // Episodes For Later — always local, never needs loading
     if (widget.playlistId == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater') {
-      _paletteColor = const Color(0xFFF43F5E); // Rose gold for episodes
+      _paletteColor = const Color(0xFF1B4332); // Deep forest for episodes
       return;
     }
 
@@ -415,10 +416,15 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         }
         // User-created playlist — extract palette after transition and persist it
         if (_paletteColor == null) {
-          _scheduleAfterTransition(() => _extractPalette(
-              local.customImageUrl ?? local.songs.firstOrNull?.thumbnailUrl,
-              persistId: local.id,
-              persistKind: _PersistKind.playlist));
+          _scheduleAfterTransition(() {
+            final coverUrls = local.customImageUrl != null
+                ? [local.customImageUrl]
+                : local.songs.take(4).map((s) => s.thumbnailUrl).toList();
+            _extractPalette(null,
+                persistId: local.id,
+                persistKind: _PersistKind.playlist,
+                allUrls: coverUrls);
+          });
         }
       }
       return;
@@ -998,34 +1004,43 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   }
 
   Future<void> _extractPalette(String? imageUrl,
-      {String? persistId, _PersistKind? persistKind}) async {
-    final color = await _extractPaletteColor(imageUrl);
-    if (color == null || !mounted) return;
-    setState(() => _paletteColor = color);
-    if (persistId != null && persistKind != null) {
-      _persistPalette(color, persistId, persistKind);
+      {String? persistId, _PersistKind? persistKind, List<String?>? allUrls}) async {
+    final urls = allUrls ?? (imageUrl != null ? [imageUrl] : []);
+    if (urls.isEmpty) return;
+
+    // Dedup: build a composite key from all URLs.
+    final key = urls.where((u) => u != null && u.isNotEmpty).join('|');
+    if (key.isEmpty || key == _lastPaletteUrl) return;
+    _lastPaletteUrl = key;
+
+    if (urls.length > 1) {
+      final gradient = await PaletteService.instance.getMultiGradient(urls);
+      if (gradient == null || !mounted) return;
+      setState(() {
+        _paletteGradient = gradient;
+        _paletteColor = gradient.colors.first;
+      });
+      // Persist the primary color.
+      if (persistId != null && persistKind != null) {
+        _persistPalette(gradient.colors.first, persistId, persistKind);
+      }
+    } else {
+      final color = await PaletteService.instance.get(urls.first);
+      if (color == null || !mounted) return;
+      setState(() => _paletteColor = color);
+      if (persistId != null && persistKind != null) {
+        _persistPalette(color, persistId, persistKind);
+      }
     }
   }
 
   /// Extracts palette color and returns it without calling setState.
-  /// Use this when you need the color before revealing content.
+  /// Delegates to [PaletteService] — memory → Hive → extract, deduplicated.
   Future<Color?> _extractPaletteColor(String? imageUrl) async {
-    if (imageUrl == null || imageUrl.isEmpty || imageUrl == _lastPaletteUrl) {
-      return null;
-    }
+    if (imageUrl == null || imageUrl.isEmpty) return null;
+    if (imageUrl == _lastPaletteUrl) return null;
     _lastPaletteUrl = imageUrl;
-    try {
-      final gen = await PaletteGenerator.fromImageProvider(
-          CachedNetworkImageProvider(imageUrl),
-          size: const Size(200, 200));
-      final raw = gen.lightVibrantColor?.color ??
-          gen.vibrantColor?.color ??
-          gen.dominantColor?.color ??
-          AppColors.primary;
-      return PaletteTheme.toPaletteColor(raw);
-    } catch (_) {
-      return null;
-    }
+    return PaletteService.instance.get(imageUrl);
   }
 
   void _persistPalette(Color color, String id, _PersistKind kind) {
@@ -1176,10 +1191,11 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       final sortedSongs = _sortBySortOrder(songs, sortOrder);
       final filteredSongs = filterByExplicitSetting(sortedSongs, showExplicit);
       final hasSong = ref.watch(currentSongProvider) != null;
-      const downloadsColor = Color(0xFF059669);
+      const downloadsColor = Color(0xFF3B82F6);
       return CollectionDetailScaffold(
         isEmpty: songs.isEmpty,
         paletteColor: downloadsColor,
+        paletteGradient: AppColors.downloadGradient,
         title: 'Downloads',
         headerExpandedChild: CollectionDetailExpandedContent(
           cover: _PlaylistCover(songs: songs, isDownloads: true),
@@ -1266,6 +1282,11 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       return CollectionDetailScaffold(
         isEmpty: songs.isEmpty,
         paletteColor: const Color(0xFF475569),
+        paletteGradient: const LinearGradient(
+          colors: [Color(0xFF475569), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         title: 'Local Files',
         headerExpandedChild: CollectionDetailExpandedContent(
           cover: _PlaylistCover(songs: songs, isLocalFiles: true),
@@ -1484,24 +1505,29 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     // For user-created playlists: re-extract palette when the source URL changes
     // (song added/removed/replaced) or when we have songs but no palette yet.
     if (!_isRemote && !isImported) {
-      final paletteSource =
-          playlist.customImageUrl ?? songs.firstOrNull?.thumbnailUrl;
-      // sourceChanged: we've extracted before but the cover source is different now
-      final sourceChanged =
-          _lastPaletteUrl != null && paletteSource != _lastPaletteUrl;
+      final coverUrls = playlist.customImageUrl != null
+          ? [playlist.customImageUrl!]
+          : songs.take(4).map((s) => s.thumbnailUrl).toList();
+      final compositeKey = coverUrls.join('|');
+      // sourceChanged: cover set is different from what we last extracted from.
+      // Also fires when _lastPaletteUrl is null (e.g. color restored from DB cache
+      // but we never recorded which URLs it came from) and songs exist.
+      final sourceChanged = compositeKey != _lastPaletteUrl && coverUrls.isNotEmpty;
       // needsExtraction: no palette yet and there's a source to extract from
-      final needsExtraction = _paletteColor == null && paletteSource != null;
+      final needsExtraction = _paletteColor == null && coverUrls.isNotEmpty;
       if (sourceChanged || needsExtraction) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (!mounted) return;
           setState(() {
             _paletteColor = null;
+            _paletteGradient = null;
             _lastPaletteUrl = null; // clear dedup guard so extraction always runs
           });
-          if (paletteSource != null) {
-            _extractPalette(paletteSource,
+          if (coverUrls.isNotEmpty) {
+            _extractPalette(null,
                 persistId: widget.playlistId,
-                persistKind: _PersistKind.playlist);
+                persistKind: _PersistKind.playlist,
+                allUrls: coverUrls);
           }
         });
       }
@@ -1524,10 +1550,19 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     return CollectionDetailScaffold(
       isEmpty: songs.isEmpty,
       paletteColor: isLiked
-          ? const Color(0xFFF59E0B)
+          ? const Color(0xFFFF5E8A)
           : isEpisodesForLater
-              ? const Color(0xFFF43F5E)
+              ? const Color(0xFF1B4332)
               : (songs.isEmpty ? const Color(0xFF404040) : _paletteColor),
+      paletteGradient: isLiked
+          ? AppColors.loveThemeGradientFor(playlist.id)
+          : isEpisodesForLater
+              ? const LinearGradient(
+                  colors: [Color(0xFF1B4332), Color(0xFF40916C)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : _paletteGradient,
       title: isLiked ? 'Liked Songs' : isEpisodesForLater ? 'Episodes For Later' : playlist.name.capitalized,
       headerExpandedChild: CollectionDetailExpandedContent(
         cover: isLiked
@@ -1764,7 +1799,7 @@ class _PlaylistCover extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
-                  color: const Color(0xFF059669).withValues(alpha: 0.4),
+                  color: const Color(0xFF3B82F6).withValues(alpha: 0.4),
                   blurRadius: 20,
                   offset: const Offset(0, 6))
             ],
@@ -1791,7 +1826,7 @@ class _PlaylistCover extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
-                  color: const Color(0xFF475569).withValues(alpha: 0.5),
+                  color: const Color(0xFF475569).withValues(alpha: 0.4),
                   blurRadius: 20,
                   offset: const Offset(0, 6))
             ],
@@ -1813,12 +1848,12 @@ class _PlaylistCover extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFF43F5E), Color(0xFFF97316)],
+              colors: [Color(0xFF1B4332), Color(0xFF40916C)],
             ),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
-                  color: const Color(0xFFF43F5E).withValues(alpha: 0.4),
+                  color: const Color(0xFF40916C).withValues(alpha: 0.45),
                   blurRadius: 20,
                   offset: const Offset(0, 6))
             ],
@@ -1881,7 +1916,7 @@ class _PlaylistCover extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.sm),
               boxShadow: [
                 BoxShadow(
-                    color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
+                    color: const Color(0xFFFF5E8A).withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 6))
               ],

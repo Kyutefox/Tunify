@@ -26,6 +26,7 @@ class CollectionDetailScaffold extends StatefulWidget {
     this.searchField,
     this.headerSliver,
     this.paletteColor,
+    this.paletteGradient,
     this.playButton,
     this.scrollController,
   });
@@ -42,6 +43,9 @@ class CollectionDetailScaffold extends StatefulWidget {
   final Widget? searchField;
   final Widget? headerSliver;
   final Color? paletteColor;
+  /// Optional full gradient for the header. When set, used directly instead
+  /// of deriving a gradient from [paletteColor].
+  final LinearGradient? paletteGradient;
   final Widget? playButton;
   final ScrollController? scrollController;
 
@@ -121,11 +125,13 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     final isDesktop = ShellContext.isDesktopOf(context);
     final topPadding = isDesktop ? 0.0 : MediaQuery.of(context).padding.top;
     final appBarHeight = kToolbarHeight + topPadding;
-    final hasPalette = widget.paletteColor != null;
+    final hasPalette = widget.paletteColor != null || widget.paletteGradient != null;
     final hasPlayButton = widget.playButton != null && _useNewLayout;
 
-    final pinnedBg = hasPalette
-      ? PaletteTheme.appBarBackground(widget.paletteColor!, background: AppColorsScheme.of(context).background)
+    final effectivePinnedColor = widget.paletteColor ??
+        widget.paletteGradient?.colors.first;
+    final pinnedBg = effectivePinnedColor != null
+        ? PaletteTheme.appBarBackground(effectivePinnedColor, background: AppColorsScheme.of(context).background)
         : AppColorsScheme.of(context).background;
 
     return Stack(
@@ -241,6 +247,31 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
   }
 
   List<Widget> _buildSlivers(double appBarHeight, bool hasPalette) {
+    // Build the header background decoration — full gradient or single-color fade.
+    BoxDecoration? headerDecoration;
+    if (hasPalette) {
+      if (widget.paletteGradient != null) {
+        // Use the full card gradient but fade it out vertically.
+        final g = widget.paletteGradient!;
+        headerDecoration = BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              g.colors.first.withValues(alpha: PaletteTheme.headerGradientTopAlpha),
+              g.colors.last.withValues(alpha: PaletteTheme.headerGradientMidAlpha),
+              Colors.transparent,
+            ],
+            stops: PaletteTheme.headerGradientStops,
+          ),
+        );
+      } else {
+        headerDecoration = BoxDecoration(
+          gradient: PaletteTheme.headerGradient(widget.paletteColor!),
+        );
+      }
+    }
+
     final headerSliver = SliverToBoxAdapter(
       child: hasPalette
           ? Stack(
@@ -251,11 +282,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                   left: 0,
                   right: 0,
                   height: appBarHeight + PaletteTheme.headerGradientContentHeight,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: PaletteTheme.headerGradient(widget.paletteColor!),
-                    ),
-                  ),
+                  child: DecoratedBox(decoration: headerDecoration!),
                 ),
                 _TitleKeyInjector(titleKey: _titleKey, child: widget.headerExpandedChild!),
               ],

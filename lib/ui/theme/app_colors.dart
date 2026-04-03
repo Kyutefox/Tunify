@@ -82,9 +82,9 @@ abstract final class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  /// gradient_downloads — forest emerald to ocean teal
+  /// gradient_downloads — clean blue, reliability & storage
   static const LinearGradient downloadGradient = LinearGradient(
-    colors: [Color(0xFF059669), Color(0xFF0891B2)],
+    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -127,30 +127,30 @@ abstract final class AppColors {
     LinearGradient(colors: [PrimaryPalette.primary, PrimaryPalette.primaryLight]),
   ];
 
-  /// Love-theme gradients (5 options) — sunset gold to coral, warm & emotional.
+  /// Love-theme gradients — soft pink to purple, emotion & favourites.
   static const List<LinearGradient> loveThemeGradients = [
     LinearGradient(
-      colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
+      colors: [Color(0xFFFF5E8A), Color(0xFFA259FF)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     LinearGradient(
-      colors: [Color(0xFFFBBF24), Color(0xFFEC4899)],
+      colors: [Color(0xFFFF6B95), Color(0xFF9B4DFF)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     LinearGradient(
-      colors: [Color(0xFFF97316), Color(0xFFEF4444)],
+      colors: [Color(0xFFFF5E8A), Color(0xFF8B3DFF)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     LinearGradient(
-      colors: [Color(0xFFF59E0B), Color(0xFFDC2626)],
+      colors: [Color(0xFFFF4D7E), Color(0xFFA259FF)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     LinearGradient(
-      colors: [Color(0xFFFCD34D), Color(0xFFF97316)],
+      colors: [Color(0xFFFF7AA2), Color(0xFFB066FF)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
@@ -196,14 +196,14 @@ abstract final class AppColors {
 /// the main player background, and anywhere a dominant/palette color is applied.
 abstract final class PaletteTheme {
   // ── Palette extraction (HSL adjustments) ──────────────────────────────────
-  /// Lightness boost — small, just enough to avoid near-black colors.
-  static const double extractLightnessBoost = 0.05;
+  /// Lightness boost — lift dark palette colors so they read on dark UI.
+  static const double extractLightnessBoost = 0.10;
   /// Minimum lightness — prevents very dark colors from being invisible.
-  static const double extractLightnessMin = 0.35;
-  /// Maximum lightness — prevents colors from washing out completely.
-  static const double extractLightnessMax = 0.75;
-  /// Saturation reduction — keep colors vivid, just slightly soften.
-  static const double extractSaturationReduce = 0.05;
+  static const double extractLightnessMin = 0.40;
+  /// Maximum lightness — high enough to allow vivid mid-tones through.
+  static const double extractLightnessMax = 0.80;
+  /// Saturation boost — push extracted colors to be vivid, not muddy.
+  static const double extractSaturationBoost = 0.15;
 
   /// Liked Songs gets a slightly stronger lightness boost for its fixed color.
   static const double likedLightnessBoost = 0.10;
@@ -245,12 +245,12 @@ abstract final class PaletteTheme {
     double lightnessBoost = extractLightnessBoost,
     double lightnessMin = extractLightnessMin,
     double lightnessMax = extractLightnessMax,
-    double saturationReduce = extractSaturationReduce,
+    double saturationBoost = extractSaturationBoost,
   }) {
     final hsl = HSLColor.fromColor(color);
     return hsl
         .withLightness((hsl.lightness + lightnessBoost).clamp(lightnessMin, lightnessMax))
-        .withSaturation((hsl.saturation - saturationReduce).clamp(0.0, 1.0))
+        .withSaturation((hsl.saturation + saturationBoost).clamp(0.0, 1.0))
         .toColor();
   }
 

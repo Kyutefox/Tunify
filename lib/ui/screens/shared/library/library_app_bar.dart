@@ -47,6 +47,12 @@ class LibraryAppBar extends StatefulWidget {
     this.folderName,
     this.onExitFolder,
     this.asSliver = true,
+    this.title = 'Library',
+    this.searchTooltip = 'Search library',
+    this.showDownloadQueueAction = true,
+    this.showCreateAction = true,
+    this.filters,
+    this.filterLabelBuilder,
   });
 
   final VoidCallback onSearchTap;
@@ -62,6 +68,12 @@ class LibraryAppBar extends StatefulWidget {
   final LibraryViewMode viewMode;
   final ValueChanged<LibrarySortOrder> onSortChanged;
   final ValueChanged<LibraryViewMode> onViewModeChanged;
+  final String title;
+  final String searchTooltip;
+  final bool showDownloadQueueAction;
+  final bool showCreateAction;
+  final List<LibraryFilter>? filters;
+  final String Function(LibraryFilter filter)? filterLabelBuilder;
 
   /// When set, the filter chip row is replaced by [X] and folder name (exit folder view).
   final String? folderName;
@@ -111,7 +123,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
           child: Row(
             children: [
               Text(
-                'Library',
+                widget.title,
                 style: TextStyle(
                   color: AppColorsScheme.of(context).textPrimary,
                   fontSize: AppFontSize.display3,
@@ -120,27 +132,29 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                 ),
               ),
               const Spacer(),
-              AppIconButton(
-                icon: DownloadQueueProgressIcon(
+              if (widget.showDownloadQueueAction)
+                AppIconButton(
+                  icon: DownloadQueueProgressIcon(
+                    iconSize: 22,
+                    baseColor: AppColorsScheme.of(context).textPrimary,
+                  ),
+                  onPressed: widget.onDownloadQueueTap,
+                  tooltip: 'Download queue',
+                  size: 40,
                   iconSize: 22,
-                  baseColor: AppColorsScheme.of(context).textPrimary,
+                  iconAlignment: Alignment.centerRight,
                 ),
-                onPressed: widget.onDownloadQueueTap,
-                tooltip: 'Download queue',
-                size: 40,
-                iconSize: 22,
-                iconAlignment: Alignment.centerRight,
-              ),
-              AppIconButton(
-                icon: AppIcon(
-                  icon: AppIcons.add,
-                  size: 24,
-                  color: AppColorsScheme.of(context).textPrimary,
+              if (widget.showCreateAction)
+                AppIconButton(
+                  icon: AppIcon(
+                    icon: AppIcons.add,
+                    size: 24,
+                    color: AppColorsScheme.of(context).textPrimary,
+                  ),
+                  onPressed: widget.onCreateTap,
+                  tooltip: 'Create playlist or folder',
+                  iconAlignment: Alignment.centerRight,
                 ),
-                onPressed: widget.onCreateTap,
-                tooltip: 'Create playlist or folder',
-                iconAlignment: Alignment.centerRight,
-              ),
               AppIconButton(
                 icon: AppIcon(
                   icon: AppIcons.search,
@@ -148,7 +162,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                   color: AppColorsScheme.of(context).textPrimary,
                 ),
                 onPressed: widget.onSearchTap,
-                tooltip: 'Search library',
+                tooltip: widget.searchTooltip,
                 iconAlignment: Alignment.centerRight,
               ),
             ],
@@ -162,6 +176,8 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
             onFilterChanged: widget.onFilterChanged,
             folderName: widget.folderName,
             onExitFolder: widget.onExitFolder,
+            filters: widget.filters,
+            labelBuilder: widget.filterLabelBuilder,
           ),
         ),
         const SizedBox(height: AppSpacing.md),

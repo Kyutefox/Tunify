@@ -266,6 +266,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   
   @override
   void dispose() {
+    _backgroundLoadCancelled = true;
     _scrollController.dispose();
     super.dispose();
   }
@@ -517,6 +518,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
   Future<void> _fetchRemoteTracks({bool silent = false}) async {
     final pl = widget.remotePlaylist!;
+    _backgroundLoadCancelled = false;
     final entry = await CollectionTrackCache.instance.getEntryFromCache(pl.id);
     if (entry != null && mounted) {
       if (!silent || _remoteAsLocal == null) {
@@ -543,7 +545,10 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       // For podcasts, even if cached, we need to check if there's more content
       if (widget._isPodcast && entry.songs.length >= 100) {
         _hasMore = true;
-        _fetchContinuationToken(pl.id);
+        await _fetchContinuationToken(pl.id);
+        if (_hasMore && _continuationToken != null) {
+          unawaited(_loadRemainingEpisodesInBackground());
+        }
       }
       // For regular playlists: cache may have been populated with fewer tracks
       // (e.g. from a previous version). Invalidate and do a silent full re-fetch.
@@ -580,6 +585,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             imageUrl: imageUrl,
           );
         });
+        if (_hasMore && _continuationToken != null) {
+          unawaited(_loadRemainingEpisodesInBackground());
+        }
         if (color != null) {
           CollectionTrackCache.instance.updatePalette(pl.id, color);
         }
@@ -628,6 +636,14 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       if (!silent) _setError(e);
     }
   }
+
+  Future<void> _loadRemainingEpisodesInBackground() async {
+    if (!widget._isPodcast || _backgroundLoadCancelled) return;
+    while (mounted && !_backgroundLoadCancelled && _hasMore && _continuationToken != null) {
+      final loaded = await _loadMoreEpisodes(background: true);
+      if (!loaded) break;
+    }
+  }
   
   Future<void> _fetchContinuationToken(String browseId) async {
     try {
@@ -644,10 +660,14 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     }
   }
   
-  Future<void> _loadMoreEpisodes() async {
-    if (_loadingMore || !_hasMore || _continuationToken == null || !widget._isPodcast) return;
-    
-    setState(() => _loadingMore = true);
+  Future<bool> _loadMoreEpisodes({bool background = false}) async {
+    if (_loadingMore || !_hasMore || _continuationToken == null || !widget._isPodcast) return false;
+
+    if (background) {
+      _loadingMore = true;
+    } else {
+      setState(() => _loadingMore = true);
+    }
     
     try {
       final pl = widget.remotePlaylist!;
@@ -657,7 +677,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         maxTracks: 100,
       );
       
-      if (!mounted) return;
+      if (!mounted) return false;
       
       final newSongs = result.tracks.map(Song.fromTrack).toList();
       _continuationToken = result.continuationToken;
@@ -671,10 +691,16 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         }
         _loadingMore = false;
       });
+      return true;
     } catch (e) {
       if (mounted) {
-        setState(() => _loadingMore = false);
+        if (background) {
+          _loadingMore = false;
+        } else {
+          setState(() => _loadingMore = false);
+        }
       }
+      return false;
     }
   }
 
@@ -1237,10 +1263,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       final sortedSongs = _sortBySortOrder(songs, sortOrder);
       final filteredSongs = filterByExplicitSetting(sortedSongs, showExplicit);
       final hasSong = ref.watch(currentSongProvider) != null;
-      const localFilesColor = Color(0xFFFF9F43);
       return CollectionDetailScaffold(
         isEmpty: songs.isEmpty,
-        paletteColor: localFilesColor,
+        paletteColor: const Color(0xFFFF9F43),
         title: 'Local Files',
         headerExpandedChild: CollectionDetailExpandedContent(
           cover: _PlaylistCover(songs: songs, isLocalFiles: true),
@@ -1837,31 +1862,6 @@ class _PlaylistCover extends StatelessWidget {
             child: const Center(
                 child: FavouriteIcon(
                     isLiked: true, size: 56, fillColor: Colors.white)),
-          ),
-        );
-      }
-      if (isEpisodesForLater) {
-        return Center(
-          child: Container(
-            width: _size,
-            height: _size,
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
-              ),
-              borderRadius: BorderRadius.circular(AppRadius.sm),
-              boxShadow: [
-                BoxShadow(
-                    color: const Color(0xFF9333EA).withValues(alpha: 0.35),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6))
-              ],
-            ),
-            child: Center(
-                child: AppIcon(
-                    icon: AppIcons.bookmark, color: Colors.white, size: 56)),
           ),
         );
       }

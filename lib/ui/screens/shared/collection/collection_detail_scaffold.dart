@@ -125,7 +125,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     final hasPlayButton = widget.playButton != null && _useNewLayout;
 
     final pinnedBg = hasPalette
-        ? PaletteTheme.appBarBackground(widget.paletteColor!, background: AppColorsScheme.of(context).background)
+      ? PaletteTheme.appBarBackground(widget.paletteColor!, background: AppColorsScheme.of(context).background)
         : AppColorsScheme.of(context).background;
 
     return Stack(

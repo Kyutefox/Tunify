@@ -15,6 +15,7 @@ class LibraryFilterChips extends StatefulWidget {
     this.folderName,
     this.onExitFolder,
     this.filters,
+    this.labelBuilder,
   });
 
   final LibraryFilter? selectedFilter;
@@ -22,6 +23,7 @@ class LibraryFilterChips extends StatefulWidget {
   final String? folderName;
   final VoidCallback? onExitFolder;
   final List<LibraryFilter>? filters;
+  final String Function(LibraryFilter filter)? labelBuilder;
 
   @override
   State<LibraryFilterChips> createState() => _LibraryFilterChipsState();
@@ -206,7 +208,7 @@ class _LibraryFilterChipsState extends State<LibraryFilterChips>
                 right: filter != effectiveFilters.last ? AppSpacing.sm : 0,
               ),
               child: _FilterChip(
-                filter: filter,
+                label: widget.labelBuilder?.call(filter) ?? filter.label,
                 selected: widget.selectedFilter == filter,
                 onTap: () => widget.onFilterChanged(
                   widget.selectedFilter == filter ? null : filter,
@@ -222,11 +224,11 @@ class _LibraryFilterChipsState extends State<LibraryFilterChips>
 /// A filter chip that animates its own selected/deselected state.
 class _FilterChip extends StatefulWidget {
   const _FilterChip({
-    required this.filter,
+    required this.label,
     required this.selected,
     required this.onTap,
   });
-  final LibraryFilter filter;
+  final String label;
   final bool selected;
   final VoidCallback onTap;
 
@@ -272,7 +274,7 @@ class _FilterChipState extends State<_FilterChip>
           onTap: widget.onTap,
           animT: t,
           child: Text(
-            widget.filter.label,
+            widget.label,
             style: TextStyle(
               color: Color.lerp(AppColorsScheme.of(context).textSecondary, AppColors.primary, t),
               fontSize: AppTokens.of(context).font.md,

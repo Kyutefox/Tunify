@@ -59,145 +59,157 @@ class HomeSettingsSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
     final isLight = themeMode == ThemeMode.light;
-    return ClipRRect(
-      borderRadius:
-          const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
-      child: Container(
-        color: AppColorsScheme.of(context).surface,
-        padding: EdgeInsets.only(
-          left: kSheetHorizontalPadding,
-          right: kSheetHorizontalPadding,
-          top: AppSpacing.md,
-          bottom: MediaQuery.of(context).padding.bottom + AppSpacing.xl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SheetDragHandle(),
-            const SizedBox(height: AppSpacing.lg),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 0),
-              child: Text(
-                'Settings',
-                style: TextStyle(
-                  color: AppColorsScheme.of(context).textPrimary,
-                  fontSize: AppFontSize.h2,
-                  fontWeight: FontWeight.w700,
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.9,
+      ),
+      child: ClipRRect(
+        borderRadius:
+            const BorderRadius.vertical(top: Radius.circular(AppRadius.xl)),
+        child: Container(
+          color: AppColorsScheme.of(context).surface,
+          padding: const EdgeInsets.only(
+            left: kSheetHorizontalPadding,
+            right: kSheetHorizontalPadding,
+            top: AppSpacing.md,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SheetDragHandle(),
+              const SizedBox(height: AppSpacing.lg),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 0),
+                child: Text(
+                  'Settings',
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textPrimary,
+                    fontSize: AppFontSize.h2,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            _ThemeToggleCard(
-              isLight: isLight,
-              onToggle: () => ref.read(themeProvider.notifier).toggleTheme(),
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SettingsCard(
-              icon: AppIcons.equalizer,
-              iconColor: AppColors.accentOrange,
-              iconBgColor: AppColors.accentOrange.withValues(alpha: 0.2),
-              title: 'Playback',
-              subtitle: 'Volume Normalization & Audio',
-              onTap: () {
-                Navigator.of(context).push(
-                  appPageRoute<void>(
-                    builder: (_) => const _PlaybackSettingsScreen(),
+              const SizedBox(height: AppSpacing.xl),
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.only(
+                    bottom: MediaQuery.of(context).padding.bottom + AppSpacing.xl,
                   ),
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SettingsCard(
-              icon: AppIcons.refresh,
-              iconColor: AppColors.primary,
-              iconBgColor: AppColors.primary.withValues(alpha: 0.2),
-              title: 'Data',
-              subtitle: 'Clear Cache, Clear Downloads, Reset Recommendations',
-              onTap: () {
-                Navigator.of(context).push(
-                  appPageRoute<void>(
-                    builder: (_) => const _DataSettingsScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SettingsCard(
-              icon: AppIcons.fileExport,
-              iconColor: AppColors.accentCyan,
-              iconBgColor: AppColors.accentCyan.withValues(alpha: 0.15),
-              title: 'Backup & Restore',
-              subtitle: 'Export or restore your entire library',
-              onTap: () {
-                Navigator.of(context).push(
-                  appPageRoute<void>(
-                    builder: (_) => const BackupRestoreScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SettingsCard(
-              icon: AppIcons.playlistAdd,
-              iconColor: AppColors.accentOrange,
-              iconBgColor: AppColors.accentOrange.withValues(alpha: 0.2),
-              title: 'Import & Export',
-              subtitle: 'Import M3U / JSON playlists or export yours',
-              onTap: () {
-                Navigator.of(context).push(
-                  appPageRoute<void>(
-                    builder: (_) => const ImportExportScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SettingsCard(
-              icon: AppIcons.lock,
-              iconColor: AppColors.primary,
-              iconBgColor: AppColors.primary.withValues(alpha: 0.2),
-              title: 'Supabase',
-              subtitle: 'Use your own project or leave default',
-              onTap: () {
-                Navigator.of(context).push(
-                  appPageRoute<void>(
-                    builder: (_) => const _SupabaseSettingsScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SettingsCard(
-              icon: AppIcons.musicNote,
-              iconColor: AppColors.accentRed,
-              iconBgColor: AppColors.accentRed.withValues(alpha: 0.2),
-              title: 'YouTube Account',
-              subtitle: 'Personalized home feed & recommendations',
-              onTap: () {
-                Navigator.of(context).push(
-                  appPageRoute<void>(
-                    builder: (_) => const _YouTubeSettingsScreen(),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: AppSpacing.md),
-            _SettingsCard(
-              icon: AppIcons.verified,
-              iconColor: AppColors.accentCyan,
-              iconBgColor: AppColors.accentCyan.withValues(alpha: 0.15),
-              title: 'About',
-              subtitle: 'Developer, version & legal info',
-              onTap: () {
-                Navigator.of(context).push(
-                  appPageRoute<void>(
-                    builder: (_) => const AboutScreen(),
-                  ),
-                );
-              },
-            ),
-          ],
+                  children: [
+              _ThemeToggleCard(
+                isLight: isLight,
+                onToggle: () => ref.read(themeProvider.notifier).toggleTheme(),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _SettingsCard(
+                icon: AppIcons.equalizer,
+                iconColor: AppColors.accentOrange,
+                iconBgColor: AppColors.accentOrange.withValues(alpha: 0.2),
+                title: 'Playback',
+                subtitle: 'Volume Normalization & Audio',
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => const _PlaybackSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _SettingsCard(
+                icon: AppIcons.refresh,
+                iconColor: AppColors.primary,
+                iconBgColor: AppColors.primary.withValues(alpha: 0.2),
+                title: 'Data',
+                subtitle: 'Clear Cache, Clear Downloads, Reset Recommendations',
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => const _DataSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _SettingsCard(
+                icon: AppIcons.fileExport,
+                iconColor: AppColors.accentCyan,
+                iconBgColor: AppColors.accentCyan.withValues(alpha: 0.15),
+                title: 'Backup & Restore',
+                subtitle: 'Export or restore your entire library',
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => const BackupRestoreScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _SettingsCard(
+                icon: AppIcons.playlistAdd,
+                iconColor: AppColors.accentOrange,
+                iconBgColor: AppColors.accentOrange.withValues(alpha: 0.2),
+                title: 'Import & Export',
+                subtitle: 'Import M3U / JSON playlists or export yours',
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => const ImportExportScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _SettingsCard(
+                icon: AppIcons.lock,
+                iconColor: AppColors.primary,
+                iconBgColor: AppColors.primary.withValues(alpha: 0.2),
+                title: 'Supabase',
+                subtitle: 'Use your own project or leave default',
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => const _SupabaseSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _SettingsCard(
+                icon: AppIcons.musicNote,
+                iconColor: AppColors.accentRed,
+                iconBgColor: AppColors.accentRed.withValues(alpha: 0.2),
+                title: 'YouTube Account',
+                subtitle: 'Personalized home feed & recommendations',
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => const _YouTubeSettingsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+                _SettingsCard(
+                  icon: AppIcons.verified,
+                  iconColor: AppColors.accentCyan,
+                  iconBgColor: AppColors.accentCyan.withValues(alpha: 0.15),
+                  title: 'About',
+                  subtitle: 'Developer, version & legal info',
+                  onTap: () {
+                    Navigator.of(context).push(
+                      appPageRoute<void>(
+                        builder: (_) => const AboutScreen(),
+                      ),
+                    );
+                  },
+                ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -2866,12 +2866,126 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   Future<List<Song>> searchSongs(String query) async {
     if (query.trim().isEmpty) return [];
-
     try {
       final tracks = await _streamManager.searchTracks(query);
       return tracks.map((t) => Song.fromTrack(t)).toList();
     } catch (e) {
       logWarning('Player: searchSongs failed: $e', tag: 'Player');
+      return [];
+    }
+  }
+
+  Future<({List<Song> items, String? continuation})> searchSongsPage(String query) async {
+    try {
+      final page = await _streamManager.searchSongsPage(query);
+      return (items: page.items.map((t) => Song.fromTrack(t)).toList(), continuation: page.continuation);
+    } catch (e) {
+      return (items: <Song>[], continuation: null);
+    }
+  }
+
+  Future<({List<Song> items, String? continuation})> searchVideosPage(String query) async {
+    try {
+      final page = await _streamManager.searchVideosPage(query);
+      return (items: page.items.map((t) => Song.fromTrack(t)).toList(), continuation: page.continuation);
+    } catch (e) {
+      return (items: <Song>[], continuation: null);
+    }
+  }
+
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchArtistsPage(String query) async {
+    try { return await _streamManager.searchArtistsPage(query); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  }
+
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchAlbumsPage(String query) async {
+    try { return await _streamManager.searchAlbumsPage(query); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  }
+
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchCommunityPlaylistsPage(String query) async {
+    try { return await _streamManager.searchCommunityPlaylistsPage(query); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  }
+
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchFeaturedPlaylistsPage(String query) async {
+    try { return await _streamManager.searchFeaturedPlaylistsPage(query); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  }
+
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchProfilesPage(String query) async {
+    try { return await _streamManager.searchProfilesPage(query); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  }
+
+  Future<({List<Song> items, String? continuation})> continueTrackSearch(String token) async {
+    try {
+      final page = await _streamManager.continueTrackSearch(token);
+      return (items: page.items.map((t) => Song.fromTrack(t)).toList(), continuation: page.continuation);
+    } catch (e) {
+      return (items: <Song>[], continuation: null);
+    }
+  }
+
+  Future<({List<Map<String, dynamic>> items, String? continuation})> continueMapSearch(
+    String token,
+    List<Map<String, dynamic>> Function(Map<String, dynamic>) parseResults,
+  ) async {
+    try { return await _streamManager.continueMapSearch(token, parseResults); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  }
+
+  Future<List<Song>> searchVideos(String query) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      final tracks = await _streamManager.searchVideos(query);
+      return tracks.map((t) => Song.fromTrack(t)).toList();
+    } catch (e) {
+      logWarning('Player: searchVideos failed: $e', tag: 'Player');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchAlbums(String query) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      return await _streamManager.searchAlbums(query);
+    } catch (e) {
+      logWarning('Player: searchAlbums failed: $e', tag: 'Player');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchArtists(String query) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      return await _streamManager.searchArtists(query);
+    } catch (e) {
+      logWarning('Player: searchArtists failed: $e', tag: 'Player');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchCommunityPlaylists(String query) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      return await _streamManager.searchCommunityPlaylists(query);
+    } catch (e) {
+      logWarning('Player: searchCommunityPlaylists failed: $e', tag: 'Player');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchFeaturedPlaylists(String query) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      return await _streamManager.searchFeaturedPlaylists(query);
+    } catch (e) {
+      logWarning('Player: searchFeaturedPlaylists failed: $e', tag: 'Player');
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchProfiles(String query) async {
+    if (query.trim().isEmpty) return [];
+    try {
+      return await _streamManager.searchProfiles(query);
+    } catch (e) {
+      logWarning('Player: searchProfiles failed: $e', tag: 'Player');
       return [];
     }
   }

@@ -80,6 +80,118 @@ class SearchApi {
     }
   }
 
+  /// Fetches the first page of results for [params] filter and returns both
+  /// the results and a continuation token for the next page.
+  ///
+  /// [parseResults] converts the raw response map into typed items.
+  Future<({List<T> items, String? continuation})> searchPage<T>(
+    String query,
+    String params,
+    List<T> Function(Map<String, dynamic>) parseResults,
+  ) async {
+    final payload = _client.basePayload();
+    payload['query'] = query;
+    payload['params'] = params;
+    final data = await _client.post('search', payload);
+    return (
+      items: parseResults(data),
+      continuation: SearchFormatter.extractContinuationToken(data),
+    );
+  }
+
+  /// Fetches the next page of results using a [continuationToken] returned
+  /// from a previous [searchPage] or [continuePage] call.
+  Future<({List<T> items, String? continuation})> continuePage<T>(
+    String continuationToken,
+    List<T> Function(Map<String, dynamic>) parseResults,
+  ) async {
+    final payload = _client.basePayload();
+    payload['continuation'] = continuationToken;
+    final data = await _client.post('search', payload);
+    return (
+      items: parseResults(data),
+      continuation: SearchFormatter.extractContinuationToken(data),
+    );
+  }
+
+  /// Performs a search for videos matching [query].
+  Future<List<Track>> searchVideos(String query, {int maxResults = 24}) async {
+    try {
+      final payload = _client.basePayload();
+      payload['query'] = query;
+      payload['params'] = YtConstants.searchFilterVideos;
+      final data = await _client.post('search', payload);
+      return SearchFormatter.parseVideoResults(data, maxResults: maxResults);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Performs a search for albums matching [query].
+  Future<List<Map<String, dynamic>>> searchAlbums(String query, {int maxResults = 24}) async {
+    try {
+      final payload = _client.basePayload();
+      payload['query'] = query;
+      payload['params'] = YtConstants.searchFilterAlbums;
+      final data = await _client.post('search', payload);
+      return SearchFormatter.parseAlbumResults(data, maxResults: maxResults);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Performs a search for artists matching [query].
+  Future<List<Map<String, dynamic>>> searchArtists(String query, {int maxResults = 24}) async {
+    try {
+      final payload = _client.basePayload();
+      payload['query'] = query;
+      payload['params'] = YtConstants.searchFilterArtists;
+      final data = await _client.post('search', payload);
+      return SearchFormatter.parseArtistResults(data, maxResults: maxResults);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Performs a search for community playlists matching [query].
+  Future<List<Map<String, dynamic>>> searchCommunityPlaylists(String query, {int maxResults = 24}) async {
+    try {
+      final payload = _client.basePayload();
+      payload['query'] = query;
+      payload['params'] = YtConstants.searchFilterCommunityPlaylists;
+      final data = await _client.post('search', payload);
+      return SearchFormatter.parsePlaylistResults(data, maxResults: maxResults);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Performs a search for featured playlists matching [query].
+  Future<List<Map<String, dynamic>>> searchFeaturedPlaylists(String query, {int maxResults = 24}) async {
+    try {
+      final payload = _client.basePayload();
+      payload['query'] = query;
+      payload['params'] = YtConstants.searchFilterFeaturedPlaylists;
+      final data = await _client.post('search', payload);
+      return SearchFormatter.parsePlaylistResults(data, maxResults: maxResults);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  /// Performs a search for profiles matching [query].
+  Future<List<Map<String, dynamic>>> searchProfiles(String query, {int maxResults = 24}) async {
+    try {
+      final payload = _client.basePayload();
+      payload['query'] = query;
+      payload['params'] = YtConstants.searchFilterProfiles;
+      final data = await _client.post('search', payload);
+      return SearchFormatter.parseProfileResults(data, maxResults: maxResults);
+    } catch (e) {
+      return [];
+    }
+  }
+
   /// Performs a search for podcasts matching [query].
   ///
   /// The search is restricted to podcasts by using [YtConstants.searchFilterPodcasts].

@@ -121,8 +121,9 @@ StreamQuality _audioToStreamQuality(AudioQuality q) {
 class _StreamFetchParams {
   final String videoId;
   final bool preferAac;
-  
-  _StreamFetchParams(this.videoId, this.preferAac);
+  final String? visitorData;
+
+  _StreamFetchParams(this.videoId, this.preferAac, this.visitorData);
 }
 
 /// Result from stream fetch isolate (serializable)
@@ -130,8 +131,9 @@ class _StreamFetchResult {
   final String url;
   final int bitrate;
   final String mimeType;
-  
-  _StreamFetchResult(this.url, this.bitrate, this.mimeType);
+  final int durationMs;
+
+  _StreamFetchResult(this.url, this.bitrate, this.mimeType, this.durationMs);
 }
 
 /// YouTube stream URLs expire after ~6 hours. Cache entries are considered
@@ -191,7 +193,6 @@ class MusicStreamManager {
   /// Callbacks capture the generation at creation time and are discarded when they no longer match,
   /// preventing stale visitor-data responses from overwriting a more recent token.
   int _ytMusicGen = 0;
-  late scrapper.YoutubeDirect _ytDirect;
   final ValueNotifier<StreamQuality> _qualityNotifier =
       ValueNotifier(StreamQuality.auto);
 
@@ -226,7 +227,6 @@ class MusicStreamManager {
         if (gen == _ytMusicGen) _onVisitorDataChanged(vd);
       },
     );
-    _ytDirect = scrapper.YoutubeDirect();
     // Skip persistence when no initial token was provided; writing null would erase
     // any token already in SharedPreferences before _restoreVisitorData reads it.
     if (_visitorData != null && _visitorData!.isNotEmpty) {
@@ -238,26 +238,24 @@ class MusicStreamManager {
   Future<_StreamFetchResult?> _fetchStreamInIsolate(String videoId, bool preferAac) async {
     try {
       // Use compute to run the network-heavy operation off the main thread
-      return await compute(_fetchStreamIsolateFunction, _StreamFetchParams(videoId, preferAac));
+      return await compute(_fetchStreamIsolateFunction, _StreamFetchParams(videoId, preferAac, _visitorData));
     } catch (e) {
       log('PlayFlow: _fetchStreamInIsolate failed: $e', tag: 'PlayFlow');
       return null;
     }
   }
 
-  /// Top-level function for compute isolate - returns serializable data
+  /// Top-level function for compute isolate - returns serializable data.
+  /// Uses Metrolist's approach: direct InnerTube /player API with ANDROID_VR clients.
   static Future<_StreamFetchResult?> _fetchStreamIsolateFunction(_StreamFetchParams params) async {
-    final ytDirect = scrapper.YoutubeDirect();
-    final stream = await ytDirect.streams.fetchBestAudioStream(
+    final stream = await scrapper.StreamsApi.fetchBestAudioStreamDirect(
       params.videoId,
       preferAac: params.preferAac,
+      visitorData: params.visitorData,
     );
     if (stream == null) return null;
-    return _StreamFetchResult(
-      stream.url,
-      stream.bitrate!,
-      stream.mimeType,
-    );
+    return _StreamFetchResult(stream.url, stream.bitrate!, stream.mimeType,
+        stream.duration?.inMilliseconds ?? 0);
   }
 
   /// Visitor-data tokens longer than this are service-worker init blobs, not
@@ -383,7 +381,7 @@ class MusicStreamManager {
           bitrate: bitrate,
           quality: audioQuality,
           codec: 'opus',
-          headers: Map<String, String>.from(scrapper.streamHeaders),
+          headers: Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
         );
         final result = StreamResult(
           trackId: key as String,
@@ -449,7 +447,7 @@ class MusicStreamManager {
         _streamCache.remove(videoId);
       }
       _misses++;
-      log('PlayFlow: getStreamUrl CACHE MISS videoId=$videoId calling youtube_direct.fetchBestAudioStream',
+      log('PlayFlow: getStreamUrl CACHE MISS videoId=$videoId calling InnerTube player API',
           tag: 'PlayFlow');
       // L2: SQLite cache check
       final sqliteCached = await _db?.getStreamUrlCache(videoId);
@@ -471,7 +469,7 @@ class MusicStreamManager {
           bitrate: bitrate,
           quality: audioQuality,
           codec: 'opus',
-          headers: Map<String, String>.from(scrapper.streamHeaders),
+          headers: Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
         );
         final result = StreamResult(
           trackId: videoId,
@@ -495,7 +493,7 @@ class MusicStreamManager {
       // Run network-heavy operation in isolate to prevent UI blocking
       final ytStream = await _fetchStreamInIsolate(videoId, isApplePlatform);
       
-      log('PlayFlow: getStreamUrl fetchBestAudioStream (youtube_explode_dart getManifest) done in ${apiSw.elapsedMilliseconds - fetchT0}ms',
+      log('PlayFlow: getStreamUrl InnerTube player API done in ${apiSw.elapsedMilliseconds - fetchT0}ms',
           tag: 'PlayFlow');
       if (ytStream == null) {
         throw Exception('No audio stream available for $videoId');
@@ -512,7 +510,7 @@ class MusicStreamManager {
         bitrate: bitrate,
         quality: quality,
         codec: 'opus',
-        headers: Map<String, String>.from(scrapper.streamHeaders),
+        headers: Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
       );
       final result = StreamResult(
         trackId: videoId,
@@ -540,7 +538,7 @@ class MusicStreamManager {
             .then((_) => db.upsertStreamUrlCache(
                   videoId,
                   ytStream.url,
-                  Map<String, String>.from(scrapper.streamHeaders),
+                  Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
                   bitrate,
                   quality.label,
                   expiresAt,
@@ -555,7 +553,8 @@ class MusicStreamManager {
         'stream_url': ytStream.url,
         'bitrate': bitrate,
         'quality': quality.label,
-        'headers': Map<String, String>.from(scrapper.streamHeaders),
+        'headers': Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
+        'durationMs': ytStream.durationMs,
       };
     } catch (e) {
       log('PlayFlow: getStreamUrl FAILED after ${apiSw.elapsedMilliseconds}ms',
@@ -666,6 +665,182 @@ class MusicStreamManager {
     }
   }
 
+  /// Returns first page of song results + continuation token for [loadMore].
+  Future<({List<Track> items, String? continuation})> searchSongsPage(String query) async {
+    try {
+      final page = await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterSongs,
+        scrapper.SearchFormatter.parseSearchResults,
+      );
+      return (
+        items: page.items.map(_scrapperTrackToApp).toList(),
+        continuation: page.continuation,
+      );
+    } catch (_) {
+      return (items: <Track>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of video results + continuation token.
+  Future<({List<Track> items, String? continuation})> searchVideosPage(String query) async {
+    try {
+      final page = await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterVideos,
+        scrapper.SearchFormatter.parseVideoResults,
+      );
+      return (
+        items: page.items.map(_scrapperTrackToApp).toList(),
+        continuation: page.continuation,
+      );
+    } catch (_) {
+      return (items: <Track>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of artist results + continuation token.
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchArtistsPage(String query) async {
+    try {
+      return await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterArtists,
+        scrapper.SearchFormatter.parseArtistResults,
+      );
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of album results + continuation token.
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchAlbumsPage(String query) async {
+    try {
+      return await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterAlbums,
+        scrapper.SearchFormatter.parseAlbumResults,
+      );
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of community playlist results + continuation token.
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchCommunityPlaylistsPage(String query) async {
+    try {
+      return await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterCommunityPlaylists,
+        scrapper.SearchFormatter.parsePlaylistResults,
+      );
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of featured playlist results + continuation token.
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchFeaturedPlaylistsPage(String query) async {
+    try {
+      return await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterFeaturedPlaylists,
+        scrapper.SearchFormatter.parsePlaylistResults,
+      );
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  /// Returns first page of profile results + continuation token.
+  Future<({List<Map<String, dynamic>> items, String? continuation})> searchProfilesPage(String query) async {
+    try {
+      return await _ytMusic.search.searchPage(
+        query,
+        scrapper.YtConstants.searchFilterProfiles,
+        scrapper.SearchFormatter.parseProfileResults,
+      );
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  /// Continues a song/video search from a [continuationToken].
+  Future<({List<Track> items, String? continuation})> continueTrackSearch(String continuationToken) async {
+    try {
+      final page = await _ytMusic.search.continuePage(
+        continuationToken,
+        scrapper.SearchFormatter.parseSearchResults,
+      );
+      return (
+        items: page.items.map(_scrapperTrackToApp).toList(),
+        continuation: page.continuation,
+      );
+    } catch (_) {
+      return (items: <Track>[], continuation: null);
+    }
+  }
+
+  /// Continues a map-based search (artists/albums/playlists/profiles) from a [continuationToken].
+  Future<({List<Map<String, dynamic>> items, String? continuation})> continueMapSearch(
+    String continuationToken,
+    List<Map<String, dynamic>> Function(Map<String, dynamic>) parseResults,
+  ) async {
+    try {
+      return await _ytMusic.search.continuePage(continuationToken, parseResults);
+    } catch (_) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
+  }
+
+  Future<List<Track>> searchVideos(String query, {int maxResults = 24}) async {
+    try {
+      final list = await _ytMusic.search.searchVideos(query, maxResults: maxResults);
+      return list.map(_scrapperTrackToApp).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchAlbums(String query, {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search.searchAlbums(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchArtists(String query, {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search.searchArtists(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchCommunityPlaylists(String query, {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search.searchCommunityPlaylists(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchFeaturedPlaylists(String query, {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search.searchFeaturedPlaylists(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchProfiles(String query, {int maxResults = 24}) async {
+    try {
+      return await _ytMusic.search.searchProfiles(query, maxResults: maxResults);
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<List<Map<String, dynamic>>> searchPodcasts(String query,
       {int maxResults = 24}) async {
     try {
@@ -719,6 +894,66 @@ class MusicStreamManager {
       {int maxTracks = 200}) async {
     final result = await fetchPlaylistTracksWithContinuation(browseId, maxTracks: maxTracks);
     return result.tracks;
+  }
+
+  /// Fetches the first page of a playlist/album/artist immediately, calls
+  /// [onFirstPage] with that initial batch so the UI can render right away,
+  /// then continues fetching all remaining continuation pages in the
+  /// background — calling [onMoreLoaded] with each new batch as it arrives.
+  ///
+  /// [onDone] is called when all pages have been exhausted (or on error after
+  /// partial load).  Both callbacks are no-ops after the returned [Future]
+  /// completes — callers must guard against widget disposal themselves.
+  Future<void> fetchCollectionTracksProgressive(
+    String browseId, {
+    String? params,
+    required void Function(List<Track> firstBatch, String? continuationToken) onFirstPage,
+    required void Function(List<Track> batch, String? continuationToken) onMoreLoaded,
+    required void Function() onDone,
+    int maxTracks = 5000,
+  }) async {
+    try {
+      // First page — shown immediately.
+      final firstResult = await _ytMusic.browse.fetchPlaylistOrAlbumWithContinuation(
+        browseId,
+        params: params,
+        maxTracks: maxTracks,
+      );
+      final firstBatch = firstResult.tracks.map(_scrapperTrackToApp).toList();
+      onFirstPage(firstBatch, firstResult.continuationToken);
+
+      // Background continuation loop.
+      var token = firstResult.continuationToken;
+      final seenIds = <String>{...firstBatch.map((t) => t.id)};
+      int totalLoaded = firstBatch.length;
+
+      while (token != null && token.isNotEmpty && totalLoaded < maxTracks) {
+        try {
+          final contResult = await _ytMusic.browse.fetchPlaylistOrAlbumWithContinuation(
+            browseId,
+            continuationToken: token,
+            maxTracks: maxTracks - totalLoaded,
+          );
+          final batch = contResult.tracks
+              .map(_scrapperTrackToApp)
+              .where((t) => seenIds.add(t.id))
+              .toList();
+          if (batch.isEmpty && contResult.continuationToken == null) break;
+          if (batch.isNotEmpty) {
+            totalLoaded += batch.length;
+            onMoreLoaded(batch, contResult.continuationToken);
+          }
+          token = contResult.continuationToken;
+          if (batch.isEmpty) break; // empty page but had token — avoid infinite loop
+        } catch (e) {
+          break;
+        }
+      }
+    } catch (_) {
+      // stream fetch errors are non-fatal; onDone is always called
+    } finally {
+      onDone();
+    }
   }
 
   Future<List<Track>> getRecommendedQueue(
@@ -795,7 +1030,10 @@ class MusicStreamManager {
     int maxResults = 0,
   }) async {
     try {
-      final maxTracks = maxResults > 0 ? maxResults : 500;
+      // fetchPlaylistOrAlbum now follows all continuation pages internally.
+      // maxResults > 0 allows callers to impose an explicit cap; otherwise the
+      // scrapper's own safety limit (5000) applies.
+      final maxTracks = maxResults > 0 ? maxResults : 5000;
       final tracks = await _ytMusic.browse.fetchPlaylistOrAlbum(
         browseId,
         params: params,
@@ -823,6 +1061,64 @@ class MusicStreamManager {
       maxMoodItems: maxMoodItems,
     );
     return _scrapperFeedToApp(feed);
+  }
+
+  /// Fetches dynamic related/recommended content for a specific browse page
+  /// (artist, album or playlist). Returns shelves like "Albums", "Singles &
+  /// EPs", "Featured on", "Fans also like", "Similar playlists", etc.
+  ///
+  /// For **artists** (browseId starts with `UC`) the artist page is browsed
+  /// directly — it already contains all relevant shelves.
+  ///
+  /// For **albums and playlists** we must go through the `next` endpoint to
+  /// resolve the "Related" tab browse ID (`tabs[2]`), then browse that.
+  /// We use the browseId itself as the `playlistId` seed (YouTube Music
+  /// accepts `VL`-prefixed playlist IDs as well as raw ones).
+  Future<RelatedHomeFeed> getPageRelatedFeed(
+    String browseId, {
+    String? seedVideoId,
+  }) async {
+    try {
+      final isArtist = browseId.startsWith('UC');
+
+      if (isArtist) {
+        final feed = await _ytMusic.browse.fetchRelatedFeed(browseId);
+        return _scrapperFeedToApp(feed);
+      }
+
+      // For albums/playlists: resolve the related browse ID via next endpoint.
+      // We need a seed videoId. If not provided, grab the first track.
+      String? videoId = seedVideoId;
+      if (videoId == null || videoId.isEmpty) {
+        final firstPage = await _ytMusic.browse.fetchPlaylistOrAlbumWithContinuation(
+          browseId,
+          maxTracks: 1,
+        );
+        videoId = firstPage.tracks.firstOrNull?.id;
+      }
+
+      if (videoId == null || videoId.isEmpty) return const RelatedHomeFeed();
+
+      // Resolve tabs[2] browse ID from the next endpoint.
+      final playlistId = browseId.startsWith('VL')
+          ? browseId.substring(2)
+          : browseId;
+      final relatedBrowseId = await _ytMusic.next.getRelatedBrowseId(
+        videoId,
+        playlistId: playlistId,
+      );
+      if (relatedBrowseId == null || relatedBrowseId.isEmpty) {
+        return const RelatedHomeFeed();
+      }
+
+      final feed = await _ytMusic.browse.fetchRelatedFeed(
+        browseId,
+        relatedBrowseId: relatedBrowseId,
+      );
+      return _scrapperFeedToApp(feed);
+    } catch (_) {
+      return const RelatedHomeFeed();
+    }
   }
 
   /// Fetches the full moods and genres list from YouTube Music.
@@ -921,7 +1217,6 @@ class MusicStreamManager {
       };
 
   void dispose() {
-    _ytDirect.dispose();
     _qualityNotifier.dispose();
   }
 }

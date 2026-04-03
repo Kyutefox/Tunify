@@ -1,111 +1,197 @@
+import 'package:scrapper/scrapper.dart' as scrapper;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
 
-enum SearchFilter { all, songs, artists, albums }
+/// Mirrors the filter tabs shown in YouTube Music search, excluding podcasts
+/// and episodes per product requirements.
+enum SearchFilter { all, songs, videos, albums, artists, communityPlaylists, featuredPlaylists, profiles }
 
-/// A unique artist derived from song results.
+// ── Typed result models ───────────────────────────────────────────────────────
+
 class ArtistSearchResult {
   final String name;
   final String? browseId;
   final String thumbnailUrl;
+  final String? subscriberCount;
 
   const ArtistSearchResult({
     required this.name,
     this.browseId,
     required this.thumbnailUrl,
+    this.subscriberCount,
   });
+
+  factory ArtistSearchResult.fromMap(Map<String, dynamic> m) =>
+      ArtistSearchResult(
+        name: m['name'] as String? ?? '',
+        browseId: m['id'] as String?,
+        thumbnailUrl: m['thumbnailUrl'] as String? ?? '',
+        subscriberCount: m['subscriberCount'] as String?,
+      );
 }
 
-/// A unique album derived from song results.
 class AlbumSearchResult {
   final String name;
   final String artist;
   final String? browseId;
   final String thumbnailUrl;
+  final String? year;
 
   const AlbumSearchResult({
     required this.name,
     required this.artist,
     this.browseId,
     required this.thumbnailUrl,
+    this.year,
   });
+
+  factory AlbumSearchResult.fromMap(Map<String, dynamic> m) =>
+      AlbumSearchResult(
+        name: m['title'] as String? ?? '',
+        artist: m['artist'] as String? ?? '',
+        browseId: m['id'] as String?,
+        thumbnailUrl: m['thumbnailUrl'] as String? ?? '',
+        year: m['year'] as String?,
+      );
 }
 
-/// Tracks the current search query, results, filter, and loading/error state.
+class PlaylistSearchResult {
+  final String title;
+  final String author;
+  final String? browseId;
+  final String thumbnailUrl;
+  final String? songCount;
+
+  const PlaylistSearchResult({
+    required this.title,
+    required this.author,
+    this.browseId,
+    required this.thumbnailUrl,
+    this.songCount,
+  });
+
+  factory PlaylistSearchResult.fromMap(Map<String, dynamic> m) =>
+      PlaylistSearchResult(
+        title: m['title'] as String? ?? '',
+        author: m['author'] as String? ?? '',
+        browseId: m['id'] as String?,
+        thumbnailUrl: m['thumbnailUrl'] as String? ?? '',
+        songCount: m['songCount'] as String?,
+      );
+}
+
+// ── SearchState ───────────────────────────────────────────────────────────────
+
+/// Holds all typed results for every filter. Each filter's data is fetched
+/// on first selection and cached for the life of the query.
 class SearchState {
   final bool isLoading;
+  /// True while a load-more page is being fetched (not an initial fetch).
+  final bool isLoadingMore;
   final String? error;
-  final List<Song> results;
   final String query;
   final SearchFilter filter;
 
+  /// Songs filter results.
+  final List<Song> songResults;
+  /// Videos filter results (playable like songs).
+  final List<Song> videoResults;
+  /// Artists filter results (from the real Artists API endpoint).
+  final List<ArtistSearchResult> artistResults;
+  /// Albums filter results (from the real Albums API endpoint).
+  final List<AlbumSearchResult> albumResults;
+  /// Community playlists filter results.
+  final List<PlaylistSearchResult> playlistResults;
+  /// Featured playlists filter results.
+  final List<PlaylistSearchResult> featuredPlaylistResults;
+  /// Profiles filter results.
+  final List<ArtistSearchResult> profileResults;
+
+  /// Continuation tokens for each filter — null means no more pages.
+  final Map<SearchFilter, String?> _continuations;
+
+  /// Tracks which filters have already been fetched for the current query.
+  final Set<SearchFilter> _fetched;
+
   const SearchState({
     this.isLoading = false,
+    this.isLoadingMore = false,
     this.error,
-    this.results = const [],
     this.query = '',
     this.filter = SearchFilter.all,
-  });
+    this.songResults = const [],
+    this.videoResults = const [],
+    this.artistResults = const [],
+    this.albumResults = const [],
+    this.playlistResults = const [],
+    this.featuredPlaylistResults = const [],
+    this.profileResults = const [],
+    Map<SearchFilter, String?> continuations = const {},
+    Set<SearchFilter> fetched = const {},
+  })  : _continuations = continuations,
+        _fetched = fetched;
 
-  /// Unique artists derived from [results], deduplicated by browseId then name.
-  List<ArtistSearchResult> get artistResults {
-    final seen = <String>{};
-    final out = <ArtistSearchResult>[];
-    for (final s in results) {
-      final key = s.artistBrowseId ?? s.artist.toLowerCase();
-      if (seen.add(key)) {
-        out.add(ArtistSearchResult(
-          name: s.artist,
-          browseId: s.artistBrowseId,
-          thumbnailUrl: s.thumbnailUrl,
-        ));
-      }
-    }
-    return out;
-  }
+  bool isFetched(SearchFilter f) => _fetched.contains(f);
+  String? continuationFor(SearchFilter f) => _continuations[f];
 
-  /// Unique albums derived from [results], deduplicated by browseId then name.
-  /// Songs without an albumName are excluded.
-  List<AlbumSearchResult> get albumResults {
-    final seen = <String>{};
-    final out = <AlbumSearchResult>[];
-    for (final s in results) {
-      final album = s.albumName;
-      if (album == null || album.isEmpty) continue;
-      final key = s.albumBrowseId ?? album.toLowerCase();
-      if (seen.add(key)) {
-        out.add(AlbumSearchResult(
-          name: album,
-          artist: s.artist,
-          browseId: s.albumBrowseId,
-          thumbnailUrl: s.thumbnailUrl,
-        ));
-      }
-    }
-    return out;
-  }
+  /// Results shown for the [all] filter — songs only (matches YT Music behaviour).
+  List<Song> get allResults => songResults;
 
   SearchState copyWith({
     bool? isLoading,
+    bool? isLoadingMore,
     String? error,
-    List<Song>? results,
     String? query,
     SearchFilter? filter,
+    List<Song>? songResults,
+    List<Song>? videoResults,
+    List<ArtistSearchResult>? artistResults,
+    List<AlbumSearchResult>? albumResults,
+    List<PlaylistSearchResult>? playlistResults,
+    List<PlaylistSearchResult>? featuredPlaylistResults,
+    List<ArtistSearchResult>? profileResults,
+    Map<SearchFilter, String?>? continuations,
+    Set<SearchFilter>? fetched,
   }) {
     return SearchState(
       isLoading: isLoading ?? this.isLoading,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: error,
-      results: results ?? this.results,
       query: query ?? this.query,
       filter: filter ?? this.filter,
+      songResults: songResults ?? this.songResults,
+      videoResults: videoResults ?? this.videoResults,
+      artistResults: artistResults ?? this.artistResults,
+      albumResults: albumResults ?? this.albumResults,
+      playlistResults: playlistResults ?? this.playlistResults,
+      featuredPlaylistResults: featuredPlaylistResults ?? this.featuredPlaylistResults,
+      profileResults: profileResults ?? this.profileResults,
+      continuations: continuations ?? _continuations,
+      fetched: fetched ?? _fetched,
     );
+  }
+
+  /// True when the currently selected filter has results to show.
+  bool get hasResults {
+    switch (filter) {
+      case SearchFilter.all:                return allResults.isNotEmpty;
+      case SearchFilter.songs:              return songResults.isNotEmpty;
+      case SearchFilter.videos:             return videoResults.isNotEmpty;
+      case SearchFilter.artists:            return artistResults.isNotEmpty;
+      case SearchFilter.albums:             return albumResults.isNotEmpty;
+      case SearchFilter.communityPlaylists: return playlistResults.isNotEmpty;
+      case SearchFilter.featuredPlaylists:  return featuredPlaylistResults.isNotEmpty;
+      case SearchFilter.profiles:           return profileResults.isNotEmpty;
+    }
   }
 }
 
-/// Executes search queries through [PlayerNotifier], deduplicates identical
-/// refetch attempts, and records successful queries in [recentSearchProvider].
+// ── SearchNotifier ────────────────────────────────────────────────────────────
+
+/// Dispatches a real YouTube Music API call for each filter with proper
+/// pagination via continuation tokens.
 class SearchNotifier extends Notifier<SearchState> {
   @override
   SearchState build() => const SearchState();
@@ -116,25 +202,186 @@ class SearchNotifier extends Notifier<SearchState> {
       state = SearchState(filter: state.filter);
       return;
     }
-    // Skip refetch when query is unchanged (e.g. user tapped input, opened sheet, dismissed keyboard).
-    if (state.query == trimmed && !state.isLoading) {
-      return;
-    }
-    state = state.copyWith(isLoading: true, error: null, query: trimmed);
+    if (state.query == trimmed && !state.isLoading) return;
+
+    state = SearchState(query: trimmed, filter: state.filter, isLoading: true);
+    await _fetchForFilter(trimmed, state.filter);
+    ref.read(recentSearchProvider.notifier).addQuery(trimmed);
+  }
+
+  Future<void> setFilter(SearchFilter filter) async {
+    state = state.copyWith(filter: filter);
+    if (state.query.isEmpty) return;
+    if (state.isFetched(filter)) return;
+    state = state.copyWith(isLoading: true, error: null);
+    await _fetchForFilter(state.query, filter);
+  }
+
+  /// Called when the user scrolls near the end of the current filter's list.
+  Future<void> loadMore() async {
+    final filter = state.filter;
+    final token = state.continuationFor(filter);
+    if (token == null || state.isLoading || state.isLoadingMore) return;
+
+    state = state.copyWith(isLoadingMore: true);
+    final player = ref.read(playerProvider.notifier);
+
     try {
-      final results =
-          await ref.read(playerProvider.notifier).searchSongs(trimmed);
-      state = state.copyWith(isLoading: false, results: results, error: null);
-      ref.read(recentSearchProvider.notifier).addQuery(trimmed);
+      switch (filter) {
+        case SearchFilter.all:
+        case SearchFilter.songs:
+          final page = await player.continueTrackSearch(token);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[SearchFilter.all] = page.continuation
+            ..[SearchFilter.songs] = page.continuation;
+          state = state.copyWith(
+            isLoadingMore: false,
+            songResults: [...state.songResults, ...page.items],
+            continuations: newConts,
+          );
+
+        case SearchFilter.videos:
+          final page = await player.continueTrackSearch(token);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoadingMore: false,
+            videoResults: [...state.videoResults, ...page.items],
+            continuations: newConts,
+          );
+
+        case SearchFilter.artists:
+          final page = await player.continueMapSearch(token, scrapper.SearchFormatter.parseArtistResults);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoadingMore: false,
+            artistResults: [...state.artistResults, ...page.items.map(ArtistSearchResult.fromMap)],
+            continuations: newConts,
+          );
+
+        case SearchFilter.albums:
+          final page = await player.continueMapSearch(token, scrapper.SearchFormatter.parseAlbumResults);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoadingMore: false,
+            albumResults: [...state.albumResults, ...page.items.map(AlbumSearchResult.fromMap)],
+            continuations: newConts,
+          );
+
+        case SearchFilter.communityPlaylists:
+          final page = await player.continueMapSearch(token, scrapper.SearchFormatter.parsePlaylistResults);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoadingMore: false,
+            playlistResults: [...state.playlistResults, ...page.items.map(PlaylistSearchResult.fromMap)],
+            continuations: newConts,
+          );
+
+        case SearchFilter.featuredPlaylists:
+          final page = await player.continueMapSearch(token, scrapper.SearchFormatter.parsePlaylistResults);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoadingMore: false,
+            featuredPlaylistResults: [...state.featuredPlaylistResults, ...page.items.map(PlaylistSearchResult.fromMap)],
+            continuations: newConts,
+          );
+
+        case SearchFilter.profiles:
+          final page = await player.continueMapSearch(token, scrapper.SearchFormatter.parseProfileResults);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoadingMore: false,
+            profileResults: [...state.profileResults, ...page.items.map(ArtistSearchResult.fromMap)],
+            continuations: newConts,
+          );
+      }
     } catch (e) {
-      state =
-          state.copyWith(isLoading: false, error: e.toString(), results: []);
+      state = state.copyWith(isLoadingMore: false);
     }
   }
 
-  void setFilter(SearchFilter filter) {
-    state = state.copyWith(filter: filter);
+  Future<void> _fetchForFilter(String query, SearchFilter filter) async {
+    final player = ref.read(playerProvider.notifier);
+    try {
+      switch (filter) {
+        case SearchFilter.all:
+        case SearchFilter.songs:
+          final page = await player.searchSongsPage(query);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[SearchFilter.all] = page.continuation
+            ..[SearchFilter.songs] = page.continuation;
+          state = state.copyWith(
+            isLoading: false,
+            songResults: page.items,
+            continuations: newConts,
+            fetched: {...state._fetched, SearchFilter.all, SearchFilter.songs},
+          );
+
+        case SearchFilter.videos:
+          final page = await player.searchVideosPage(query);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoading: false,
+            videoResults: page.items,
+            continuations: newConts,
+            fetched: {...state._fetched, filter},
+          );
+
+        case SearchFilter.artists:
+          final page = await player.searchArtistsPage(query);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoading: false,
+            artistResults: page.items.map(ArtistSearchResult.fromMap).toList(),
+            continuations: newConts,
+            fetched: {...state._fetched, filter},
+          );
+
+        case SearchFilter.albums:
+          final page = await player.searchAlbumsPage(query);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoading: false,
+            albumResults: page.items.map(AlbumSearchResult.fromMap).toList(),
+            continuations: newConts,
+            fetched: {...state._fetched, filter},
+          );
+
+        case SearchFilter.communityPlaylists:
+          final page = await player.searchCommunityPlaylistsPage(query);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoading: false,
+            playlistResults: page.items.map(PlaylistSearchResult.fromMap).toList(),
+            continuations: newConts,
+            fetched: {...state._fetched, filter},
+          );
+
+        case SearchFilter.featuredPlaylists:
+          final page = await player.searchFeaturedPlaylistsPage(query);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoading: false,
+            featuredPlaylistResults: page.items.map(PlaylistSearchResult.fromMap).toList(),
+            continuations: newConts,
+            fetched: {...state._fetched, filter},
+          );
+
+        case SearchFilter.profiles:
+          final page = await player.searchProfilesPage(query);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          state = state.copyWith(
+            isLoading: false,
+            profileResults: page.items.map(ArtistSearchResult.fromMap).toList(),
+            continuations: newConts,
+            fetched: {...state._fetched, filter},
+          );
+      }
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
   }
 }
 
-final searchProvider = NotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);
+final searchProvider =
+    NotifierProvider<SearchNotifier, SearchState>(SearchNotifier.new);

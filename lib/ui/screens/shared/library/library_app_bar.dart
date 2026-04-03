@@ -129,6 +129,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                 tooltip: 'Download queue',
                 size: 40,
                 iconSize: 22,
+                iconAlignment: Alignment.centerRight,
               ),
               AppIconButton(
                 icon: AppIcon(
@@ -138,6 +139,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                 ),
                 onPressed: widget.onCreateTap,
                 tooltip: 'Create playlist or folder',
+                iconAlignment: Alignment.centerRight,
               ),
               AppIconButton(
                 icon: AppIcon(
@@ -147,6 +149,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                 ),
                 onPressed: widget.onSearchTap,
                 tooltip: 'Search library',
+                iconAlignment: Alignment.centerRight,
               ),
             ],
           ),
@@ -221,6 +224,7 @@ class _LibraryAppBarState extends State<LibraryAppBar> {
                 ),
                 iconSize: _sortGridIconSize,
                 size: 36,
+                iconAlignment: Alignment.centerRight,
               ),
             ],
           ),

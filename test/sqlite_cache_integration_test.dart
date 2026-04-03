@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:tunify_database/src/sqlite/create.controller.dart';
 import 'package:tunify_database/src/sqlite/delete.controller.dart';
 import 'package:tunify_database/src/sqlite/get.controller.dart';
@@ -100,6 +101,11 @@ Future<Database> _openTestDb() async {
 // ---------------------------------------------------------------------------
 
 void main() {
+  setUpAll(() {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  });
+
   const iterations = 20;
 
   // ── P1: Stream URL cache round-trip ──────────────────────────────────────

@@ -613,7 +613,7 @@ class _LibraryPlaylistGridCardState extends State<_LibraryPlaylistGridCard> {
                                 : null);
                           },
                           child: AppIcon(
-                            icon: AppIcons.moreHoriz,
+                            icon: AppIcons.moreVert,
                             color: AppColorsScheme.of(context).textMuted,
                             size: 20,
                           ),
@@ -764,7 +764,7 @@ class _LibraryFolderGridCardState extends State<_LibraryFolderGridCard> {
                                 : null);
                           },
                           child: AppIcon(
-                            icon: AppIcons.moreHoriz,
+                            icon: AppIcons.moreVert,
                             color: AppColorsScheme.of(context).textMuted,
                             size: 20,
                           ),
@@ -925,7 +925,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                 Builder(
                   builder: (btnCtx) => AppIconButton(
                     icon: AppIcon(
-                        icon: AppIcons.moreHoriz,
+                        icon: AppIcons.moreVert,
                         size: 22,
                         color: AppColorsScheme.of(context).textMuted),
                     onPressedWithContext: (btnCtx) {
@@ -936,6 +936,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                     },
                     size: 40,
                     iconSize: 22,
+                    iconAlignment: Alignment.centerRight,
                   ),
                 ),
               ],
@@ -1244,14 +1245,14 @@ class _LibraryPlaylistListTile extends StatelessWidget {
               if (!isSelecting) ...[
                 if (playlist.isPinned)
                   Padding(
-                    padding: const EdgeInsets.only(right: 4),
+                    padding: const EdgeInsets.only(right:  4),
                     child: AppIcon(
                         icon: AppIcons.pin, size: 14, color: AppColors.primary),
                   ),
                 Builder(
                   builder: (btnCtx) => AppIconButton(
                     icon: AppIcon(
-                        icon: AppIcons.moreHoriz,
+                        icon: AppIcons.moreVert,
                         size: 22,
                         color: AppColorsScheme.of(context).textMuted),
                     onPressedWithContext: (btnCtx) {
@@ -1262,6 +1263,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                     },
                     size: 40,
                     iconSize: 22,
+                    iconAlignment: Alignment.centerRight,
                   ),
                 ),
               ],

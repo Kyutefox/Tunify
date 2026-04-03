@@ -143,6 +143,7 @@ class SharedSearchPage extends StatelessWidget {
                           },
                           size: 40,
                           iconSize: 20,
+                          iconAlignment: Alignment.centerRight,
                         )
                       else
                         const SizedBox(width: AppSpacing.sm),

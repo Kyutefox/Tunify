@@ -206,16 +206,26 @@ class BrowseFormatter {
         final responsive = node['musicResponsiveListItemRenderer'];
         if (responsive is Map<String, dynamic>) {
           collect(parseTrackFromResponsiveItem(responsive));
+          return; // don't recurse further into this node
         }
 
         final twoRow = node['musicTwoRowItemRenderer'];
         if (twoRow is Map<String, dynamic>) {
           collect(parseTrackFromTwoRowItem(twoRow));
+          return;
         }
 
         final multiRow = node['musicMultiRowListItemRenderer'];
         if (multiRow is Map<String, dynamic>) {
           collect(parseTrackFromMultiRowItem(multiRow));
+          return;
+        }
+
+        // Carousel shelves appear in continuation responses — walk their contents.
+        final carousel = node['musicCarouselShelfRenderer'];
+        if (carousel is Map<String, dynamic>) {
+          walk(carousel['contents']);
+          return;
         }
 
         for (final value in node.values) {
@@ -246,13 +256,28 @@ class BrowseFormatter {
       }
     }
     
-    // Handle continuation contents
+    // Handle continuation contents (e.g. musicPlaylistShelfContinuation)
     final continuationContents = browseData['continuationContents'];
     if (continuationContents is Map<String, dynamic>) {
       walk(continuationContents);
     }
-    
-    // Also walk the entire data as fallback
+
+    // Handle onResponseReceivedActions (used by playlist/track-list continuations)
+    final onResponseReceivedActions = browseData['onResponseReceivedActions'];
+    if (onResponseReceivedActions is List && onResponseReceivedActions.isNotEmpty) {
+      final action = onResponseReceivedActions[0];
+      if (action is Map<String, dynamic>) {
+        final items = action['appendContinuationItemsAction']?['continuationItems'];
+        if (items is List) {
+          for (final item in items) {
+            walk(item);
+            if (tracks.length >= maxResults) break;
+          }
+        }
+      }
+    }
+
+    // Fallback: walk entire response if nothing found yet
     if (tracks.isEmpty) {
       walk(browseData);
     }
@@ -264,60 +289,112 @@ class BrowseFormatter {
   /// Returns null if no continuation is available.
   static String? extractBrowseContinuationToken(Map<String, dynamic> browseData) {
     try {
-      // Try to find continuation in the main contents
       final contents = browseData['contents'];
       if (contents is Map<String, dynamic>) {
         final singleColumn = contents['singleColumnBrowseResultsRenderer'];
         final twoColumn = contents['twoColumnBrowseResultsRenderer'];
-        
+
         if (singleColumn != null) {
           final tabs = singleColumn['tabs'] as List?;
           if (tabs != null && tabs.isNotEmpty) {
             final tabRenderer = tabs[0]['tabRenderer'];
             final content = tabRenderer?['content'];
             final sectionList = content?['sectionListRenderer'];
-            final contentsList = sectionList?['contents'] as List?;
-            if (contentsList != null) {
-              for (final item in contentsList) {
-                final shelf = item['musicShelfRenderer'] ?? item['musicPlaylistShelfRenderer'];
-                if (shelf != null) {
-                  final continuations = shelf['continuations'] as List?;
-                  if (continuations != null && continuations.isNotEmpty) {
-                    final token = continuations[0]?['nextContinuationData']?['continuation'] as String?;
-                    if (token != null) return token;
-                  }
-                }
-              }
-            }
+            final token = _extractTokenFromSectionList(sectionList);
+            if (token != null) return token;
           }
         }
-        
-        // Try twoColumnBrowseResultsRenderer for podcast pages
+
         if (twoColumn != null) {
+          // Secondary contents holds the track list for playlists/artists
           final secondaryContents = twoColumn['secondaryContents'];
-          final sectionList = secondaryContents?['sectionListRenderer'];
-          final contentsList = sectionList?['contents'] as List?;
-          if (contentsList != null) {
-            for (final item in contentsList) {
-              final shelf = item['musicShelfRenderer'] ?? item['musicPlaylistShelfRenderer'];
-              if (shelf != null) {
-                final continuations = shelf['continuations'] as List?;
-                if (continuations != null && continuations.isNotEmpty) {
-                  final token = continuations[0]?['nextContinuationData']?['continuation'] as String?;
-                  if (token != null) return token;
-                }
-              }
+          final secondarySectionList = secondaryContents?['sectionListRenderer'];
+          final secondaryToken = _extractTokenFromSectionList(secondarySectionList);
+          if (secondaryToken != null) return secondaryToken;
+
+          // Primary contents fallback
+          final primaryContents = twoColumn['primaryContents'];
+          final primarySectionList = primaryContents?['sectionListRenderer'];
+          final primaryToken = _extractTokenFromSectionList(primarySectionList);
+          if (primaryToken != null) return primaryToken;
+        }
+      }
+
+      // Continuation responses — token is in onResponseReceivedActions
+      final onResponseReceivedActions = browseData['onResponseReceivedActions'];
+      if (onResponseReceivedActions is List && onResponseReceivedActions.isNotEmpty) {
+        final action = onResponseReceivedActions[0];
+        if (action is Map<String, dynamic>) {
+          final items = action['appendContinuationItemsAction']?['continuationItems'];
+          if (items is List) {
+            final token = _extractTokenFromContinuationItems(items);
+            if (token != null) return token;
+          }
+        }
+      }
+
+      // Continuation responses — sectionListContinuation / musicPlaylistShelfContinuation
+      final continuationContents = browseData['continuationContents'];
+      if (continuationContents is Map<String, dynamic>) {
+        for (final key in ['sectionListContinuation', 'musicPlaylistShelfContinuation', 'musicShelfContinuation']) {
+          final shelf = continuationContents[key];
+          if (shelf is Map<String, dynamic>) {
+            // Check shelf-level continuations list
+            final continuations = shelf['continuations'] as List?;
+            if (continuations != null && continuations.isNotEmpty) {
+              final token = continuations[0]?['nextContinuationData']?['continuation'] as String?;
+              if (token != null) return token;
+            }
+            // Check continuationItemRenderer inside contents
+            final shelfContents = shelf['contents'] as List?;
+            if (shelfContents != null) {
+              final token = _extractTokenFromContinuationItems(shelfContents);
+              if (token != null) return token;
             }
           }
         }
       }
-      
-      // Try continuation contents (for continuation responses)
-      final continuationContents = browseData['continuationContents'];
-      if (continuationContents is Map<String, dynamic>) {
-        final shelf = continuationContents['musicPlaylistShelfContinuation'] ?? 
-                      continuationContents['musicShelfContinuation'];
+    } catch (_) {}
+    return null;
+  }
+
+  /// Finds a continuation token embedded as a [continuationItemRenderer] in a list.
+  static String? _extractTokenFromContinuationItems(List items) {
+    for (final item in items) {
+      if (item is Map<String, dynamic>) {
+        final renderer = item['continuationItemRenderer'];
+        if (renderer is Map<String, dynamic>) {
+          final token = renderer['continuationEndpoint']?['continuationCommand']?['token'] as String?;
+          if (token != null) return token;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Extracts a continuation token from a sectionListRenderer node by checking:
+  /// 1. `continuationItemRenderer` embedded inside musicPlaylistShelfRenderer.contents
+  ///    (YouTube Music's primary pattern — matches Metrolist's getContinuation()).
+  /// 2. `continuations` on musicPlaylistShelfRenderer itself.
+  /// 3. Top-level `continuations` on the sectionListRenderer.
+  static String? _extractTokenFromSectionList(dynamic sectionList) {
+    if (sectionList is! Map<String, dynamic>) return null;
+
+    final contentsList = sectionList['contents'] as List?;
+    if (contentsList != null) {
+      for (final item in contentsList) {
+        if (item is! Map<String, dynamic>) continue;
+        final shelf = (item['musicPlaylistShelfRenderer'] ??
+            item['musicShelfRenderer'] ??
+            item['musicCardShelfRenderer']) as Map<String, dynamic>?;
         if (shelf != null) {
+          // 1. continuationItemRenderer inside shelf contents (primary pattern)
+          final shelfContents = shelf['contents'] as List?;
+          if (shelfContents != null) {
+            final token = _extractTokenFromContinuationItems(shelfContents);
+            if (token != null) return token;
+          }
+          // 2. shelf-level continuations field
           final continuations = shelf['continuations'] as List?;
           if (continuations != null && continuations.isNotEmpty) {
             final token = continuations[0]?['nextContinuationData']?['continuation'] as String?;
@@ -325,9 +402,15 @@ class BrowseFormatter {
           }
         }
       }
-    } catch (_) {
-      // Ignore parsing errors
     }
+
+    // 3. Top-level continuations on sectionListRenderer itself
+    final topContinuations = sectionList['continuations'] as List?;
+    if (topContinuations != null && topContinuations.isNotEmpty) {
+      final token = topContinuations[0]?['nextContinuationData']?['continuation'] as String?;
+      if (token != null) return token;
+    }
+
     return null;
   }
 

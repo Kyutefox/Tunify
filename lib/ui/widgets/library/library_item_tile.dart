@@ -121,7 +121,7 @@ class LibraryItemTile extends StatelessWidget {
                 Builder(
                   builder: (btnCtx) => AppIconButton(
                     icon: AppIcon(
-                        icon: AppIcons.moreHoriz,
+                        icon: AppIcons.moreVert,
                         size: 22,
                         color: AppColorsScheme.of(context).textMuted),
                     onPressedWithContext: (btnCtx) {
@@ -132,6 +132,7 @@ class LibraryItemTile extends StatelessWidget {
                     },
                     size: 40,
                     iconSize: 22,
+                    iconAlignment: Alignment.centerRight,
                   ),
                 ),
               ],

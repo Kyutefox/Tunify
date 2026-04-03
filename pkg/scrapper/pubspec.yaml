@@ -8,5 +8,4 @@ environment:
 
 dependencies:
   http: ^1.2.0
-  youtube_explode_dart: ^3.0.5
   crypto: ^3.0.0

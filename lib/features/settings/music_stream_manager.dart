@@ -121,8 +121,9 @@ StreamQuality _audioToStreamQuality(AudioQuality q) {
 class _StreamFetchParams {
   final String videoId;
   final bool preferAac;
-  
-  _StreamFetchParams(this.videoId, this.preferAac);
+  final String? visitorData;
+
+  _StreamFetchParams(this.videoId, this.preferAac, this.visitorData);
 }
 
 /// Result from stream fetch isolate (serializable)
@@ -130,8 +131,9 @@ class _StreamFetchResult {
   final String url;
   final int bitrate;
   final String mimeType;
-  
-  _StreamFetchResult(this.url, this.bitrate, this.mimeType);
+  final int durationMs;
+
+  _StreamFetchResult(this.url, this.bitrate, this.mimeType, this.durationMs);
 }
 
 /// YouTube stream URLs expire after ~6 hours. Cache entries are considered
@@ -191,7 +193,6 @@ class MusicStreamManager {
   /// Callbacks capture the generation at creation time and are discarded when they no longer match,
   /// preventing stale visitor-data responses from overwriting a more recent token.
   int _ytMusicGen = 0;
-  late scrapper.YoutubeDirect _ytDirect;
   final ValueNotifier<StreamQuality> _qualityNotifier =
       ValueNotifier(StreamQuality.auto);
 
@@ -226,7 +227,6 @@ class MusicStreamManager {
         if (gen == _ytMusicGen) _onVisitorDataChanged(vd);
       },
     );
-    _ytDirect = scrapper.YoutubeDirect();
     // Skip persistence when no initial token was provided; writing null would erase
     // any token already in SharedPreferences before _restoreVisitorData reads it.
     if (_visitorData != null && _visitorData!.isNotEmpty) {
@@ -238,26 +238,24 @@ class MusicStreamManager {
   Future<_StreamFetchResult?> _fetchStreamInIsolate(String videoId, bool preferAac) async {
     try {
       // Use compute to run the network-heavy operation off the main thread
-      return await compute(_fetchStreamIsolateFunction, _StreamFetchParams(videoId, preferAac));
+      return await compute(_fetchStreamIsolateFunction, _StreamFetchParams(videoId, preferAac, _visitorData));
     } catch (e) {
       log('PlayFlow: _fetchStreamInIsolate failed: $e', tag: 'PlayFlow');
       return null;
     }
   }
 
-  /// Top-level function for compute isolate - returns serializable data
+  /// Top-level function for compute isolate - returns serializable data.
+  /// Uses Metrolist's approach: direct InnerTube /player API with ANDROID_VR clients.
   static Future<_StreamFetchResult?> _fetchStreamIsolateFunction(_StreamFetchParams params) async {
-    final ytDirect = scrapper.YoutubeDirect();
-    final stream = await ytDirect.streams.fetchBestAudioStream(
+    final stream = await scrapper.StreamsApi.fetchBestAudioStreamDirect(
       params.videoId,
       preferAac: params.preferAac,
+      visitorData: params.visitorData,
     );
     if (stream == null) return null;
-    return _StreamFetchResult(
-      stream.url,
-      stream.bitrate!,
-      stream.mimeType,
-    );
+    return _StreamFetchResult(stream.url, stream.bitrate!, stream.mimeType,
+        stream.duration?.inMilliseconds ?? 0);
   }
 
   /// Visitor-data tokens longer than this are service-worker init blobs, not
@@ -383,7 +381,7 @@ class MusicStreamManager {
           bitrate: bitrate,
           quality: audioQuality,
           codec: 'opus',
-          headers: Map<String, String>.from(scrapper.streamHeaders),
+          headers: Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
         );
         final result = StreamResult(
           trackId: key as String,
@@ -449,7 +447,7 @@ class MusicStreamManager {
         _streamCache.remove(videoId);
       }
       _misses++;
-      log('PlayFlow: getStreamUrl CACHE MISS videoId=$videoId calling youtube_direct.fetchBestAudioStream',
+      log('PlayFlow: getStreamUrl CACHE MISS videoId=$videoId calling InnerTube player API',
           tag: 'PlayFlow');
       // L2: SQLite cache check
       final sqliteCached = await _db?.getStreamUrlCache(videoId);
@@ -471,7 +469,7 @@ class MusicStreamManager {
           bitrate: bitrate,
           quality: audioQuality,
           codec: 'opus',
-          headers: Map<String, String>.from(scrapper.streamHeaders),
+          headers: Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
         );
         final result = StreamResult(
           trackId: videoId,
@@ -495,7 +493,7 @@ class MusicStreamManager {
       // Run network-heavy operation in isolate to prevent UI blocking
       final ytStream = await _fetchStreamInIsolate(videoId, isApplePlatform);
       
-      log('PlayFlow: getStreamUrl fetchBestAudioStream (youtube_explode_dart getManifest) done in ${apiSw.elapsedMilliseconds - fetchT0}ms',
+      log('PlayFlow: getStreamUrl InnerTube player API done in ${apiSw.elapsedMilliseconds - fetchT0}ms',
           tag: 'PlayFlow');
       if (ytStream == null) {
         throw Exception('No audio stream available for $videoId');
@@ -512,7 +510,7 @@ class MusicStreamManager {
         bitrate: bitrate,
         quality: quality,
         codec: 'opus',
-        headers: Map<String, String>.from(scrapper.streamHeaders),
+        headers: Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
       );
       final result = StreamResult(
         trackId: videoId,
@@ -540,7 +538,7 @@ class MusicStreamManager {
             .then((_) => db.upsertStreamUrlCache(
                   videoId,
                   ytStream.url,
-                  Map<String, String>.from(scrapper.streamHeaders),
+                  Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
                   bitrate,
                   quality.label,
                   expiresAt,
@@ -555,7 +553,8 @@ class MusicStreamManager {
         'stream_url': ytStream.url,
         'bitrate': bitrate,
         'quality': quality.label,
-        'headers': Map<String, String>.from(scrapper.streamHeaders),
+        'headers': Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
+        'durationMs': ytStream.durationMs,
       };
     } catch (e) {
       log('PlayFlow: getStreamUrl FAILED after ${apiSw.elapsedMilliseconds}ms',
@@ -950,7 +949,8 @@ class MusicStreamManager {
           break;
         }
       }
-    } catch (e) {
+    } catch (_) {
+      // stream fetch errors are non-fatal; onDone is always called
     } finally {
       onDone();
     }
@@ -1217,7 +1217,6 @@ class MusicStreamManager {
       };
 
   void dispose() {
-    _ytDirect.dispose();
     _qualityNotifier.dispose();
   }
 }

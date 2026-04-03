@@ -180,7 +180,7 @@ class AudioPlayerService {
       {Map<String, String>? headers, Duration? initialPosition}) async {
     final requestHeaders = (headers != null && headers.isNotEmpty)
         ? headers
-        : youtubePlaybackHeaders;
+        : SharedHeaders.youtubePlaybackHeaders;
 
     // On Apple platforms (iOS, macOS), no custom headers — AVURLAsset hangs
     // with Origin/Referer set. Signed YouTube URLs are self-authenticating.

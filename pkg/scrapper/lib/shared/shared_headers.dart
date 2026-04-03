@@ -30,7 +30,8 @@ class SharedHeaders {
   /// discovered client version.
   static Map<String, String> get ytMusicApi => {
         ...apiHeaders(YtConstants.originMusic, YtConstants.originMusicSlash),
-        'X-YouTube-Client-Name': YtConstants.innertubeClientName,
+        'X-YouTube-Client-Name': YtConstants.innertubeClientId,
+        'X-Goog-Api-Format-Version': '1',
       };
 
   /// Headers for YouTube web (non‑music) InnerTube calls against

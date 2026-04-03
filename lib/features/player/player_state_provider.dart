@@ -13,6 +13,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tunify/core/constants/storage_keys.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/data/repositories/audio_repository.dart';
+import 'package:scrapper/scrapper.dart' as scrapper;
+import 'package:tunify/core/services/shared_prefs_service.dart';
 import 'package:tunify/features/settings/music_stream_manager.dart';
 import 'package:tunify/features/player/audio/audio_player_service.dart';
 import 'package:tunify/features/player/audio/crossfade_engine.dart';
@@ -3053,7 +3055,14 @@ final playerProvider =
     NotifierProvider<PlayerNotifier, PlayerState>(PlayerNotifier.new);
 
 final streamManagerProvider = Provider<MusicStreamManager>((ref) {
+  final prefs = SharedPrefsService.instance.prefs;
+  final sapisid = prefs?.getString(StorageKeys.prefsYtSapisid) ?? '';
+  final cookie = prefs?.getString(StorageKeys.prefsYtCookie) ?? '';
+  final auth = sapisid.isNotEmpty && cookie.isNotEmpty
+      ? scrapper.YTMusicAuth(sapisid: sapisid, cookie: cookie)
+      : null;
   return MusicStreamManager(
+    auth: auth,
     onVisitorDataReceived: (String? visitorData) async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(kYtVisitorDataKey, visitorData ?? '');

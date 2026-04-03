@@ -186,7 +186,7 @@ class MusicStreamManager {
   /// Language locale fetched live from YouTube (e.g. 'en'). Null until the
   /// first successful VisitorDataFetcher call — never hardcoded.
   String? _hl;
-  final scrapper.YTMusicAuth? _auth;
+  scrapper.YTMusicAuth? _auth;
   late scrapper.YoutubeMusic _ytMusic;
 
   /// Monotonic generation counter incremented each time [_ytMusic] is replaced.
@@ -284,6 +284,25 @@ class MusicStreamManager {
     // accumulated in the current client instance (e.g. from a recent player call).
     if (normalized == _visitorData) return;
     _visitorData = normalized;
+    final gen = ++_ytMusicGen;
+    _ytMusic = scrapper.YoutubeMusic(
+      visitorData: _visitorData,
+      apiKey: _apiKey,
+      clientVersion: _clientVersion,
+      sessionCookies: _sessionCookies,
+      gl: _gl,
+      hl: _hl,
+      auth: _auth,
+      onVisitorDataReceived: (vd) {
+        if (gen == _ytMusicGen) _onVisitorDataChanged(vd);
+      },
+    );
+  }
+
+  /// Updates the YouTube Music authentication credentials and rebuilds [YoutubeMusic].
+  /// Pass `null` to remove authentication (revert to unauthenticated requests).
+  void setAuth(scrapper.YTMusicAuth? auth) {
+    _auth = auth;
     final gen = ++_ytMusicGen;
     _ytMusic = scrapper.YoutubeMusic(
       visitorData: _visitorData,
@@ -967,9 +986,14 @@ class MusicStreamManager {
       // Fire-and-forget — we don't need the result and don't want to block queue loading.
       getSongFromPlayer(videoId).ignore();
 
+      // When inside a playlist, set playlistSetVideoId to the current video so
+      // YouTube scopes recommendations to the playlist context (matches Metrolist).
+      final playlistSetVideoId = playlistId != null ? videoId : null;
+
       var list = await _ytMusic.next.fetchNext(
         videoId: videoId,
         playlistId: playlistId,
+        playlistSetVideoId: playlistSetVideoId,
       );
       if (list.isEmpty) {
         log('getRecommendedQueue: first fetchNext returned 0 tracks, retrying once',
@@ -978,6 +1002,7 @@ class MusicStreamManager {
         list = await _ytMusic.next.fetchNext(
           videoId: videoId,
           playlistId: playlistId,
+          playlistSetVideoId: playlistSetVideoId,
         );
       }
       if (list.isEmpty) {
@@ -1047,8 +1072,7 @@ class MusicStreamManager {
     }
   }
 
-  Future<RelatedHomeFeed> getRelatedHomeFeed(
-    String seedVideoId, {
+  Future<RelatedHomeFeed> getHomeFeed({
     int maxTracks = 30,
     int maxPlaylists = 12,
     int maxArtists = 12,
@@ -1124,6 +1148,18 @@ class MusicStreamManager {
   /// Fetches the full moods and genres list from YouTube Music.
   Future<RelatedHomeFeed> getMoodsAndGenresFeed() async {
     final feed = await _ytMusic.browse.fetchMoodsAndGenresFeed();
+    return _scrapperFeedToApp(feed);
+  }
+
+  /// Fetches the non-personalised Explore feed (new releases + moods).
+  Future<RelatedHomeFeed> getExploreFeed() async {
+    final feed = await _ytMusic.browse.fetchExploreFeed();
+    return _scrapperFeedToApp(feed);
+  }
+
+  /// Fetches the top charts feed (songs, artists, albums).
+  Future<RelatedHomeFeed> getChartsFeed() async {
+    final feed = await _ytMusic.browse.fetchChartsPage();
     return _scrapperFeedToApp(feed);
   }
 

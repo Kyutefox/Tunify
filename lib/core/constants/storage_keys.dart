@@ -7,6 +7,10 @@ abstract final class StorageKeys {
   static const String prefsYtApiKey = 'yt_api_key';
   static const String prefsYtClientVersion = 'yt_client_version';
 
+  // ——— SharedPreferences: YouTube Music account auth ———
+  static const String prefsYtSapisid = 'yt_sapisid';
+  static const String prefsYtCookie = 'yt_cookie';
+
   // ——— SharedPreferences: player ———
   static const String prefsLastPlayedPositionMs = 'last_played_position_ms';
   static const String prefsLastPlayedDurationMs = 'last_played_duration_ms';

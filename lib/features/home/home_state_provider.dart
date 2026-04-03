@@ -161,7 +161,6 @@ List<dynamic> _deepCastList(List l) => l
 class HomeNotifier extends Notifier<HomeState> {
   MusicStreamManager get _streamManager => ref.read(streamManagerProvider);
   DatabaseRepository get _repository => ref.read(databaseRepositoryProvider);
-  static const String _defaultSeedVideoId = 'J7p4bzqLvCw';
 
   /// Gradient palette mirroring [_mapMoods] order, used when deserializing moods from the disk cache.
   /// Gradient palette mirroring [_mapMoods] order, used when deserializing moods from the disk cache.
@@ -366,31 +365,7 @@ class HomeNotifier extends Notifier<HomeState> {
         await _streamManager.initFromSwJsData();
       }
 
-      final homeFeed = await _streamManager.getRelatedHomeFeed(
-        _defaultSeedVideoId,
-        maxTracks: 150,
-        maxPlaylists: 40,
-        maxArtists: 12,
-      );
-
-      // Also fetch the full moods list from the dedicated endpoint
-      final moodsFeed = await _streamManager.getMoodsAndGenresFeed();
-
-      // Merge moods from both feeds, avoiding duplicates by browseId
-      final mergedMoods = <String, RelatedMoodItem>{};
-      for (final mood in [...homeFeed.moodItems, ...moodsFeed.moodItems]) {
-        final key = '${mood.browseId}|${mood.params ?? ''}';
-        if (!mergedMoods.containsKey(key)) {
-          mergedMoods[key] = mood;
-        }
-      }
-      final combinedFeed = RelatedHomeFeed(
-        trackShelves: homeFeed.trackShelves,
-        playlistShelves: homeFeed.playlistShelves,
-        artistShelves: homeFeed.artistShelves,
-        shelves: homeFeed.shelves,
-        moodItems: mergedMoods.values.toList(),
-      );
+      final combinedFeed = await _fetchCombinedFeed();
 
       // Apply as pending update (doesn't change UI)
       _applyFeedToState(combinedFeed, isForeground: false);
@@ -498,36 +473,52 @@ class HomeNotifier extends Notifier<HomeState> {
         unawaited(_fetchSwJsDataAndRefresh());
       }
 
-      final homeFeed = await _streamManager.getRelatedHomeFeed(
-        _defaultSeedVideoId,
-        maxTracks: 150,
-        maxPlaylists: 40,
-        maxArtists: 12,
-      );
-
-      // Also fetch the full moods list from the dedicated endpoint
-      final moodsFeed = await _streamManager.getMoodsAndGenresFeed();
-
-      // Merge moods from both feeds, avoiding duplicates by browseId
-      final mergedMoods = <String, RelatedMoodItem>{};
-      for (final mood in [...homeFeed.moodItems, ...moodsFeed.moodItems]) {
-        final key = '${mood.browseId}|${mood.params ?? ''}';
-        if (!mergedMoods.containsKey(key)) {
-          mergedMoods[key] = mood;
-        }
-      }
-      final combinedFeed = RelatedHomeFeed(
-        trackShelves: homeFeed.trackShelves,
-        playlistShelves: homeFeed.playlistShelves,
-        artistShelves: homeFeed.artistShelves,
-        shelves: homeFeed.shelves,
-        moodItems: mergedMoods.values.toList(),
-      );
+      final combinedFeed = await _fetchCombinedFeed();
 
       _applyFeedToState(combinedFeed, isForeground: !isBackgroundRefresh);
+
+      // For foreground loads, enrich the visible feed in the background with
+      // artist-page sections (albums, singles, fans also like) seeded by
+      // artists returned in the home feed.
+      if (!isBackgroundRefresh) {
+        final artistIds = combinedFeed.artistShelves
+            .expand((s) => s.artists)
+            .map((a) => a.id)
+            .where((id) => id.startsWith('UC'))
+            .toSet()
+            .take(2)
+            .toList();
+        if (artistIds.isNotEmpty) {
+          unawaited(_fetchAndAppendSimilarSections(artistIds));
+        }
+      }
     } catch (e) {
       rethrow;
     }
+  }
+
+  /// Fetches artist-page shelves for [artistIds] in the background and appends
+  /// any new sections (by title) to the currently visible home feed.
+  Future<void> _fetchAndAppendSimilarSections(List<String> artistIds) async {
+    final extraSections = <HomeSongSection>[];
+    final existingTitles =
+        state.dynamicSections.map((s) => s.titleLower).toSet();
+    for (final artistId in artistIds) {
+      try {
+        final feed = await _streamManager.getPageRelatedFeed(artistId);
+        for (final section in _buildSections(feed)) {
+          if (existingTitles.add(section.titleLower)) {
+            extraSections.add(section);
+          }
+        }
+      } catch (_) {}
+    }
+    if (extraSections.isEmpty || !state.isLoaded) return;
+    state = state.copyWith(
+      dynamicSections: [...state.dynamicSections, ...extraSections],
+    );
+    _cache = state;
+    unawaited(_persistCache());
   }
 
   /// Fetches the YouTube Music main page via [VisitorDataFetcher] to obtain a
@@ -554,31 +545,7 @@ class HomeNotifier extends Notifier<HomeState> {
 
       // Refresh the feed with the new visitor data so the home UI reflects
       // the latest personalisation from this device/session.
-      final homeFeed = await _streamManager.getRelatedHomeFeed(
-        _defaultSeedVideoId,
-        maxTracks: 150,
-        maxPlaylists: 40,
-        maxArtists: 12,
-      );
-
-      // Also fetch the full moods list from the dedicated endpoint
-      final moodsFeed = await _streamManager.getMoodsAndGenresFeed();
-
-      // Merge moods from both feeds, avoiding duplicates by browseId
-      final mergedMoods = <String, RelatedMoodItem>{};
-      for (final mood in [...homeFeed.moodItems, ...moodsFeed.moodItems]) {
-        final key = '${mood.browseId}|${mood.params ?? ''}';
-        if (!mergedMoods.containsKey(key)) {
-          mergedMoods[key] = mood;
-        }
-      }
-      final combinedFeed = RelatedHomeFeed(
-        trackShelves: homeFeed.trackShelves,
-        playlistShelves: homeFeed.playlistShelves,
-        artistShelves: homeFeed.artistShelves,
-        shelves: homeFeed.shelves,
-        moodItems: mergedMoods.values.toList(),
-      );
+      final combinedFeed = await _fetchCombinedFeed();
 
       _applyFeedToState(combinedFeed, isForeground: false);
     } catch (e) {
@@ -590,6 +557,65 @@ class HomeNotifier extends Notifier<HomeState> {
     } finally {
       _backgroundFetchInProgress = false;
     }
+  }
+
+  /// Fetches home + explore + charts + moods in parallel and returns a merged
+  /// [RelatedHomeFeed] with deduplicated shelves.
+  Future<RelatedHomeFeed> _fetchCombinedFeed() async {
+    final results = await Future.wait([
+      _streamManager.getHomeFeed(
+          maxTracks: 150, maxPlaylists: 40, maxArtists: 12),
+      _streamManager.getMoodsAndGenresFeed(),
+      _streamManager.getExploreFeed(),
+      _streamManager.getChartsFeed(),
+    ]);
+    final homeFeed = results[0];
+    final moodsFeed = results[1];
+    final exploreFeed = results[2];
+    final chartsFeed = results[3];
+
+    final seenTitles = <String>{};
+    List<T> dedup<T>(
+      List<T> items,
+      String Function(T) title,
+    ) =>
+        items.where((s) => seenTitles.add(title(s).toLowerCase())).toList();
+
+    final allTrackShelves = dedup([
+      ...homeFeed.trackShelves,
+      ...chartsFeed.trackShelves,
+      ...exploreFeed.trackShelves,
+    ], (s) => s.title);
+
+    final allPlaylistShelves = dedup([
+      ...homeFeed.playlistShelves,
+      ...exploreFeed.playlistShelves,
+      ...chartsFeed.playlistShelves,
+    ], (s) => s.title);
+
+    final allArtistShelves = dedup([
+      ...homeFeed.artistShelves,
+      ...chartsFeed.artistShelves,
+      ...exploreFeed.artistShelves,
+    ], (s) => s.title);
+
+    final mergedMoods = <String, RelatedMoodItem>{};
+    for (final mood in [
+      ...homeFeed.moodItems,
+      ...moodsFeed.moodItems,
+      ...exploreFeed.moodItems,
+    ]) {
+      final key = '${mood.browseId}|${mood.params ?? ''}';
+      if (!mergedMoods.containsKey(key)) mergedMoods[key] = mood;
+    }
+
+    return RelatedHomeFeed(
+      trackShelves: allTrackShelves,
+      playlistShelves: allPlaylistShelves,
+      artistShelves: allArtistShelves,
+      shelves: homeFeed.shelves,
+      moodItems: mergedMoods.values.toList(),
+    );
   }
 
   /// Builds state from [homeFeed], sets [state] and [_cache], and kicks off

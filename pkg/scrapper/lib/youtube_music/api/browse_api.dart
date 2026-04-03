@@ -139,6 +139,24 @@ class BrowseApi {
     }
   }
 
+  /// Fetches the top charts feed from YouTube Music.
+  ///
+  /// Uses the static `FEmusic_charts` browse ID with a global filter param.
+  /// Returns song/artist/album chart sections as a [RelatedHomeFeed].
+  Future<RelatedHomeFeed> fetchChartsPage() async {
+    try {
+      final data = await _client.post('browse', {
+        'context': _client.context(),
+        'browseId': 'FEmusic_charts',
+        'params': 'ggMGCgQIgAQ%3D',
+      });
+      return BrowseFormatter.parseRelatedFeed(data,
+          maxTracks: 25, maxPlaylists: 12, maxArtists: 12);
+    } catch (_) {
+      return const RelatedHomeFeed();
+    }
+  }
+
   /// Fetches the full moods and genres list from YouTube Music.
   ///
   /// This uses the `FEmusic_moods_and_genres` browse ID which returns all

@@ -696,6 +696,18 @@ class _ArtistsRowState extends ConsumerState<ArtistsRow>
                           artist: gridRows[r][c],
                           size: avatarSize,
                           compact: true,
+                          onTap: () {
+                            final a = gridRows[r][c];
+                            Navigator.of(context).push(
+                              appPageRoute<void>(
+                                builder: (_) => LibraryPlaylistScreen.artist(
+                                  artistName: a.name,
+                                  thumbnailUrl: a.avatarUrl,
+                                  browseId: a.id,
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ],

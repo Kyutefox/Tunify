@@ -23,6 +23,7 @@ class NextApi {
   Future<List<Track>> fetchNext({
     String? videoId,
     String? playlistId,
+    String? playlistSetVideoId,
     int? index,
     String? params,
     String? cpn,
@@ -34,6 +35,11 @@ class NextApi {
 
       if (videoId != null) payload['videoId'] = videoId;
       if (playlistId != null) payload['playlistId'] = playlistId;
+      // playlistSetVideoId scopes recommendations to the playlist context.
+      // When in a playlist, set to the current video ID (same as Metrolist).
+      if (playlistSetVideoId != null) {
+        payload['playlistSetVideoId'] = playlistSetVideoId;
+      }
       if (index != null) payload['index'] = index;
       if (params != null) payload['params'] = params;
       if (cpn != null && cpn.isNotEmpty) payload['cpn'] = cpn;

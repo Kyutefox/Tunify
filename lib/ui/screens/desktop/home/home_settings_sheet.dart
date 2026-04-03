@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:scrapper/scrapper.dart' as scrapper;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -14,6 +16,7 @@ import 'package:tunify/ui/widgets/common/sheet.dart';
 import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
 import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/core/constants/storage_keys.dart';
 import 'package:tunify/data/databases/supabase/supabase_prefs.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/library/collection_track_cache.dart';
@@ -160,6 +163,21 @@ class HomeSettingsSheet extends ConsumerWidget {
                 Navigator.of(context).push(
                   appPageRoute<void>(
                     builder: (_) => const _SupabaseSettingsScreen(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: AppSpacing.md),
+            _SettingsCard(
+              icon: AppIcons.musicNote,
+              iconColor: AppColors.accentRed,
+              iconBgColor: AppColors.accentRed.withValues(alpha: 0.2),
+              title: 'YouTube Account',
+              subtitle: 'Personalized home feed & recommendations',
+              onTap: () {
+                Navigator.of(context).push(
+                  appPageRoute<void>(
+                    builder: (_) => const _YouTubeSettingsScreen(),
                   ),
                 );
               },
@@ -1113,5 +1131,216 @@ class _SupabaseSettingsScreen extends StatelessWidget {
         backgroundColor: AppColorsScheme.of(context).background,
         appBar: const BackTitleAppBar(title: 'Supabase'),
         body: const SupabaseSettingsBody(),
+      );
+}
+
+// ── YouTube Account Settings ───────────────────────────────────────────────────
+
+/// Body-only widget for YouTube account settings — no Scaffold wrapper.
+/// Used directly in the desktop 2-pane settings screen and wrapped in a
+/// Scaffold by [_YouTubeSettingsScreen] on mobile.
+class YouTubeSettingsBody extends ConsumerStatefulWidget {
+  const YouTubeSettingsBody({super.key});
+
+  @override
+  ConsumerState<YouTubeSettingsBody> createState() =>
+      _YouTubeSettingsBodyState();
+}
+
+class _YouTubeSettingsBodyState extends ConsumerState<YouTubeSettingsBody> {
+  final _sapisidController = TextEditingController();
+  final _cookieController = TextEditingController();
+  bool _saving = false;
+  bool _hasSavedCredentials = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStored();
+  }
+
+  Future<void> _loadStored() async {
+    final prefs = await SharedPreferences.getInstance();
+    final sapisid = prefs.getString(StorageKeys.prefsYtSapisid) ?? '';
+    final cookie = prefs.getString(StorageKeys.prefsYtCookie) ?? '';
+    if (!mounted) return;
+    setState(() {
+      _hasSavedCredentials = sapisid.isNotEmpty && cookie.isNotEmpty;
+      if (sapisid.isNotEmpty) _sapisidController.text = sapisid;
+    });
+  }
+
+  @override
+  void dispose() {
+    _sapisidController.dispose();
+    _cookieController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final sapisid = _sapisidController.text.trim();
+    final cookie = _cookieController.text.trim();
+
+    if (sapisid.isEmpty && cookie.isEmpty) {
+      await _clear();
+      return;
+    }
+
+    if (sapisid.isEmpty || cookie.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Enter both SAPISID and Cookie, or clear both to sign out.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(StorageKeys.prefsYtSapisid, sapisid);
+    await prefs.setString(StorageKeys.prefsYtCookie, cookie);
+    if (!mounted) return;
+    setState(() {
+      _saving = false;
+      _hasSavedCredentials = true;
+    });
+
+    // Apply auth to the live stream manager without a restart
+    try {
+      ref.read(streamManagerProvider).setAuth(
+        scrapper.YTMusicAuth(sapisid: sapisid, cookie: cookie),
+      );
+      // Refresh home feed so personalized sections appear immediately
+      if (ref.exists(homeProvider)) {
+        unawaited(ref.read(homeProvider.notifier).refresh());
+      }
+    } catch (_) {}
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('YouTube account saved. Refreshing home feed…'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  Future<void> _clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(StorageKeys.prefsYtSapisid);
+    await prefs.remove(StorageKeys.prefsYtCookie);
+    if (!mounted) return;
+    setState(() {
+      _hasSavedCredentials = false;
+      _sapisidController.clear();
+      _cookieController.clear();
+    });
+
+    try {
+      ref.read(streamManagerProvider).setAuth(null);
+      if (ref.exists(homeProvider)) {
+        unawaited(ref.read(homeProvider.notifier).refresh());
+      }
+    } catch (_) {}
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('YouTube account removed.'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _hasSavedCredentials
+                ? 'YouTube account connected — personalized home feed active'
+                : 'No YouTube account — home feed shows generic content',
+            style: TextStyle(
+              color: _hasSavedCredentials
+                  ? AppColors.primary
+                  : AppColorsScheme.of(context).textMuted,
+              fontSize: AppFontSize.md,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Text(
+            'Paste your YouTube Music SAPISID cookie value and the full Cookie header '
+            'from a logged-in browser session to unlock "Listen again", '
+            '"Forgotten favorites", "Mixes", and other personalized sections.',
+            style: TextStyle(
+              color: AppColorsScheme.of(context).textSecondary,
+              fontSize: AppFontSize.md,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          AppInputField(
+            controller: _sapisidController,
+            labelText: 'SAPISID',
+            hintText: 'Value of the SAPISID cookie',
+            style: InputFieldStyle.outlined,
+            obscureText: true,
+          ),
+          const SizedBox(height: AppSpacing.md),
+          AppInputField(
+            controller: _cookieController,
+            labelText: 'Cookie header',
+            hintText: 'Full Cookie: header string',
+            style: InputFieldStyle.outlined,
+            obscureText: true,
+          ),
+          const SizedBox(height: AppSpacing.xl),
+          Row(
+            children: [
+              if (_hasSavedCredentials) ...[
+                Expanded(
+                  child: AppButton(
+                    label: 'Clear',
+                    icon: AppIcon(
+                      icon: AppIcons.close,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    onPressed: _clear,
+                    fullWidth: true,
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.md),
+              ],
+              Expanded(
+                child: AppButton(
+                  label: 'Save',
+                  icon: AppIcon(
+                    icon: AppIcons.check,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                  onPressed: _save,
+                  isLoading: _saving,
+                  fullWidth: true,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _YouTubeSettingsScreen extends StatelessWidget {
+  const _YouTubeSettingsScreen();
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: AppColorsScheme.of(context).background,
+        appBar: const BackTitleAppBar(title: 'YouTube Account'),
+        body: const YouTubeSettingsBody(),
       );
 }

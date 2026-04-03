@@ -9,7 +9,7 @@ import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 // ── Section enum ──────────────────────────────────────────────────────────────
 
-enum _SettingsSection { playback, data, supabase, about }
+enum _SettingsSection { playback, data, supabase, youtube, about }
 
 extension _SettingsSectionX on _SettingsSection {
   String get label {
@@ -20,6 +20,8 @@ extension _SettingsSectionX on _SettingsSection {
         return 'Data';
       case _SettingsSection.supabase:
         return 'Supabase';
+      case _SettingsSection.youtube:
+        return 'YouTube';
       case _SettingsSection.about:
         return 'About';
     }
@@ -33,6 +35,8 @@ extension _SettingsSectionX on _SettingsSection {
         return 'Cache, downloads & recommendations';
       case _SettingsSection.supabase:
         return 'Use your own project or leave default';
+      case _SettingsSection.youtube:
+        return 'Personalized feed & recommendations';
       case _SettingsSection.about:
         return 'Developer, version & legal info';
     }
@@ -46,6 +50,8 @@ extension _SettingsSectionX on _SettingsSection {
         return AppIcons.refresh;
       case _SettingsSection.supabase:
         return AppIcons.lock;
+      case _SettingsSection.youtube:
+        return AppIcons.musicNote;
       case _SettingsSection.about:
         return AppIcons.verified;
     }
@@ -59,6 +65,8 @@ extension _SettingsSectionX on _SettingsSection {
         return AppColors.primary;
       case _SettingsSection.supabase:
         return AppColors.primary;
+      case _SettingsSection.youtube:
+        return AppColors.accentRed;
       case _SettingsSection.about:
         return AppColors.accentCyan;
     }
@@ -141,6 +149,8 @@ class _DesktopSettingsScreenState extends State<DesktopSettingsScreen> {
         return const DataSettingsBody(key: ValueKey('data'));
       case _SettingsSection.supabase:
         return const SupabaseSettingsBody(key: ValueKey('supabase'));
+      case _SettingsSection.youtube:
+        return const YouTubeSettingsBody(key: ValueKey('youtube'));
       case _SettingsSection.about:
         return const AboutScreenBody(key: ValueKey('about'));
     }

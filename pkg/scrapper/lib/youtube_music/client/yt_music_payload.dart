@@ -18,8 +18,11 @@ class YTMusicPayload {
   }) {
     final client = <String, dynamic>{
       'clientName': YtConstants.innertubeClientName,
-      if (clientVersion != null && clientVersion.isNotEmpty)
-        'clientVersion': clientVersion,
+      // Always include a version — fall back to the hardcoded stable value so
+      // YouTube routes the request correctly even before the live fetch completes.
+      'clientVersion': (clientVersion != null && clientVersion.isNotEmpty)
+          ? clientVersion
+          : YtConstants.innertubeClientVersionFallback,
       'userAgent': YTMusicHeaders.userAgent,
     };
     // Only include locale fields when we have real values from the HTML fetch.
@@ -29,7 +32,16 @@ class YTMusicPayload {
     if (visitorData != null && visitorData.isNotEmpty) {
       client['visitorData'] = visitorData;
     }
-    return {'client': client};
+    return {
+      'client': client,
+      'request': {
+        'internalExperimentFlags': <dynamic>[],
+        'useSsl': true,
+      },
+      'user': {
+        'lockedSafetyMode': false,
+      },
+    };
   }
 
   /// Builds a base InnerTube payload containing only the `context` block.

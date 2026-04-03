@@ -14,9 +14,12 @@ import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/screens/shared/podcast/podcast_search_screen.dart';
 import 'package:tunify/ui/screens/shared/podcast/podcast_options_sheet.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
+import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/common/content_switcher.dart';
+import 'package:tunify/ui/screens/shared/library/library_playlists_section.dart'
+    show StaticGridCard, StaticListTile;
 import 'package:tunify/ui/widgets/library/library_item_tile.dart';
 
 class PodcastScreen extends ConsumerStatefulWidget {
@@ -89,7 +92,7 @@ class _PodcastScreenState extends ConsumerState<PodcastScreen>
 
   void _openSearch() {
     Navigator.of(context).push(
-      MaterialPageRoute(
+      appPageRoute(
         builder: (_) => const PodcastSearchScreen(),
       ),
     );
@@ -129,18 +132,19 @@ class _PodcastsTab extends ConsumerWidget {
         itemCount: itemCount,
         itemBuilder: (context, i) {
           if (i == 0) {
-            return _PodcastGridCard(
-              title: 'Episodes For Later',
-              subtitle:
-                  '${episodesForLater.length} ${episodesForLater.length == 1 ? 'episode' : 'episodes'}',
-              thumbnailUrl: null,
-              placeholderIcon: AppIcons.bookmark,
-              placeholderIconColor: Colors.white,
-              placeholderGradient: const LinearGradient(
+            return StaticGridCard(
+              icon: AppIcons.bookmark,
+              iconColor: Colors.white,
+              backgroundColor: Colors.transparent,
+              backgroundGradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
               ),
+              title: 'Episodes For Later',
+              subtitle: episodesForLater.isEmpty
+                  ? 'No episodes yet'
+                  : '${episodesForLater.length} ${episodesForLater.length == 1 ? 'episode' : 'episodes'}',
               onTap: () {
                 final playlist = Playlist(
                   id: 'episodesForLater',
@@ -149,7 +153,7 @@ class _PodcastsTab extends ConsumerWidget {
                   coverUrl: '',
                   trackCount: episodesForLater.length,
                 );
-                Navigator.of(context).push(MaterialPageRoute(
+                Navigator.of(context).push(appPageRoute(
                   builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
                 ));
               },
@@ -172,7 +176,7 @@ class _PodcastsTab extends ConsumerWidget {
                 coverUrl: podcast.thumbnailUrl ?? '',
                 trackCount: 0,
               );
-              Navigator.of(context).push(MaterialPageRoute(
+              Navigator.of(context).push(appPageRoute(
                 builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
               ));
             },
@@ -196,79 +200,31 @@ class _PodcastsTab extends ConsumerWidget {
       itemCount: sortedSubscriptions.length + 1,
       itemBuilder: (context, i) {
         if (i == 0) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: AppSpacing.xs),
-            child: Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () {
-                  final playlist = Playlist(
-                    id: 'episodesForLater',
-                    title: 'Episodes For Later',
-                    description: 'Your saved podcast episodes',
-                    coverUrl: '',
-                    trackCount: episodesForLater.length,
-                  );
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
-                  ));
-                },
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
-                          ),
-                          borderRadius: BorderRadius.circular(AppRadius.sm),
-                        ),
-                        child: Center(
-                          child: AppIcon(
-                            icon: AppIcons.bookmark,
-                            size: 28,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Episodes For Later',
-                              style: TextStyle(
-                                color: AppColorsScheme.of(context).textPrimary,
-                                fontSize: AppFontSize.lg,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            Text(
-                              '${episodesForLater.length} ${episodesForLater.length == 1 ? 'episode' : 'episodes'}',
-                              style: TextStyle(
-                                color: AppColorsScheme.of(context).textMuted,
-                                fontSize: AppFontSize.md,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+          return StaticListTile(
+            icon: AppIcons.bookmark,
+            iconColor: Colors.white,
+            backgroundColor: Colors.transparent,
+            backgroundGradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
             ),
+            title: 'Episodes For Later',
+            subtitle: episodesForLater.isEmpty
+                ? 'No episodes yet'
+                : '${episodesForLater.length} ${episodesForLater.length == 1 ? 'episode' : 'episodes'}',
+            onTap: () {
+              final playlist = Playlist(
+                id: 'episodesForLater',
+                title: 'Episodes For Later',
+                description: 'Your saved podcast episodes',
+                coverUrl: '',
+                trackCount: episodesForLater.length,
+              );
+              Navigator.of(context).push(appPageRoute(
+                builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+              ));
+            },
           );
         }
 
@@ -288,7 +244,7 @@ class _PodcastsTab extends ConsumerWidget {
               coverUrl: podcast.thumbnailUrl ?? '',
               trackCount: 0,
             );
-            Navigator.of(context).push(MaterialPageRoute(
+            Navigator.of(context).push(appPageRoute(
               builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
             ));
           },
@@ -356,7 +312,7 @@ class _AudiobooksTab extends ConsumerWidget {
                 coverUrl: audiobook.thumbnailUrl ?? '',
                 trackCount: 0,
               );
-              Navigator.of(context).push(MaterialPageRoute(
+              Navigator.of(context).push(appPageRoute(
                 builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
               ));
             },
@@ -394,7 +350,7 @@ class _AudiobooksTab extends ConsumerWidget {
               coverUrl: audiobook.thumbnailUrl ?? '',
               trackCount: 0,
             );
-            Navigator.of(context).push(MaterialPageRoute(
+            Navigator.of(context).push(appPageRoute(
               builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
             ));
           },
@@ -419,8 +375,6 @@ class _PodcastGridCard extends StatelessWidget {
     required this.onTap,
     this.onOptions,
     this.showPinIndicator = false,
-    this.placeholderGradient,
-    this.placeholderIconColor,
   });
 
   final String title;
@@ -430,8 +384,6 @@ class _PodcastGridCard extends StatelessWidget {
   final VoidCallback onTap;
   final void Function(Rect?)? onOptions;
   final bool showPinIndicator;
-  final Gradient? placeholderGradient;
-  final Color? placeholderIconColor;
 
   @override
   Widget build(BuildContext context) {
@@ -446,10 +398,7 @@ class _PodcastGridCard extends StatelessWidget {
                 Container(
                   width: double.infinity,
                   decoration: BoxDecoration(
-                    color: placeholderGradient == null
-                        ? AppColorsScheme.of(context).surfaceLight
-                        : null,
-                    gradient: placeholderGradient,
+                    color: AppColorsScheme.of(context).surfaceLight,
                     borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                   child: ClipRRect(
@@ -461,8 +410,7 @@ class _PodcastGridCard extends StatelessWidget {
                             errorWidget: (_, __, ___) => Center(
                               child: AppIcon(
                                 icon: placeholderIcon,
-                                color: placeholderIconColor ??
-                                    AppColorsScheme.of(context).textMuted,
+                                color: AppColorsScheme.of(context).textMuted,
                                 size: 36,
                               ),
                             ),
@@ -470,8 +418,7 @@ class _PodcastGridCard extends StatelessWidget {
                         : Center(
                             child: AppIcon(
                               icon: placeholderIcon,
-                              color: placeholderIconColor ??
-                                  AppColorsScheme.of(context).textMuted,
+                              color: AppColorsScheme.of(context).textMuted,
                               size: 36,
                             ),
                           ),
@@ -642,3 +589,4 @@ class _EmptyState extends StatelessWidget {
     );
   }
 }
+

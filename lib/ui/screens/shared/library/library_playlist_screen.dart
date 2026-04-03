@@ -1803,6 +1803,33 @@ class _PlaylistCover extends StatelessWidget {
       );
     }
 
+    // Episodes For Later — always show purple gradient icon cover
+    if (isEpisodesForLater) {
+      return Center(
+        child: Container(
+          width: _size,
+          height: _size,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+            ),
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            boxShadow: [
+              BoxShadow(
+                  color: const Color(0xFF9333EA).withValues(alpha: 0.35),
+                  blurRadius: 20,
+                  offset: const Offset(0, 6))
+            ],
+          ),
+          child: Center(
+              child: AppIcon(
+                  icon: AppIcons.bookmark, color: Colors.white, size: 56)),
+        ),
+      );
+    }
+
     if (imageUrl != null && imageUrl!.isNotEmpty) {
       return Center(
         child: Container(

@@ -364,7 +364,7 @@ class _LibrarySectionGrid extends StatelessWidget {
       itemBuilder: (context, index) {
         final entry = entries[index];
         final card = switch (entry) {
-          LikedSongsEntry(:final songCount, :final onTap) => _StaticGridCard(
+          LikedSongsEntry(:final songCount, :final onTap) => StaticGridCard(
               iconWidget: FavouriteIcon(
                 isLiked: true,
                 size: 40,
@@ -376,7 +376,7 @@ class _LibrarySectionGrid extends StatelessWidget {
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
-          DownloadsEntry(:final songCount, :final onTap) => _StaticGridCard(
+          DownloadsEntry(:final songCount, :final onTap) => StaticGridCard(
               icon: AppIcons.download,
               iconColor: Colors.white,
               backgroundColor: AppColorsScheme.of(context).surfaceLight,
@@ -385,7 +385,7 @@ class _LibrarySectionGrid extends StatelessWidget {
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
-          LocalFilesEntry(:final songCount, :final onTap) => _StaticGridCard(
+          LocalFilesEntry(:final songCount, :final onTap) => StaticGridCard(
               icon: AppIcons.folder,
               iconColor: Colors.white,
               backgroundColor: AppColorsScheme.of(context).surfaceLight,
@@ -421,8 +421,9 @@ class _LibrarySectionGrid extends StatelessWidget {
   }
 }
 
-class _StaticGridCard extends StatefulWidget {
-  const _StaticGridCard({
+class StaticGridCard extends StatefulWidget {
+  const StaticGridCard({
+    super.key,
     this.icon,
     this.iconColor,
     this.iconWidget,
@@ -443,10 +444,10 @@ class _StaticGridCard extends StatefulWidget {
   final VoidCallback onTap;
 
   @override
-  State<_StaticGridCard> createState() => _StaticGridCardState();
+  State<StaticGridCard> createState() => StaticGridCardState();
 }
 
-class _StaticGridCardState extends State<_StaticGridCard> {
+class StaticGridCardState extends State<StaticGridCard> {
   bool _pressed = false;
 
   @override
@@ -946,7 +947,7 @@ class _LibraryFolderListTile extends StatelessWidget {
       ),
     );
 
-    if (t.isDesktop) return _LibraryHoverTile(child: tile);
+    if (t.isDesktop) return LibraryHoverTile(child: tile);
     return tile;
   }
 }
@@ -1004,7 +1005,7 @@ class _LibrarySectionList extends StatelessWidget {
       itemBuilder: (context, index) {
         final entry = entries[index];
         final tile = switch (entry) {
-          LikedSongsEntry(:final songCount, :final onTap) => _StaticListTile(
+          LikedSongsEntry(:final songCount, :final onTap) => StaticListTile(
               iconWidget: FavouriteIcon(
                 isLiked: true,
                 size: 28,
@@ -1016,7 +1017,7 @@ class _LibrarySectionList extends StatelessWidget {
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
-          DownloadsEntry(:final songCount, :final onTap) => _StaticListTile(
+          DownloadsEntry(:final songCount, :final onTap) => StaticListTile(
               icon: AppIcons.download,
               iconColor: Colors.white,
               backgroundColor: AppColorsScheme.of(context).surfaceLight,
@@ -1025,7 +1026,7 @@ class _LibrarySectionList extends StatelessWidget {
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
-          LocalFilesEntry(:final songCount, :final onTap) => _StaticListTile(
+          LocalFilesEntry(:final songCount, :final onTap) => StaticListTile(
               icon: AppIcons.folder,
               iconColor: Colors.white,
               backgroundColor: AppColorsScheme.of(context).surfaceLight,
@@ -1061,8 +1062,9 @@ class _LibrarySectionList extends StatelessWidget {
   }
 }
 
-class _StaticListTile extends StatelessWidget {
-  const _StaticListTile({
+class StaticListTile extends StatelessWidget {
+  const StaticListTile({
+    super.key,
     this.icon,
     this.iconColor,
     this.iconWidget,
@@ -1146,7 +1148,7 @@ class _StaticListTile extends StatelessWidget {
       ),
     );
 
-    if (t.isDesktop) return _LibraryHoverTile(child: tile);
+    if (t.isDesktop) return LibraryHoverTile(child: tile);
     return tile;
   }
 }
@@ -1273,21 +1275,21 @@ class _LibraryPlaylistListTile extends StatelessWidget {
       ),
     );
 
-    if (t.isDesktop) return _LibraryHoverTile(child: tile);
+    if (t.isDesktop) return LibraryHoverTile(child: tile);
     return tile;
   }
 }
 
 /// Hover highlight wrapper for desktop library list tiles.
-class _LibraryHoverTile extends StatefulWidget {
-  const _LibraryHoverTile({required this.child});
+class LibraryHoverTile extends StatefulWidget {
+  const LibraryHoverTile({super.key, required this.child});
   final Widget child;
 
   @override
-  State<_LibraryHoverTile> createState() => _LibraryHoverTileState();
+  State<LibraryHoverTile> createState() => LibraryHoverTileState();
 }
 
-class _LibraryHoverTileState extends State<_LibraryHoverTile> {
+class LibraryHoverTileState extends State<LibraryHoverTile> {
   bool _hovered = false;
 
   @override

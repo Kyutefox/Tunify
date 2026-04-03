@@ -267,7 +267,12 @@ class DownloadService extends ChangeNotifier {
         return;
       }
 
-      await _store.saveDownload(song.id, path, song.toJson());
+      final songJson = song.toJson();
+      if ((songJson['durationMs'] as int? ?? 0) == 0) {
+        final streamDurationMs = streamData['durationMs'] as int? ?? 0;
+        if (streamDurationMs > 0) songJson['durationMs'] = streamDurationMs;
+      }
+      await _store.saveDownload(song.id, path, songJson);
       _downloadedIds.add(song.id);
       _pathBySongId[song.id] = path;
       _downloadedSongs.insert(0, song);
@@ -389,6 +394,7 @@ class DownloadService extends ChangeNotifier {
     try {
       final request = http.Request('GET', Uri.parse(streamUrl));
       if (headers.isNotEmpty) request.headers.addAll(headers);
+      request.headers['Range'] = 'bytes=0-';
       final response = await client.send(request);
       if (response.statusCode != 200 && response.statusCode != 206) {
         throw Exception('HTTP ${response.statusCode}');

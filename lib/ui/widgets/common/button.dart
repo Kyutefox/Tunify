@@ -180,6 +180,7 @@ class AppIconButton extends StatelessWidget {
     this.iconSize = 24,
     this.color,
     this.onPressedWithContext,
+    this.iconAlignment = Alignment.center,
   });
 
   final Widget icon;
@@ -192,6 +193,10 @@ class AppIconButton extends StatelessWidget {
   final double size;
   final double iconSize;
   final Color? color;
+  /// Alignment of the icon within the touch target. Use [Alignment.centerRight]
+  /// when the button is at the trailing edge of a list tile so the icon sits
+  /// flush with the right content boundary instead of being center-padded.
+  final AlignmentGeometry iconAlignment;
 
   void _handleTap(BuildContext ctx) {
     if (onPressedWithContext != null) {
@@ -223,7 +228,8 @@ class AppIconButton extends StatelessWidget {
               child: SizedBox(
                 width: size,
                 height: size,
-                child: Center(
+                child: Align(
+                  alignment: iconAlignment,
                   child: IconTheme(
                     data: IconThemeData(size: iconSize, color: effectiveColor),
                     child: icon,

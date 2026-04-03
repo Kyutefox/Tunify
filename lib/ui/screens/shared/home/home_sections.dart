@@ -365,6 +365,7 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
             ),
             size: 32,
             iconSize: 18,
+            iconAlignment: Alignment.centerRight,
           ),
         ],
       ),

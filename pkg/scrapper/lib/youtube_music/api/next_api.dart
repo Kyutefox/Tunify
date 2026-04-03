@@ -95,6 +95,35 @@ class NextApi {
     }
   }
 
+  /// Resolves the browse ID for the "Related" tab for a given [videoId]
+  /// (optionally scoped to a [playlistId]). YouTube Music returns this in
+  /// `tabs[2].tabRenderer.endpoint.browseEndpoint` of the `next` response.
+  /// Browsing that ID returns the related shelves (similar playlists, albums,
+  /// artists, songs).
+  Future<String?> getRelatedBrowseId(
+    String videoId, {
+    String? playlistId,
+  }) async {
+    if (videoId.isEmpty) return null;
+    try {
+      final payload = _client.basePayload();
+      payload['videoId'] = videoId;
+      if (playlistId != null && playlistId.isNotEmpty) {
+        payload['playlistId'] = playlistId;
+      }
+      final data = await _client.post('next', payload);
+      final tabs = data['contents']?['singleColumnMusicWatchNextResultsRenderer']
+          ?['tabbedRenderer']?['watchNextTabbedResultsRenderer']?['tabs'];
+      if (tabs is! List || tabs.length < 3) return null;
+      final tab2 = tabs[2] as Map<String, dynamic>?;
+      final endpoint = tab2?['tabRenderer']?['endpoint']?['browseEndpoint'];
+      if (endpoint is! Map<String, dynamic>) return null;
+      return endpoint['browseId'] as String?;
+    } catch (_) {
+      return null;
+    }
+  }
+
   /// Resolves the browse ID that serves lyrics for a given [videoId], when
   /// available.
   ///

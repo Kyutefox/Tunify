@@ -392,7 +392,7 @@ class _LibrarySectionGrid extends StatelessWidget {
               backgroundGradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFFF9F43), Color(0xFFFF6B35)],
+                colors: [Color(0xFF475569), Color(0xFF1E293B)],
               ),
               title: 'Local Files',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
@@ -1033,7 +1033,7 @@ class _LibrarySectionList extends StatelessWidget {
               backgroundGradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFFFF9F43), Color(0xFFFF6B35)],
+                colors: [Color(0xFF475569), Color(0xFF1E293B)],
               ),
               title: 'Local Files',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',

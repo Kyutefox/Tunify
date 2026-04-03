@@ -290,7 +290,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   void _initSync() {
     // Liked songs — pre-load its fixed pink color for smooth transition
     if (widget.playlistId == 'liked') {
-      _paletteColor = const Color(0xFFE91E8C);
+      _paletteColor = const Color(0xFFF59E0B);
       return;
     }
 
@@ -306,7 +306,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
     // Episodes For Later — always local, never needs loading
     if (widget.playlistId == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater') {
-      _paletteColor = const Color(0xFF9333EA); // Purple color for episodes
+      _paletteColor = const Color(0xFFF43F5E); // Rose gold for episodes
       return;
     }
 
@@ -1176,7 +1176,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       final sortedSongs = _sortBySortOrder(songs, sortOrder);
       final filteredSongs = filterByExplicitSetting(sortedSongs, showExplicit);
       final hasSong = ref.watch(currentSongProvider) != null;
-      const downloadsColor = Color(0xFF0EA5E9);
+      const downloadsColor = Color(0xFF059669);
       return CollectionDetailScaffold(
         isEmpty: songs.isEmpty,
         paletteColor: downloadsColor,
@@ -1265,7 +1265,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       final hasSong = ref.watch(currentSongProvider) != null;
       return CollectionDetailScaffold(
         isEmpty: songs.isEmpty,
-        paletteColor: const Color(0xFFFF9F43),
+        paletteColor: const Color(0xFF475569),
         title: 'Local Files',
         headerExpandedChild: CollectionDetailExpandedContent(
           cover: _PlaylistCover(songs: songs, isLocalFiles: true),
@@ -1524,9 +1524,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     return CollectionDetailScaffold(
       isEmpty: songs.isEmpty,
       paletteColor: isLiked
-          ? const Color(0xFFE91E8C)
+          ? const Color(0xFFF59E0B)
           : isEpisodesForLater
-              ? const Color(0xFF9333EA)
+              ? const Color(0xFFF43F5E)
               : (songs.isEmpty ? const Color(0xFF404040) : _paletteColor),
       title: isLiked ? 'Liked Songs' : isEpisodesForLater ? 'Episodes For Later' : playlist.name.capitalized,
       headerExpandedChild: CollectionDetailExpandedContent(
@@ -1764,7 +1764,7 @@ class _PlaylistCover extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
-                  color: const Color(0xFF0EA5E9).withValues(alpha: 0.35),
+                  color: const Color(0xFF059669).withValues(alpha: 0.4),
                   blurRadius: 20,
                   offset: const Offset(0, 6))
             ],
@@ -1786,12 +1786,12 @@ class _PlaylistCover extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFFF9F43), Color(0xFFFF6B35)],
+              colors: [Color(0xFF475569), Color(0xFF1E293B)],
             ),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
-                  color: const Color(0xFFFF9F43).withValues(alpha: 0.35),
+                  color: const Color(0xFF475569).withValues(alpha: 0.5),
                   blurRadius: 20,
                   offset: const Offset(0, 6))
             ],
@@ -1813,12 +1813,12 @@ class _PlaylistCover extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+              colors: [Color(0xFFF43F5E), Color(0xFFF97316)],
             ),
             borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
-                  color: const Color(0xFF9333EA).withValues(alpha: 0.35),
+                  color: const Color(0xFFF43F5E).withValues(alpha: 0.4),
                   blurRadius: 20,
                   offset: const Offset(0, 6))
             ],
@@ -1881,7 +1881,7 @@ class _PlaylistCover extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.sm),
               boxShadow: [
                 BoxShadow(
-                    color: const Color(0xFFE91E8C).withValues(alpha: 0.35),
+                    color: const Color(0xFFF59E0B).withValues(alpha: 0.4),
                     blurRadius: 20,
                     offset: const Offset(0, 6))
               ],

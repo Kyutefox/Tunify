@@ -139,7 +139,7 @@ class _PodcastsTab extends ConsumerWidget {
               backgroundGradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+                colors: [Color(0xFFF43F5E), Color(0xFFF97316)],
               ),
               title: 'Episodes For Later',
               subtitle: episodesForLater.isEmpty
@@ -207,7 +207,7 @@ class _PodcastsTab extends ConsumerWidget {
             backgroundGradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+              colors: [Color(0xFFF43F5E), Color(0xFFF97316)],
             ),
             title: 'Episodes For Later',
             subtitle: episodesForLater.isEmpty

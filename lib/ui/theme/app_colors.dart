@@ -82,9 +82,9 @@ abstract final class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
-  /// gradient_downloads — teal-to-blue for the Downloads fixed playlist
+  /// gradient_downloads — forest emerald to ocean teal
   static const LinearGradient downloadGradient = LinearGradient(
-    colors: [Color(0xFF0EA5E9), Color(0xFF6366F1)],
+    colors: [Color(0xFF059669), Color(0xFF0891B2)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -127,30 +127,30 @@ abstract final class AppColors {
     LinearGradient(colors: [PrimaryPalette.primary, PrimaryPalette.primaryLight]),
   ];
 
-  /// Love-theme gradients (5 options) for liked hearts and favourite UI.
+  /// Love-theme gradients (5 options) — sunset gold to coral, warm & emotional.
   static const List<LinearGradient> loveThemeGradients = [
     LinearGradient(
-      colors: [Color(0xFFE91429), Color(0xFFF472B6)],
+      colors: [Color(0xFFF59E0B), Color(0xFFEF4444)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     LinearGradient(
-      colors: [Color(0xFFEC4899), Color(0xFFBE185D)],
+      colors: [Color(0xFFFBBF24), Color(0xFFEC4899)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     LinearGradient(
-      colors: [Color(0xFFF472B6), Color(0xFFE11D48)],
+      colors: [Color(0xFFF97316), Color(0xFFEF4444)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     LinearGradient(
-      colors: [Color(0xFFDB2777), Color(0xFF831843)],
+      colors: [Color(0xFFF59E0B), Color(0xFFDC2626)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
     LinearGradient(
-      colors: [Color(0xFFF9A8D4), Color(0xFFEC4899)],
+      colors: [Color(0xFFFCD34D), Color(0xFFF97316)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),

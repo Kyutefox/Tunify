@@ -13,6 +13,8 @@ import 'package:tunify/features/settings/guest_profile_provider.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
+const Color _desktopGreetingGradientTop = Color(0xFF3A3A3A);
+
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -20,7 +22,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   ConsumerState<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> 
+class _HomeScreenState extends ConsumerState<HomeScreen>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
@@ -59,20 +61,53 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               backgroundColor: AppColorsScheme.of(context).surface,
               strokeWidth: 2.5,
               displacement: 80,
-              child: CustomScrollView(
-                cacheExtent: 500,
-                physics: const BouncingScrollPhysics(
-                  parent: AlwaysScrollableScrollPhysics(),
-                ),
-                slivers: [
+              child: Stack(
+                children: [
                   if (isDesktop)
-                    SliverPersistentHeader(
-                      pinned: true,
-                      delegate: _DesktopGreetingDelegate(),
+                    Positioned(
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 360,
+                      child: IgnorePointer(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              stops: const [0.0, 0.52, 1.0],
+                              colors: [
+                                _desktopGreetingGradientTop.withValues(
+                                    alpha: 0.95),
+                                AppColorsScheme.of(context)
+                                    .desktopSurface
+                                    .withValues(alpha: 0.995),
+                                AppColorsScheme.of(context)
+                                    .desktopSurface
+                                    .withValues(alpha: 0.0),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                  HomeContent(onPlay: _play),
-                  SliverToBoxAdapter(
-                    child: SizedBox(height: MediaQuery.of(context).padding.bottom + 16),
+                  CustomScrollView(
+                    cacheExtent: 500,
+                    physics: const BouncingScrollPhysics(
+                      parent: AlwaysScrollableScrollPhysics(),
+                    ),
+                    slivers: [
+                      if (isDesktop)
+                        SliverPersistentHeader(
+                          pinned: true,
+                          delegate: _DesktopGreetingDelegate(),
+                        ),
+                      HomeContent(onPlay: _play),
+                      SliverToBoxAdapter(
+                        child: SizedBox(
+                            height: MediaQuery.of(context).padding.bottom + 16),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -95,8 +130,10 @@ class _DesktopGreetingDelegate extends SliverPersistentHeaderDelegate {
   double get maxExtent => _height;
 
   @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return _DesktopGreetingHeader(overlaps: overlapsContent || shrinkOffset > 0);
+  Widget build(
+      BuildContext context, double shrinkOffset, bool overlapsContent) {
+    return _DesktopGreetingHeader(
+        overlaps: overlapsContent || shrinkOffset > 0);
   }
 
   @override
@@ -112,7 +149,8 @@ class _DesktopGreetingHeader extends ConsumerWidget {
     final greeting = ref.watch(greetingProvider);
     final user = ref.watch(currentUserProvider);
     final isGuest = ref.watch(guestModeProvider);
-    final guestUsername = isGuest ? ref.watch(guestUsernameProvider).value : null;
+    final guestUsername =
+        isGuest ? ref.watch(guestUsernameProvider).value : null;
     final username = (user?.userMetadata?['username'] as String?) ??
         (user?.email?.split('@').first) ??
         (isGuest ? (guestUsername ?? 'Guest') : '');
@@ -120,24 +158,26 @@ class _DesktopGreetingHeader extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 150),
       decoration: BoxDecoration(
-        color: overlaps ? AppColorsScheme.of(context).background.withValues(alpha: 0.95) : AppColorsScheme.of(context).background,
+        color: overlaps
+            ? _desktopGreetingGradientTop.withValues(alpha: 0.95)
+            : Colors.transparent,
         border: overlaps
-            ? Border(bottom: BorderSide(color: AppColorsScheme.of(context).surfaceLight, width: 0.5))
+            ? Border(
+                bottom: BorderSide(
+                    color: AppColorsScheme.of(context).surfaceLight,
+                    width: 0.5))
             : null,
       ),
-      padding: const EdgeInsets.fromLTRB(DesktopSpacing.lg, 0, DesktopSpacing.lg, 0),
+      padding:
+          const EdgeInsets.fromLTRB(DesktopSpacing.lg, 0, DesktopSpacing.lg, 0),
       alignment: Alignment.centerLeft,
-      child: ShaderMask(
-        shaderCallback: (bounds) =>
-            AppColors.primaryGradient.createShader(bounds),
-        child: Text(
-          username.isNotEmpty ? '$greeting, $username' : greeting,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: DesktopFontSize.h2,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-          ),
+      child: Text(
+        username.isNotEmpty ? '$greeting, $username' : greeting,
+        style: TextStyle(
+          color: AppColorsScheme.of(context).textPrimary,
+          fontSize: DesktopFontSize.h3,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
         ),
       ),
     );

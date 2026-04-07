@@ -4,7 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Centered empty state for [SharedSearchPage] with icon, heading and subheading.
@@ -81,9 +83,14 @@ class SharedSearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final searchBarHPad =
+        isDesktop ? DesktopSpacing.lg : AppSpacing.base;
     final overlayStyle = isDark
-        ? SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent)
-        : SystemUiOverlayStyle.dark.copyWith(statusBarColor: Colors.transparent);
+        ? SystemUiOverlayStyle.light
+            .copyWith(statusBarColor: Colors.transparent)
+        : SystemUiOverlayStyle.dark
+            .copyWith(statusBarColor: Colors.transparent);
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
@@ -91,71 +98,71 @@ class SharedSearchPage extends StatelessWidget {
         backgroundColor: AppColorsScheme.of(context).background,
         resizeToAvoidBottomInset: false,
         body: SafeArea(
-        bottom: false,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.xs,
-                AppSpacing.sm,
-                AppSpacing.base,
-                AppSpacing.sm,
-              ),
-              child: ValueListenableBuilder<TextEditingValue>(
-                valueListenable: controller,
-                builder: (context, value, _) {
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      AppIconButton(
-                        icon: AppIcon(
-                          icon: AppIcons.back,
-                          size: 24,
-                          color: AppColorsScheme.of(context).textPrimary,
-                        ),
-                        onPressed: onBack,
-                        size: 48,
-                        iconSize: 24,
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Expanded(
-                        child: AppInputField(
-                          controller: controller,
-                          focusNode: focusNode,
-                          hintText: hintText,
-                          textInputAction: TextInputAction.search,
-                          style: InputFieldStyle.transparent,
-                          autofocus: autofocus,
-                        ),
-                      ),
-                      if (value.text.isNotEmpty)
+          bottom: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  searchBarHPad,
+                  AppSpacing.sm,
+                  searchBarHPad,
+                  AppSpacing.sm,
+                ),
+                child: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: controller,
+                  builder: (context, value, _) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
                         AppIconButton(
                           icon: AppIcon(
-                            icon: AppIcons.clear,
-                            size: 20,
-                            color: AppColorsScheme.of(context).textMuted,
+                            icon: AppIcons.back,
+                            size: 24,
+                            color: AppColorsScheme.of(context).textPrimary,
                           ),
-                          onPressed: () {
-                            controller.clear();
-                            focusNode?.unfocus();
-                            onClear?.call();
-                          },
-                          size: 40,
-                          iconSize: 20,
-                          iconAlignment: Alignment.centerRight,
-                        )
-                      else
+                          onPressed: onBack,
+                          size: 48,
+                          iconSize: 24,
+                        ),
                         const SizedBox(width: AppSpacing.sm),
-                    ],
-                  );
-                },
+                        Expanded(
+                          child: AppInputField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            hintText: hintText,
+                            textInputAction: TextInputAction.search,
+                            style: InputFieldStyle.transparent,
+                            autofocus: autofocus,
+                          ),
+                        ),
+                        if (value.text.isNotEmpty)
+                          AppIconButton(
+                            icon: AppIcon(
+                              icon: AppIcons.clear,
+                              size: 20,
+                              color: AppColorsScheme.of(context).textMuted,
+                            ),
+                            onPressed: () {
+                              controller.clear();
+                              focusNode?.unfocus();
+                              onClear?.call();
+                            },
+                            size: 40,
+                            iconSize: 20,
+                            iconAlignment: Alignment.centerRight,
+                          )
+                        else
+                          const SizedBox(width: AppSpacing.sm),
+                      ],
+                    );
+                  },
+                ),
               ),
-            ),
-            Expanded(child: body),
-          ],
+              Expanded(child: body),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }

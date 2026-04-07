@@ -42,6 +42,8 @@ class _MobileShellState extends ConsumerState<MobileShell> {
     AppIcons.podcast,
   ];
 
+  static const _navLabels = ['Home', 'Search', 'Library', 'Podcasts'];
+
   @override
   Widget build(BuildContext context) {
     final isGuest = ref.watch(guestModeProvider);
@@ -81,40 +83,40 @@ class _MobileShellState extends ConsumerState<MobileShell> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
       child: ShellContext(
-      isDesktop: false,
-      child: Scaffold(
-        backgroundColor: AppColorsScheme.of(context).background,
-        body: Column(
-          children: [
-            const _OfflineBanner(),
-            Expanded(
-              child: _buildCurrentScreen(),
-            ),
-          ],
-        ),
-        bottomNavigationBar: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSwitcher(
-              duration: AppDuration.fast,
-              transitionBuilder: (child, anim) => SizeTransition(
-                sizeFactor: CurvedAnimation(
-                  parent: anim,
-                  curve: Curves.easeOut,
-                ),
-                axisAlignment: -1,
-                child: child,
+        isDesktop: false,
+        child: Scaffold(
+          backgroundColor: AppColorsScheme.of(context).background,
+          body: Column(
+            children: [
+              const _OfflineBanner(),
+              Expanded(
+                child: _buildCurrentScreen(),
               ),
-              child: hasSong
-                  ? const MiniPlayer(key: ValueKey('mini-player'))
-                  : const SizedBox.shrink(key: ValueKey('hidden')),
-            ),
-            _buildNavBar(),
-          ],
+            ],
+          ),
+          bottomNavigationBar: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AnimatedSwitcher(
+                duration: AppDuration.fast,
+                transitionBuilder: (child, anim) => SizeTransition(
+                  sizeFactor: CurvedAnimation(
+                    parent: anim,
+                    curve: Curves.easeOut,
+                  ),
+                  axisAlignment: -1,
+                  child: child,
+                ),
+                child: hasSong
+                    ? const MiniPlayer(key: ValueKey('mini-player'))
+                    : const SizedBox.shrink(key: ValueKey('hidden')),
+              ),
+              _buildNavBar(),
+            ],
+          ),
         ),
-      ),
       ), // ShellContext
-    );   // AnnotatedRegion
+    ); // AnnotatedRegion
   }
 
   Widget _buildCurrentScreen() {
@@ -138,11 +140,15 @@ class _MobileShellState extends ConsumerState<MobileShell> {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      height: 56 + bottomPadding,
+      height: 64 + bottomPadding,
       decoration: BoxDecoration(
-        color: AppColorsScheme.of(context).surface,
+        color: AppColors.background,
         border: Border(
-          top: BorderSide(color: AppColors.glassBorder, width: 0.5),
+          top: BorderSide(
+            color:
+                AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.10),
+            width: 0.5,
+          ),
         ),
       ),
       child: Padding(
@@ -155,6 +161,7 @@ class _MobileShellState extends ConsumerState<MobileShell> {
             return Expanded(
               child: _NavItem(
                 icon: _navIcons[i],
+                label: _navLabels[i],
                 selected: selected,
                 onTap: () {
                   if (_selectedIndex == 1 && i != 1) {
@@ -229,16 +236,17 @@ class _OfflineBanner extends ConsumerWidget {
 class _NavItem extends StatelessWidget {
   const _NavItem({
     required this.icon,
+    required this.label,
     required this.selected,
     required this.onTap,
   });
 
   final List<List<dynamic>> icon;
+  final String label;
   final bool selected;
   final VoidCallback onTap;
 
   static const double _iconSize = 24.0;
-  static const double _circleSize = 40.0;
 
   @override
   Widget build(BuildContext context) {
@@ -247,32 +255,37 @@ class _NavItem extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          customBorder: const CircleBorder(),
+          customBorder: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+          ),
           splashColor: AppColors.primary.withValues(alpha: 0.12),
           highlightColor: AppColors.primary.withValues(alpha: 0.06),
           child: SizedBox(
-            width: _circleSize,
-            height: _circleSize,
-            child: Center(
-              child: AnimatedContainer(
-                duration: AppDuration.fast,
-                curve: Curves.easeOutCubic,
-                width: _circleSize,
-                height: _circleSize,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+            height: double.infinity,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AppIcon(
+                  icon: icon,
                   color: selected
-                      ? AppColors.primary.withValues(alpha: 0.18)
-                      : Colors.transparent,
+                      ? AppColorsScheme.of(context).textPrimary
+                      : AppColorsScheme.of(context).textMuted,
+                  size: _iconSize,
                 ),
-                child: Center(
-                  child: AppIcon(
-                    icon: icon,
-                    color: selected ? AppColors.primary : AppColorsScheme.of(context).textMuted,
-                    size: _iconSize,
+                const SizedBox(height: 2),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: selected
+                        ? AppColorsScheme.of(context).textPrimary
+                        : AppColorsScheme.of(context).textMuted,
+                    fontSize: AppFontSize.xs,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                   ),
                 ),
-              ),
+              ],
             ),
           ),
         ),

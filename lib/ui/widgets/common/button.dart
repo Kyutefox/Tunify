@@ -45,7 +45,11 @@ class AppButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveForeground = foregroundColor ??
-        (useGradient ? Colors.white : variant == AppButtonVariant.filled ? Colors.white : AppColors.primary);
+        (useGradient
+            ? Colors.white
+            : variant == AppButtonVariant.filled
+                ? Colors.white
+                : AppColors.primary);
     final isDisabled = onPressed == null || isLoading;
 
     Widget child = isLoading
@@ -112,7 +116,9 @@ class AppButton extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: effectiveForeground,
             side: BorderSide(
-              color: isDisabled ? AppColorsScheme.of(context).textMuted : AppColors.primary,
+              color: isDisabled
+                  ? AppColorsScheme.of(context).textMuted
+                  : AppColors.primary,
             ),
             shape: shape,
           ),
@@ -132,13 +138,15 @@ class AppButton extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(AppRadius.input),
-              boxShadow: isDisabled ? null : [
-                BoxShadow(
-                  color: AppColors.primary.withValues(alpha: 0.35),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
-                ),
-              ],
+              boxShadow: isDisabled
+                  ? null
+                  : [
+                      BoxShadow(
+                        color: AppColors.primary.withValues(alpha: 0.35),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
+                      ),
+                    ],
             ),
             child: Material(
               color: Colors.transparent,
@@ -185,6 +193,7 @@ class AppIconButton extends StatelessWidget {
 
   final Widget icon;
   final VoidCallback? onPressed;
+
   /// Called with the button's own [BuildContext] — use this when you need
   /// to compute the button's screen rect for dropdown positioning.
   final void Function(BuildContext ctx)? onPressedWithContext;
@@ -193,6 +202,7 @@ class AppIconButton extends StatelessWidget {
   final double size;
   final double iconSize;
   final Color? color;
+
   /// Alignment of the icon within the touch target. Use [Alignment.centerRight]
   /// when the button is at the trailing edge of a list tile so the icon sits
   /// flush with the right content boundary instead of being center-padded.
@@ -209,13 +219,13 @@ class AppIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveColor = color ?? AppColorsScheme.of(context).textPrimary;
-    
+
     // Wrap in Builder first so the context passed to _handleTap has the
     // button's full size and position for accurate dropdown positioning
     return Builder(
       builder: (btnCtx) {
         Widget button;
-        
+
         if (style == AppIconButtonStyle.ghost) {
           button = Material(
             color: Colors.transparent,
@@ -228,11 +238,16 @@ class AppIconButton extends StatelessWidget {
               child: SizedBox(
                 width: size,
                 height: size,
-                child: Align(
-                  alignment: iconAlignment,
-                  child: IconTheme(
-                    data: IconThemeData(size: iconSize, color: effectiveColor),
-                    child: icon,
+                child: AnimatedScale(
+                  scale: 1.0,
+                  duration: AppDuration.fast,
+                  child: Align(
+                    alignment: iconAlignment,
+                    child: IconTheme(
+                      data:
+                          IconThemeData(size: iconSize, color: effectiveColor),
+                      child: icon,
+                    ),
                   ),
                 ),
               ),
@@ -246,7 +261,9 @@ class AppIconButton extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: AppColorsScheme.of(context).surfaceLight,
-              border: Border.all(color: AppColorsScheme.of(context).surfaceHighlight, width: 0.5),
+              border: Border.all(
+                  color: AppColorsScheme.of(context).surfaceHighlight,
+                  width: 0.5),
             ),
             child: Material(
               color: Colors.transparent,
@@ -256,9 +273,14 @@ class AppIconButton extends StatelessWidget {
                     : null,
                 customBorder: const CircleBorder(),
                 child: Center(
-                  child: IconTheme(
-                    data: IconThemeData(size: iconSize, color: effectiveColor),
-                    child: icon,
+                  child: AnimatedScale(
+                    scale: 1.0,
+                    duration: AppDuration.fast,
+                    child: IconTheme(
+                      data:
+                          IconThemeData(size: iconSize, color: effectiveColor),
+                      child: icon,
+                    ),
                   ),
                 ),
               ),

@@ -9,6 +9,7 @@ import 'package:tunify/ui/theme/app_colors_scheme.dart';
 class SectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
+  final bool subtitleFirst;
   final VoidCallback? onSeeAll;
   final String? seeAllLabel;
   final Widget? trailing;
@@ -19,6 +20,7 @@ class SectionHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.subtitleFirst = false,
     this.onSeeAll,
     this.seeAllLabel,
     this.trailing,
@@ -30,7 +32,8 @@ class SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
     final hPad = t.isDesktop ? DesktopSpacing.lg : AppSpacing.base;
-    final resolvedPadding = padding ?? EdgeInsets.fromLTRB(hPad, 0, hPad, t.spacing.md);
+    final resolvedPadding =
+        padding ?? EdgeInsets.fromLTRB(hPad, 0, hPad, t.spacing.md);
     final titleFontSize = useCompactStyle ? t.font.xxl : t.font.h3;
     final subtitleFontSize = useCompactStyle ? t.font.xs : t.font.sm;
 
@@ -44,6 +47,16 @@ class SectionHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (subtitleFirst && subtitle != null) ...[
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textMuted,
+                      fontSize: subtitleFontSize,
+                    ),
+                  ),
+                  SizedBox(height: useCompactStyle ? 2 : 4),
+                ],
                 Text(
                   title,
                   style: TextStyle(
@@ -51,11 +64,13 @@ class SectionHeader extends StatelessWidget {
                     fontSize: titleFontSize,
                     fontWeight: FontWeight.w700,
                     letterSpacing: t.isDesktop
-                        ? (useCompactStyle ? -0.6 : t.typography.headingLetterSpacingSm)
+                        ? (useCompactStyle
+                            ? -0.6
+                            : t.typography.headingLetterSpacingSm)
                         : (useCompactStyle ? -0.3 : -0.5),
                   ),
                 ),
-                if (subtitle != null) ...[
+                if (!subtitleFirst && subtitle != null) ...[
                   SizedBox(height: useCompactStyle ? 2 : 4),
                   Text(
                     subtitle!,
@@ -82,16 +97,12 @@ class SectionHeader extends StatelessWidget {
     final text = (label != null && label.isNotEmpty) ? label : 'See All';
     return GestureDetector(
       onTap: onSeeAll,
-      child: ShaderMask(
-        shaderCallback: (bounds) =>
-            AppColors.primaryGradient.createShader(bounds),
-        child: Text(
-          text,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: t.font.md,
-            fontWeight: FontWeight.w600,
-          ),
+      child: Text(
+        text,
+        style: TextStyle(
+          color: AppColorsScheme.of(context).textPrimary,
+          fontSize: t.font.sm,
+          fontWeight: FontWeight.w700,
         ),
       ),
     );
@@ -101,6 +112,7 @@ class SectionHeader extends StatelessWidget {
 class GradientSectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
+  final bool subtitleFirst;
   final LinearGradient gradient;
   final List<List<dynamic>>? icon;
 
@@ -108,6 +120,7 @@ class GradientSectionHeader extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
+    this.subtitleFirst = false,
     this.gradient = AppColors.primaryGradient,
     this.icon,
   });
@@ -116,7 +129,8 @@ class GradientSectionHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
     return Padding(
-      padding: EdgeInsets.fromLTRB(t.spacing.base, t.spacing.xl, t.spacing.base, t.spacing.base),
+      padding: EdgeInsets.fromLTRB(
+          t.spacing.base, t.spacing.xl, t.spacing.base, t.spacing.base),
       child: Row(
         children: [
           if (icon != null) ...[
@@ -130,6 +144,16 @@ class GradientSectionHeader extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (subtitleFirst && subtitle != null) ...[
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textMuted,
+                      fontSize: t.font.md,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
                 ShaderMask(
                   shaderCallback: (bounds) => gradient.createShader(bounds),
                   child: Text(
@@ -142,7 +166,7 @@ class GradientSectionHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                if (subtitle != null) ...[
+                if (!subtitleFirst && subtitle != null) ...[
                   const SizedBox(height: 4),
                   Text(
                     subtitle!,

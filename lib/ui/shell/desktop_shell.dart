@@ -12,6 +12,7 @@ import 'package:tunify/ui/screens/shared/library/create_library_item_screen.dart
 import 'package:tunify/ui/screens/shared/library/library_screen.dart';
 import 'package:tunify/ui/screens/shared/search/search_screen.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'desktop_player_bar.dart';
 import 'desktop_right_sidebar.dart';
@@ -232,9 +233,9 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
       _sidebarAnim.reverse();
     }
 
-    // Home btn (40) + gap (8) + search bar (maxWidth 380) are centered on the full screen.
+    // Home btn (40) + gap (8) + search bar are centered on the full screen.
     const homeBtnWidth = 40.0 + 8.0;
-    const searchMaxWidth = 380.0;
+    final searchMaxWidth = DesktopLayout.searchMaxWidth;
     final groupWidth = homeBtnWidth + searchMaxWidth;
     final searchLeft = (screenWidth - groupWidth) / 2 + homeBtnWidth;
     final searchRight = screenWidth - searchLeft - searchMaxWidth;
@@ -358,13 +359,8 @@ class _DesktopShellState extends ConsumerState<DesktopShell>
                     ),
                   ),
 
-                  const SizedBox(height: _gap),
-
-                  // ── Player bar — background-level panel (same layer as nav) ────
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(_radius),
-                    child: const DesktopPlayerBar(),
-                  ),
+                  // ── Player bar — attached to shell background ─────────────────
+                  const DesktopPlayerBar(),
                 ],
               ),
             ),

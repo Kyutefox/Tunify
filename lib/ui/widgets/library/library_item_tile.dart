@@ -21,9 +21,6 @@ class LibraryItemTile extends StatelessWidget {
     required this.onOptions,
     required this.placeholderIcon,
     this.showPinIndicator = false,
-    this.isSelected = false,
-    this.isSelecting = false,
-    this.onLongPress,
   });
 
   final String title;
@@ -33,55 +30,26 @@ class LibraryItemTile extends StatelessWidget {
   final void Function(Rect?) onOptions;
   final List<List<dynamic>> placeholderIcon;
   final bool showPinIndicator;
-  final bool isSelected;
-  final bool isSelecting;
-  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final thumbSize = t.isDesktop ? 44.0 : 52.0;
+    final thumbSize = t.isDesktop ? 48.0 : 52.0;
     final tile = Material(
-      color: isSelected
-          ? AppColors.primary.withValues(alpha: 0.12)
-          : Colors.transparent,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: InkWell(
         onTap: () {
           HapticFeedback.selectionClick();
           onTap();
         },
-        onLongPress: () {
-          if (onLongPress != null) {
-            onLongPress!();
-          } else {
-            HapticFeedback.mediumImpact();
-            onOptions(null);
-          }
-        },
         hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: t.spacing.sm),
+          padding: EdgeInsets.symmetric(
+              vertical: t.isDesktop ? t.spacing.xs : t.spacing.sm),
           child: Row(
             children: [
-              if (isSelecting)
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: AnimatedSwitcher(
-                    duration: AppDuration.fast,
-                    child: Icon(
-                      isSelected
-                          ? Icons.check_circle
-                          : Icons.radio_button_unchecked,
-                      key: ValueKey(isSelected),
-                      size: 22,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColorsScheme.of(context).textMuted,
-                    ),
-                  ),
-                ),
               _buildThumbnail(context, thumbSize),
               SizedBox(width: t.spacing.md),
               Expanded(
@@ -111,31 +79,29 @@ class LibraryItemTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (!isSelecting) ...[
-                if (showPinIndicator)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: AppIcon(
-                        icon: AppIcons.pin, size: 14, color: AppColors.primary),
-                  ),
-                Builder(
-                  builder: (btnCtx) => AppIconButton(
-                    icon: AppIcon(
-                        icon: AppIcons.moreVert,
-                        size: 22,
-                        color: AppColorsScheme.of(context).textMuted),
-                    onPressedWithContext: (btnCtx) {
-                      final box = btnCtx.findRenderObject() as RenderBox?;
-                      onOptions(box != null && box.hasSize
-                          ? box.localToGlobal(Offset.zero) & box.size
-                          : null);
-                    },
-                    size: 40,
-                    iconSize: 22,
-                    iconAlignment: Alignment.centerRight,
-                  ),
+              if (showPinIndicator)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: AppIcon(
+                      icon: AppIcons.pin, size: 14, color: AppColors.primary),
                 ),
-              ],
+              Builder(
+                builder: (btnCtx) => AppIconButton(
+                  icon: AppIcon(
+                      icon: AppIcons.moreVert,
+                      size: 22,
+                      color: AppColorsScheme.of(context).textMuted),
+                  onPressedWithContext: (btnCtx) {
+                    final box = btnCtx.findRenderObject() as RenderBox?;
+                    onOptions(box != null && box.hasSize
+                        ? box.localToGlobal(Offset.zero) & box.size
+                        : null);
+                  },
+                  size: t.isDesktop ? 36 : 40,
+                  iconSize: 22,
+                  iconAlignment: Alignment.centerRight,
+                ),
+              ),
             ],
           ),
         ),
@@ -196,10 +162,10 @@ class _LibraryHoverTileState extends State<_LibraryHoverTile> {
       onExit: (_) => setState(() => _hovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
         decoration: BoxDecoration(
           color: _hovered ? AppColors.hoverOverlay : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
+          borderRadius: BorderRadius.circular(AppRadius.xs),
         ),
         child: widget.child,
       ),

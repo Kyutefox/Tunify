@@ -214,7 +214,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
       width: kDesktopSidebarWidth,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColorsScheme.of(context).background,
+          color: AppColorsScheme.of(context).desktopSurface,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,9 +230,9 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                       'Library',
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textPrimary,
-                        fontSize: DesktopFontSize.h2,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
+                        fontSize: DesktopFontSize.h3,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
@@ -293,7 +293,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                               icon: AppIcon(
                                 icon: AppIcons.back,
                                 size: 18,
-                                color: AppColorsScheme.of(context).textSecondary,
+                                color:
+                                    AppColorsScheme.of(context).textSecondary,
                               ),
                               onPressed: _toggleSearch,
                               size: 36,
@@ -382,16 +383,18 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                   children: [
                                     AppIcon(
                                       icon: AppIcons.sort,
-                                      color: AppColorsScheme.of(context).textSecondary,
+                                      color: AppColorsScheme.of(context)
+                                          .textSecondary,
                                       size: DesktopIconSize.xs,
                                     ),
                                     const SizedBox(width: DesktopSpacing.xs),
                                     Text(
                                       sortOrder.label,
                                       style: TextStyle(
-                                        color: AppColorsScheme.of(context).desktopTextSecondary,
+                                        color: AppColorsScheme.of(context)
+                                            .textPrimary,
                                         fontSize: DesktopFontSize.sm,
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
@@ -503,7 +506,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                         'No playlists in this folder.',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                            color: AppColorsScheme.of(context).textMuted,
+                                            color: AppColorsScheme.of(context)
+                                                .textMuted,
                                             fontSize: AppFontSize.md),
                                       ),
                                     )
@@ -511,6 +515,13 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                     LibraryPlaylistsSection(
                                       entries: folderEntries,
                                       viewMode: viewMode,
+                                      contentPadding:
+                                          const EdgeInsets.fromLTRB(
+                                        DesktopSpacing.base,
+                                        0,
+                                        DesktopSpacing.sm,
+                                        0,
+                                      ),
                                       onPlaylistTap: _openPlaylist,
                                       onPlaylistOptions: (p, rect) =>
                                           showLibraryPlaylistOptionsSheet(
@@ -528,6 +539,13 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                     LibraryPlaylistsSection(
                                       entries: playlistEntries,
                                       viewMode: viewMode,
+                                      contentPadding:
+                                          const EdgeInsets.fromLTRB(
+                                        DesktopSpacing.base,
+                                        0,
+                                        DesktopSpacing.sm,
+                                        0,
+                                      ),
                                       onPlaylistTap: _openPlaylist,
                                       onPlaylistOptions: (p, rect) =>
                                           showLibraryPlaylistOptionsSheet(
@@ -621,8 +639,10 @@ class _CreateMenuButton extends StatelessWidget {
         ),
       ],
       child: AppIconButton(
-        icon:
-            AppIcon(icon: AppIcons.add, size: 20, color: AppColorsScheme.of(context).textPrimary),
+        icon: AppIcon(
+            icon: AppIcons.add,
+            size: 20,
+            color: AppColorsScheme.of(context).textPrimary),
         onPressed: null, // tap handled by AdaptiveMenuAnchor
         size: 36,
         iconSize: 20,

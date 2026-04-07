@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -53,10 +52,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
   /// When non-null, section shows this folder's playlists with a back row instead of main list.
   String? _selectedFolderId;
-
-  // ── Bulk selection ───────────────────────────────────────────────────────────
-  bool _isSelecting = false;
-  final Set<String> _selectedIds = {};
 
   @override
   void initState() {
@@ -236,8 +231,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     Widget buildScrollView(bool withRefresh) {
       if (isLoading) {
         return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-          child: const LibrarySkeletonList(),
+          padding:
+              const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+          child: LibrarySkeletonList(viewMode: viewMode),
         );
       }
       final scrollView = CustomScrollView(
@@ -250,7 +246,11 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 parent: AlwaysScrollableScrollPhysics()),
         slivers: [
           ..._buildContentSlivers(viewMode, sortOrder, rootPlaylists),
-          const SliverToBoxAdapter(child: SizedBox(height: 160)),
+          SliverToBoxAdapter(
+            child: SizedBox(
+              height: isDesktop ? 96 : 160,
+            ),
+          ),
         ],
       );
       if (withRefresh) {
@@ -282,13 +282,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           ),
         ),
       ),
-      bottomSheet: _isSelecting
-          ? _BulkSelectBar(
-              selectedCount: _selectedIds.length,
-              onCancel: _exitSelectMode,
-              onDelete: _selectedIds.isNotEmpty ? _deleteSelected : null,
-            )
-          : null,
     );
   }
 
@@ -353,15 +346,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               showCreateFirstPlaylistEmptyState:
                   showCreateFirstPlaylistEmptyState,
               isFolderView: _selectedFolderId != null,
-              isSelecting: _isSelecting,
-              selectedIds: _selectedIds,
-              onLongPress: _enterSelectMode,
             ),
           ),
         ];
       case LibraryFilter.albums:
         final rawAlbums =
             ref.watch(libraryProvider.select((s) => s.followedAlbums));
+        const albumsHPad = AppSpacing.base;
         if (rawAlbums.isEmpty) {
           return [
             SliverFillRemaining(
@@ -376,7 +367,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         return [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+              padding: const EdgeInsets.symmetric(horizontal: albumsHPad),
               child: viewMode == LibraryViewMode.grid
                   ? _FollowedAlbumsGrid(albums: sortedAlbums)
                   : _FollowedAlbumsList(albums: sortedAlbums),
@@ -387,6 +378,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       case LibraryFilter.artists:
         final rawArtists =
             ref.watch(libraryProvider.select((s) => s.followedArtists));
+        const artistsHPad = AppSpacing.base;
         if (rawArtists.isEmpty) {
           return [
             SliverFillRemaining(
@@ -401,7 +393,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         return [
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+              padding: const EdgeInsets.symmetric(horizontal: artistsHPad),
               child: viewMode == LibraryViewMode.grid
                   ? _FollowedArtistsGrid(artists: sortedArtists)
                   : _FollowedArtistsList(artists: sortedArtists),
@@ -445,10 +437,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 
   void _onPlaylistTap(LibraryPlaylist playlist) {
-    if (_isSelecting) {
-      _toggleSelection(playlist.id);
-      return;
-    }
     Navigator.of(context).push(
       appPageRoute<void>(
         builder: (_) => LibraryPlaylistScreen(playlistId: playlist.id),
@@ -457,82 +445,18 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 
   void _onFolderTap(LibraryFolder folder) {
-    if (_isSelecting) {
-      _toggleSelection(folder.id);
-      return;
-    }
     setState(() => _selectedFolderId = folder.id);
   }
 
   void _onFolderOptions(LibraryFolder folder, Rect? anchorRect) {
-    if (_isSelecting) {
-      _toggleSelection(folder.id);
-      return;
-    }
     _unfocus();
     showLibraryFolderOptionsSheet(context, ref, folder, anchorRect: anchorRect);
   }
 
   void _onPlaylistOptions(LibraryPlaylist playlist, Rect? anchorRect) {
-    if (_isSelecting) {
-      _toggleSelection(playlist.id);
-      return;
-    }
     _unfocus();
     showLibraryPlaylistOptionsSheet(context, ref, playlist,
         anchorRect: anchorRect);
-  }
-
-  void _enterSelectMode(String id) {
-    HapticFeedback.mediumImpact();
-    setState(() {
-      _isSelecting = true;
-      _selectedIds
-        ..clear()
-        ..add(id);
-    });
-  }
-
-  void _exitSelectMode() {
-    setState(() {
-      _isSelecting = false;
-      _selectedIds.clear();
-    });
-  }
-
-  void _toggleSelection(String id) {
-    setState(() {
-      if (_selectedIds.contains(id)) {
-        _selectedIds.remove(id);
-        if (_selectedIds.isEmpty) _isSelecting = false;
-      } else {
-        _selectedIds.add(id);
-      }
-    });
-  }
-
-  Future<void> _deleteSelected() async {
-    final count = _selectedIds.length;
-    final confirmed = await showConfirmDialog(
-      context,
-      title: 'Delete $count item${count == 1 ? '' : 's'}?',
-      message: 'This cannot be undone.',
-      confirmLabel: 'Delete',
-      isDestructive: true,
-    );
-    if (!confirmed) return;
-    final ids = Set<String>.from(_selectedIds);
-    _exitSelectMode();
-    final notifier = ref.read(libraryProvider.notifier);
-    for (final id in ids) {
-      final isFolder =
-          ref.read(libraryProvider).folders.any((f) => f.id == id);
-      if (isFolder) {
-        await notifier.deleteFolder(id);
-      } else {
-        await notifier.deletePlaylist(id);
-      }
-    }
   }
 }
 
@@ -662,8 +586,6 @@ class _FollowedArtistsGrid extends ConsumerWidget {
               ),
             ),
           ),
-          onLongPress: () =>
-              ref.read(libraryProvider.notifier).toggleFollowArtist(artist),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -702,7 +624,8 @@ class _FollowedArtistsGrid extends ConsumerWidget {
               Text(
                 'Artist',
                 style: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.xs),
+                    color: AppColorsScheme.of(context).textMuted,
+                    fontSize: AppFontSize.xs),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
@@ -848,8 +771,6 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
               ),
             ),
           ),
-          onLongPress: () =>
-              ref.read(libraryProvider.notifier).toggleFollowAlbum(album),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -888,7 +809,8 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
               Text(
                 album.artistName,
                 style: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.xs),
+                    color: AppColorsScheme.of(context).textMuted,
+                    fontSize: AppFontSize.xs),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
@@ -922,7 +844,8 @@ class LibraryFilterPlaceholder extends StatelessWidget {
           children: [
             AppIcon(
               icon: icon,
-              color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5),
+              color:
+                  AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5),
               size: 64,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -930,7 +853,9 @@ class LibraryFilterPlaceholder extends StatelessWidget {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
+                color: AppColorsScheme.of(context)
+                    .textMuted
+                    .withValues(alpha: 0.9),
                 fontSize: AppFontSize.lg,
               ),
             ),
@@ -1103,7 +1028,8 @@ class _AddToFolderSheetState extends State<_AddToFolderSheet> {
                       ),
                       title: Text(
                         f.name.capitalized,
-                        style: TextStyle(color: AppColorsScheme.of(context).textPrimary),
+                        style: TextStyle(
+                            color: AppColorsScheme.of(context).textPrimary),
                       ),
                       subtitle: Text(
                         '${f.playlistCount} playlists',
@@ -1569,71 +1495,6 @@ class _ContentSwitcherState extends State<_ContentSwitcher>
       child: SlideTransition(
         position: _slide,
         child: _current,
-      ),
-    );
-  }
-}
-
-// ── Bulk-select action bar ────────────────────────────────────────────────────
-
-class _BulkSelectBar extends StatelessWidget {
-  const _BulkSelectBar({
-    required this.selectedCount,
-    required this.onCancel,
-    this.onDelete,
-  });
-
-  final int selectedCount;
-  final VoidCallback onCancel;
-  final VoidCallback? onDelete;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColorsScheme.of(context).surface,
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.base, vertical: AppSpacing.sm),
-          child: Row(
-            children: [
-              IconButton(
-                icon: Icon(Icons.close, color: AppColorsScheme.of(context).textPrimary),
-                onPressed: onCancel,
-                tooltip: 'Cancel',
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              Expanded(
-                child: Text(
-                  selectedCount == 0
-                      ? 'Select items'
-                      : '$selectedCount selected',
-                  style: TextStyle(
-                    color: AppColorsScheme.of(context).textPrimary,
-                    fontSize: AppFontSize.lg,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.delete_outline,
-                  color: onDelete != null
-                      ? AppColors.accentRed
-                      : AppColorsScheme.of(context).textMuted,
-                ),
-                onPressed: onDelete != null
-                    ? () {
-                        HapticFeedback.mediumImpact();
-                        onDelete!();
-                      }
-                    : null,
-                tooltip: 'Delete selected',
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

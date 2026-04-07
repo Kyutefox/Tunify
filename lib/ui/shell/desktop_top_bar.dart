@@ -162,7 +162,8 @@ class _DesktopTopBarState extends ConsumerState<DesktopTopBar> {
                 ),
                 const SizedBox(width: DesktopSpacing.sm),
                 ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: DesktopLayout.searchMaxWidth),
+                  constraints: const BoxConstraints(
+                      maxWidth: DesktopLayout.searchMaxWidth),
                   child: TapRegion(
                     groupId: 'desktop-search',
                     child: _DesktopSearchBar(
@@ -210,7 +211,7 @@ class _NavArrowBtn extends StatelessWidget {
         width: DesktopLayout.navBtnSize,
         height: DesktopLayout.navBtnSize,
         decoration: BoxDecoration(
-          color: AppColorsScheme.of(context).surfaceLight,
+          color: AppColorsScheme.of(context).surface,
           shape: BoxShape.circle,
         ),
         child: Center(
@@ -219,7 +220,9 @@ class _NavArrowBtn extends StatelessWidget {
             size: DesktopIconSize.md,
             color: enabled
                 ? AppColorsScheme.of(context).textPrimary
-                : AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.3),
+                : AppColorsScheme.of(context)
+                    .textPrimary
+                    .withValues(alpha: 0.22),
           ),
         ),
       ),
@@ -250,21 +253,24 @@ class _DesktopSearchBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 48,
+      height: 40,
       decoration: BoxDecoration(
-        color: AppColorsScheme.of(context).surfaceLight,
+        color: AppColorsScheme.of(context).surface,
         borderRadius: BorderRadius.circular(AppRadius.xl),
         border: Border.all(
           color: isActive
-              ? AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.35)
-              : Colors.transparent,
+              ? AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.28)
+              : AppColorsScheme.of(context).textPrimary.withValues(alpha: 0.10),
           width: 1,
         ),
       ),
       child: Row(
         children: [
           const SizedBox(width: DesktopSpacing.md),
-          AppIcon(icon: AppIcons.search, size: DesktopIconSize.sm, color: AppColorsScheme.of(context).textMuted),
+          AppIcon(
+              icon: AppIcons.search,
+              size: DesktopIconSize.sm,
+              color: AppColorsScheme.of(context).textMuted),
           const SizedBox(width: DesktopSpacing.sm),
           Expanded(
             child: Theme(
@@ -288,7 +294,9 @@ class _DesktopSearchBar extends StatelessWidget {
                 decoration: InputDecoration(
                   hintText: 'What do you want to play?',
                   hintStyle: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
+                    color: AppColorsScheme.of(context)
+                        .textMuted
+                        .withValues(alpha: 0.7),
                     fontSize: DesktopFontSize.base,
                   ),
                   border: InputBorder.none,
@@ -307,7 +315,8 @@ class _DesktopSearchBar extends StatelessWidget {
             GestureDetector(
               onTap: onClear,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.sm),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: DesktopSpacing.sm),
                 child: AppIcon(
                     icon: AppIcons.close,
                     size: DesktopIconSize.xs,
@@ -323,7 +332,8 @@ class _DesktopSearchBar extends StatelessWidget {
             onTap: onBrowse,
             behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.sm),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: DesktopSpacing.sm),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -364,8 +374,8 @@ class _HomeBtn extends StatelessWidget {
       child: Container(
         width: DesktopLayout.homeBtnSize,
         height: DesktopLayout.homeBtnSize,
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: AppColorsScheme.of(context).surface,
           shape: BoxShape.circle,
         ),
         child: Center(
@@ -373,8 +383,10 @@ class _HomeBtn extends StatelessWidget {
             icon: AppIcons.home,
             size: DesktopIconSize.md,
             color: isActive
-                ? AppColorsScheme.of(context).background
-                : AppColorsScheme.of(context).background.withValues(alpha: 0.45),
+                ? AppColorsScheme.of(context).textPrimary
+                : AppColorsScheme.of(context)
+                    .textPrimary
+                    .withValues(alpha: 0.5),
           ),
         ),
       ),

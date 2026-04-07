@@ -8,6 +8,7 @@ import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/screens/shared/podcast/podcast_options_sheet.dart';
 import 'package:tunify/ui/screens/shared/search/search_page.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/library/library_item_tile.dart';
@@ -98,9 +99,15 @@ class _PodcastSearchResults extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final hPad = AppTokens.of(context).isDesktop
+        ? DesktopSpacing.lg
+        : AppSpacing.base;
     if (query.isEmpty) {
       return SearchPageEmptyState(
-        icon: AppIcon(icon: AppIcons.podcast, size: 56, color: AppColorsScheme.of(context).textMuted),
+        icon: AppIcon(
+            icon: AppIcons.podcast,
+            size: 56,
+            color: AppColorsScheme.of(context).textMuted),
         heading: 'Search Podcasts',
         subheading: 'Find podcast episodes, interviews & talks',
       );
@@ -110,20 +117,26 @@ class _PodcastSearchResults extends ConsumerWidget {
     return resultsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => SearchPageEmptyState(
-        icon: AppIcon(icon: AppIcons.search, size: 56, color: AppColorsScheme.of(context).textMuted),
+        icon: AppIcon(
+            icon: AppIcons.search,
+            size: 56,
+            color: AppColorsScheme.of(context).textMuted),
         heading: 'Something went wrong',
         subheading: 'Could not load podcast results',
       ),
       data: (podcasts) {
         if (podcasts.isEmpty) {
           return SearchPageEmptyState(
-            icon: AppIcon(icon: AppIcons.podcast, size: 56, color: AppColorsScheme.of(context).textMuted),
+            icon: AppIcon(
+                icon: AppIcons.podcast,
+                size: 56,
+                color: AppColorsScheme.of(context).textMuted),
             heading: 'No podcasts found',
             subheading: 'Try a different search term',
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.only(bottom: 120, left: AppSpacing.base, right: AppSpacing.base),
+          padding: EdgeInsets.only(bottom: 120, left: hPad, right: hPad),
           itemCount: podcasts.length,
           itemBuilder: (context, i) {
             final podcast = podcasts[i];
@@ -142,7 +155,8 @@ class _PodcastSearchResults extends ConsumerWidget {
                   trackCount: 0,
                 );
                 Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+                  builder: (_) =>
+                      LibraryPlaylistScreen.podcast(playlist: playlist),
                 ));
               },
               onOptions: (rect) => showPodcastOptionsSheet(
@@ -167,9 +181,15 @@ class _AudiobookSearchResults extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final hPad = AppTokens.of(context).isDesktop
+        ? DesktopSpacing.lg
+        : AppSpacing.base;
     if (query.isEmpty) {
       return SearchPageEmptyState(
-        icon: AppIcon(icon: AppIcons.bookOpen, size: 56, color: AppColorsScheme.of(context).textMuted),
+        icon: AppIcon(
+            icon: AppIcons.bookOpen,
+            size: 56,
+            color: AppColorsScheme.of(context).textMuted),
         heading: 'Search Audiobooks',
         subheading: 'Find audiobooks & long-form content',
       );
@@ -179,20 +199,26 @@ class _AudiobookSearchResults extends ConsumerWidget {
     return resultsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (_, __) => SearchPageEmptyState(
-        icon: AppIcon(icon: AppIcons.search, size: 56, color: AppColorsScheme.of(context).textMuted),
+        icon: AppIcon(
+            icon: AppIcons.search,
+            size: 56,
+            color: AppColorsScheme.of(context).textMuted),
         heading: 'Something went wrong',
         subheading: 'Could not load audiobook results',
       ),
       data: (audiobooks) {
         if (audiobooks.isEmpty) {
           return SearchPageEmptyState(
-            icon: AppIcon(icon: AppIcons.bookOpen, size: 56, color: AppColorsScheme.of(context).textMuted),
+            icon: AppIcon(
+                icon: AppIcons.bookOpen,
+                size: 56,
+                color: AppColorsScheme.of(context).textMuted),
             heading: 'No audiobooks found',
             subheading: 'Try a different search term',
           );
         }
         return ListView.builder(
-          padding: const EdgeInsets.only(bottom: 120, left: AppSpacing.base, right: AppSpacing.base),
+          padding: EdgeInsets.only(bottom: 120, left: hPad, right: hPad),
           itemCount: audiobooks.length,
           itemBuilder: (context, i) {
             final audiobook = audiobooks[i];
@@ -211,7 +237,8 @@ class _AudiobookSearchResults extends ConsumerWidget {
                   trackCount: 0,
                 );
                 Navigator.of(context).push(MaterialPageRoute(
-                  builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+                  builder: (_) =>
+                      LibraryPlaylistScreen.podcast(playlist: playlist),
                 ));
               },
               onOptions: (rect) => showAudiobookOptionsSheet(

@@ -7,8 +7,10 @@ abstract final class AppColors {
   // ——— Base backgrounds ———
   /// background_main
   static const Color background = Color(0xFF121212);
+
   /// background_sidebar
   static const Color backgroundSecondary = Color(0xFF000000);
+
   /// background_base
   static const Color backgroundBase = Color(0xFF191414);
 
@@ -16,8 +18,10 @@ abstract final class AppColors {
   /// surface_elevated
   static const Color surface = Color(0xFF181818);
   static const Color surfaceElevated = Color(0xFF181818);
+
   /// surface_card — cards, list tiles
   static const Color card = Color(0xFF282828);
+
   /// surface_hover — hover brighten
   static const Color surfaceLight = Color(0xFF2A2A2A);
   static const Color surfaceHighlight = Color(0xFF333333);
@@ -27,6 +31,7 @@ abstract final class AppColors {
   static const Color primaryLight = PrimaryPalette.primaryLight;
   static const Color primaryDark = PrimaryPalette.primaryDark;
   static const Color primaryContainer = PrimaryPalette.primaryContainer;
+
   /// Brighter green for active icon states on dark surfaces — more punch than [primary].
   static const Color primaryIcon = PrimaryPalette.primaryLight;
   static const Color secondary = PrimaryPalette.primaryLight;
@@ -48,7 +53,7 @@ abstract final class AppColors {
   static const Color desktopTextMuted = Color(0xFF666666);
 
   // ——— Desktop surface layers ———
-  static const Color desktopSurface = Color(0xFF1E1E1E);
+  static const Color desktopSurface = Color(0xFF121212);
   static const Color desktopCanvas = Color(0xFF0A0A0A);
 
   // ——— Hover overlay ———
@@ -61,10 +66,13 @@ abstract final class AppColors {
   // ——— Player overlay text / icon tints (white with opacity) ———
   /// Player icon inactive state — white @ 80%
   static const Color playerIconInactive = Color(0xCCFFFFFF);
+
   /// Player extra button icons / label — white @ 75%
   static const Color playerIconExtra = Color(0xBFFFFFFF);
+
   /// Player status label ("NOW PLAYING") — white @ 65%
   static const Color playerLabelSubtle = Color(0xA6FFFFFF);
+
   /// Player time label — white @ 50%
   static const Color playerTimeMuted = Color(0x80FFFFFF);
 
@@ -82,6 +90,7 @@ abstract final class AppColors {
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
+
   /// gradient_downloads — teal-to-blue for the Downloads fixed playlist
   static const LinearGradient downloadGradient = LinearGradient(
     colors: [Color(0xFF0EA5E9), Color(0xFF6366F1)],
@@ -117,14 +126,17 @@ abstract final class AppColors {
   );
 
   static const List<LinearGradient> moodGradients = [
-    LinearGradient(colors: [PrimaryPalette.primary, PrimaryPalette.primaryLight]),
+    LinearGradient(
+        colors: [PrimaryPalette.primary, PrimaryPalette.primaryLight]),
     primaryGradient,
     LinearGradient(colors: [Color(0xFFFF6B35), Color(0xFFFF2D78)]),
     LinearGradient(colors: [Color(0xFF00D2FF), Color(0xFF3A7BD5)]),
     LinearGradient(colors: [Color(0xFFFFD60A), PrimaryPalette.primary]),
     LinearGradient(colors: [Color(0xFF3A7BD5), PrimaryPalette.primary]),
-    LinearGradient(colors: [PrimaryPalette.primary, PrimaryPalette.primaryDark]),
-    LinearGradient(colors: [PrimaryPalette.primary, PrimaryPalette.primaryLight]),
+    LinearGradient(
+        colors: [PrimaryPalette.primary, PrimaryPalette.primaryDark]),
+    LinearGradient(
+        colors: [PrimaryPalette.primary, PrimaryPalette.primaryLight]),
   ];
 
   /// Love-theme gradients (5 options) for liked hearts and favourite UI.
@@ -198,10 +210,13 @@ abstract final class PaletteTheme {
   // ── Palette extraction (HSL adjustments) ──────────────────────────────────
   /// Lightness boost — small, just enough to avoid near-black colors.
   static const double extractLightnessBoost = 0.05;
+
   /// Minimum lightness — prevents very dark colors from being invisible.
   static const double extractLightnessMin = 0.35;
+
   /// Maximum lightness — prevents colors from washing out completely.
   static const double extractLightnessMax = 0.75;
+
   /// Saturation reduction — keep colors vivid, just slightly soften.
   static const double extractSaturationReduce = 0.05;
 
@@ -212,10 +227,13 @@ abstract final class PaletteTheme {
   // ── Collection header gradient (scrolls with content) ────────────────────
   /// Top alpha — strong enough to be clearly visible on dark background.
   static const double headerGradientTopAlpha = 0.85;
+
   /// Mid alpha — still visible as it fades out.
   static const double headerGradientMidAlpha = 0.40;
+
   /// Gradient stop positions [top, mid, transparent].
   static const List<double> headerGradientStops = [0.0, 0.55, 1.0];
+
   /// Total height of the gradient panel (appBarHeight + this).
   static const double headerGradientContentHeight = 600.0;
 
@@ -226,8 +244,10 @@ abstract final class PaletteTheme {
   // ── Player background gradient ────────────────────────────────────────────
   /// Top alpha of the dominant-color overlay on the player blurred background.
   static const double playerGradientTopAlpha = 0.60;
+
   /// Mid alpha of the dominant-color overlay.
   static const double playerGradientMidAlpha = 0.20;
+
   /// Dark overlay alpha applied over the blurred artwork — reduced so color shows.
   static const double playerDarkOverlayAlpha = 0.30;
 
@@ -241,7 +261,8 @@ abstract final class PaletteTheme {
 
   /// Converts a raw dominant/vibrant [color] into the palette color used for
   /// gradients. Keeps the color vivid — only clamps lightness to a safe range.
-  static Color toPaletteColor(Color color, {
+  static Color toPaletteColor(
+    Color color, {
     double lightnessBoost = extractLightnessBoost,
     double lightnessMin = extractLightnessMin,
     double lightnessMax = extractLightnessMax,
@@ -249,7 +270,8 @@ abstract final class PaletteTheme {
   }) {
     final hsl = HSLColor.fromColor(color);
     return hsl
-        .withLightness((hsl.lightness + lightnessBoost).clamp(lightnessMin, lightnessMax))
+        .withLightness(
+            (hsl.lightness + lightnessBoost).clamp(lightnessMin, lightnessMax))
         .withSaturation((hsl.saturation - saturationReduce).clamp(0.0, 1.0))
         .toColor();
   }
@@ -268,7 +290,8 @@ abstract final class PaletteTheme {
 
   /// Builds the pinned AppBar background color by blending [paletteColor]
   /// over [background] (defaults to [AppColors.background]).
-  static Color appBarBackground(Color paletteColor, {Color? background}) => Color.alphaBlend(
+  static Color appBarBackground(Color paletteColor, {Color? background}) =>
+      Color.alphaBlend(
         paletteColor.withValues(alpha: appBarBlendAlpha),
         background ?? AppColors.background,
       );

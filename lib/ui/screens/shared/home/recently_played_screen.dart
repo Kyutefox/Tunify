@@ -21,7 +21,6 @@ import 'package:tunify/ui/widgets/common/empty_state_placeholder.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
-
 class RecentlyPlayedScreen extends ConsumerWidget {
   const RecentlyPlayedScreen({super.key});
 
@@ -34,8 +33,8 @@ class RecentlyPlayedScreen extends ConsumerWidget {
     final displayTimestamps = <DateTime>[];
     for (int i = 0; i < songs.length; i++) {
       if (showExplicit || !songs[i].isExplicit) {
-        displayTimestamps.add(
-            i < timestamps.length ? timestamps[i] : DateTime.now());
+        displayTimestamps
+            .add(i < timestamps.length ? timestamps[i] : DateTime.now());
       }
     }
     final hasSong = ref.watch(currentSongProvider) != null;
@@ -53,8 +52,7 @@ class RecentlyPlayedScreen extends ConsumerWidget {
                 size: 48,
               ),
               title: 'Nothing played yet',
-              subtitle:
-                  'Start playing songs and they\'ll appear here.',
+              subtitle: 'Start playing songs and they\'ll appear here.',
             )
           : Column(
               children: [
@@ -73,7 +71,8 @@ class RecentlyPlayedScreen extends ConsumerWidget {
                       GestureDetector(
                         onTap: () {
                           final queue = shuffleEnabled
-                              ? (List<Song>.from(displaySongs)..shuffle(Random()))
+                              ? (List<Song>.from(displaySongs)
+                                ..shuffle(Random()))
                               : displaySongs;
                           ref.read(playerProvider.notifier).playSong(
                                 queue.first,
@@ -118,7 +117,6 @@ class RecentlyPlayedScreen extends ConsumerWidget {
     );
   }
 }
-
 
 enum _DateGroup { today, yesterday, older }
 
@@ -221,8 +219,8 @@ class _DateGroupedSongList extends ConsumerWidget {
                   color: AppColorsScheme.of(context).textMuted,
                   size: 20,
                 ),
-                onPressedWithContext: (btnCtx) =>
-                    showSongOptionsSheet(context, song: songs[index], ref: ref, buttonContext: btnCtx),
+                onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
+                    song: songs[index], ref: ref, buttonContext: btnCtx),
                 size: 40,
                 iconSize: 20,
                 iconAlignment: Alignment.centerRight,
@@ -234,7 +232,6 @@ class _DateGroupedSongList extends ConsumerWidget {
     }
 
     return ListView.builder(
-      cacheExtent: 1000,
       addAutomaticKeepAlives: true,
       padding: const EdgeInsets.only(bottom: AppSpacing.xxl),
       itemCount: _itemCount(groups),
@@ -285,7 +282,8 @@ class _DateGroupedSongList extends ConsumerWidget {
                   color: AppColorsScheme.of(context).textMuted,
                   size: 20,
                 ),
-                onPressedWithContext: (btnCtx) => showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
+                onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
+                    song: song, ref: ref, buttonContext: btnCtx),
                 size: 40,
                 iconSize: 20,
                 iconAlignment: Alignment.centerRight,
@@ -298,7 +296,7 @@ class _DateGroupedSongList extends ConsumerWidget {
   }
 
   int _itemCount(List<(_DateGroup, String, List<Song>)> groups) {
-    int count = 0;
+    var count = 0;
     for (final (_, _, songs) in groups) {
       count += 1 + songs.length;
     }
@@ -339,7 +337,6 @@ class _DateGroupedSongList extends ConsumerWidget {
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
 }
-
 
 class _DateHeader extends StatelessWidget {
   const _DateHeader({required this.label});
@@ -441,8 +438,8 @@ class _RecentlyPlayedShuffleModeSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Padding(
-        padding: const EdgeInsets.fromLTRB(
-            kSheetHorizontalPadding, AppSpacing.lg, kSheetHorizontalPadding, AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(kSheetHorizontalPadding,
+            AppSpacing.lg, kSheetHorizontalPadding, AppSpacing.md),
         child: Text('Shuffle',
             style: TextStyle(
                 color: AppColorsScheme.of(context).textPrimary,
@@ -494,7 +491,9 @@ class _ShuffleModeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColorsScheme.of(context).textSecondary;
+    final color = selected
+        ? AppColors.primary
+        : AppColorsScheme.of(context).textSecondary;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
           horizontal: kSheetHorizontalPadding, vertical: 4),
@@ -514,12 +513,15 @@ class _ShuffleModeTile extends StatelessWidget {
           : AppIcon(icon: icon, size: 24, color: color),
       title: Text(label,
           style: TextStyle(
-              color: selected ? AppColors.primary : AppColorsScheme.of(context).textPrimary,
+              color: selected
+                  ? AppColors.primary
+                  : AppColorsScheme.of(context).textPrimary,
               fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
       subtitle: subtitle != null
           ? Text(subtitle!,
               style: TextStyle(
-                  color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm))
+                  color: AppColorsScheme.of(context).textMuted,
+                  fontSize: AppFontSize.sm))
           : null,
       trailing: selected
           ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)

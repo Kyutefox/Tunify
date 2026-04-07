@@ -11,6 +11,7 @@ import 'package:tunify/ui/screens/shared/podcast/podcast_options_sheet.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/library/library_item_tile.dart';
 
@@ -145,18 +146,22 @@ class _PodcastsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final hPad = AppTokens.of(context).isDesktop
+        ? DesktopSpacing.lg
+        : AppSpacing.base;
     final subscriptions = ref.watch(podcastSubscriptionsProvider);
-    final episodesForLater = ref.watch(podcastProvider.select((s) => s.episodesForLater));
+    final episodesForLater =
+        ref.watch(podcastProvider.select((s) => s.episodesForLater));
 
     if (subscriptions.isEmpty) {
       // Show Episodes For Later even when no subscriptions
       return Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(
+            padding: EdgeInsets.only(
               top: AppSpacing.sm,
-              left: AppSpacing.base,
-              right: AppSpacing.base,
+              left: hPad,
+              right: hPad,
             ),
             child: Material(
               color: Colors.transparent,
@@ -170,7 +175,8 @@ class _PodcastsTab extends ConsumerWidget {
                     trackCount: episodesForLater.length,
                   );
                   Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+                    builder: (_) =>
+                        LibraryPlaylistScreen.podcast(playlist: playlist),
                   ));
                 },
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -242,8 +248,11 @@ class _PodcastsTab extends ConsumerWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.only(
-          top: AppSpacing.sm, left: AppSpacing.base, right: AppSpacing.base, bottom: AppSpacing.xxl + 80),
+      padding: EdgeInsets.only(
+          top: AppSpacing.sm,
+          left: hPad,
+          right: hPad,
+          bottom: AppSpacing.xxl + 80),
       itemCount: subscriptions.length + 1, // Always show Episodes For Later
       itemBuilder: (context, i) {
         // Episodes For Later tile (always first)
@@ -262,7 +271,8 @@ class _PodcastsTab extends ConsumerWidget {
                     trackCount: episodesForLater.length,
                   );
                   Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => LibraryPlaylistScreen.podcast(playlist: playlist),
+                    builder: (_) =>
+                        LibraryPlaylistScreen.podcast(playlist: playlist),
                   ));
                 },
                 borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -323,7 +333,7 @@ class _PodcastsTab extends ConsumerWidget {
             ),
           );
         }
-        
+
         // Adjust index for podcast subscriptions
         final podcastIndex = i - 1;
         final podcast = subscriptions[podcastIndex];
@@ -364,6 +374,9 @@ class _AudiobooksTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final hPad = AppTokens.of(context).isDesktop
+        ? DesktopSpacing.lg
+        : AppSpacing.base;
     final audiobooks = ref.watch(savedAudiobooksProvider);
 
     if (audiobooks.isEmpty) {
@@ -375,8 +388,11 @@ class _AudiobooksTab extends ConsumerWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.only(
-          top: AppSpacing.sm, left: AppSpacing.base, right: AppSpacing.base, bottom: AppSpacing.xxl + 80),
+      padding: EdgeInsets.only(
+          top: AppSpacing.sm,
+          left: hPad,
+          right: hPad,
+          bottom: AppSpacing.xxl + 80),
       itemCount: audiobooks.length,
       itemBuilder: (context, i) {
         final audiobook = audiobooks[i];

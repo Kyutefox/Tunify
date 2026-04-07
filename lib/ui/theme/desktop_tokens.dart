@@ -6,31 +6,31 @@ import 'design_tokens.dart';
 // ── Desktop-specific overrides ────────────────────────────────────────────────
 
 abstract final class DesktopSpacing {
-  static const double xs   = 6.0;
-  static const double sm   = 10.0;
-  static const double md   = 16.0;
+  static const double xs = 6.0;
+  static const double sm = 10.0;
+  static const double md = 16.0;
   static const double base = 22.0;
-  static const double lg   = 28.0;
-  static const double xl   = 36.0;
-  static const double xxl  = 48.0;
+  static const double lg = 28.0;
+  static const double xl = 36.0;
+  static const double xxl = 48.0;
 }
 
 abstract final class DesktopFontSize {
-  static const double micro    = 11.0;
-  static const double xs       = 12.0;
-  static const double sm       = 13.0;
-  static const double md       = 14.0;
-  static const double base     = 15.0;
-  static const double lg       = 16.0;
-  static const double xl       = 17.0;
-  static const double xxl      = 20.0;
-  static const double h3       = 22.0;
-  static const double h2       = 24.0;
-  static const double h1       = 28.0;
+  static const double micro = 11.0;
+  static const double xs = 12.0;
+  static const double sm = 13.0;
+  static const double md = 14.0;
+  static const double base = 15.0;
+  static const double lg = 16.0;
+  static const double xl = 17.0;
+  static const double xxl = 20.0;
+  static const double h3 = 22.0;
+  static const double h2 = 24.0;
+  static const double h1 = 28.0;
   static const double display3 = 32.0; // collection titles
   static const double display2 = 40.0; // large display
   static const double display1 = 52.0; // hero display
-  static const double hero     = 60.0; // welcome / splash
+  static const double hero = 60.0; // welcome / splash
 }
 
 abstract final class DesktopIconSize {
@@ -48,16 +48,16 @@ abstract final class DesktopButtonSize {
 }
 
 abstract final class DesktopLayout {
-  static const double topBarHeight       = 64.0;
-  static const double playerBarHeight    = 76.0;
-  static const double sidebarWidth       = 340.0;
-  static const double rightSidebarWidth  = 320.0;
-  static const double playerArtSize      = 52.0;
-  static const double navBtnSize         = 44.0;
-  static const double homeBtnSize        = 44.0;
-  static const double searchMaxWidth     = 420.0;
-  static const double volumeSliderWidth  = 96.0;
-  static const double rightTabBarHeight  = 56.0;
+  static const double topBarHeight = 56.0;
+  static const double playerBarHeight = 88.0;
+  static const double sidebarWidth = 340.0;
+  static const double rightSidebarWidth = 320.0;
+  static const double playerArtSize = 52.0;
+  static const double navBtnSize = 36.0;
+  static const double homeBtnSize = 48.0;
+  static const double searchMaxWidth = 420.0;
+  static const double volumeSliderWidth = 96.0;
+  static const double rightTabBarHeight = 56.0;
 }
 
 // ── Unified token accessor ────────────────────────────────────────────────────
@@ -138,8 +138,10 @@ class _TypographyTokens {
   });
   final FontWeight titleWeight;
   final FontWeight bodyWeight;
+
   /// For h1 / h2 — tighter, more impactful
   final double headingLetterSpacingLg;
+
   /// For h3 and below — relaxed enough to avoid cramping
   final double headingLetterSpacingSm;
   final double bodyLineHeight;
@@ -171,36 +173,37 @@ class AppTokens {
 
   /// Shorthand for secondary text color (desktop: #888, mobile: #B3B3B3)
   Color get secondaryColor => typography.secondaryColor;
+
   /// Shorthand for muted text color (desktop: #666, mobile: #9E9E9E)
   Color get mutedColor => typography.mutedColor;
 
   static const AppTokens _mobile = AppTokens._(
     isDesktop: false,
     spacing: _SpacingTokens(
-      xs:   AppSpacing.xs,
-      sm:   AppSpacing.sm,
-      md:   AppSpacing.md,
+      xs: AppSpacing.xs,
+      sm: AppSpacing.sm,
+      md: AppSpacing.md,
       base: AppSpacing.base,
-      lg:   AppSpacing.lg,
-      xl:   AppSpacing.xl,
-      xxl:  AppSpacing.xxl,
+      lg: AppSpacing.lg,
+      xl: AppSpacing.xl,
+      xxl: AppSpacing.xxl,
     ),
     font: _FontTokens(
-      micro:    AppFontSize.micro,
-      xs:       AppFontSize.xs,
-      sm:       AppFontSize.sm,
-      md:       AppFontSize.md,
-      base:     AppFontSize.base,
-      lg:       AppFontSize.lg,
-      xl:       AppFontSize.xl,
-      xxl:      AppFontSize.xxl,
-      h3:       AppFontSize.h3,
-      h2:       AppFontSize.h2,
-      h1:       AppFontSize.h1,
+      micro: AppFontSize.micro,
+      xs: AppFontSize.xs,
+      sm: AppFontSize.sm,
+      md: AppFontSize.md,
+      base: AppFontSize.base,
+      lg: AppFontSize.lg,
+      xl: AppFontSize.xl,
+      xxl: AppFontSize.xxl,
+      h3: AppFontSize.h3,
+      h2: AppFontSize.h2,
+      h1: AppFontSize.h1,
       display3: AppFontSize.display3,
       display2: AppFontSize.display2,
       display1: AppFontSize.display1,
-      hero:     AppFontSize.hero,
+      hero: AppFontSize.hero,
     ),
     icon: _IconTokens(xs: 14, sm: 16, md: 20, lg: 24, xl: 28),
     button: _ButtonTokens(sm: 32, md: 40, lg: 48),
@@ -218,30 +221,30 @@ class AppTokens {
   static const AppTokens _desktop = AppTokens._(
     isDesktop: true,
     spacing: _SpacingTokens(
-      xs:   DesktopSpacing.xs,
-      sm:   DesktopSpacing.sm,
-      md:   DesktopSpacing.md,
+      xs: DesktopSpacing.xs,
+      sm: DesktopSpacing.sm,
+      md: DesktopSpacing.md,
       base: DesktopSpacing.base,
-      lg:   DesktopSpacing.lg,
-      xl:   DesktopSpacing.xl,
-      xxl:  DesktopSpacing.xxl,
+      lg: DesktopSpacing.lg,
+      xl: DesktopSpacing.xl,
+      xxl: DesktopSpacing.xxl,
     ),
     font: _FontTokens(
-      micro:    DesktopFontSize.micro,
-      xs:       DesktopFontSize.xs,
-      sm:       DesktopFontSize.sm,
-      md:       DesktopFontSize.md,
-      base:     DesktopFontSize.base,
-      lg:       DesktopFontSize.lg,
-      xl:       DesktopFontSize.xl,
-      xxl:      DesktopFontSize.xxl,
-      h3:       DesktopFontSize.h3,
-      h2:       DesktopFontSize.h2,
-      h1:       DesktopFontSize.h1,
+      micro: DesktopFontSize.micro,
+      xs: DesktopFontSize.xs,
+      sm: DesktopFontSize.sm,
+      md: DesktopFontSize.md,
+      base: DesktopFontSize.base,
+      lg: DesktopFontSize.lg,
+      xl: DesktopFontSize.xl,
+      xxl: DesktopFontSize.xxl,
+      h3: DesktopFontSize.h3,
+      h2: DesktopFontSize.h2,
+      h1: DesktopFontSize.h1,
       display3: DesktopFontSize.display3,
       display2: DesktopFontSize.display2,
       display1: DesktopFontSize.display1,
-      hero:     DesktopFontSize.hero,
+      hero: DesktopFontSize.hero,
     ),
     icon: _IconTokens(
       xs: DesktopIconSize.xs,

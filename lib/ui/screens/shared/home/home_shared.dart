@@ -6,12 +6,12 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/player/now_playing_indicator.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Circular play button used in section headers and action rows.
-/// Provides consistent size, color, and press feedback everywhere.
+/// Default size matches [HomeSectionNavIcon] (32) so play aligns with prev/next on home.
+/// Pass [size] / [iconSize] for larger affordances (e.g. playlist hero).
 class PlayCircleButton extends StatefulWidget {
   const PlayCircleButton({
     super.key,
@@ -33,9 +33,8 @@ class _PlayCircleButtonState extends State<PlayCircleButton> {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
-    final size = widget.size ?? t.spacing.xxl;
-    final iconSize = widget.iconSize ?? t.icon.sm;
+    final size = widget.size ?? 32;
+    final iconSize = widget.iconSize ?? 16;
 
     return GestureDetector(
       onTap: widget.onTap,
@@ -43,8 +42,8 @@ class _PlayCircleButtonState extends State<PlayCircleButton> {
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
-        scale: _pressed ? 0.88 : 1.0,
-        duration: AppDuration.fast,
+        scale: _pressed ? 0.92 : 1.0,
+        duration: AppDuration.normal,
         curve: Curves.easeOut,
         child: Container(
           width: size,
@@ -59,6 +58,85 @@ class _PlayCircleButtonState extends State<PlayCircleButton> {
               size: iconSize,
               color: Colors.white,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Prev/next pager controls used in home section headers (shared with loading skeletons).
+class HomeSectionNavButtonPair extends StatelessWidget {
+  const HomeSectionNavButtonPair({
+    super.key,
+    required this.pageCtrl,
+    required this.currentPage,
+    this.totalPages = 2,
+  });
+
+  final PageController pageCtrl;
+  final int currentPage;
+  final int totalPages;
+
+  void _go(int page) => pageCtrl.animateToPage(
+        page,
+        duration: AppDuration.normal,
+        curve: Curves.easeInOut,
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        HomeSectionNavIcon(
+          icon: AppIcons.back,
+          enabled: currentPage > 0,
+          onTap: () => _go(currentPage - 1),
+        ),
+        const SizedBox(width: AppSpacing.xs),
+        HomeSectionNavIcon(
+          icon: AppIcons.forward,
+          enabled: currentPage < totalPages - 1,
+          onTap: () => _go(currentPage + 1),
+        ),
+      ],
+    );
+  }
+}
+
+class HomeSectionNavIcon extends StatelessWidget {
+  const HomeSectionNavIcon({
+    super.key,
+    required this.icon,
+    required this.onTap,
+    this.enabled = true,
+  });
+
+  final List<List<dynamic>> icon;
+  final VoidCallback onTap;
+  final bool enabled;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      child: Container(
+        width: 32,
+        height: 32,
+        decoration: BoxDecoration(
+          color: enabled
+              ? AppColorsScheme.of(context).surface
+              : AppColorsScheme.of(context).surface.withValues(alpha: 0.4),
+          shape: BoxShape.circle,
+        ),
+        child: Center(
+          child: AppIcon(
+            icon: icon,
+            size: 16,
+            color: enabled
+                ? AppColorsScheme.of(context).textPrimary
+                : AppColorsScheme.of(context).textMuted,
           ),
         ),
       ),
@@ -105,7 +183,7 @@ class _PressScaleState extends State<PressScale> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
         scale: reduceMotion ? 1.0 : (_pressed ? widget.scale : 1.0),
-        duration: reduceMotion ? AppDuration.instant : AppDuration.fast,
+        duration: reduceMotion ? AppDuration.instant : AppDuration.normal,
         curve: AppCurves.decelerate,
         child: widget.child,
       ),
@@ -124,7 +202,10 @@ class PlaceholderArt extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColorsScheme.of(context).surfaceHighlight, AppColorsScheme.of(context).surfaceLight],
+          colors: [
+            AppColorsScheme.of(context).surfaceHighlight,
+            AppColorsScheme.of(context).surfaceLight
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -135,30 +216,6 @@ class PlaceholderArt extends StatelessWidget {
           color: AppColorsScheme.of(context).textMuted,
           size: 36,
         ),
-      ),
-    );
-  }
-}
-
-class SkeletonBox extends StatelessWidget {
-  const SkeletonBox({
-    super.key,
-    required this.width,
-    required this.height,
-    required this.radius,
-  });
-  final double width;
-  final double height;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: width,
-      height: height,
-      decoration: BoxDecoration(
-        color: AppColorsScheme.of(context).surfaceHighlight,
-        borderRadius: BorderRadius.circular(radius),
       ),
     );
   }
@@ -265,7 +322,7 @@ class DpiAwareThumbnail extends StatelessWidget {
   Widget build(BuildContext context) {
     final dpr = MediaQuery.devicePixelRatioOf(context);
     final cacheSize = (size * dpr).round();
-    
+
     // PERF: ClipRRect (1 render object) replaces Container+BoxDecoration+clipBehavior (3+).
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),

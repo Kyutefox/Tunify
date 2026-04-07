@@ -32,10 +32,10 @@ class LibraryThumbnailTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadius.sm),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: EdgeInsets.symmetric(
-              vertical: t.spacing.sm, horizontal: t.spacing.sm),
+              vertical: t.spacing.xs, horizontal: t.spacing.sm),
           child: Row(
             children: [
               icon != null
@@ -52,9 +52,9 @@ class LibraryThumbnailTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textPrimary,
-                        fontSize: AppFontSize.lg,
+                        fontSize: AppFontSize.base,
                         fontWeight:
-                            t.isDesktop ? FontWeight.w700 : FontWeight.w600,
+                            t.isDesktop ? FontWeight.w600 : FontWeight.w600,
                       ),
                     ),
                     Text(
@@ -63,7 +63,7 @@ class LibraryThumbnailTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textMuted,
-                        fontSize: AppFontSize.md,
+                        fontSize: AppFontSize.sm,
                       ),
                     ),
                   ],
@@ -76,7 +76,7 @@ class LibraryThumbnailTile extends StatelessWidget {
     );
 
     if (t.isDesktop) {
-      return HoverTile(borderRadius: AppRadius.sm, child: tile);
+      return HoverTile(borderRadius: AppRadius.md, child: tile);
     }
     return tile;
   }
@@ -89,7 +89,7 @@ class _IconThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final size = t.isDesktop ? 44.0 : 52.0;
+    final size = t.isDesktop ? 48.0 : 52.0;
     return Container(
       width: size,
       height: size,
@@ -98,8 +98,10 @@ class _IconThumb extends StatelessWidget {
         borderRadius: BorderRadius.circular(AppRadius.sm),
       ),
       child: Center(
-        child:
-            AppIcon(icon: icon, color: AppColorsScheme.of(context).textMuted, size: size * 0.5),
+        child: AppIcon(
+            icon: icon,
+            color: AppColorsScheme.of(context).textMuted,
+            size: size * 0.5),
       ),
     );
   }
@@ -114,7 +116,7 @@ class _Thumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final size = t.isDesktop ? 44.0 : 52.0;
+    final size = t.isDesktop ? 48.0 : 52.0;
     return ClipRRect(
       borderRadius: BorderRadius.circular(isCircle ? size / 2 : AppRadius.sm),
       child: Container(

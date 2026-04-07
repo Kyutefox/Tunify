@@ -223,7 +223,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   ShuffleMode _ephemeralShuffleMode = ShuffleMode.none;
   bool _exporting = false;
 
-  // Pagination state (podcasts = manual load-more; others = background auto-load)
+  // Pagination state for remote collections (including podcast/audiobook feeds).
   String? _continuationToken;
   bool _loadingMore = false;
   bool _hasMore = true;
@@ -257,11 +257,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     // never shows a loading screen for already-available data.
     _initSync();
 
-    // Setup scroll listener for pagination (podcasts only)
-    if (widget._isPodcast) {
-      _scrollController.addListener(_onScroll);
-    }
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startAfterTransition();
     });
@@ -271,19 +266,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (!widget._isPodcast || !_hasMore || _loadingMore) return;
-
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
-    final delta = maxScroll - currentScroll;
-
-    // Load more when within 500 pixels of the bottom
-    if (delta < 500) {
-      _loadMoreEpisodes();
-    }
   }
 
   /// Runs synchronously in initState (before first build).
@@ -544,52 +526,67 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             : pl.coverUrl);
       }
 
-      // For podcasts, even if cached, we need to check if there's more content
-      if (widget._isPodcast && entry.songs.length >= 100) {
-        _hasMore = true;
-        _fetchContinuationToken(pl.id);
-      }
       // For regular playlists: cache may have been populated with fewer tracks
       // (e.g. from a previous version). Invalidate and do a silent full re-fetch.
-      if (!widget._isPodcast) {
-        CollectionTrackCache.instance.invalidate(pl.id);
-        // fall through to fresh fetch below (silent so no loading spinner)
-      } else {
-        return;
-      }
+      CollectionTrackCache.instance.invalidate(pl.id);
+      // fall through to fresh fetch below (silent so no loading spinner)
     }
     if (!silent) _setLoading();
     try {
-      // For podcasts, use pagination-aware fetching
+      // Podcasts/audiobooks use the same progressive loading behavior as playlists:
+      // first page renders immediately, then continuation pages stream in automatically.
       if (widget._isPodcast) {
-        final result = await ref
-            .read(streamManagerProvider)
-            .fetchPlaylistTracksWithContinuation(pl.id, maxTracks: 200);
-        if (!mounted) return;
-        final songs = result.tracks.map(Song.fromTrack).toList();
         final imageUrl = pl.coverUrl.isEmpty ? null : pl.coverUrl;
-
-        // Store continuation token for pagination
-        _continuationToken = result.continuationToken;
-        _hasMore = result.continuationToken != null;
-
-        CollectionTrackCache.instance.put(pl.id, songs, imageUrl: imageUrl);
-        final color = await _extractPaletteColor(
-            imageUrl ?? songs.firstOrNull?.thumbnailUrl);
-        if (!mounted) return;
-        setState(() {
-          if (color != null) _paletteColor = color;
-          _remoteAsLocal = _makePlaylist(
-            id: pl.id,
-            name: pl.title,
-            description: pl.curatorName ?? pl.description,
-            songs: songs,
-            imageUrl: imageUrl,
-          );
-        });
-        if (color != null) {
-          CollectionTrackCache.instance.updatePalette(pl.id, color);
-        }
+        _backgroundLoadCancelled = false;
+        await ref.read(streamManagerProvider).fetchCollectionTracksProgressive(
+          pl.id,
+          onFirstPage: (firstBatch, token) async {
+            if (!mounted || _backgroundLoadCancelled) return;
+            final songs = firstBatch.map(Song.fromTrack).toList();
+            CollectionTrackCache.instance.put(pl.id, songs, imageUrl: imageUrl);
+            final color = await _extractPaletteColor(
+                imageUrl ?? songs.firstOrNull?.thumbnailUrl);
+            if (!mounted || _backgroundLoadCancelled) return;
+            setState(() {
+              _continuationToken = token;
+              _hasMore = token != null;
+              _loadingMore = token != null;
+              if (color != null) _paletteColor = color;
+              _remoteAsLocal = _makePlaylist(
+                id: pl.id,
+                name: pl.title,
+                description: pl.curatorName ?? pl.description,
+                songs: songs,
+                imageUrl: imageUrl,
+              );
+            });
+            if (color != null) {
+              CollectionTrackCache.instance.updatePalette(pl.id, color);
+            }
+          },
+          onMoreLoaded: (batch, token) {
+            if (!mounted || _backgroundLoadCancelled) return;
+            final newSongs = batch.map(Song.fromTrack).toList();
+            setState(() {
+              _continuationToken = token;
+              _hasMore = token != null;
+              _loadingMore = token != null;
+              if (_remoteAsLocal != null) {
+                final updated = [..._remoteAsLocal!.songs, ...newSongs];
+                _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
+                CollectionTrackCache.instance
+                    .put(pl.id, updated, imageUrl: imageUrl);
+              }
+            });
+          },
+          onDone: () {
+            if (!mounted || _backgroundLoadCancelled) return;
+            setState(() {
+              _hasMore = false;
+              _loadingMore = false;
+            });
+          },
+        );
       } else {
         // Regular playlist — progressive loading: show first page immediately,
         // then append remaining pages in background.
@@ -635,62 +632,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
     } catch (e) {
       if (!silent) _setError(e);
-    }
-  }
-
-  Future<void> _fetchContinuationToken(String browseId) async {
-    try {
-      // Fetch just to get the continuation token
-      final result = await ref
-          .read(streamManagerProvider)
-          .fetchPlaylistTracksWithContinuation(browseId, maxTracks: 100);
-      if (mounted) {
-        setState(() {
-          _continuationToken = result.continuationToken;
-          _hasMore = result.continuationToken != null;
-        });
-      }
-    } catch (e) {
-      // Failed to fetch continuation token
-    }
-  }
-
-  Future<void> _loadMoreEpisodes() async {
-    if (_loadingMore ||
-        !_hasMore ||
-        _continuationToken == null ||
-        !widget._isPodcast) return;
-
-    setState(() => _loadingMore = true);
-
-    try {
-      final pl = widget.remotePlaylist!;
-      final result = await ref
-          .read(streamManagerProvider)
-          .fetchPlaylistTracksWithContinuation(
-            pl.id,
-            continuationToken: _continuationToken,
-            maxTracks: 100,
-          );
-
-      if (!mounted) return;
-
-      final newSongs = result.tracks.map(Song.fromTrack).toList();
-      _continuationToken = result.continuationToken;
-      _hasMore = result.continuationToken != null;
-
-      setState(() {
-        if (_remoteAsLocal != null) {
-          _remoteAsLocal = _remoteAsLocal!.copyWith(
-            songs: [..._remoteAsLocal!.songs, ...newSongs],
-          );
-        }
-        _loadingMore = false;
-      });
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loadingMore = false);
-      }
     }
   }
 

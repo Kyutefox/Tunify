@@ -33,6 +33,14 @@ import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/device/device_music_provider.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
+String _typedSubtitle(String type, String currentSubtitle) {
+  final subtitle = currentSubtitle.trim();
+  if (subtitle.isEmpty || subtitle.toLowerCase() == type.toLowerCase()) {
+    return type;
+  }
+  return '$type • $subtitle';
+}
+
 class LibraryScreen extends ConsumerStatefulWidget {
   const LibraryScreen({super.key});
 
@@ -187,7 +195,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             .map(
               (p) => MediaLibraryEntry(
                 title: p.title,
-                subtitle: p.author ?? 'Podcast',
+                subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
                 thumbnailUrl: p.thumbnailUrl,
                 placeholderIcon: AppIcons.podcast,
                 showPinIndicator: p.isPinned,
@@ -222,7 +230,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             .map(
               (a) => MediaLibraryEntry(
                 title: a.title,
-                subtitle: a.author ?? 'Audiobook',
+                subtitle: 'Audiobook',
                 thumbnailUrl: a.thumbnailUrl,
                 placeholderIcon: AppIcons.bookOpen,
                 showPinIndicator: a.isPinned,
@@ -257,7 +265,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             .map(
               (album) => MediaLibraryEntry(
                 title: album.title,
-                subtitle: album.artistName,
+                subtitle: _typedSubtitle('Album', album.artistName),
                 thumbnailUrl: album.thumbnailUrl,
                 placeholderIcon: AppIcons.album,
                 showPinIndicator: album.isPinned,
@@ -324,7 +332,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             .map(
           (p) => MediaLibraryEntry(
             title: p.title,
-            subtitle: p.author ?? 'Podcast',
+            subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
             thumbnailUrl: p.thumbnailUrl,
             placeholderIcon: AppIcons.podcast,
             showPinIndicator: p.isPinned,
@@ -359,7 +367,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             .map(
           (a) => MediaLibraryEntry(
             title: a.title,
-            subtitle: a.author ?? 'Audiobook',
+            subtitle: 'Audiobook',
             thumbnailUrl: a.thumbnailUrl,
             placeholderIcon: AppIcons.bookOpen,
             showPinIndicator: a.isPinned,
@@ -394,7 +402,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             .map(
               (album) => MediaLibraryEntry(
                 title: album.title,
-                subtitle: album.artistName,
+                subtitle: _typedSubtitle('Album', album.artistName),
                 thumbnailUrl: album.thumbnailUrl,
                 placeholderIcon: AppIcons.album,
                 showPinIndicator: album.isPinned,
@@ -656,7 +664,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     switch (_contentFilter) {
       case LibraryFilter.all:
       case null:
-      case LibraryFilter.playlists:
         final folders = ref.watch(libraryFoldersProvider);
         final folder = _selectedFolder(folders);
         final List<LibrarySectionEntry> entries;
@@ -713,6 +720,82 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         ];
 
         return slivers;
+      case LibraryFilter.playlists:
+        final entries = _buildSectionEntries(
+          includeLikedSongs: false,
+          folders: const <LibraryFolder>[],
+          rootPlaylists: rootPlaylists,
+          sortOrder: sortOrder,
+        );
+        if (entries.isEmpty) {
+          return [
+            SliverFillRemaining(
+              child: LibraryFilterPlaceholder(
+                icon: AppIcons.playlist,
+                message: 'Playlists you create will appear here',
+              ),
+            ),
+          ];
+        }
+        return [
+          SliverToBoxAdapter(
+            child: LibraryPlaylistsSection(
+              entries: entries,
+              viewMode: viewMode,
+              onPlaylistTap: _onPlaylistTap,
+              onPlaylistOptions: _onPlaylistOptions,
+              onFolderTap: _onFolderTap,
+              onFolderOptions: _onFolderOptions,
+            ),
+          ),
+        ];
+      case LibraryFilter.folders:
+        final folders = ref.watch(libraryFoldersProvider);
+        final folder = _selectedFolder(folders);
+        if (folder != null) {
+          final entries = buildSortedFolderSectionEntries(
+            context: context,
+            ref: ref,
+            folder: folder,
+            library: ref.watch(libraryProvider),
+            sortOrder: sortOrder,
+          );
+          return [
+            SliverToBoxAdapter(
+              child: LibraryPlaylistsSection(
+                entries: entries,
+                viewMode: viewMode,
+                onPlaylistTap: _onPlaylistTap,
+                onPlaylistOptions: _onPlaylistOptions,
+                onFolderTap: _onFolderTap,
+                onFolderOptions: _onFolderOptions,
+                isFolderView: true,
+              ),
+            ),
+          ];
+        }
+        if (folders.isEmpty) {
+          return [
+            SliverFillRemaining(
+              child: LibraryFilterPlaceholder(
+                icon: AppIcons.folder,
+                message: 'Folders you create will appear here',
+              ),
+            ),
+          ];
+        }
+        return [
+          SliverToBoxAdapter(
+            child: LibraryPlaylistsSection(
+              entries: folders.map(FolderEntry.new).toList(),
+              viewMode: viewMode,
+              onPlaylistTap: _onPlaylistTap,
+              onPlaylistOptions: _onPlaylistOptions,
+              onFolderTap: _onFolderTap,
+              onFolderOptions: _onFolderOptions,
+            ),
+          ),
+        ];
       case LibraryFilter.podcasts:
         final podcasts = ref.watch(podcastSubscriptionsProvider);
         if (podcasts.isEmpty) {
@@ -797,7 +880,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                   final audiobook = audiobooks[index];
                   return LibraryItemTile(
                     title: audiobook.title,
-                    subtitle: audiobook.author ?? 'Audiobook',
+                    subtitle: 'Audiobook',
                     thumbnailUrl: audiobook.thumbnailUrl,
                     placeholderIcon: AppIcons.bookOpen,
                     onTap: () {
@@ -1050,7 +1133,7 @@ class _FollowedAlbumsList extends ConsumerWidget {
         final album = albums[index];
         return LibraryItemTile(
           title: album.title,
-          subtitle: album.artistName,
+          subtitle: _typedSubtitle('Album', album.artistName),
           thumbnailUrl: album.thumbnailUrl,
           placeholderIcon: AppIcons.album,
           showPinIndicator: album.isPinned,
@@ -1098,7 +1181,7 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
         return MediaLibraryGridCard(
           entry: MediaLibraryEntry(
             title: album.title,
-            subtitle: album.artistName,
+            subtitle: _typedSubtitle('Album', album.artistName),
             thumbnailUrl: album.thumbnailUrl,
             placeholderIcon: AppIcons.album,
             showPinIndicator: album.isPinned,
@@ -1756,7 +1839,7 @@ List<LibrarySectionEntry> buildSortedFolderSectionEntries({
       raw.add(
         MediaLibraryEntry(
           title: album.title,
-          subtitle: album.artistName,
+          subtitle: _typedSubtitle('Album', album.artistName),
           thumbnailUrl: album.thumbnailUrl,
           placeholderIcon: AppIcons.album,
           showPinIndicator: album.isPinned,

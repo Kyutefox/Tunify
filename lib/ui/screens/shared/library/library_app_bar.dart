@@ -13,6 +13,7 @@ import 'package:tunify/ui/theme/app_colors_scheme.dart';
 enum LibraryFilter {
   all,
   playlists,
+  folders,
   podcasts,
   audiobooks,
   albums,
@@ -26,6 +27,8 @@ extension LibraryFilterX on LibraryFilter {
         return 'All';
       case LibraryFilter.playlists:
         return 'Playlists';
+      case LibraryFilter.folders:
+        return 'Folders';
       case LibraryFilter.podcasts:
         return 'Podcasts';
       case LibraryFilter.audiobooks:

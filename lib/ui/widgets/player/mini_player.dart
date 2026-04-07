@@ -98,32 +98,61 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
     return GestureDetector(
       onTap: _openFullPlayer,
       onVerticalDragUpdate: (d) {
-        _dragY += d.delta.dy;
+        final nextY = (_dragY + d.delta.dy).clamp(-80.0, 120.0);
+        final shouldOpen = nextY < -24;
 
-        if (_dragY < 0) {
-          // Upward drag: fire a one-shot selection haptic at 8px to signal
-          // the gesture is being recognized, before the route commits at 24px.
-          if (!_didTriggerOpenHaptic && _dragY < -8) {
-            _didTriggerOpenHaptic = true;
-            HapticFeedback.selectionClick();
-          }
-          // Scale preview: linearly map 0–50px of upward drag to 0–3% scale.
-          final upPx = (-_dragY).clamp(0.0, 50.0);
-          final newScale = upPx / 50.0;
-          if ((newScale - _dragScale).abs() > 0.01) {
-            setState(() => _dragScale = newScale);
-          }
-          if (_dragY < -24) {
-            _openFullPlayer();
+        if (!shouldOpen &&
+            !_didTriggerOpenHaptic &&
+            nextY < -8) {
+          _didTriggerOpenHaptic = true;
+          HapticFeedback.selectionClick();
+        }
+
+        setState(() {
+          if (shouldOpen) {
             _dragY = 0;
+            _dragScale = 0;
+            _dragOpacity = 1.0;
+          } else {
+            _dragY = nextY;
+            if (_dragY < 0) {
+              final upPx = (-_dragY).clamp(0.0, 50.0);
+              _dragScale = upPx / 50.0;
+              _dragOpacity = 1.0;
+            } else if (_dragY > 0) {
+              _dragScale = 0;
+              _dragOpacity =
+                  (1.0 - (_dragY / 120.0) * 0.35).clamp(0.65, 1.0);
+            } else {
+              _dragScale = 0;
+              _dragOpacity = 1.0;
+            }
           }
+        });
+
+        if (shouldOpen) {
+          _didTriggerOpenHaptic = false;
+          _openFullPlayer();
         }
       },
-      onVerticalDragEnd: (_) {
-        _dragY = 0;
+      onVerticalDragEnd: (d) {
+        final vy = d.primaryVelocity ?? 0;
+        const dismissDistance = 48.0;
+        const flingDismissVy = 400.0;
+        final dismiss = _dragY > dismissDistance || vy > flingDismissVy;
+
+        if (dismiss) {
+          HapticFeedback.mediumImpact();
+          ref.read(playerProvider.notifier).clearCurrentSong();
+        }
+
+        if (!mounted) return;
+        setState(() {
+          _dragY = 0;
+          _dragScale = 0;
+          _dragOpacity = 1.0;
+        });
         _didTriggerOpenHaptic = false;
-        if (_dragScale > 0) setState(() => _dragScale = 0.0);
-        if (_dragOpacity < 1.0) setState(() => _dragOpacity = 1.0);
       },
       onHorizontalDragUpdate: (d) {
         _dragX += d.delta.dx;
@@ -177,8 +206,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
                     0.03, // Only scale on intentional drag up, not swipe gestures
             // Add horizontal translation feedback for swipe gestures
             child: Transform.translate(
-              offset: Offset(
-                  _dragX * 0.2, 0), // Only horizontal movement, no vertical
+              offset: Offset(_dragX * 0.2, _dragY > 0 ? _dragY : 0),
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeOutCubic,

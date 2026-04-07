@@ -31,6 +31,14 @@ import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 const double kDesktopSidebarWidth = 340.0;
 
+String _typedSubtitle(String type, String currentSubtitle) {
+  final subtitle = currentSubtitle.trim();
+  if (subtitle.isEmpty || subtitle.toLowerCase() == type.toLowerCase()) {
+    return type;
+  }
+  return '$type • $subtitle';
+}
+
 /// Library-only left sidebar for the macOS desktop layout.
 ///
 /// Reuses the exact same components as the mobile library:
@@ -125,6 +133,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
     // ── Filter + sort playlists/folders ────────────────────────────────
     final showAll = _filter == null;
     final showPlaylists = showAll || _filter == LibraryFilter.playlists;
+    final showFolders = showAll || _filter == LibraryFilter.folders;
     final showPodcasts = showAll || _filter == LibraryFilter.podcasts;
     final showAudiobooks = showAll || _filter == LibraryFilter.audiobooks;
     final showAlbums = showAll || _filter == LibraryFilter.albums;
@@ -138,8 +147,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
 
     final isPlaylistsFilter = _filter == LibraryFilter.playlists;
 
-    // Folders are hidden when the Playlists filter is active (matches mobile).
-    final folders = showAll
+    final folders = showFolders
         ? library.sortedFolders
             .where((f) => q.isEmpty || f.name.toLowerCase().contains(q))
             .toList()
@@ -185,8 +193,9 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
           onTap: () =>
               widget.onNavigateTo(const LibraryPlaylistScreen.localFiles()),
         ),
-      ...folders.map(FolderEntry.new),
-      ...rootPlaylists.map(PlaylistEntry.new),
+      if (_filter == LibraryFilter.folders) ...folders.map(FolderEntry.new),
+      if (_filter == LibraryFilter.playlists)
+        ...rootPlaylists.map(PlaylistEntry.new),
     ];
 
     final rawAlbums = showAlbums
@@ -279,7 +288,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
       ...podcasts.where((p) => p.isPinned).map(
             (p) => MediaLibraryEntry(
               title: p.title,
-              subtitle: p.author ?? 'Podcast',
+              subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
               thumbnailUrl: p.thumbnailUrl,
               placeholderIcon: AppIcons.podcast,
               showPinIndicator: p.isPinned,
@@ -314,7 +323,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
       ...audiobooks.where((a) => a.isPinned).map(
             (a) => MediaLibraryEntry(
               title: a.title,
-              subtitle: a.author ?? 'Audiobook',
+              subtitle: 'Audiobook',
               thumbnailUrl: a.thumbnailUrl,
               placeholderIcon: AppIcons.bookOpen,
               showPinIndicator: a.isPinned,
@@ -349,7 +358,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
       ...visibleAlbums.where((a) => a.isPinned).map(
             (a) => MediaLibraryEntry(
               title: a.title,
-              subtitle: a.artistName,
+              subtitle: _typedSubtitle('Album', a.artistName),
               thumbnailUrl: a.thumbnailUrl.isNotEmpty ? a.thumbnailUrl : null,
               placeholderIcon: AppIcons.album,
               showPinIndicator: a.isPinned,
@@ -390,7 +399,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
       ...podcasts.where((p) => !p.isPinned).map(
             (p) => MediaLibraryEntry(
               title: p.title,
-              subtitle: p.author ?? 'Podcast',
+              subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
               thumbnailUrl: p.thumbnailUrl,
               placeholderIcon: AppIcons.podcast,
               showPinIndicator: p.isPinned,
@@ -425,7 +434,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
       ...audiobooks.where((a) => !a.isPinned).map(
             (a) => MediaLibraryEntry(
               title: a.title,
-              subtitle: a.author ?? 'Audiobook',
+              subtitle: 'Audiobook',
               thumbnailUrl: a.thumbnailUrl,
               placeholderIcon: AppIcons.bookOpen,
               showPinIndicator: a.isPinned,
@@ -460,7 +469,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
       ...visibleAlbums.where((a) => !a.isPinned).map(
             (a) => MediaLibraryEntry(
               title: a.title,
-              subtitle: a.artistName,
+              subtitle: _typedSubtitle('Album', a.artistName),
               thumbnailUrl: a.thumbnailUrl.isNotEmpty ? a.thumbnailUrl : null,
               placeholderIcon: AppIcons.album,
               showPinIndicator: a.isPinned,
@@ -617,6 +626,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                 onFilterChanged: _onFilterChanged,
                 filters: const [
                   LibraryFilter.playlists,
+                  LibraryFilter.folders,
                   LibraryFilter.podcasts,
                   LibraryFilter.audiobooks,
                   LibraryFilter.albums,
@@ -839,6 +849,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                   ? AppIcons.album
                                   : _filter == LibraryFilter.podcasts
                                       ? AppIcons.podcast
+                                      : _filter == LibraryFilter.folders
+                                          ? AppIcons.folder
                                       : _filter == LibraryFilter.audiobooks
                                           ? AppIcons.bookOpen
                                   : _filter == LibraryFilter.artists
@@ -846,6 +858,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                       : AppIcons.playlist,
                               message: _filter == LibraryFilter.playlists
                                   ? 'Playlists you create will appear here'
+                                  : _filter == LibraryFilter.folders
+                                      ? 'Folders you create will appear here'
                                   : _filter == LibraryFilter.podcasts
                                       ? 'Podcasts you save will appear here'
                                       : _filter == LibraryFilter.audiobooks
@@ -956,7 +970,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                             0),
                                         child: LibraryItemTile(
                                           title: p.title,
-                                          subtitle: p.author ?? 'Podcast',
+                                          subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
                                           thumbnailUrl: p.thumbnailUrl,
                                           placeholderIcon: AppIcons.podcast,
                                           onTap: () => widget.onNavigateTo(
@@ -1002,7 +1016,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                             0),
                                         child: LibraryItemTile(
                                           title: a.title,
-                                          subtitle: a.author ?? 'Audiobook',
+                                          subtitle: 'Audiobook',
                                           thumbnailUrl: a.thumbnailUrl,
                                           placeholderIcon: AppIcons.bookOpen,
                                           onTap: () => widget.onNavigateTo(
@@ -1048,7 +1062,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                             0),
                                         child: LibraryItemTile(
                                           title: a.title,
-                                          subtitle: a.artistName,
+                                          subtitle: _typedSubtitle('Album', a.artistName),
                                           thumbnailUrl: a.thumbnailUrl.isNotEmpty
                                               ? a.thumbnailUrl
                                               : null,

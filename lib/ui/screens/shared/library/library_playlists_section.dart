@@ -16,6 +16,14 @@ import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/core/utils/string_utils.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
+String _typedSubtitle(String type, String currentSubtitle) {
+  final subtitle = currentSubtitle.trim();
+  if (subtitle.isEmpty || subtitle.toLowerCase() == type.toLowerCase()) {
+    return type;
+  }
+  return '$type • $subtitle';
+}
+
 /// Shared playlist cover thumbnail used in both list and grid views.
 /// Respects [customImageUrl] first, then falls back to song art mosaic.
 class PlaylistCoverThumbnail extends StatelessWidget {
@@ -638,7 +646,7 @@ class _LibraryPlaylistGridCardState extends State<_LibraryPlaylistGridCard> {
                 ],
               ),
               Text(
-                playlist.trackCountLabel,
+                _typedSubtitle('Playlist', playlist.trackCountLabel),
                 style: TextStyle(
                   color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.xs,
@@ -830,9 +838,12 @@ class _LibraryFolderListTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      folder.playlistCount == 0
-                          ? 'No playlists'
-                          : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
+                      _typedSubtitle(
+                        'Folder',
+                        folder.playlistCount == 0
+                            ? 'No playlists'
+                            : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
+                      ),
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.md,
@@ -1295,7 +1306,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      playlist.trackCountLabel,
+                      _typedSubtitle('Playlist', playlist.trackCountLabel),
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.md,

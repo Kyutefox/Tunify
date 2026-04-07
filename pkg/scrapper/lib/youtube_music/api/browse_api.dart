@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:scrapper/models/playlist_browse_meta.dart';
 import 'package:scrapper/models/related_feed.dart';
 import 'package:scrapper/models/track.dart';
 import 'package:scrapper/youtube_music/client/yt_music_client.dart';
@@ -189,7 +190,12 @@ class BrowseApi {
   /// The [browseId] corresponds to a playlist or album page and [params]
   /// carries additional server‑side filters. The number of returned [Track]s
   /// per page is capped by [maxTracks].
-  Future<({List<Track> tracks, String? continuationToken})> fetchPlaylistOrAlbumWithContinuation(
+  Future<
+      ({
+        List<Track> tracks,
+        String? continuationToken,
+        PlaylistBrowseMeta? playlistBrowseMeta,
+      })> fetchPlaylistOrAlbumWithContinuation(
     String browseId, {
     String? params,
     String? continuationToken,
@@ -199,8 +205,10 @@ class BrowseApi {
       final payload = <String, dynamic>{
         'context': _client.context(),
       };
-      
-      if (continuationToken != null && continuationToken.isNotEmpty) {
+      final bool isContinuationRequest =
+          continuationToken != null && continuationToken.isNotEmpty;
+
+      if (isContinuationRequest) {
         payload['continuation'] = continuationToken;
       } else {
         payload['browseId'] = browseId;
@@ -208,13 +216,24 @@ class BrowseApi {
           payload['params'] = params;
         }
       }
-      
+
       final data = await _client.post('browse', payload);
       final tracks = BrowseFormatter.extractTracksFromBrowseData(data, maxResults: maxTracks);
       final nextToken = BrowseFormatter.extractBrowseContinuationToken(data);
-      return (tracks: tracks, continuationToken: nextToken);
+      final PlaylistBrowseMeta? meta = !isContinuationRequest
+          ? BrowseFormatter.extractPlaylistBrowseMeta(data)
+          : null;
+      return (
+        tracks: tracks,
+        continuationToken: nextToken,
+        playlistBrowseMeta: meta,
+      );
     } catch (e) {
-      return (tracks: <Track>[], continuationToken: null);
+      return (
+        tracks: <Track>[],
+        continuationToken: null,
+        playlistBrowseMeta: null,
+      );
     }
   }
 

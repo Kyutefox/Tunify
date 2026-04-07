@@ -870,7 +870,12 @@ class MusicStreamManager {
     }
   }
 
-  Future<({List<Track> tracks, String? continuationToken})> fetchPlaylistTracksWithContinuation(
+  Future<
+      ({
+        List<Track> tracks,
+        String? continuationToken,
+        scrapper.PlaylistBrowseMeta? playlistBrowseMeta,
+      })> fetchPlaylistTracksWithContinuation(
     String browseId, {
     String? continuationToken,
     int maxTracks = 200,
@@ -884,9 +889,14 @@ class MusicStreamManager {
       return (
         tracks: result.tracks.map(_scrapperTrackToApp).toList(),
         continuationToken: result.continuationToken,
+        playlistBrowseMeta: result.playlistBrowseMeta,
       );
     } catch (_) {
-      return (tracks: <Track>[], continuationToken: null);
+      return (
+        tracks: <Track>[],
+        continuationToken: null,
+        playlistBrowseMeta: null,
+      );
     }
   }
 
@@ -907,7 +917,11 @@ class MusicStreamManager {
   Future<void> fetchCollectionTracksProgressive(
     String browseId, {
     String? params,
-    required void Function(List<Track> firstBatch, String? continuationToken) onFirstPage,
+    required void Function(
+      List<Track> firstBatch,
+      String? continuationToken, [
+      scrapper.PlaylistBrowseMeta? browseMeta,
+    ]) onFirstPage,
     required void Function(List<Track> batch, String? continuationToken) onMoreLoaded,
     required void Function() onDone,
     int maxTracks = 5000,
@@ -920,7 +934,11 @@ class MusicStreamManager {
         maxTracks: maxTracks,
       );
       final firstBatch = firstResult.tracks.map(_scrapperTrackToApp).toList();
-      onFirstPage(firstBatch, firstResult.continuationToken);
+      onFirstPage(
+        firstBatch,
+        firstResult.continuationToken,
+        firstResult.playlistBrowseMeta,
+      );
 
       // Background continuation loop.
       var token = firstResult.continuationToken;

@@ -4,6 +4,7 @@ library;
 
 export 'constants/youtube_constants.dart';
 export 'youtube_music/formatters/search_formatter.dart';
+export 'models/playlist_browse_meta.dart';
 export 'models/related_feed.dart';
 export 'models/track.dart';
 export 'models/youtube_stream.dart';

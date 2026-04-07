@@ -345,10 +345,19 @@ class LibraryNotifier extends Notifier<LibraryState> {
   Future<void> addPlaylistToLibrary(LibraryPlaylist playlist) async {
     if (state.playlists.any((p) => p.id == playlist.id)) return;
     final minimal = LibraryPlaylist(
-      id: playlist.id, name: playlist.name, description: playlist.description,
-      createdAt: DateTime.now(), updatedAt: DateTime.now(), songs: const [],
+      id: playlist.id,
+      name: playlist.name,
+      description: playlist.description,
+      curatorName: playlist.curatorName,
+      curatorThumbnailUrl: playlist.curatorThumbnailUrl,
+      headerSubtitle: playlist.headerSubtitle,
+      headerSecondSubtitle: playlist.headerSecondSubtitle,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      songs: const [],
       customImageUrl: playlist.customImageUrl,
-      isImported: true, browseId: playlist.browseId ?? playlist.id,
+      isImported: true,
+      browseId: playlist.browseId ?? playlist.id,
       remoteTrackCount: playlist.songs.isNotEmpty
           ? playlist.songs.length
           : playlist.remoteTrackCount,
@@ -368,6 +377,10 @@ class LibraryNotifier extends Notifier<LibraryState> {
       id: newId,
       name: playlist.name,
       description: playlist.description,
+      curatorName: playlist.curatorName,
+      curatorThumbnailUrl: playlist.curatorThumbnailUrl,
+      headerSubtitle: playlist.headerSubtitle,
+      headerSecondSubtitle: playlist.headerSecondSubtitle,
       createdAt: now,
       updatedAt: now,
       songs: List<Song>.from(playlist.songs),

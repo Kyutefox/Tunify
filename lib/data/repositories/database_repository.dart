@@ -247,6 +247,10 @@ class DatabaseRepository {
         id: m['id'] as String,
         name: m['name'] as String? ?? '',
         description: m['description'] as String? ?? '',
+        curatorName: m['curator_name'] as String?,
+        curatorThumbnailUrl: m['curator_thumbnail_url'] as String?,
+        headerSubtitle: m['header_subtitle'] as String?,
+        headerSecondSubtitle: m['header_second_subtitle'] as String?,
         createdAt: _parseDateTime(m['created_at']),
         updatedAt: _parseDateTime(m['updated_at']),
         songs: songsList
@@ -303,6 +307,12 @@ class DatabaseRepository {
         'id': p.id,
         'name': p.name,
         'description': p.description,
+        if (p.curatorName != null) 'curator_name': p.curatorName,
+        if (p.curatorThumbnailUrl != null)
+          'curator_thumbnail_url': p.curatorThumbnailUrl,
+        if (p.headerSubtitle != null) 'header_subtitle': p.headerSubtitle,
+        if (p.headerSecondSubtitle != null)
+          'header_second_subtitle': p.headerSecondSubtitle,
         'sort_order': p.sortOrder.value,
         // Imported playlists always re-fetch tracks — don't persist songs.
         'songs': p.isImported ? [] : p.songs.map((s) => s.toJson()).toList(),

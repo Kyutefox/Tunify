@@ -1190,7 +1190,9 @@ class _PlaylistResultTile extends StatelessWidget {
                 playlist: Playlist(
                   id: playlist.browseId!,
                   title: playlist.title,
-                  description: playlist.author,
+                  description: '',
+                  curatorName:
+                      playlist.author.isNotEmpty ? playlist.author : null,
                   coverUrl: playlist.thumbnailUrl,
                 ),
               ),

@@ -69,6 +69,10 @@ class SqliteGetController {
           'total_track_count_remote': r['total_track_count_remote'] as int?,
           'shuffle_enabled': r['shuffle_enabled'] as int? ?? 0,
           'is_pinned': (r['is_pinned'] as int? ?? 0) == 1,
+          if (r['header_subtitle'] != null)
+            'header_subtitle': r['header_subtitle'],
+          if (r['header_second_subtitle'] != null)
+            'header_second_subtitle': r['header_second_subtitle'],
         };
       }).toList();
 

@@ -9,6 +9,8 @@ class Playlist {
   final String description;
   final String coverUrl;
   final String? curatorName;
+  /// Channel / profile image URL when the API exposes it (often null).
+  final String? curatorThumbnailUrl;
   final int trackCount;
   final Duration? totalDuration;
   final List<Song>? tracks;
@@ -21,6 +23,7 @@ class Playlist {
     required this.description,
     required this.coverUrl,
     this.curatorName,
+    this.curatorThumbnailUrl,
     this.trackCount = 0,
     this.totalDuration,
     this.tracks,
@@ -48,6 +51,7 @@ class Playlist {
     String? description,
     String? coverUrl,
     String? curatorName,
+    String? curatorThumbnailUrl,
     int? trackCount,
     Duration? totalDuration,
     List<Song>? tracks,
@@ -59,6 +63,7 @@ class Playlist {
       description: description ?? this.description,
       coverUrl: coverUrl ?? this.coverUrl,
       curatorName: curatorName ?? this.curatorName,
+      curatorThumbnailUrl: curatorThumbnailUrl ?? this.curatorThumbnailUrl,
       trackCount: trackCount ?? this.trackCount,
       totalDuration: totalDuration ?? this.totalDuration,
       tracks: tracks ?? this.tracks,

@@ -756,6 +756,8 @@ class HomeNotifier extends Notifier<HomeState> {
         'description': p.description,
         'coverUrl': p.coverUrl,
         'curatorName': p.curatorName,
+        if (p.curatorThumbnailUrl != null)
+          'curatorThumbnailUrl': p.curatorThumbnailUrl,
         'trackCount': p.trackCount,
       };
 
@@ -869,6 +871,7 @@ class HomeNotifier extends Notifier<HomeState> {
         description: m['description'] as String? ?? '',
         coverUrl: m['coverUrl'] as String? ?? '',
         curatorName: m['curatorName'] as String?,
+        curatorThumbnailUrl: m['curatorThumbnailUrl'] as String?,
         trackCount: (m['trackCount'] as int?) ?? 0,
       );
 
@@ -1041,7 +1044,7 @@ class HomeNotifier extends Notifier<HomeState> {
           (p) => Playlist(
             id: p.id,
             title: p.title,
-            description: p.curatorName ?? 'Recommended on YouTube Music',
+            description: '',
             coverUrl: p.thumbnailUrl,
             curatorName: p.curatorName,
             trackCount: p.trackCount ?? 0,

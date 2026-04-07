@@ -49,6 +49,11 @@ class CollectionTrackCache {
       cachedAt: cachedAt,
       imageUrl: map['imageUrl'] as String?,
       paletteColor: paletteRaw != null ? Color(paletteRaw) : null,
+      description: map['description'] as String?,
+      curatorName: map['curatorName'] as String?,
+      curatorThumbnailUrl: map['curatorThumbnailUrl'] as String?,
+      headerSubtitle: map['headerSubtitle'] as String?,
+      headerSecondSubtitle: map['headerSecondSubtitle'] as String?,
     );
   }
 
@@ -57,16 +62,38 @@ class CollectionTrackCache {
     return (await getEntryFromCache(id))?.songs;
   }
 
-  /// Stores [songs], [imageUrl], and [paletteColor] for [id] in Hive.
-  void put(String id, List<Song> songs, {Color? paletteColor, String? imageUrl}) {
+  /// Stores [songs], image/palette, and optional header metadata for [id] in Hive.
+  void put(
+    String id,
+    List<Song> songs, {
+    Color? paletteColor,
+    String? imageUrl,
+    String? description,
+    String? curatorName,
+    String? curatorThumbnailUrl,
+    String? headerSubtitle,
+    String? headerSecondSubtitle,
+  }) {
     final now = DateTime.now();
     _getBox().then((box) {
-      box.put(id, {
-        'tracks': songs.map((s) => s.toJson()).toList(),
-        'cachedAt': now.toUtc().toIso8601String(),
-        if (imageUrl != null) 'imageUrl': imageUrl,
-        if (paletteColor != null) 'paletteColor': paletteColor.toARGB32(),
-      });
+      final prevRaw = box.get(id);
+      final map = prevRaw != null
+          ? Map<String, dynamic>.from(prevRaw as Map)
+          : <String, dynamic>{};
+      map['tracks'] = songs.map((s) => s.toJson()).toList();
+      map['cachedAt'] = now.toUtc().toIso8601String();
+      if (imageUrl != null) map['imageUrl'] = imageUrl;
+      if (paletteColor != null) map['paletteColor'] = paletteColor.toARGB32();
+      if (description != null) map['description'] = description;
+      if (curatorName != null) map['curatorName'] = curatorName;
+      if (curatorThumbnailUrl != null) {
+        map['curatorThumbnailUrl'] = curatorThumbnailUrl;
+      }
+      if (headerSubtitle != null) map['headerSubtitle'] = headerSubtitle;
+      if (headerSecondSubtitle != null) {
+        map['headerSecondSubtitle'] = headerSecondSubtitle;
+      }
+      box.put(id, map);
     }).ignore();
   }
 
@@ -99,9 +126,19 @@ class CacheEntry {
     required this.cachedAt,
     this.paletteColor,
     this.imageUrl,
+    this.description,
+    this.curatorName,
+    this.curatorThumbnailUrl,
+    this.headerSubtitle,
+    this.headerSecondSubtitle,
   });
   final List<Song> songs;
   final DateTime cachedAt;
   final Color? paletteColor;
   final String? imageUrl;
+  final String? description;
+  final String? curatorName;
+  final String? curatorThumbnailUrl;
+  final String? headerSubtitle;
+  final String? headerSecondSubtitle;
 }

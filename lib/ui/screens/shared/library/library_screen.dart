@@ -12,8 +12,10 @@ import 'package:tunify/data/models/library_album.dart';
 import 'package:tunify/data/models/library_artist.dart';
 import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
+import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/features/podcast/podcast_provider.dart';
 import 'package:tunify/data/repositories/database_repository.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
@@ -25,6 +27,7 @@ import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/screens/shared/library/library_playlists_section.dart';
 import 'package:tunify/ui/screens/shared/library/library_app_bar.dart';
 import 'package:tunify/ui/screens/shared/library/library_search_screen.dart';
+import 'package:tunify/ui/widgets/library/library_item_tile.dart';
 import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
 import 'package:tunify/ui/screens/shared/library/create_library_options.dart';
 import 'package:tunify/ui/widgets/player/download_queue_sheet.dart';
@@ -102,6 +105,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       final downloadCount =
           ref.watch(downloadServiceProvider).downloadedSongs.length;
       final localFilesCount = ref.watch(deviceMusicProvider).songs.length;
+      final episodesForLaterCount =
+          ref.watch(podcastProvider.select((s) => s.episodesForLater.length));
+      final podcasts = ref.watch(podcastSubscriptionsProvider);
+      final audiobooks = ref.watch(savedAudiobooksProvider);
       return [
         LikedSongsEntry(
           songCount: ref.watch(libraryLikedCountProvider),
@@ -132,6 +139,90 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               ),
             );
           },
+        ),
+        EpisodesForLaterEntry(
+          episodeCount: episodesForLaterCount,
+          onTap: () {
+            Navigator.of(context).push(
+              appPageRoute<void>(
+                builder: (_) => LibraryPlaylistScreen.podcast(
+                  playlist: Playlist(
+                    id: 'episodesForLater',
+                    title: 'Episodes For Later',
+                    description: 'Your saved podcast episodes',
+                    coverUrl: '',
+                    trackCount: episodesForLaterCount,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+        ...podcasts.map(
+          (p) => MediaLibraryEntry(
+            title: p.title,
+            subtitle: p.author ?? 'Podcast',
+            thumbnailUrl: p.thumbnailUrl,
+            placeholderIcon: AppIcons.podcast,
+            showPinIndicator: p.isPinned,
+            onTap: () {
+              Navigator.of(context).push(
+                appPageRoute<void>(
+                  builder: (_) => LibraryPlaylistScreen.podcast(
+                    playlist: Playlist(
+                      id: p.browseId ?? p.id,
+                      title: p.title,
+                      description: p.author ?? '',
+                      coverUrl: p.thumbnailUrl ?? '',
+                    ),
+                  ),
+                ),
+              );
+            },
+            onOptions: (rect) => _onPlaylistOptions(
+              _mediaAsLibraryPlaylist(
+                id: p.browseId ?? p.id,
+                title: p.title,
+                subtitle: p.author ?? '',
+                thumbnailUrl: p.thumbnailUrl,
+                isPinned: p.isPinned,
+              ),
+              rect,
+            ),
+          ),
+        ),
+        ...audiobooks.map(
+          (a) => MediaLibraryEntry(
+            title: a.title,
+            subtitle: a.author ?? 'Audiobook',
+            thumbnailUrl: a.thumbnailUrl,
+            placeholderIcon: AppIcons.bookOpen,
+            showPinIndicator: a.isPinned,
+            onTap: () {
+              Navigator.of(context).push(
+                appPageRoute<void>(
+                  builder: (_) => LibraryPlaylistScreen.podcast(
+                    playlist: Playlist(
+                      id: a.browseId ?? a.id,
+                      title: a.title,
+                      description: a.author ?? '',
+                      coverUrl: a.thumbnailUrl ?? '',
+                    ),
+                  ),
+                ),
+              );
+            },
+            onOptions: (rect) => _onPlaylistOptions(
+              _mediaAsLibraryPlaylist(
+                id: a.browseId ?? a.id,
+                title: a.title,
+                subtitle: a.author ?? '',
+                thumbnailUrl: a.thumbnailUrl,
+                isPinned: a.isPinned,
+              ),
+              rect,
+            ),
+          ),
         ),
         ...folders.map((f) => FolderEntry(f)),
         ...rootPlaylists.map((p) => PlaylistEntry(p)),
@@ -164,6 +255,25 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     final unpinned = copy.where((p) => !p.isPinned).toList();
     return [...pinned, ...unpinned];
   }
+
+  LibraryPlaylist _mediaAsLibraryPlaylist({
+    required String id,
+    required String title,
+    required String subtitle,
+    required String? thumbnailUrl,
+    required bool isPinned,
+  }) =>
+      LibraryPlaylist(
+        id: id,
+        name: title,
+        description: subtitle,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        isImported: true,
+        browseId: id,
+        customImageUrl: thumbnailUrl,
+        isPinned: isPinned,
+      );
 
   @override
   Widget build(BuildContext context) {
@@ -348,6 +458,124 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               isFolderView: _selectedFolderId != null,
             ),
           ),
+        ];
+      case LibraryFilter.podcasts:
+        final podcasts = ref.watch(podcastSubscriptionsProvider);
+        if (podcasts.isEmpty) {
+          return [
+            SliverFillRemaining(
+              child: LibraryFilterPlaceholder(
+                icon: AppIcons.podcast,
+                message: 'Podcasts you save will appear here',
+              ),
+            ),
+          ];
+        }
+        return [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: podcasts.length,
+                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+                itemBuilder: (context, index) {
+                  final podcast = podcasts[index];
+                  return LibraryItemTile(
+                    title: podcast.title,
+                    subtitle: podcast.author ?? 'Podcast',
+                    thumbnailUrl: podcast.thumbnailUrl,
+                    placeholderIcon: AppIcons.podcast,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        appPageRoute<void>(
+                          builder: (_) => LibraryPlaylistScreen.podcast(
+                            playlist: Playlist(
+                              id: podcast.browseId ?? podcast.id,
+                              title: podcast.title,
+                              description: podcast.author ?? '',
+                              coverUrl: podcast.thumbnailUrl ?? '',
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    onOptions: (rect) => _onPlaylistOptions(
+                      _mediaAsLibraryPlaylist(
+                        id: podcast.browseId ?? podcast.id,
+                        title: podcast.title,
+                        subtitle: podcast.author ?? '',
+                        thumbnailUrl: podcast.thumbnailUrl,
+                        isPinned: podcast.isPinned,
+                      ),
+                      rect,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 160)),
+        ];
+      case LibraryFilter.audiobooks:
+        final audiobooks = ref.watch(savedAudiobooksProvider);
+        if (audiobooks.isEmpty) {
+          return [
+            SliverFillRemaining(
+              child: LibraryFilterPlaceholder(
+                icon: AppIcons.bookOpen,
+                message: 'Audiobooks you save will appear here',
+              ),
+            ),
+          ];
+        }
+        return [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+              child: ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: audiobooks.length,
+                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+                itemBuilder: (context, index) {
+                  final audiobook = audiobooks[index];
+                  return LibraryItemTile(
+                    title: audiobook.title,
+                    subtitle: audiobook.author ?? 'Audiobook',
+                    thumbnailUrl: audiobook.thumbnailUrl,
+                    placeholderIcon: AppIcons.bookOpen,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        appPageRoute<void>(
+                          builder: (_) => LibraryPlaylistScreen.podcast(
+                            playlist: Playlist(
+                              id: audiobook.browseId ?? audiobook.id,
+                              title: audiobook.title,
+                              description: audiobook.author ?? '',
+                              coverUrl: audiobook.thumbnailUrl ?? '',
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    onOptions: (rect) => _onPlaylistOptions(
+                      _mediaAsLibraryPlaylist(
+                        id: audiobook.browseId ?? audiobook.id,
+                        title: audiobook.title,
+                        subtitle: audiobook.author ?? '',
+                        thumbnailUrl: audiobook.thumbnailUrl,
+                        isPinned: audiobook.isPinned,
+                      ),
+                      rect,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 160)),
         ];
       case LibraryFilter.albums:
         final rawAlbums =

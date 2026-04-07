@@ -260,6 +260,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
   Timer? _persistDebounceTimer;
   DateTime? _playRequestedAt;
   Duration? _playRequestedPosition;
+  String? _lastRecentlyPlayedRecordedSongId;
   // Notification media item duration is derived from `just_audio` once it becomes
   // available; we cache the last values to avoid redundant MediaSession updates.
   String? _lastNotifiedSongId;
@@ -897,9 +898,26 @@ class PlayerNotifier extends Notifier<PlayerState> {
       _playRequestedAt = null;
       _playRequestedPosition = null;
       _startPositionSyncTimer();
+      _recordRecentlyPlayedIfConfirmed();
     } else if (!_pendingPlay) {
       _stopPositionSyncTimer();
     }
+  }
+
+  void _recordRecentlyPlayedIfConfirmed([Song? candidate]) {
+    if (!_hasLoadedSource) return;
+    final song = candidate ?? state.currentSong;
+    if (song == null) return;
+    if (song.title.trim().isEmpty || song.artist.trim().isEmpty) return;
+
+    final ps = _audioPlayer.player.playerState;
+    final isActuallyPlaying =
+        ps.playing && ps.processingState == ja.ProcessingState.ready;
+    if (!isActuallyPlaying && state.status != PlayerStatus.playing) return;
+
+    if (_lastRecentlyPlayedRecordedSongId == song.id) return;
+    _lastRecentlyPlayedRecordedSongId = song.id;
+    _recordRecentlyPlayedIfConfirmed(song);
   }
 
   void _initializeListeners() {
@@ -963,6 +981,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
                   state.status == PlayerStatus.buffering) &&
               _audioPlayer.isPlaying) {
             state = state.copyWith(status: PlayerStatus.playing);
+            _recordRecentlyPlayedIfConfirmed();
           }
           ref.read(playbackPositionProvider.notifier).update(position);
 
@@ -1134,7 +1153,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
         clearDuration: true,
       );
       _syncMediaNotification(song);
-      ref.read(homeProvider.notifier).addToRecentlyPlayed(song);
+      _recordRecentlyPlayedIfConfirmed(song);
       unawaited(_persistPlaybackState());
       unawaited(_prefetchUpcoming(idx));
       unawaited(_initializePlaybackTracking(song.id));
@@ -1618,10 +1637,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
       unawaited(_loadQueueInBackground(song, playlistId: playlistId));
     }
 
-    // Record as recently played immediately. The currentIndexStream listener
-    // skips the callback when the song hasn't changed (sameTrack guard), so
-    // explicitly-started songs would otherwise never be recorded.
-    ref.read(homeProvider.notifier).addToRecentlyPlayed(song);
+    // Attempt recording here too; helper only persists once playback is confirmed.
+    _recordRecentlyPlayedIfConfirmed(song);
 
     // An explicit user song selection must always win over any in-progress
     // transition (e.g. the previous song was still loading when the user tapped
@@ -1985,7 +2002,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _audioPlayer.seek(resumePosition);
       }
       await _startPlaybackWithRecovery();
-      ref.read(homeProvider.notifier).addToRecentlyPlayed(song);
+      _recordRecentlyPlayedIfConfirmed(song);
     } catch (e) {
       logError('PlayLocal: FAILED ($e), falling back to stream', tag: 'Player');
       _isTransitioning = false;
@@ -2123,7 +2140,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
           currentSong: nextSong,
           status: PlayerStatus.loading,
         );
-        ref.read(homeProvider.notifier).addToRecentlyPlayed(nextSong);
+        _recordRecentlyPlayedIfConfirmed(nextSong);
         await _syncPlaylistToQueue(shouldPlay: true);
         return;
       }
@@ -2165,7 +2182,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
             currentSong: nextSong,
             status: PlayerStatus.loading,
           );
-          ref.read(homeProvider.notifier).addToRecentlyPlayed(nextSong);
+          _recordRecentlyPlayedIfConfirmed(nextSong);
           
           try {
             // Force playlist rebuild to use cached file instead of original stream
@@ -2585,7 +2602,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     );
 
     _syncMediaNotification(nextSong);
-    ref.read(homeProvider.notifier).addToRecentlyPlayed(nextSong);
+    _recordRecentlyPlayedIfConfirmed(nextSong);
     unawaited(_persistPlaybackState());
     unawaited(_prefetchUpcoming(nextIndex));
     unawaited(_initializePlaybackTracking(nextSong.id));

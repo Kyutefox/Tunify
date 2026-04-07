@@ -5,7 +5,6 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/features/podcast/podcast_provider.dart';
 import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
-import 'package:tunify/ui/screens/shared/podcast/podcast_options_sheet.dart';
 import 'package:tunify/ui/screens/shared/search/search_page.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
@@ -159,12 +158,6 @@ class _PodcastSearchResults extends ConsumerWidget {
                       LibraryPlaylistScreen.podcast(playlist: playlist),
                 ));
               },
-              onOptions: (rect) => showPodcastOptionsSheet(
-                context,
-                podcast: podcast,
-                ref: ref,
-                anchorRect: rect,
-              ),
             );
           },
         );
@@ -241,12 +234,6 @@ class _AudiobookSearchResults extends ConsumerWidget {
                       LibraryPlaylistScreen.podcast(playlist: playlist),
                 ));
               },
-              onOptions: (rect) => showAudiobookOptionsSheet(
-                context,
-                audiobook: audiobook,
-                ref: ref,
-                anchorRect: rect,
-              ),
             );
           },
         );

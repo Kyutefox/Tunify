@@ -440,8 +440,9 @@ class SearchResultsBody extends ConsumerWidget {
 
     switch (filter) {
       case SearchFilter.artists:
-        if (state.artistResults.isEmpty)
+        if (state.artistResults.isEmpty) {
           return _emptyFilterState(context, 'No artists found');
+        }
         return _PaginatedList(
           listKey: const ValueKey('artists'),
           isLoadingMore: state.isLoadingMore,
@@ -453,8 +454,9 @@ class SearchResultsBody extends ConsumerWidget {
         );
 
       case SearchFilter.albums:
-        if (state.albumResults.isEmpty)
+        if (state.albumResults.isEmpty) {
           return _emptyFilterState(context, 'No albums found');
+        }
         return _PaginatedList(
           listKey: const ValueKey('albums'),
           isLoadingMore: state.isLoadingMore,
@@ -467,8 +469,9 @@ class SearchResultsBody extends ConsumerWidget {
       case SearchFilter.videos:
         final videos =
             filterByExplicitSetting(state.videoResults, showExplicit);
-        if (videos.isEmpty)
+        if (videos.isEmpty) {
           return _emptyFilterState(context, 'No videos found');
+        }
         return _PaginatedList(
           listKey: const ValueKey('videos'),
           isLoadingMore: state.isLoadingMore,
@@ -515,8 +518,9 @@ class SearchResultsBody extends ConsumerWidget {
         );
 
       case SearchFilter.communityPlaylists:
-        if (state.playlistResults.isEmpty)
+        if (state.playlistResults.isEmpty) {
           return _emptyFilterState(context, 'No playlists found');
+        }
         return _PaginatedList(
           listKey: const ValueKey('playlists'),
           isLoadingMore: state.isLoadingMore,
@@ -529,8 +533,9 @@ class SearchResultsBody extends ConsumerWidget {
         );
 
       case SearchFilter.featuredPlaylists:
-        if (state.featuredPlaylistResults.isEmpty)
+        if (state.featuredPlaylistResults.isEmpty) {
           return _emptyFilterState(context, 'No featured playlists found');
+        }
         return _PaginatedList(
           listKey: const ValueKey('featuredPlaylists'),
           isLoadingMore: state.isLoadingMore,
@@ -542,9 +547,38 @@ class SearchResultsBody extends ConsumerWidget {
               _PlaylistResultTile(playlist: state.featuredPlaylistResults[i]),
         );
 
+      case SearchFilter.podcasts:
+        if (state.podcastResults.isEmpty) {
+          return _emptyFilterState(context, 'No podcasts found');
+        }
+        return _PaginatedList(
+          listKey: const ValueKey('podcasts'),
+          isLoadingMore: state.isLoadingMore,
+          hasMore: false,
+          onLoadMore: () {},
+          itemCount: state.podcastResults.length,
+          itemBuilder: (_, i) =>
+              _PodcastResultTile(podcast: state.podcastResults[i]),
+        );
+
+      case SearchFilter.audiobooks:
+        if (state.audiobookResults.isEmpty) {
+          return _emptyFilterState(context, 'No audiobooks found');
+        }
+        return _PaginatedList(
+          listKey: const ValueKey('audiobooks'),
+          isLoadingMore: state.isLoadingMore,
+          hasMore: false,
+          onLoadMore: () {},
+          itemCount: state.audiobookResults.length,
+          itemBuilder: (_, i) =>
+              _AudiobookResultTile(audiobook: state.audiobookResults[i]),
+        );
+
       case SearchFilter.profiles:
-        if (state.profileResults.isEmpty)
+        if (state.profileResults.isEmpty) {
           return _emptyFilterState(context, 'No profiles found');
+        }
         return _PaginatedList(
           listKey: const ValueKey('profiles'),
           isLoadingMore: state.isLoadingMore,
@@ -562,8 +596,9 @@ class SearchResultsBody extends ConsumerWidget {
         final suggestionCount =
             showInlineSuggestions ? inlineSuggestions.length : 0;
         final totalCount = suggestionCount + displayResults.length;
-        if (totalCount == 0)
+        if (totalCount == 0) {
           return _emptyFilterState(context, 'No results found');
+        }
         return _PaginatedList(
           listKey: ValueKey('songs_${state.query}'),
           isLoadingMore: state.isLoadingMore,
@@ -861,6 +896,8 @@ class _SearchFilterBar extends StatelessWidget {
                   SearchFilter.videos => 'Videos',
                   SearchFilter.albums => 'Albums',
                   SearchFilter.artists => 'Artists',
+                  SearchFilter.podcasts => 'Podcasts',
+                  SearchFilter.audiobooks => 'Audiobooks',
                   SearchFilter.communityPlaylists => 'Community playlists',
                   SearchFilter.featuredPlaylists => 'Featured playlists',
                   SearchFilter.profiles => 'Profiles',
@@ -1207,6 +1244,180 @@ class _PlaylistResultTile extends StatelessWidget {
                         if (playlist.author.isNotEmpty) playlist.author,
                         if (playlist.songCount != null) playlist.songCount!,
                       ].join(' • '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
+                        fontSize: AppFontSize.xs,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PodcastResultTile extends StatelessWidget {
+  const _PodcastResultTile({required this.podcast});
+
+  final PodcastSearchResult podcast;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            appPageRoute<void>(
+              builder: (_) => LibraryPlaylistScreen.podcast(
+                playlist: Playlist(
+                  id: podcast.browseId ?? podcast.id,
+                  title: podcast.title,
+                  description: podcast.author ?? '',
+                  coverUrl: podcast.thumbnailUrl ?? '',
+                ),
+              ),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.xs,
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Image.network(
+                  podcast.thumbnailUrl ?? '',
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 48,
+                    height: 48,
+                    color: AppColorsScheme.of(context).surfaceLight,
+                    child: AppIcon(
+                      icon: AppIcons.podcast,
+                      color: AppColorsScheme.of(context).textMuted,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      podcast.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.base,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      podcast.author ?? 'Podcast',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
+                        fontSize: AppFontSize.xs,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AudiobookResultTile extends StatelessWidget {
+  const _AudiobookResultTile({required this.audiobook});
+
+  final AudiobookSearchResult audiobook;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.of(context).push(
+            appPageRoute<void>(
+              builder: (_) => LibraryPlaylistScreen.podcast(
+                playlist: Playlist(
+                  id: audiobook.browseId ?? audiobook.id,
+                  title: audiobook.title,
+                  description: audiobook.author ?? '',
+                  coverUrl: audiobook.thumbnailUrl ?? '',
+                ),
+              ),
+            ),
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.base,
+            vertical: AppSpacing.xs,
+          ),
+          child: Row(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.md),
+                child: Image.network(
+                  audiobook.thumbnailUrl ?? '',
+                  width: 48,
+                  height: 48,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => Container(
+                    width: 48,
+                    height: 48,
+                    color: AppColorsScheme.of(context).surfaceLight,
+                    child: AppIcon(
+                      icon: AppIcons.bookOpen,
+                      color: AppColorsScheme.of(context).textMuted,
+                      size: 24,
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      audiobook.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.base,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      audiobook.author ?? 'Audiobook',
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(

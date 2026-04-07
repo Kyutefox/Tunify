@@ -9,6 +9,7 @@ import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/widgets/library/library_item_tile.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
@@ -157,6 +158,32 @@ class LocalFilesEntry extends LibrarySectionEntry {
   LocalFilesEntry({required this.songCount, required this.onTap});
   final int songCount;
   final VoidCallback onTap;
+}
+
+class EpisodesForLaterEntry extends LibrarySectionEntry {
+  EpisodesForLaterEntry({required this.episodeCount, required this.onTap});
+  final int episodeCount;
+  final VoidCallback onTap;
+}
+
+class MediaLibraryEntry extends LibrarySectionEntry {
+  MediaLibraryEntry({
+    required this.title,
+    required this.subtitle,
+    required this.thumbnailUrl,
+    required this.placeholderIcon,
+    required this.onTap,
+    this.onOptions,
+    this.showPinIndicator = false,
+  });
+
+  final String title;
+  final String subtitle;
+  final String? thumbnailUrl;
+  final List<List<dynamic>> placeholderIcon;
+  final VoidCallback onTap;
+  final void Function(Rect?)? onOptions;
+  final bool showPinIndicator;
 }
 
 class FolderEntry extends LibrarySectionEntry {
@@ -384,6 +411,23 @@ class _LibrarySectionGrid extends StatelessWidget {
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
+          EpisodesForLaterEntry(:final episodeCount, :final onTap) =>
+            _StaticGridCard(
+              icon: AppIcons.bookmark,
+              iconColor: Colors.white,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
+              backgroundGradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+              ),
+              title: 'Episodes For Later',
+              subtitle: episodeCount == 0
+                  ? 'No episodes yet'
+                  : '$episodeCount episodes',
+              onTap: onTap,
+            ),
+          MediaLibraryEntry() => _MediaGridCard(entry: entry),
           FolderEntry(:final folder) => _LibraryFolderGridCard(
               folder: folder,
               onTap: () => onFolderTap(folder),
@@ -527,76 +571,74 @@ class _LibraryPlaylistGridCardState extends State<_LibraryPlaylistGridCard> {
         scale: _pressed ? 0.95 : 1.0,
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) => PlaylistCoverThumbnail(
-                      playlist: playlist,
-                      size: constraints.maxHeight.isFinite
-                          ? constraints.maxHeight
-                          : constraints.maxWidth,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
+        child: SizedBox.expand(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) => PlaylistCoverThumbnail(
+                    playlist: playlist,
+                    // Grid card covers should track tile width so custom
+                    // playlists don't appear narrower than other card types.
+                    size: constraints.maxWidth,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    if (playlist.isPinned)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: AppIcon(
-                          icon: AppIcons.pin,
-                          size: 12,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    Expanded(
-                      child: Text(
-                        playlist.name.capitalized,
-                        style: TextStyle(
-                          color: AppColorsScheme.of(context).textPrimary,
-                          fontSize: AppFontSize.md,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  if (playlist.isPinned)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: AppIcon(
+                        icon: AppIcons.pin,
+                        size: 12,
+                        color: AppColors.primary,
                       ),
                     ),
-                    Builder(
-                      builder: (btnCtx) => GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          final box = btnCtx.findRenderObject() as RenderBox?;
-                          widget.onOptions(box != null && box.hasSize
-                              ? box.localToGlobal(Offset.zero) & box.size
-                              : null);
-                        },
-                        child: AppIcon(
-                          icon: AppIcons.moreVert,
-                          color: AppColorsScheme.of(context).textMuted,
-                          size: 20,
-                        ),
+                  Expanded(
+                    child: Text(
+                      playlist.name.capitalized,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.md,
+                        fontWeight: FontWeight.w600,
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                  ],
-                ),
-                Text(
-                  playlist.trackCountLabel,
-                  style: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted,
-                    fontSize: AppFontSize.xs,
                   ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                  Builder(
+                    builder: (btnCtx) => GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        final box = btnCtx.findRenderObject() as RenderBox?;
+                        widget.onOptions(box != null && box.hasSize
+                            ? box.localToGlobal(Offset.zero) & box.size
+                            : null);
+                      },
+                      child: AppIcon(
+                        icon: AppIcons.moreVert,
+                        color: AppColorsScheme.of(context).textMuted,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                playlist.trackCountLabel,
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
+                  fontSize: AppFontSize.xs,
                 ),
-              ],
-            ),
-          ],
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -638,81 +680,79 @@ class _LibraryFolderGridCardState extends State<_LibraryFolderGridCard> {
         scale: _pressed ? 0.95 : 1.0,
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppColorsScheme.of(context).surfaceLight,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
+        child: SizedBox.expand(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColorsScheme.of(context).surfaceLight,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                  ),
+                  child: Center(
+                    child: AppIcon(
+                      icon: AppIcons.folder,
+                      color: AppColors.primary,
+                      size: 40,
                     ),
-                    child: Center(
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  if (folder.isPinned)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
                       child: AppIcon(
-                        icon: AppIcons.folder,
+                        icon: AppIcons.pin,
+                        size: 12,
                         color: AppColors.primary,
-                        size: 40,
+                      ),
+                    ),
+                  Expanded(
+                    child: Text(
+                      folder.name.capitalized,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.md,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Builder(
+                    builder: (btnCtx) => GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        final box = btnCtx.findRenderObject() as RenderBox?;
+                        widget.onOptions(box != null && box.hasSize
+                            ? box.localToGlobal(Offset.zero) & box.size
+                            : null);
+                      },
+                      child: AppIcon(
+                        icon: AppIcons.moreVert,
+                        color: AppColorsScheme.of(context).textMuted,
+                        size: 20,
                       ),
                     ),
                   ),
+                ],
+              ),
+              Text(
+                folder.playlistCount == 0
+                    ? 'No playlists'
+                    : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
+                  fontSize: AppFontSize.xs,
                 ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    if (folder.isPinned)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: AppIcon(
-                          icon: AppIcons.pin,
-                          size: 12,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    Expanded(
-                      child: Text(
-                        folder.name.capitalized,
-                        style: TextStyle(
-                          color: AppColorsScheme.of(context).textPrimary,
-                          fontSize: AppFontSize.md,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    Builder(
-                      builder: (btnCtx) => GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          final box = btnCtx.findRenderObject() as RenderBox?;
-                          widget.onOptions(box != null && box.hasSize
-                              ? box.localToGlobal(Offset.zero) & box.size
-                              : null);
-                        },
-                        child: AppIcon(
-                          icon: AppIcons.moreVert,
-                          color: AppColorsScheme.of(context).textMuted,
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                Text(
-                  folder.playlistCount == 0
-                      ? 'No playlists'
-                      : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
-                  style: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted,
-                    fontSize: AppFontSize.xs,
-                  ),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -909,6 +949,31 @@ class _LibrarySectionList extends StatelessWidget {
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
+          EpisodesForLaterEntry(:final episodeCount, :final onTap) =>
+            _StaticListTile(
+              icon: AppIcons.bookmark,
+              iconColor: Colors.white,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
+              backgroundGradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+              ),
+              title: 'Episodes For Later',
+              subtitle: episodeCount == 0
+                  ? 'No episodes yet'
+                  : '$episodeCount episodes',
+              onTap: onTap,
+            ),
+          MediaLibraryEntry() => LibraryItemTile(
+              title: entry.title,
+              subtitle: entry.subtitle,
+              thumbnailUrl: entry.thumbnailUrl,
+              placeholderIcon: entry.placeholderIcon,
+              showPinIndicator: entry.showPinIndicator,
+              onTap: entry.onTap,
+              onOptions: entry.onOptions,
+            ),
           FolderEntry(:final folder) => _LibraryFolderListTile(
               folder: folder,
               onTap: () => onFolderTap(folder),
@@ -1012,6 +1077,111 @@ class _StaticListTile extends StatelessWidget {
     );
 
     return tile;
+  }
+}
+
+class _MediaGridCard extends StatelessWidget {
+  const _MediaGridCard({required this.entry});
+
+  final MediaLibraryEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: entry.onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(AppRadius.md),
+              child: entry.thumbnailUrl != null && entry.thumbnailUrl!.isNotEmpty
+                  ? CachedNetworkImage(
+                      imageUrl: entry.thumbnailUrl!,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorWidget: (_, __, ___) => Container(
+                        color: AppColorsScheme.of(context).surfaceLight,
+                        child: Center(
+                          child: AppIcon(
+                            icon: entry.placeholderIcon,
+                            color: AppColorsScheme.of(context).textMuted,
+                            size: 36,
+                          ),
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: AppColorsScheme.of(context).surfaceLight,
+                      child: Center(
+                        child: AppIcon(
+                          icon: entry.placeholderIcon,
+                          color: AppColorsScheme.of(context).textMuted,
+                          size: 36,
+                        ),
+                      ),
+                    ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  entry.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textPrimary,
+                    fontSize: AppFontSize.md,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (entry.showPinIndicator)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: AppIcon(
+                    icon: AppIcons.pin,
+                    size: 12,
+                    color: AppColors.primary,
+                  ),
+                ),
+              if (entry.onOptions != null)
+                Builder(
+                  builder: (btnCtx) => GestureDetector(
+                    onTap: () {
+                      final box = btnCtx.findRenderObject() as RenderBox?;
+                      entry.onOptions!(
+                        box != null && box.hasSize
+                            ? box.localToGlobal(Offset.zero) & box.size
+                            : null,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: AppIcon(
+                        icon: AppIcons.moreVert,
+                        size: 18,
+                        color: AppColorsScheme.of(context).textMuted,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          Text(
+            entry.subtitle,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppColorsScheme.of(context).textMuted,
+              fontSize: AppFontSize.xs,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

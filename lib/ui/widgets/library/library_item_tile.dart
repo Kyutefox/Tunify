@@ -18,7 +18,7 @@ class LibraryItemTile extends StatelessWidget {
     required this.subtitle,
     required this.thumbnailUrl,
     required this.onTap,
-    required this.onOptions,
+    this.onOptions,
     required this.placeholderIcon,
     this.showPinIndicator = false,
   });
@@ -27,7 +27,7 @@ class LibraryItemTile extends StatelessWidget {
   final String subtitle;
   final String? thumbnailUrl;
   final VoidCallback onTap;
-  final void Function(Rect?) onOptions;
+  final void Function(Rect?)? onOptions;
   final List<List<dynamic>> placeholderIcon;
   final bool showPinIndicator;
 
@@ -85,23 +85,26 @@ class LibraryItemTile extends StatelessWidget {
                   child: AppIcon(
                       icon: AppIcons.pin, size: 14, color: AppColors.primary),
                 ),
-              Builder(
-                builder: (btnCtx) => AppIconButton(
-                  icon: AppIcon(
-                      icon: AppIcons.moreVert,
-                      size: 22,
-                      color: AppColorsScheme.of(context).textMuted),
-                  onPressedWithContext: (btnCtx) {
-                    final box = btnCtx.findRenderObject() as RenderBox?;
-                    onOptions(box != null && box.hasSize
-                        ? box.localToGlobal(Offset.zero) & box.size
-                        : null);
-                  },
-                  size: t.isDesktop ? 36 : 40,
-                  iconSize: 22,
-                  iconAlignment: Alignment.centerRight,
+              if (onOptions != null)
+                Builder(
+                  builder: (btnCtx) => AppIconButton(
+                    icon: AppIcon(
+                        icon: AppIcons.moreVert,
+                        size: 22,
+                        color: AppColorsScheme.of(context).textMuted),
+                    onPressedWithContext: (btnCtx) {
+                      final box = btnCtx.findRenderObject() as RenderBox?;
+                      onOptions!(
+                        box != null && box.hasSize
+                            ? box.localToGlobal(Offset.zero) & box.size
+                            : null,
+                      );
+                    },
+                    size: t.isDesktop ? 36 : 40,
+                    iconSize: 22,
+                    iconAlignment: Alignment.centerRight,
+                  ),
                 ),
-              ),
             ],
           ),
         ),

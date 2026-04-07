@@ -175,6 +175,9 @@ class MediaLibraryEntry extends LibrarySectionEntry {
     required this.onTap,
     this.onOptions,
     this.showPinIndicator = false,
+    this.circularThumbnail = false,
+    this.folderSortDate,
+    this.gridDetailSubtitle,
   });
 
   final String title;
@@ -184,6 +187,12 @@ class MediaLibraryEntry extends LibrarySectionEntry {
   final VoidCallback onTap;
   final void Function(Rect?)? onOptions;
   final bool showPinIndicator;
+  /// Circular cover in grid/list (e.g. artists).
+  final bool circularThumbnail;
+  /// When this entry is shown inside a folder, used for sort by recent / recent add.
+  final DateTime? folderSortDate;
+  /// Optional second line under the title row in grid layout (e.g. album artist).
+  final String? gridDetailSubtitle;
 }
 
 class FolderEntry extends LibrarySectionEntry {
@@ -427,7 +436,7 @@ class _LibrarySectionGrid extends StatelessWidget {
                   : '$episodeCount episodes',
               onTap: onTap,
             ),
-          MediaLibraryEntry() => _MediaGridCard(entry: entry),
+          MediaLibraryEntry() => MediaLibraryGridCard(entry: entry),
           FolderEntry(:final folder) => _LibraryFolderGridCard(
               folder: folder,
               onTap: () => onFolderTap(folder),
@@ -971,6 +980,7 @@ class _LibrarySectionList extends StatelessWidget {
               thumbnailUrl: entry.thumbnailUrl,
               placeholderIcon: entry.placeholderIcon,
               showPinIndicator: entry.showPinIndicator,
+              circularThumbnail: entry.circularThumbnail,
               onTap: entry.onTap,
               onOptions: entry.onOptions,
             ),
@@ -1080,48 +1090,101 @@ class _StaticListTile extends StatelessWidget {
   }
 }
 
-class _MediaGridCard extends StatelessWidget {
-  const _MediaGridCard({required this.entry});
+class MediaLibraryGridCard extends StatelessWidget {
+  const MediaLibraryGridCard({super.key, required this.entry});
 
   final MediaLibraryEntry entry;
 
   @override
   Widget build(BuildContext context) {
+    final mediaChild = entry.thumbnailUrl != null &&
+            entry.thumbnailUrl!.isNotEmpty
+        ? CachedNetworkImage(
+            imageUrl: entry.thumbnailUrl!,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorWidget: (_, __, ___) => Container(
+              color: AppColorsScheme.of(context).surfaceLight,
+              child: Center(
+                child: AppIcon(
+                  icon: entry.placeholderIcon,
+                  color: AppColorsScheme.of(context).textMuted,
+                  size: 36,
+                ),
+              ),
+            ),
+          )
+        : Container(
+            color: AppColorsScheme.of(context).surfaceLight,
+            child: Center(
+              child: AppIcon(
+                icon: entry.placeholderIcon,
+                color: AppColorsScheme.of(context).textMuted,
+                size: 36,
+              ),
+            ),
+          );
+
+    final detailLine = entry.gridDetailSubtitle ?? entry.subtitle;
+
     return GestureDetector(
       onTap: entry.onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(AppRadius.md),
-              child: entry.thumbnailUrl != null && entry.thumbnailUrl!.isNotEmpty
-                  ? CachedNetworkImage(
-                      imageUrl: entry.thumbnailUrl!,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => Container(
-                        color: AppColorsScheme.of(context).surfaceLight,
-                        child: Center(
-                          child: AppIcon(
-                            icon: entry.placeholderIcon,
-                            color: AppColorsScheme.of(context).textMuted,
-                            size: 36,
+            child: entry.circularThumbnail
+                ? LayoutBuilder(
+                    builder: (context, constraints) {
+                      final side = constraints.maxWidth < constraints.maxHeight
+                          ? constraints.maxWidth
+                          : constraints.maxHeight;
+                      return Center(
+                        child: ClipOval(
+                          child: SizedBox(
+                            width: side,
+                            height: side,
+                            child: entry.thumbnailUrl != null &&
+                                    entry.thumbnailUrl!.isNotEmpty
+                                ? CachedNetworkImage(
+                                    imageUrl: entry.thumbnailUrl!,
+                                    width: side,
+                                    height: side,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (_, __, ___) => Container(
+                                      color: AppColorsScheme.of(context)
+                                          .surfaceLight,
+                                      child: Center(
+                                        child: AppIcon(
+                                          icon: entry.placeholderIcon,
+                                          color: AppColorsScheme.of(context)
+                                              .textMuted,
+                                          size: 36,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    color: AppColorsScheme.of(context)
+                                        .surfaceLight,
+                                    child: Center(
+                                      child: AppIcon(
+                                        icon: entry.placeholderIcon,
+                                        color: AppColorsScheme.of(context)
+                                            .textMuted,
+                                        size: 36,
+                                      ),
+                                    ),
+                                  ),
                           ),
                         ),
-                      ),
-                    )
-                  : Container(
-                      color: AppColorsScheme.of(context).surfaceLight,
-                      child: Center(
-                        child: AppIcon(
-                          icon: entry.placeholderIcon,
-                          color: AppColorsScheme.of(context).textMuted,
-                          size: 36,
-                        ),
-                      ),
-                    ),
-            ),
+                      );
+                    },
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: mediaChild,
+                  ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Row(
@@ -1171,7 +1234,7 @@ class _MediaGridCard extends StatelessWidget {
             ],
           ),
           Text(
-            entry.subtitle,
+            detailLine,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

@@ -21,6 +21,7 @@ class LibraryItemTile extends StatelessWidget {
     this.onOptions,
     required this.placeholderIcon,
     this.showPinIndicator = false,
+    this.circularThumbnail = false,
   });
 
   final String title;
@@ -30,6 +31,8 @@ class LibraryItemTile extends StatelessWidget {
   final void Function(Rect?)? onOptions;
   final List<List<dynamic>> placeholderIcon;
   final bool showPinIndicator;
+  /// When true, the thumbnail is circular (e.g. artists).
+  final bool circularThumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -116,8 +119,9 @@ class LibraryItemTile extends StatelessWidget {
   }
 
   Widget _buildThumbnail(BuildContext context, double size) {
+    final radius = circularThumbnail ? size / 2 : AppRadius.sm;
     return ClipRRect(
-      borderRadius: BorderRadius.circular(AppRadius.sm),
+      borderRadius: BorderRadius.circular(radius),
       child: thumbnailUrl != null && thumbnailUrl!.isNotEmpty
           ? CachedNetworkImage(
               imageUrl: thumbnailUrl!,

@@ -7,6 +7,7 @@ class LibraryAlbum {
   final String? browseId;
   final DateTime followedAt;
   final int? cachedPaletteColor;
+  final bool isPinned;
 
   const LibraryAlbum({
     required this.id,
@@ -16,6 +17,7 @@ class LibraryAlbum {
     this.browseId,
     required this.followedAt,
     this.cachedPaletteColor,
+    this.isPinned = false,
   });
 
   factory LibraryAlbum.fromJson(Map<String, dynamic> json) {
@@ -29,6 +31,7 @@ class LibraryAlbum {
           ? DateTime.tryParse(json['followedAt'] as String) ?? DateTime.now()
           : DateTime.now(),
       cachedPaletteColor: json['cachedPaletteColor'] as int?,
+      isPinned: json['isPinned'] as bool? ?? false,
     );
   }
 
@@ -40,6 +43,7 @@ class LibraryAlbum {
         'browseId': browseId,
         'followedAt': followedAt.toUtc().toIso8601String(),
         if (cachedPaletteColor != null) 'cachedPaletteColor': cachedPaletteColor,
+        'isPinned': isPinned,
       };
 
   LibraryAlbum copyWith({
@@ -47,6 +51,7 @@ class LibraryAlbum {
     String? artistName,
     String? thumbnailUrl,
     int? cachedPaletteColor,
+    bool? isPinned,
   }) => LibraryAlbum(
         id: id,
         title: title ?? this.title,
@@ -55,6 +60,7 @@ class LibraryAlbum {
         browseId: browseId,
         followedAt: followedAt,
         cachedPaletteColor: cachedPaletteColor ?? this.cachedPaletteColor,
+        isPinned: isPinned ?? this.isPinned,
       );
 
   @override

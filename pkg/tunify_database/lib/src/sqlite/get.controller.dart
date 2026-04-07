@@ -100,6 +100,7 @@ class SqliteGetController {
             'browseId': r['browse_id'],
             'followedAt': r['created_at'],
             if (r['palette_color'] != null) 'cachedPaletteColor': r['palette_color'],
+            'isPinned': (r['is_pinned'] as int? ?? 0) == 1,
           }).toList();
 
       // Map album rows → LibraryAlbum.fromJson compatible maps.
@@ -111,6 +112,7 @@ class SqliteGetController {
             'browseId': r['browse_id'],
             'followedAt': r['created_at'],
             if (r['palette_color'] != null) 'cachedPaletteColor': r['palette_color'],
+            'isPinned': (r['is_pinned'] as int? ?? 0) == 1,
           }).toList();
 
       return {

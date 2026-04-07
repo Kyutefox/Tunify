@@ -1631,25 +1631,49 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.xxl),
-                child: Text(
-                  songs.isEmpty
-                      ? (isLiked
-                          ? 'Your liked songs will appear here.'
-                          : isEpisodesForLater
-                              ? 'Your saved podcast episodes will appear here.\nTap "Add to Episodes For Later" from episode options.'
-                              : isImported ||
-                                      widget._isAlbum ||
-                                      widget._isArtist
-                                  ? 'Nothing here yet — check back soon'
-                                  : 'Your playlist is empty.\nAdd songs to get started.')
-                      : 'No songs match your filter',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColorsScheme.of(context)
-                        .textMuted
-                        .withValues(alpha: 0.7),
-                    fontSize: AppFontSize.base,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      songs.isEmpty
+                          ? (isLiked
+                              ? 'Your liked songs will appear here.'
+                              : isEpisodesForLater
+                                  ? 'Your saved podcast episodes will appear here.\nTap "Add to Episodes For Later" from episode options.'
+                                  : isImported ||
+                                          widget._isAlbum ||
+                                          widget._isArtist
+                                      ? 'Nothing here yet — check back soon'
+                                      : 'Your playlist is empty.\nAdd songs to get started.')
+                          : 'No songs match your filter',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context)
+                            .textMuted
+                            .withValues(alpha: 0.7),
+                        fontSize: AppFontSize.base,
+                      ),
+                    ),
+                    if (songs.isEmpty &&
+                        !isImported &&
+                        !widget._isAlbum &&
+                        !widget._isArtist &&
+                        !isEpisodesForLater) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      _Pill(
+                        icon: AppIcons.add,
+                        label: 'Add',
+                        onTap: () => _openAddSongsSheet(
+                          context,
+                          widget.playlistId.isNotEmpty
+                              ? widget.playlistId
+                              : playlist.id,
+                          playlistName: playlist.name,
+                          onAdded: () => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -2851,12 +2875,12 @@ class _PlaylistPillRow extends ConsumerWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(children: [
-          _Pill(
-              icon: AppIcons.add,
-              label: 'Add',
-              onTap: () => _openAddSongsSheet(context, playlistId,
-                  playlistName: playlist.name, onAdded: onPlaylistUpdated)),
           if (!isEmpty) ...[
+            _Pill(
+                icon: AppIcons.add,
+                label: 'Add',
+                onTap: () => _openAddSongsSheet(context, playlistId,
+                    playlistName: playlist.name, onAdded: onPlaylistUpdated)),
             const SizedBox(width: AppSpacing.sm),
             _Pill(
                 icon: AppIcons.edit,

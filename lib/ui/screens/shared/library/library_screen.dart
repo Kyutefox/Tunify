@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:cached_network_image/cached_network_image.dart';
-
 import 'package:tunify/ui/widgets/common/sheet.dart';
 import 'package:tunify/ui/widgets/common/confirm_dialog.dart';
 import 'package:tunify/ui/widgets/common/input_field.dart';
@@ -100,6 +98,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     required bool includeLikedSongs,
     required List<LibraryFolder> folders,
     required List<LibraryPlaylist> rootPlaylists,
+    required LibrarySortOrder sortOrder,
   }) {
     if (includeLikedSongs) {
       final downloadCount =
@@ -109,13 +108,50 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           ref.watch(podcastProvider.select((s) => s.episodesForLater.length));
       final podcasts = ref.watch(podcastSubscriptionsProvider);
       final audiobooks = ref.watch(savedAudiobooksProvider);
-      return [
+      final inFolderIds = folders.fold<Set<String>>(
+        {},
+        (set, f) => set..addAll(f.playlistIds),
+      );
+      final albums = _sortedFollowedAlbums(
+        ref
+            .watch(libraryProvider.select((s) => s.followedAlbums))
+            .where((a) => !inFolderIds.contains(a.id))
+            .toList(),
+        sortOrder,
+      );
+      final artists = _sortedFollowedArtists(
+        ref
+            .watch(libraryProvider.select((s) => s.followedArtists))
+            .where((a) => !inFolderIds.contains(a.id))
+            .toList(),
+        sortOrder,
+      );
+
+      final staticEntries = <LibrarySectionEntry>[
         LikedSongsEntry(
           songCount: ref.watch(libraryLikedCountProvider),
           onTap: () {
             Navigator.of(context).push(
               appPageRoute<void>(
                 builder: (_) => const LibraryPlaylistScreen.liked(),
+              ),
+            );
+          },
+        ),
+        EpisodesForLaterEntry(
+          episodeCount: episodesForLaterCount,
+          onTap: () {
+            Navigator.of(context).push(
+              appPageRoute<void>(
+                builder: (_) => LibraryPlaylistScreen.podcast(
+                  playlist: Playlist(
+                    id: 'episodesForLater',
+                    title: 'Episodes For Later',
+                    description: 'Your saved podcast episodes',
+                    coverUrl: '',
+                    trackCount: episodesForLaterCount,
+                  ),
+                ),
               ),
             );
           },
@@ -140,25 +176,152 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             );
           },
         ),
-        EpisodesForLaterEntry(
-          episodeCount: episodesForLaterCount,
-          onTap: () {
-            Navigator.of(context).push(
-              appPageRoute<void>(
-                builder: (_) => LibraryPlaylistScreen.podcast(
-                  playlist: Playlist(
-                    id: 'episodesForLater',
-                    title: 'Episodes For Later',
-                    description: 'Your saved podcast episodes',
-                    coverUrl: '',
-                    trackCount: episodesForLaterCount,
+      ];
+
+      final pinnedEntries = <LibrarySectionEntry>[
+        ...rootPlaylists
+            .where((p) => p.isPinned)
+            .map((p) => PlaylistEntry(p)),
+        ...podcasts
+            .where((p) => p.isPinned)
+            .map(
+              (p) => MediaLibraryEntry(
+                title: p.title,
+                subtitle: p.author ?? 'Podcast',
+                thumbnailUrl: p.thumbnailUrl,
+                placeholderIcon: AppIcons.podcast,
+                showPinIndicator: p.isPinned,
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => LibraryPlaylistScreen.podcast(
+                        playlist: Playlist(
+                          id: p.browseId ?? p.id,
+                          title: p.title,
+                          description: p.author ?? '',
+                          coverUrl: p.thumbnailUrl ?? '',
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                onOptions: (rect) => _onPlaylistOptions(
+                  _mediaAsLibraryPlaylist(
+                    id: p.browseId ?? p.id,
+                    title: p.title,
+                    subtitle: p.author ?? '',
+                    thumbnailUrl: p.thumbnailUrl,
+                    isPinned: p.isPinned,
                   ),
+                  rect,
                 ),
               ),
-            );
-          },
-        ),
-        ...podcasts.map(
+            ),
+        ...audiobooks
+            .where((a) => a.isPinned)
+            .map(
+              (a) => MediaLibraryEntry(
+                title: a.title,
+                subtitle: a.author ?? 'Audiobook',
+                thumbnailUrl: a.thumbnailUrl,
+                placeholderIcon: AppIcons.bookOpen,
+                showPinIndicator: a.isPinned,
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => LibraryPlaylistScreen.podcast(
+                        playlist: Playlist(
+                          id: a.browseId ?? a.id,
+                          title: a.title,
+                          description: a.author ?? '',
+                          coverUrl: a.thumbnailUrl ?? '',
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                onOptions: (rect) => _onPlaylistOptions(
+                  _mediaAsLibraryPlaylist(
+                    id: a.browseId ?? a.id,
+                    title: a.title,
+                    subtitle: a.author ?? '',
+                    thumbnailUrl: a.thumbnailUrl,
+                    isPinned: a.isPinned,
+                  ),
+                  rect,
+                ),
+              ),
+            ),
+        ...albums
+            .where((a) => a.isPinned)
+            .map(
+              (album) => MediaLibraryEntry(
+                title: album.title,
+                subtitle: album.artistName,
+                thumbnailUrl: album.thumbnailUrl,
+                placeholderIcon: AppIcons.album,
+                showPinIndicator: album.isPinned,
+                gridDetailSubtitle: album.artistName,
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => LibraryPlaylistScreen.album(
+                        songTitle: album.title,
+                        artistName: album.artistName,
+                        thumbnailUrl: album.thumbnailUrl,
+                        browseId: album.browseId,
+                        name: album.title,
+                      ),
+                    ),
+                  );
+                },
+                onOptions: (rect) => showFollowedAlbumOptionsSheet(
+                  context,
+                  ref,
+                  album,
+                  anchorRect: rect,
+                ),
+              ),
+            ),
+        ...artists
+            .where((a) => a.isPinned)
+            .map(
+              (artist) => MediaLibraryEntry(
+                title: artist.name,
+                subtitle: 'Artist',
+                thumbnailUrl: artist.thumbnailUrl,
+                placeholderIcon: AppIcons.person,
+                showPinIndicator: artist.isPinned,
+                circularThumbnail: true,
+                gridDetailSubtitle: 'Artist',
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => LibraryPlaylistScreen.artist(
+                        artistName: artist.name,
+                        thumbnailUrl: artist.thumbnailUrl,
+                        browseId: artist.browseId,
+                      ),
+                    ),
+                  );
+                },
+                onOptions: (rect) => showFollowedArtistOptionsSheet(
+                  context,
+                  ref,
+                  artist,
+                  anchorRect: rect,
+                ),
+              ),
+            ),
+      ];
+
+      final allEntries = <LibrarySectionEntry>[
+        ...rootPlaylists
+            .where((p) => !p.isPinned)
+            .map((p) => PlaylistEntry(p)),
+        ...podcasts
+            .where((p) => !p.isPinned)
+            .map(
           (p) => MediaLibraryEntry(
             title: p.title,
             subtitle: p.author ?? 'Podcast',
@@ -191,7 +354,9 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             ),
           ),
         ),
-        ...audiobooks.map(
+        ...audiobooks
+            .where((a) => !a.isPinned)
+            .map(
           (a) => MediaLibraryEntry(
             title: a.title,
             subtitle: a.author ?? 'Audiobook',
@@ -224,36 +389,124 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             ),
           ),
         ),
+        ...albums
+            .where((a) => !a.isPinned)
+            .map(
+              (album) => MediaLibraryEntry(
+                title: album.title,
+                subtitle: album.artistName,
+                thumbnailUrl: album.thumbnailUrl,
+                placeholderIcon: AppIcons.album,
+                showPinIndicator: album.isPinned,
+                folderSortDate: album.followedAt,
+                gridDetailSubtitle: album.artistName,
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => LibraryPlaylistScreen.album(
+                        songTitle: album.title,
+                        artistName: album.artistName,
+                        thumbnailUrl: album.thumbnailUrl,
+                        browseId: album.browseId,
+                        name: album.title,
+                      ),
+                    ),
+                  );
+                },
+                onOptions: (rect) => showFollowedAlbumOptionsSheet(
+                  context,
+                  ref,
+                  album,
+                  anchorRect: rect,
+                ),
+              ),
+            ),
+        ...artists
+            .where((a) => !a.isPinned)
+            .map(
+              (artist) => MediaLibraryEntry(
+                title: artist.name,
+                subtitle: 'Artist',
+                thumbnailUrl: artist.thumbnailUrl,
+                placeholderIcon: AppIcons.person,
+                showPinIndicator: artist.isPinned,
+                circularThumbnail: true,
+                folderSortDate: artist.followedAt,
+                gridDetailSubtitle: 'Artist',
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => LibraryPlaylistScreen.artist(
+                        artistName: artist.name,
+                        thumbnailUrl: artist.thumbnailUrl,
+                        browseId: artist.browseId,
+                      ),
+                    ),
+                  );
+                },
+                onOptions: (rect) => showFollowedArtistOptionsSheet(
+                  context,
+                  ref,
+                  artist,
+                  anchorRect: rect,
+                ),
+              ),
+            ),
+      ];
+      allEntries.sort((a, b) =>
+          _compareMainAllEntries(a, b, sortOrder));
+
+      return [
+        ...staticEntries,
+        ...pinnedEntries,
         ...folders.map((f) => FolderEntry(f)),
-        ...rootPlaylists.map((p) => PlaylistEntry(p)),
+        ...allEntries,
       ];
     }
+    final pinnedPlaylists = rootPlaylists.where((p) => p.isPinned).toList();
+    final unpinnedPlaylists = rootPlaylists.where((p) => !p.isPinned).toList();
     return [
+      ...pinnedPlaylists.map((p) => PlaylistEntry(p)),
       ...folders.map((f) => FolderEntry(f)),
-      ...rootPlaylists.map((p) => PlaylistEntry(p)),
+      ...unpinnedPlaylists.map((p) => PlaylistEntry(p)),
     ];
   }
 
-  List<LibraryPlaylist> _sortedPlaylists(
-    List<LibraryPlaylist> list,
+  int _compareMainAllEntries(
+    LibrarySectionEntry a,
+    LibrarySectionEntry b,
     LibrarySortOrder sortOrder,
   ) {
-    final copy = List<LibraryPlaylist>.from(list);
-    switch (sortOrder) {
-      case LibrarySortOrder.recent:
-        copy.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
-        break;
-      case LibrarySortOrder.recentlyAdded:
-        copy.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        break;
-      case LibrarySortOrder.alphabetical:
-        copy.sort(
-            (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-        break;
+    String titleOf(LibrarySectionEntry e) {
+      return switch (e) {
+        PlaylistEntry(:final playlist) => playlist.name,
+        MediaLibraryEntry(:final title) => title,
+        FolderEntry(:final folder) => folder.name,
+        _ => '',
+      };
     }
-    final pinned = copy.where((p) => p.isPinned).toList();
-    final unpinned = copy.where((p) => !p.isPinned).toList();
-    return [...pinned, ...unpinned];
+
+    DateTime dateOf(LibrarySectionEntry e) {
+      return switch (e) {
+        PlaylistEntry(:final playlist) => sortOrder == LibrarySortOrder.recentlyAdded
+            ? playlist.createdAt
+            : playlist.updatedAt,
+        MediaLibraryEntry(:final folderSortDate) =>
+          folderSortDate ?? DateTime.fromMillisecondsSinceEpoch(0),
+        FolderEntry(:final folder) => folder.createdAt,
+        _ => DateTime.fromMillisecondsSinceEpoch(0),
+      };
+    }
+
+    switch (sortOrder) {
+      case LibrarySortOrder.alphabetical:
+        return titleOf(a).toLowerCase().compareTo(titleOf(b).toLowerCase());
+      case LibrarySortOrder.recent:
+      case LibrarySortOrder.recentlyAdded:
+        final byDate = dateOf(b).compareTo(dateOf(a));
+        if (byDate != 0) return byDate;
+        return titleOf(a).toLowerCase().compareTo(titleOf(b).toLowerCase());
+    }
   }
 
   LibraryPlaylist _mediaAsLibraryPlaylist({
@@ -408,15 +661,13 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         final folder = _selectedFolder(folders);
         final List<LibrarySectionEntry> entries;
         if (folder != null) {
-          final allPlaylists = ref.watch(libraryProvider).playlists;
-          final idToPlaylist = {for (final p in allPlaylists) p.id: p};
-          final folderPlaylists = folder.playlistIds
-              .map((id) => idToPlaylist[id])
-              .whereType<LibraryPlaylist>()
-              .toList();
-          entries = _sortedPlaylists(folderPlaylists, sortOrder)
-              .map((p) => PlaylistEntry(p))
-              .toList();
+          entries = buildSortedFolderSectionEntries(
+            context: context,
+            ref: ref,
+            folder: folder,
+            library: ref.watch(libraryProvider),
+            sortOrder: sortOrder,
+          );
         } else {
           final isMainSection =
               _contentFilter == null || _contentFilter == LibraryFilter.all;
@@ -424,6 +675,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             includeLikedSongs: isMainSection,
             folders: folders,
             rootPlaylists: rootPlaylists,
+            sortOrder: sortOrder,
           );
         }
         final showCreateFirstPlaylistEmptyState = _contentFilter ==
@@ -444,7 +696,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           ];
         }
 
-        return [
+        final slivers = <Widget>[
           SliverToBoxAdapter(
             child: LibraryPlaylistsSection(
               entries: entries,
@@ -459,6 +711,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
             ),
           ),
         ];
+
+        return slivers;
       case LibraryFilter.podcasts:
         final podcasts = ref.watch(podcastSubscriptionsProvider);
         if (podcasts.isEmpty) {
@@ -636,7 +890,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     List<LibraryArtist> list,
     LibrarySortOrder sortOrder,
   ) {
-    final copy = List<LibraryArtist>.from(list);
+    final pinned = list.where((a) => a.isPinned).toList();
+    final copy = list.where((a) => !a.isPinned).toList();
     switch (sortOrder) {
       case LibrarySortOrder.alphabetical:
         copy.sort(
@@ -645,14 +900,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       case LibrarySortOrder.recentlyAdded:
         copy.sort((a, b) => b.followedAt.compareTo(a.followedAt));
     }
-    return copy;
+    return [...pinned, ...copy];
   }
 
   List<LibraryAlbum> _sortedFollowedAlbums(
     List<LibraryAlbum> list,
     LibrarySortOrder sortOrder,
   ) {
-    final copy = List<LibraryAlbum>.from(list);
+    final pinned = list.where((a) => a.isPinned).toList();
+    final copy = list.where((a) => !a.isPinned).toList();
     switch (sortOrder) {
       case LibrarySortOrder.alphabetical:
         copy.sort(
@@ -661,7 +917,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       case LibrarySortOrder.recentlyAdded:
         copy.sort((a, b) => b.followedAt.compareTo(a.followedAt));
     }
-    return copy;
+    return [...pinned, ...copy];
   }
 
   void _onPlaylistTap(LibraryPlaylist playlist) {
@@ -703,80 +959,25 @@ class _FollowedArtistsList extends ConsumerWidget {
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
       itemBuilder: (context, index) {
         final artist = artists[index];
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => Navigator.of(context).push(
-              appPageRoute<void>(
-                builder: (_) => LibraryPlaylistScreen.artist(
-                  artistName: artist.name,
-                  thumbnailUrl: artist.thumbnailUrl,
-                  browseId: artist.browseId,
-                ),
-              ),
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: AppSpacing.sm,
-              ),
-              child: Row(
-                children: [
-                  ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: artist.thumbnailUrl,
-                      width: 52,
-                      height: 52,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => Container(
-                        width: 52,
-                        height: 52,
-                        color: AppColorsScheme.of(context).surfaceLight,
-                        child: AppIcon(
-                            icon: AppIcons.person,
-                            color: AppColorsScheme.of(context).textMuted,
-                            size: 28),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          artist.name,
-                          style: TextStyle(
-                            color: AppColorsScheme.of(context).textPrimary,
-                            fontSize: AppFontSize.lg,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          'Artist',
-                          style: TextStyle(
-                              color: AppColorsScheme.of(context).textMuted,
-                              fontSize: AppFontSize.md),
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: AppIcon(
-                        icon: AppIcons.checkCircle,
-                        color: AppColors.primary,
-                        size: 22),
-                    onPressed: () => ref
-                        .read(libraryProvider.notifier)
-                        .toggleFollowArtist(artist),
-                    iconSize: 22,
-                  ),
-                ],
+        return LibraryItemTile(
+          title: artist.name,
+          subtitle: 'Artist',
+          thumbnailUrl: artist.thumbnailUrl,
+          placeholderIcon: AppIcons.person,
+          showPinIndicator: artist.isPinned,
+          circularThumbnail: true,
+          onTap: () => Navigator.of(context).push(
+            appPageRoute<void>(
+              builder: (_) => LibraryPlaylistScreen.artist(
+                artistName: artist.name,
+                thumbnailUrl: artist.thumbnailUrl,
+                browseId: artist.browseId,
               ),
             ),
           ),
+          onOptions: (rect) =>
+              showFollowedArtistOptionsSheet(context, ref, artist,
+                  anchorRect: rect),
         );
       },
     );
@@ -804,61 +1005,27 @@ class _FollowedArtistsGrid extends ConsumerWidget {
       itemCount: artists.length,
       itemBuilder: (context, index) {
         final artist = artists[index];
-        return GestureDetector(
-          onTap: () => Navigator.of(context).push(
-            appPageRoute<void>(
-              builder: (_) => LibraryPlaylistScreen.artist(
-                artistName: artist.name,
-                thumbnailUrl: artist.thumbnailUrl,
-                browseId: artist.browseId,
+        return MediaLibraryGridCard(
+          entry: MediaLibraryEntry(
+            title: artist.name,
+            subtitle: 'Artist',
+            thumbnailUrl: artist.thumbnailUrl,
+            placeholderIcon: AppIcons.person,
+            showPinIndicator: artist.isPinned,
+            circularThumbnail: true,
+            gridDetailSubtitle: 'Artist',
+            onTap: () => Navigator.of(context).push(
+              appPageRoute<void>(
+                builder: (_) => LibraryPlaylistScreen.artist(
+                  artistName: artist.name,
+                  thumbnailUrl: artist.thumbnailUrl,
+                  browseId: artist.browseId,
+                ),
               ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppColorsScheme.of(context).surfaceLight,
-                    shape: BoxShape.circle,
-                  ),
-                  child: ClipOval(
-                    child: CachedNetworkImage(
-                      imageUrl: artist.thumbnailUrl,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => AppIcon(
-                        icon: AppIcons.person,
-                        color: AppColorsScheme.of(context).textMuted,
-                        size: 40,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                artist.name,
-                style: TextStyle(
-                  color: AppColorsScheme.of(context).textPrimary,
-                  fontSize: AppFontSize.md,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-              Text(
-                'Artist',
-                style: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted,
-                    fontSize: AppFontSize.xs),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-              ),
-            ],
+            onOptions: (rect) =>
+                showFollowedArtistOptionsSheet(context, ref, artist,
+                    anchorRect: rect),
           ),
         );
       },
@@ -881,85 +1048,26 @@ class _FollowedAlbumsList extends ConsumerWidget {
       separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
       itemBuilder: (context, index) {
         final album = albums[index];
-        return Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: () => Navigator.of(context).push(
-              appPageRoute<void>(
-                builder: (_) => LibraryPlaylistScreen.album(
-                  songTitle: album.title,
-                  artistName: album.artistName,
-                  thumbnailUrl: album.thumbnailUrl,
-                  browseId: album.browseId,
-                  name: album.title,
-                ),
-              ),
-            ),
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                vertical: AppSpacing.sm,
-              ),
-              child: Row(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.sm),
-                    child: CachedNetworkImage(
-                      imageUrl: album.thumbnailUrl,
-                      width: 52,
-                      height: 52,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => Container(
-                        width: 52,
-                        height: 52,
-                        color: AppColorsScheme.of(context).surfaceLight,
-                        child: AppIcon(
-                            icon: AppIcons.album,
-                            color: AppColorsScheme.of(context).textMuted,
-                            size: 28),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          album.title,
-                          style: TextStyle(
-                            color: AppColorsScheme.of(context).textPrimary,
-                            fontSize: AppFontSize.lg,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          album.artistName,
-                          style: TextStyle(
-                              color: AppColorsScheme.of(context).textMuted,
-                              fontSize: AppFontSize.md),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: AppIcon(
-                        icon: AppIcons.checkCircle,
-                        color: AppColors.primary,
-                        size: 22),
-                    onPressed: () => ref
-                        .read(libraryProvider.notifier)
-                        .toggleFollowAlbum(album),
-                    iconSize: 22,
-                  ),
-                ],
+        return LibraryItemTile(
+          title: album.title,
+          subtitle: album.artistName,
+          thumbnailUrl: album.thumbnailUrl,
+          placeholderIcon: AppIcons.album,
+          showPinIndicator: album.isPinned,
+          onTap: () => Navigator.of(context).push(
+            appPageRoute<void>(
+              builder: (_) => LibraryPlaylistScreen.album(
+                songTitle: album.title,
+                artistName: album.artistName,
+                thumbnailUrl: album.thumbnailUrl,
+                browseId: album.browseId,
+                name: album.title,
               ),
             ),
           ),
+          onOptions: (rect) =>
+              showFollowedAlbumOptionsSheet(context, ref, album,
+                  anchorRect: rect),
         );
       },
     );
@@ -987,62 +1095,28 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
       itemCount: albums.length,
       itemBuilder: (context, index) {
         final album = albums[index];
-        return GestureDetector(
-          onTap: () => Navigator.of(context).push(
-            appPageRoute<void>(
-              builder: (_) => LibraryPlaylistScreen.album(
-                songTitle: album.title,
-                artistName: album.artistName,
-                thumbnailUrl: album.thumbnailUrl,
-                browseId: album.browseId,
-                name: album.title,
+        return MediaLibraryGridCard(
+          entry: MediaLibraryEntry(
+            title: album.title,
+            subtitle: album.artistName,
+            thumbnailUrl: album.thumbnailUrl,
+            placeholderIcon: AppIcons.album,
+            showPinIndicator: album.isPinned,
+            gridDetailSubtitle: album.artistName,
+            onTap: () => Navigator.of(context).push(
+              appPageRoute<void>(
+                builder: (_) => LibraryPlaylistScreen.album(
+                  songTitle: album.title,
+                  artistName: album.artistName,
+                  thumbnailUrl: album.thumbnailUrl,
+                  browseId: album.browseId,
+                  name: album.title,
+                ),
               ),
             ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: AppColorsScheme.of(context).surfaceLight,
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(AppRadius.md),
-                    child: CachedNetworkImage(
-                      imageUrl: album.thumbnailUrl,
-                      fit: BoxFit.cover,
-                      errorWidget: (_, __, ___) => AppIcon(
-                        icon: AppIcons.album,
-                        color: AppColorsScheme.of(context).textMuted,
-                        size: 40,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                album.title,
-                style: TextStyle(
-                  color: AppColorsScheme.of(context).textPrimary,
-                  fontSize: AppFontSize.md,
-                  fontWeight: FontWeight.w600,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                album.artistName,
-                style: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted,
-                    fontSize: AppFontSize.xs),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+            onOptions: (rect) =>
+                showFollowedAlbumOptionsSheet(context, ref, album,
+                    anchorRect: rect),
           ),
         );
       },
@@ -1386,6 +1460,362 @@ void showLibraryPlaylistOptionsSheet(
       },
     ),
   );
+}
+
+void showFollowedAlbumOptionsSheet(
+  BuildContext context,
+  WidgetRef ref,
+  LibraryAlbum album, {
+  Rect? anchorRect,
+}) {
+  final playlistShell = LibraryPlaylist(
+    id: album.id,
+    name: album.title,
+    description: album.artistName,
+    createdAt: album.followedAt,
+    updatedAt: album.followedAt,
+    isPinned: album.isPinned,
+  );
+  final isDesktop = ShellContext.isDesktopPlatform;
+
+  if (isDesktop) {
+    final folders = ref.read(libraryFoldersProvider);
+    final folderSubEntries = folders.map((f) {
+      final alreadyIn = f.playlistIds.contains(album.id);
+      return AppMenuEntry(
+        icon: alreadyIn ? AppIcons.checkCircle : AppIcons.folder,
+        label: f.name,
+        color: alreadyIn ? AppColors.primary : null,
+        onTap: () {
+          if (alreadyIn) {
+            ref
+                .read(libraryProvider.notifier)
+                .removePlaylistFromFolder(f.id, album.id);
+          } else {
+            ref
+                .read(libraryProvider.notifier)
+                .addPlaylistToFolder(f.id, album.id);
+          }
+        },
+      );
+    }).toList();
+
+    showAdaptiveMenu(
+      context,
+      title: album.title,
+      entries: [
+        AppMenuEntry(
+          icon: album.isPinned ? AppIcons.pinOff : AppIcons.pin,
+          label: album.isPinned ? 'Unpin' : 'Pin to top',
+          onTap: () => ref
+              .read(libraryProvider.notifier)
+              .toggleAlbumPin(album),
+        ),
+        if (folders.isNotEmpty)
+          AppMenuEntry(
+            icon: AppIcons.folder,
+            label: 'Add to folder',
+            onTap: () {},
+            subEntries: folderSubEntries,
+          ),
+        const AppMenuEntry.divider(),
+        AppMenuEntry(
+          icon: AppIcons.deleteOutline,
+          label: 'Delete',
+          color: AppColors.secondary,
+          onTap: () async {
+            final confirmed = await showConfirmDialog(
+              context,
+              title: 'Remove album?',
+              message:
+                  '${album.title.capitalized} will be removed from your library.',
+              confirmLabel: 'Remove',
+            );
+            if (confirmed) {
+              await ref
+                  .read(libraryProvider.notifier)
+                  .toggleFollowAlbum(album);
+            }
+          },
+        ),
+      ],
+      anchorRect: anchorRect,
+      forceDesktop: true,
+    );
+    return;
+  }
+
+  showAppSheet(
+    context,
+    child: LibraryPlaylistSheet(
+      playlist: playlistShell,
+      onTogglePin: () {
+        ref.read(libraryProvider.notifier).toggleAlbumPin(album);
+      },
+      onDelete: () async {
+        final confirmed = await showConfirmDialog(
+          context,
+          title: 'Remove album?',
+          message:
+              '${album.title.capitalized} will be removed from your library.',
+          confirmLabel: 'Remove',
+        );
+        if (confirmed) {
+          await ref.read(libraryProvider.notifier).toggleFollowAlbum(album);
+        }
+      },
+      onAddToFolder: () async {
+        final navigator = Navigator.of(context);
+        await showAddToFolderSheet(context, ref, album.id);
+        if (navigator.mounted) navigator.pop();
+      },
+    ),
+  );
+}
+
+void showFollowedArtistOptionsSheet(
+  BuildContext context,
+  WidgetRef ref,
+  LibraryArtist artist, {
+  Rect? anchorRect,
+}) {
+  final playlistShell = LibraryPlaylist(
+    id: artist.id,
+    name: artist.name,
+    description: '',
+    createdAt: artist.followedAt,
+    updatedAt: artist.followedAt,
+    isPinned: artist.isPinned,
+  );
+  final isDesktop = ShellContext.isDesktopPlatform;
+
+  if (isDesktop) {
+    final folders = ref.read(libraryFoldersProvider);
+    final folderSubEntries = folders.map((f) {
+      final alreadyIn = f.playlistIds.contains(artist.id);
+      return AppMenuEntry(
+        icon: alreadyIn ? AppIcons.checkCircle : AppIcons.folder,
+        label: f.name,
+        color: alreadyIn ? AppColors.primary : null,
+        onTap: () {
+          if (alreadyIn) {
+            ref
+                .read(libraryProvider.notifier)
+                .removePlaylistFromFolder(f.id, artist.id);
+          } else {
+            ref
+                .read(libraryProvider.notifier)
+                .addPlaylistToFolder(f.id, artist.id);
+          }
+        },
+      );
+    }).toList();
+
+    showAdaptiveMenu(
+      context,
+      title: artist.name,
+      entries: [
+        AppMenuEntry(
+          icon: artist.isPinned ? AppIcons.pinOff : AppIcons.pin,
+          label: artist.isPinned ? 'Unpin' : 'Pin to top',
+          onTap: () => ref
+              .read(libraryProvider.notifier)
+              .toggleArtistPin(artist),
+        ),
+        if (folders.isNotEmpty)
+          AppMenuEntry(
+            icon: AppIcons.folder,
+            label: 'Add to folder',
+            onTap: () {},
+            subEntries: folderSubEntries,
+          ),
+        const AppMenuEntry.divider(),
+        AppMenuEntry(
+          icon: AppIcons.deleteOutline,
+          label: 'Delete',
+          color: AppColors.secondary,
+          onTap: () async {
+            final confirmed = await showConfirmDialog(
+              context,
+              title: 'Unfollow artist?',
+              message:
+                  '${artist.name.capitalized} will be removed from your library.',
+              confirmLabel: 'Remove',
+            );
+            if (confirmed) {
+              await ref
+                  .read(libraryProvider.notifier)
+                  .toggleFollowArtist(artist);
+            }
+          },
+        ),
+      ],
+      anchorRect: anchorRect,
+      forceDesktop: true,
+    );
+    return;
+  }
+
+  showAppSheet(
+    context,
+    child: LibraryPlaylistSheet(
+      playlist: playlistShell,
+      onTogglePin: () {
+        ref.read(libraryProvider.notifier).toggleArtistPin(artist);
+      },
+      onDelete: () async {
+        final confirmed = await showConfirmDialog(
+          context,
+          title: 'Unfollow artist?',
+          message:
+              '${artist.name.capitalized} will be removed from your library.',
+          confirmLabel: 'Remove',
+        );
+        if (confirmed) {
+          await ref.read(libraryProvider.notifier).toggleFollowArtist(artist);
+        }
+      },
+      onAddToFolder: () async {
+        final navigator = Navigator.of(context);
+        await showAddToFolderSheet(context, ref, artist.id);
+        if (navigator.mounted) navigator.pop();
+      },
+    ),
+  );
+}
+
+bool _folderEntryPinned(LibrarySectionEntry e) {
+  return switch (e) {
+    PlaylistEntry(:final playlist) => playlist.isPinned,
+    MediaLibraryEntry(:final showPinIndicator) => showPinIndicator,
+    _ => false,
+  };
+}
+
+String _folderEntryTitle(LibrarySectionEntry e) {
+  return switch (e) {
+    PlaylistEntry(:final playlist) => playlist.name,
+    MediaLibraryEntry(:final title) => title,
+    FolderEntry(:final folder) => folder.name,
+    _ => '',
+  };
+}
+
+DateTime _folderEntryDate(LibrarySectionEntry e) {
+  return switch (e) {
+    PlaylistEntry(:final playlist) => playlist.updatedAt,
+    MediaLibraryEntry(:final folderSortDate) =>
+      folderSortDate ?? DateTime.fromMillisecondsSinceEpoch(0),
+    FolderEntry(:final folder) => folder.createdAt,
+    _ => DateTime.fromMillisecondsSinceEpoch(0),
+  };
+}
+
+int _compareFolderSectionEntries(
+  LibrarySectionEntry a,
+  LibrarySectionEntry b,
+  LibrarySortOrder sortOrder,
+) {
+  final pinA = _folderEntryPinned(a);
+  final pinB = _folderEntryPinned(b);
+  if (pinA != pinB) {
+    return pinA ? -1 : 1;
+  }
+  switch (sortOrder) {
+    case LibrarySortOrder.alphabetical:
+      return _folderEntryTitle(a)
+          .toLowerCase()
+          .compareTo(_folderEntryTitle(b).toLowerCase());
+    case LibrarySortOrder.recent:
+    case LibrarySortOrder.recentlyAdded:
+      return _folderEntryDate(b).compareTo(_folderEntryDate(a));
+  }
+}
+
+/// Builds folder contents including playlists, followed albums, and artists.
+List<LibrarySectionEntry> buildSortedFolderSectionEntries({
+  required BuildContext context,
+  required WidgetRef ref,
+  required LibraryFolder folder,
+  required LibraryState library,
+  required LibrarySortOrder sortOrder,
+}) {
+  final idToPlaylist = {for (final p in library.playlists) p.id: p};
+  final idToAlbum = {for (final a in library.followedAlbums) a.id: a};
+  final idToArtist = {for (final a in library.followedArtists) a.id: a};
+
+  final raw = <LibrarySectionEntry>[];
+  for (final id in folder.playlistIds) {
+    final p = idToPlaylist[id];
+    if (p != null) {
+      raw.add(PlaylistEntry(p));
+      continue;
+    }
+    final album = idToAlbum[id];
+    if (album != null) {
+      raw.add(
+        MediaLibraryEntry(
+          title: album.title,
+          subtitle: album.artistName,
+          thumbnailUrl: album.thumbnailUrl,
+          placeholderIcon: AppIcons.album,
+          showPinIndicator: album.isPinned,
+          folderSortDate: album.followedAt,
+          gridDetailSubtitle: album.artistName,
+          onTap: () {
+            Navigator.of(context).push(
+              appPageRoute<void>(
+                builder: (_) => LibraryPlaylistScreen.album(
+                  songTitle: album.title,
+                  artistName: album.artistName,
+                  thumbnailUrl: album.thumbnailUrl,
+                  browseId: album.browseId,
+                  name: album.title,
+                ),
+              ),
+            );
+          },
+          onOptions: (rect) =>
+              showFollowedAlbumOptionsSheet(context, ref, album,
+                  anchorRect: rect),
+        ),
+      );
+      continue;
+    }
+    final artist = idToArtist[id];
+    if (artist != null) {
+      raw.add(
+        MediaLibraryEntry(
+          title: artist.name,
+          subtitle: 'Artist',
+          thumbnailUrl: artist.thumbnailUrl,
+          placeholderIcon: AppIcons.person,
+          showPinIndicator: artist.isPinned,
+          circularThumbnail: true,
+          folderSortDate: artist.followedAt,
+          gridDetailSubtitle: 'Artist',
+          onTap: () {
+            Navigator.of(context).push(
+              appPageRoute<void>(
+                builder: (_) => LibraryPlaylistScreen.artist(
+                  artistName: artist.name,
+                  thumbnailUrl: artist.thumbnailUrl,
+                  browseId: artist.browseId,
+                ),
+              ),
+            );
+          },
+          onOptions: (rect) =>
+              showFollowedArtistOptionsSheet(context, ref, artist,
+                  anchorRect: rect),
+        ),
+      );
+    }
+  }
+
+  final sorted = List<LibrarySectionEntry>.from(raw)
+    ..sort((a, b) => _compareFolderSectionEntries(a, b, sortOrder));
+  return sorted;
 }
 
 /// Shows the folder options sheet (pin, rename, delete).

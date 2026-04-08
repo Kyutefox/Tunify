@@ -8,7 +8,7 @@ import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/player/lyrics_provider.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
-import 'package:tunify/ui/screens/desktop/player/player_screen.dart'
+import 'package:tunify/ui/screens/shared/player/player_mobile_sheets.dart'
     show
         showQueueSheet,
         showLyricsSheet,

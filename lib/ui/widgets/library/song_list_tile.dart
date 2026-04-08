@@ -7,8 +7,7 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
-import 'package:tunify/ui/widgets/common/hover_tile.dart';
+import 'package:tunify/ui/theme/app_tokens.dart';
 import 'package:tunify/ui/screens/shared/home/home_shared.dart';
 import '../player/now_playing_indicator.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
@@ -180,16 +179,6 @@ class SongListTile extends ConsumerWidget {
         ],
       ),
     );
-
-    if (t.isDesktop) {
-      return HoverTile(
-        borderRadius: AppRadius.sm,
-        child: InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(AppRadius.sm),
-            child: tile),
-      );
-    }
 
     return InkWell(
       onTap: () {

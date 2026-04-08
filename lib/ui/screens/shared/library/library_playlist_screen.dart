@@ -55,12 +55,7 @@ import 'package:tunify/ui/widgets/common/section_header.dart';
 import 'package:tunify/ui/widgets/common/artist_avatar.dart';
 import 'package:tunify/ui/screens/shared/home/home_sections.dart';
 import 'package:tunify/ui/screens/shared/home/home_skeletons.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
-
-const double _playlistDurationColumnWidth = 56;
-const double _playlistActionColumnWidth = 56;
-const double kDesktopCollectionContentInset = AppSpacing.xl;
+import 'package:tunify/ui/theme/app_tokens.dart';
 
 enum CollectionType { playlist, album, artist, podcast }
 
@@ -2401,10 +2396,9 @@ class _PlaylistCover extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
-    Widget wrapCover(Widget child) => isDesktop ? child : Center(child: child);
+    Widget wrapCover(Widget child) => Center(child: child);
     final horizontalCoverMargin =
-        isDesktop ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: AppSpacing.base);
+        const EdgeInsets.symmetric(horizontal: AppSpacing.base);
     final shadow = BoxShadow(
         color: Colors.black.withValues(alpha: 0.3),
         blurRadius: 16,
@@ -2706,7 +2700,6 @@ class _ActionRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDesktop = ShellContext.isDesktopOf(context);
     final ShuffleMode shuffleMode = externalShuffleMode ??
         (isDownloads || isLocalFiles
             ? ref.watch(libraryProvider.select((s) => s.downloadedShuffleMode))
@@ -2722,7 +2715,7 @@ class _ActionRow extends ConsumerWidget {
       height: kCollectionActionRowHeight,
       child: Padding(
         padding: EdgeInsets.only(
-          left: isDesktop ? 0 : AppSpacing.sm,
+          left: AppSpacing.sm,
           right: AppSpacing.sm,
         ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
@@ -2808,7 +2801,7 @@ class _ActionRow extends ConsumerWidget {
             ),
           ],
           const Spacer(),
-          SizedBox(width: isDesktop ? 72 : 56),
+          SizedBox(width: 56),
         ]),
       ),
     );
@@ -3797,11 +3790,9 @@ class _SearchInPlaylistTap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
     return Padding(
       padding: EdgeInsets.symmetric(
-        horizontal:
-            isDesktop ? kDesktopCollectionContentInset : AppSpacing.base,
+        horizontal: AppSpacing.base,
       ),
       child: GestureDetector(
         onTap: () => Navigator.of(context).push(appPageRoute<void>(
@@ -3983,22 +3974,20 @@ class _TrackTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isDesktop = ShellContext.isDesktopOf(context);
     final tile = SongListTile(
       song: song,
-      index: isDesktop ? index : null,
-      thumbnailSize: isDesktop ? 44 : 48,
+      index: null,
+      thumbnailSize: 48,
       contentPadding: EdgeInsets.symmetric(
-        horizontal:
-            isDesktop ? kDesktopCollectionContentInset : AppSpacing.base,
-        vertical: isDesktop ? 4 : AppSpacing.xs,
+        horizontal: AppSpacing.base,
+        vertical: AppSpacing.xs,
       ),
-      showIndexIndicator: isDesktop,
+      showIndexIndicator: false,
       onTap: () => ref.read(playerProvider.notifier).playSong(song,
           queue: songs, playlistId: playlistId, queueSource: queueSource),
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         SizedBox(
-          width: isDesktop ? _playlistDurationColumnWidth : null,
+          width: null,
           child: Center(
             child: Text(
               song.durationFormatted,
@@ -4009,12 +3998,12 @@ class _TrackTile extends ConsumerWidget {
               style: TextStyle(
                   color: AppColorsScheme.of(context).textMuted,
                   fontSize: AppFontSize.sm,
-                  fontWeight: isDesktop ? FontWeight.w500 : FontWeight.w400),
+                  fontWeight: FontWeight.w400),
             ),
           ),
         ),
         SizedBox(
-          width: isDesktop ? _playlistActionColumnWidth : null,
+          width: null,
           child: AppIconButton(
             icon: AppIcon(
                 icon: AppIcons.moreVert,
@@ -4078,20 +4067,7 @@ class _TrackTile extends ConsumerWidget {
         ),
       ]),
     );
-    if (!isDesktop) return tile;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        tile,
-        Divider(
-          height: 1,
-          thickness: 0.5,
-          indent: AppSpacing.xl,
-          endIndent: AppSpacing.xl,
-          color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.12),
-        ),
-      ],
-    );
+    return tile;
   }
 }
 
@@ -4656,7 +4632,6 @@ class _PlaylistShelfSectionState extends ConsumerState<_PlaylistShelfSection>
     with PagedSectionMixin {
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
     final layout = ContentLayout.of(context, ref, itemWidth: 200, maxCols: 6);
     final totalPages = (widget.playlists.length / layout.cols).ceil();
     final hasOverflow = totalPages > 1;
@@ -4676,7 +4651,7 @@ class _PlaylistShelfSectionState extends ConsumerState<_PlaylistShelfSection>
               : null,
         ),
         PlaylistsRow(playlists: widget.playlists, pageController: pageCtrl),
-        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+        SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
@@ -4702,7 +4677,6 @@ class _ArtistShelfSectionState extends ConsumerState<_ArtistShelfSection>
     with PagedSectionMixin {
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
     final layout = ContentLayout.of(context, ref, itemWidth: 200, maxCols: 6);
     const gap = AppSpacing.xl;
     const rows = 1;
@@ -4805,7 +4779,7 @@ class _ArtistShelfSectionState extends ConsumerState<_ArtistShelfSection>
               : null,
         ),
         content,
-        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+        SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
@@ -4834,8 +4808,6 @@ class _RecommendationsSliver extends StatelessWidget {
     if (!loading && !hasData) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
-
-    final isDesktop = ShellContext.isDesktopOf(context);
 
     // Build loaded content
     Widget loadedContent;
@@ -4886,10 +4858,10 @@ class _RecommendationsSliver extends StatelessWidget {
         children: [
           const SectionSkeleton(
               title: 'Related Playlists', child: PlaylistsRowSkeleton()),
-          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+          SizedBox(height: AppSpacing.xxl),
           const SectionSkeleton(
               title: 'Featured Artists', child: ArtistsRowSkeleton()),
-          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+          SizedBox(height: AppSpacing.xxl),
         ],
       );
     } else {
@@ -4897,7 +4869,7 @@ class _RecommendationsSliver extends StatelessWidget {
         children: [
           const SectionSkeleton(
               title: 'Related Playlists', child: PlaylistsRowSkeleton()),
-          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+          SizedBox(height: AppSpacing.xxl),
         ],
       );
     }

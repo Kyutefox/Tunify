@@ -8,10 +8,9 @@ import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/widgets/common/section_header.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_tokens.dart';
 import 'home_sections.dart';
 import 'home_shared.dart';
 import 'home_skeletons.dart';
@@ -95,7 +94,6 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection>
   Widget build(BuildContext context) {
     final isLoading = ref.watch(homeIsLoadingProvider);
     final quickPicks = ref.watch(quickPicksProvider);
-    final isDesktop = ShellContext.isDesktopOf(context);
     final layout =
         ContentLayout.of(context, ref, itemWidth: 240, minCols: 1, maxCols: 3);
     const maxRows = 4;
@@ -137,7 +135,7 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection>
               songs: quickPicks,
               onPlay: widget.onPlay,
               pageController: pageCtrl),
-          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+          SizedBox(height: AppSpacing.xxl),
         ],
       ),
       loadingChild: Column(
@@ -164,7 +162,7 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection>
             ),
           ),
           const QuickPicksRowSkeleton(),
-          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+          SizedBox(height: AppSpacing.xxl),
         ],
       ),
     );
@@ -183,11 +181,10 @@ class _DynamicSectionsSkeletonGate extends ConsumerWidget {
     if (!isLoading || dynamicSections.isNotEmpty) {
       return const SizedBox.shrink();
     }
-    final isDesktop = ShellContext.isDesktopOf(context);
     return Column(
       children: [
         const DynamicSectionsSkeleton(),
-        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+        SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
@@ -219,7 +216,6 @@ class _DynamicSectionsSliceState extends ConsumerState<_DynamicSectionsSlice> {
   @override
   Widget build(BuildContext context) {
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
-    final isDesktop = ShellContext.isDesktopOf(context);
 
     final filtered = dynamicSections
         .where((s) => !s.titleLower.contains('quick pick'))
@@ -241,7 +237,6 @@ class _DynamicSectionsSliceState extends ConsumerState<_DynamicSectionsSlice> {
               artists: filtered[idx].artists,
               onPlay: widget.onPlay,
               pageController: _ctrlFor(idx),
-              isDesktop: isDesktop,
             ),
           ),
       ],
@@ -260,7 +255,6 @@ class _SectionWithNav extends ConsumerStatefulWidget {
     required this.artists,
     required this.onPlay,
     this.pageController,
-    required this.isDesktop,
   });
   final String title;
   final String? subtitle;
@@ -270,7 +264,6 @@ class _SectionWithNav extends ConsumerStatefulWidget {
   final List<Artist> artists;
   final void Function(Song song) onPlay;
   final PageController? pageController;
-  final bool isDesktop;
 
   @override
   ConsumerState<_SectionWithNav> createState() => _SectionWithNavState();
@@ -373,8 +366,7 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav>
           PlaylistsRow(playlists: widget.playlists, pageController: _ctrl),
         if (widget.type == HomeSectionType.artists)
           ArtistsRow(artists: widget.artists, pageController: _ctrl),
-        SizedBox(
-            height: widget.isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+        SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
@@ -396,7 +388,6 @@ class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection>
     final isLoading = ref.watch(homeIsLoadingProvider);
     final playlists = ref.watch(homePlaylistsProvider);
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
-    final isDesktop = ShellContext.isDesktopOf(context);
     final layout = ContentLayout.of(context, ref);
     final hasDynamicPlaylists =
         dynamicSections.any((s) => s.type == HomeSectionType.playlists);
@@ -421,8 +412,7 @@ class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection>
                       : null,
                 ),
                 PlaylistsRow(playlists: playlists, pageController: pageCtrl),
-                SizedBox(
-                    height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+                SizedBox(height: AppSpacing.xxl),
               ],
             )
           : const SizedBox.shrink(),
@@ -441,7 +431,7 @@ class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection>
                 : null,
           ),
           const PlaylistsRowSkeleton(),
-          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+          SizedBox(height: AppSpacing.xxl),
         ],
       ),
     );
@@ -464,7 +454,6 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection>
     final isLoading = ref.watch(homeIsLoadingProvider);
     final artists = ref.watch(homeArtistsProvider);
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
-    final isDesktop = ShellContext.isDesktopOf(context);
     final layout = ContentLayout.of(context, ref);
     final hasDynamicArtists =
         dynamicSections.any((s) => s.type == HomeSectionType.artists);
@@ -489,8 +478,7 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection>
                       : null,
                 ),
                 ArtistsRow(artists: artists, pageController: pageCtrl),
-                SizedBox(
-                    height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+                SizedBox(height: AppSpacing.xxl),
               ],
             )
           : const SizedBox.shrink(),
@@ -509,7 +497,7 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection>
                 : null,
           ),
           const ArtistsRowSkeleton(),
-          SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+          SizedBox(height: AppSpacing.xxl),
         ],
       ),
     );

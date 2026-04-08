@@ -4,7 +4,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/screens/shared/library/library_app_bar.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_tokens.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class LibraryFilterChips extends StatefulWidget {
@@ -318,13 +318,11 @@ class _LibraryChip extends StatelessWidget {
   final double? animT;
 
   static const double _mobileHeight = 32;
-  static const double _desktopHeight = 36;
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
-    final chipHeight = t.isDesktop ? _desktopHeight : _mobileHeight;
-    final hPad = t.isDesktop ? t.spacing.md : AppSpacing.md;
+    final chipHeight = _mobileHeight;
+    final hPad = AppSpacing.md;
     final tv = animT ?? (selected ? 1.0 : 0.0);
     return Material(
       color: Colors.transparent,

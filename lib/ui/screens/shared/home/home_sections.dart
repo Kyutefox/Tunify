@@ -12,10 +12,9 @@ import 'package:tunify/ui/widgets/player/mood_browse_sheet.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_tokens.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/screens/shared/player/song_options_sheet.dart';
 import 'home_shared.dart';
@@ -52,8 +51,7 @@ class RecentlyPlayedRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hList =
-        ShellContext.isDesktopOf(context) ? DesktopSpacing.lg : AppSpacing.base;
+    const hList = AppSpacing.base;
     return SizedBox(
       height: 188,
       child: ListView.separated(
@@ -174,8 +172,7 @@ class _QuickPicksRowState extends ConsumerState<QuickPicksRow>
     final layout =
         ContentLayout.of(context, ref, itemWidth: 240, minCols: 1, maxCols: 3);
     const maxRows = 4;
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final tileH = isDesktop ? 72.0 : (layout.cols > 2 ? 88.0 : 72.0);
+    final tileH = (layout.cols > 2 ? 88.0 : 72.0);
     const gap = AppSpacing.sm;
 
     final songs = widget.songs;
@@ -280,7 +277,6 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
   @override
   Widget build(BuildContext context) {
     final status = NowPlayingStatus.of(ref, widget.song.id);
-    final isDesktop = ShellContext.isDesktopOf(context);
 
     final thumbSize = widget.height - AppSpacing.sm * 2;
     final thumb = ClipRRect(
@@ -354,7 +350,7 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
             : Colors.transparent,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
-      // No extra horizontal padding on desktop: [SectionHeader] and playlist
+      // No extra horizontal padding: [SectionHeader] and playlist
       // cards align to the same content inset; padding here made song tiles look shifted.
       child: Row(
         children: [
@@ -383,14 +379,12 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
       ),
     );
 
-    if (isDesktop) {
-      tile = MouseRegion(
-        cursor: SystemMouseCursors.click,
-        onEnter: (_) => setState(() => _hovered = true),
-        onExit: (_) => setState(() => _hovered = false),
-        child: tile,
-      );
-    }
+    tile = MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: tile,
+    );
 
     return PressScale(onTap: widget.onTap, scale: 0.96, child: tile);
   }
@@ -519,9 +513,7 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
     final page = saved
         ? LibraryPlaylistScreen(playlistId: widget.playlist.id)
         : LibraryPlaylistScreen.remote(playlist: widget.playlist);
-    if (!ShellContext.pushDetail(context, page)) {
-      Navigator.of(context).push(appPageRoute<void>(builder: (_) => page));
-    }
+    Navigator.of(context).push(appPageRoute<void>(builder: (_) => page));
   }
 
   @override

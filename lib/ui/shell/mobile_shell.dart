@@ -9,8 +9,7 @@ import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
-import 'package:tunify/ui/screens/desktop/home/home_screen.dart';
+import 'package:tunify/ui/screens/mobile/home/home_screen.dart';
 import '../screens/shared/library/library_screen.dart';
 import '../screens/shared/auth/loading_screen.dart';
 import '../screens/shared/search/search_screen.dart';
@@ -20,8 +19,7 @@ import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Standard mobile shell: bottom nav bar + mini player + IndexedStack.
 ///
-/// Used on iOS and Android. Wraps the tree with [ShellContext(isDesktop: false)]
-/// so descendant screens and widgets can adapt their chrome accordingly.
+/// Used on iOS and Android.
 class MobileShell extends ConsumerStatefulWidget {
   const MobileShell({super.key});
 
@@ -67,53 +65,47 @@ class _MobileShellState extends ConsumerState<MobileShell> {
     if (showGuestHomeFullScreenLoading) {
       return AnnotatedRegion<SystemUiOverlayStyle>(
         value: overlayStyle,
-        child: ShellContext(
-          isDesktop: false,
-          child: Scaffold(
-            backgroundColor: AppColorsScheme.of(context).background,
-            body: LoadingScreen(),
-          ),
+        child: Scaffold(
+          backgroundColor: AppColorsScheme.of(context).background,
+          body: LoadingScreen(),
         ),
       );
     }
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: overlayStyle,
-      child: ShellContext(
-        isDesktop: false,
-        child: Scaffold(
-          backgroundColor: AppColorsScheme.of(context).background,
-          body: Column(
-            children: [
-              const _OfflineBanner(),
-              Expanded(
-                child: _buildCurrentScreen(),
-              ),
-            ],
-          ),
-          bottomNavigationBar: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedSwitcher(
-                duration: AppDuration.fast,
-                transitionBuilder: (child, anim) => SizeTransition(
-                  sizeFactor: CurvedAnimation(
-                    parent: anim,
-                    curve: Curves.easeOut,
-                  ),
-                  axisAlignment: -1,
-                  child: child,
-                ),
-                child: hasSong
-                    ? const MiniPlayer(key: ValueKey('mini-player'))
-                    : const SizedBox.shrink(key: ValueKey('hidden')),
-              ),
-              _buildNavBar(),
-            ],
-          ),
+      child: Scaffold(
+        backgroundColor: AppColorsScheme.of(context).background,
+        body: Column(
+          children: [
+            const _OfflineBanner(),
+            Expanded(
+              child: _buildCurrentScreen(),
+            ),
+          ],
         ),
-      ), // ShellContext
-    ); // AnnotatedRegion
+        bottomNavigationBar: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            AnimatedSwitcher(
+              duration: AppDuration.fast,
+              transitionBuilder: (child, anim) => SizeTransition(
+                sizeFactor: CurvedAnimation(
+                  parent: anim,
+                  curve: Curves.easeOut,
+                ),
+                axisAlignment: -1,
+                child: child,
+              ),
+              child: hasSong
+                  ? const MiniPlayer(key: ValueKey('mini-player'))
+                  : const SizedBox.shrink(key: ValueKey('hidden')),
+            ),
+            _buildNavBar(),
+          ],
+        ),
+      ),
+    );
   }
 
   Widget _buildCurrentScreen() {

@@ -11,7 +11,7 @@ import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
 ///
 /// [createPlaylist] and [createFolder] own the push-and-await-name pattern.
 /// [showCreateLibraryOptions] shows an adaptive menu (sheet on mobile,
-/// dropdown on desktop) — single call site for both platforms.
+/// dropdown) — single call site for all layouts.
 Future<void> createPlaylist(BuildContext context, WidgetRef ref) async {
   final name = await Navigator.of(context).push<String>(
     appPageRoute<String>(
@@ -39,7 +39,7 @@ Future<void> createFolder(BuildContext context, WidgetRef ref) async {
 }
 
 /// Shows an adaptive menu with "Create playlist" and "Create folder" options.
-/// Mobile: bottom sheet. Desktop: dropdown anchored to [anchorRect].
+/// Bottom sheet anchored to [anchorRect] when provided.
 void showCreateLibraryOptions(
   BuildContext context,
   WidgetRef ref, {

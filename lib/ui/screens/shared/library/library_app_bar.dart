@@ -84,8 +84,8 @@ class LibraryAppBar extends StatefulWidget {
 }
 
 /// Shows the library sort-order menu.
-/// Mobile: bottom sheet. Desktop: dropdown anchored to [anchorRect].
-/// Shared between [LibraryAppBar] (mobile) and the desktop sidebar.
+/// Bottom sheet anchored to [anchorRect] when provided.
+/// Shared between [LibraryAppBar] (mobile) and the library sidebar.
 void showLibrarySortSheet(
   BuildContext context,
   LibrarySortOrder current,

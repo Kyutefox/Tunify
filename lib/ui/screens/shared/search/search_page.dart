@@ -4,9 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 /// Centered empty state for [SharedSearchPage] with icon, heading and subheading.
@@ -83,8 +81,7 @@ class SharedSearchPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final searchBarHPad = isDesktop ? DesktopSpacing.lg : AppSpacing.base;
+    final searchBarHPad = AppSpacing.base;
     final overlayStyle = isDark
         ? SystemUiOverlayStyle.light
             .copyWith(statusBarColor: Colors.transparent)

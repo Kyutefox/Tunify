@@ -5,12 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/features/device/device_music_provider.dart';
-import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart'
     show showAppSheet, kSheetHorizontalPadding, SheetOptionTile;
-import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/library/library_provider.dart';
@@ -51,23 +48,6 @@ void showSongOptionsSheet(
   bool isDownloads = false,
   bool isLocalFiles = false,
 }) {
-  if (ShellContext.isDesktopPlatform) {
-    _showDesktopSongMenu(
-      context,
-      ref: ref,
-      song: song,
-      extraOptions: extraOptions,
-      showAddToPlaylist: showAddToPlaylist,
-      showLike: showLike,
-      showAddToQueue: showAddToQueue,
-      showGoToArtist: showGoToArtist,
-      showGoToAlbum: showGoToAlbum,
-      onRemoveFromPlaylist: onRemoveFromPlaylist,
-      queueIndex: queueIndex,
-      anchorRect: anchorRect ?? _rectFromContext(buttonContext ?? context),
-    );
-    return;
-  }
   showAppSheet(
     context,
     child: _SongOptionsContent(
@@ -84,193 +64,6 @@ void showSongOptionsSheet(
       isLocalFiles: isLocalFiles,
     ),
   );
-}
-
-void _showDesktopSongMenu(
-  BuildContext context, {
-  required WidgetRef ref,
-  required Song song,
-  List<SongOptionExtra> extraOptions = const [],
-  bool showAddToPlaylist = true,
-  bool showLike = true,
-  bool showAddToQueue = true,
-  bool showGoToArtist = true,
-  bool showGoToAlbum = true,
-  VoidCallback? onRemoveFromPlaylist,
-  int? queueIndex,
-  Rect? anchorRect,
-}) {
-  final effectiveRect = anchorRect ?? _rectFromContext(context);
-
-  // Capture navigator before the menu opens — the context may be deactivated
-  // by the time a menu item's onTap fires (e.g. search screen gets popped).
-  // Use rootNavigator: true so we always get a valid navigator for sheets/dialogs.
-  final navigator = Navigator.of(context, rootNavigator: true);
-  // Capture the shell's content-navigator push callback so Artist/Album pages
-  // open inside the desktop content panel instead of full-screen.
-  // Use getElementForInheritedWidgetOfExactType (read-only, no rebuild
-  // subscription) because this is a one-shot call, not a build method.
-  final pushDetail = (context
-          .getElementForInheritedWidgetOfExactType<ShellContext>()
-          ?.widget as ShellContext?)
-      ?.onPushDetail;
-
-  final downloadService = ref.read(downloadServiceProvider);
-  final isDownloaded = downloadService.isDownloaded(song.id);
-  final isLocalSong = song.id.startsWith('device_');
-  final isLiked = ref.read(libraryProvider).likedSongIds.contains(song.id);
-  final queue = ref.read(playerProvider).queue;
-  final effectiveQueueIndex =
-      queueIndex ?? queue.indexWhere((s) => s.id == song.id);
-  final isInQueue = effectiveQueueIndex >= 0;
-
-  // Build folder-aware playlist sub-entries for the hover submenu (desktop only).
-  final playlists = ref.read(libraryPlaylistsProvider);
-  final folders = ref.read(libraryFoldersProvider);
-
-  // IDs of playlists that belong to any folder.
-  final folderedIds = {
-    for (final f in folders)
-      for (final id in f.playlistIds) id,
-  };
-
-  AppMenuEntry playlistEntry(LibraryPlaylist p) {
-    final alreadyIn = p.songs.any((s) => s.id == song.id);
-    return AppMenuEntry(
-      icon: alreadyIn ? AppIcons.checkCircle : AppIcons.musicNote,
-      label: p.name,
-      color: alreadyIn ? AppColors.primary : null,
-      onTap: () =>
-          ref.read(libraryProvider.notifier).addSongsToPlaylist(p.id, [song]),
-    );
-  }
-
-  final idToPlaylist = {for (final p in playlists) p.id: p};
-
-  final playlistSubEntries = <AppMenuEntry>[
-    // Folders first — each opens a sub-sub-menu with its playlists.
-    for (final f in folders)
-      AppMenuEntry(
-        icon: AppIcons.folder,
-        label: f.name,
-        onTap: () {},
-        subEntries: f.playlistIds
-            .map((id) => idToPlaylist[id])
-            .whereType<LibraryPlaylist>()
-            .map(playlistEntry)
-            .toList(),
-      ),
-    // Then playlists not in any folder.
-    for (final p in playlists)
-      if (!folderedIds.contains(p.id)) playlistEntry(p),
-  ];
-
-  final entries = <AppMenuEntry>[
-    if (showLike)
-      AppMenuEntry(
-        icon: AppIcons.favourite,
-        label: isLiked ? 'Unlike' : 'Like',
-        color: isLiked ? AppColors.loveThemeColorFor(song.id) : null,
-        onTap: () => ref.read(libraryProvider.notifier).toggleLiked(song),
-      ),
-    if (showAddToPlaylist || onRemoveFromPlaylist != null)
-      AppMenuEntry(
-        icon: onRemoveFromPlaylist != null
-            ? AppIcons.removeCircleOutline
-            : AppIcons.playlistAdd,
-        label: onRemoveFromPlaylist != null
-            ? 'Remove from playlist'
-            : 'Add to playlist',
-        // When removing from playlist, use a direct tap action.
-        // When adding, show a hover submenu with the playlist list.
-        onTap: onRemoveFromPlaylist ?? () {},
-        subEntries: onRemoveFromPlaylist == null ? playlistSubEntries : null,
-      ),
-    if (showAddToQueue)
-      AppMenuEntry(
-        icon: isInQueue ? AppIcons.removeCircleOutline : AppIcons.queueMusic,
-        label: isInQueue ? 'Remove from queue' : 'Add to queue',
-        onTap: () {
-          if (isInQueue) {
-            ref
-                .read(playerProvider.notifier)
-                .removeFromQueue(effectiveQueueIndex);
-          } else {
-            ref.read(playerProvider.notifier).addToQueue(song);
-          }
-        },
-      ),
-    if (!isLocalSong)
-      AppMenuEntry(
-        icon: isDownloaded ? AppIcons.checkCircle : AppIcons.download,
-        label: isDownloaded ? 'Remove download' : 'Download',
-        onTap: () {
-          if (isDownloaded) {
-            ref.read(downloadServiceProvider).removeDownload(song.id);
-          } else {
-            ref.read(downloadServiceProvider).enqueue(song);
-          }
-        },
-      ),
-    const AppMenuEntry.divider(),
-    if (showGoToArtist)
-      AppMenuEntry(
-        icon: AppIcons.artist,
-        label: 'Go to Artist',
-        showChevron: true,
-        onTap: () {
-          final page = LibraryPlaylistScreen.artist(
-            artistName: song.artist,
-            thumbnailUrl: song.thumbnailUrl,
-            browseId: song.artistBrowseId,
-          );
-          if (pushDetail != null) {
-            pushDetail(page);
-          } else {
-            navigator.push(appPageRoute<void>(builder: (_) => page));
-          }
-        },
-      ),
-    if (showGoToAlbum)
-      AppMenuEntry(
-        icon: AppIcons.album,
-        label: 'Go to Album',
-        showChevron: true,
-        onTap: () {
-          final page = LibraryPlaylistScreen.album(
-            songTitle: song.title,
-            artistName: song.artist,
-            thumbnailUrl: song.thumbnailUrl,
-            browseId: song.albumBrowseId,
-            name: song.albumName,
-            songId: song.id,
-          );
-          if (pushDetail != null) {
-            pushDetail(page);
-          } else {
-            navigator.push(appPageRoute<void>(builder: (_) => page));
-          }
-        },
-      ),
-    for (final extra in extraOptions)
-      AppMenuEntry(icon: extra.icon, label: extra.label, onTap: extra.onTap),
-  ];
-
-  showAdaptiveMenu(
-    context,
-    title: song.title,
-    entries: entries,
-    anchorRect: effectiveRect,
-    forceDesktop: true,
-  );
-}
-
-Rect? _rectFromContext(BuildContext context) {
-  final obj = context.findRenderObject();
-  if (obj is RenderBox && obj.hasSize) {
-    return obj.localToGlobal(Offset.zero) & obj.size;
-  }
-  return null;
 }
 
 class _SongOptionsContent extends ConsumerWidget {

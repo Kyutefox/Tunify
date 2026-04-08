@@ -5,13 +5,12 @@ import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/ui/screens/shared/home/recently_played_screen.dart';
 import 'package:tunify/ui/screens/shared/home/home_sections.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_tokens.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 import 'package:tunify/ui/widgets/common/section_header.dart';
-import 'package:tunify/ui/widgets/common/desktop_interaction.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
+import 'package:tunify/ui/widgets/common/click_region.dart';
 
 class RecentlyPlayedSection extends ConsumerStatefulWidget {
   const RecentlyPlayedSection({super.key, required this.onPlay});
@@ -29,22 +28,21 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
     if (songs.isEmpty) return const SizedBox(height: AppSpacing.sm);
 
     final visibleSongs = songs.take(20).toList(growable: false);
-    final isDesktop = ShellContext.isDesktopOf(context);
     final layout = ContentLayout.of(
       context,
       ref,
-      itemWidth: isDesktop ? 240 : 320,
+      itemWidth: 320,
       minCols: 1,
-      maxCols: isDesktop ? 3 : 1,
+      maxCols: 1,
     );
     const gap = AppSpacing.sm;
     const rows = 2;
 
-    final cols = isDesktop ? 3 : 1;
+    final cols = 1;
     final itemCount = (rows * cols).clamp(0, visibleSongs.length);
     final gridSongs = visibleSongs.take(itemCount).toList(growable: false);
     final actualRows = (gridSongs.length / cols).ceil();
-    final tileH = isDesktop ? 72.0 : (cols > 2 ? 88.0 : 72.0);
+    final tileH = (cols > 2 ? 88.0 : 72.0);
     final totalGap = gap * (cols - 1);
     final tileW = ((layout.maxWidth - totalGap) / cols).floorToDouble();
     final gridH = tileH * actualRows + gap * (actualRows - 1);
@@ -97,7 +95,7 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
         SectionHeader(
           title: 'Recently Played',
           useCompactStyle: true,
-          trailing: DesktopClickRegion(
+          trailing: ClickRegion(
             child: GestureDetector(
               onTap: () => Navigator.of(context).push(
                 appPageRoute<void>(
@@ -119,7 +117,7 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
           padding: EdgeInsets.symmetric(horizontal: layout.hPad),
           child: buildGrid(gridSongs),
         ),
-        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+        SizedBox(height: AppSpacing.xxl),
       ],
     );
   }

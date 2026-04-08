@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
-import 'package:tunify/ui/widgets/common/desktop_interaction.dart';
+import 'package:tunify/ui/theme/app_tokens.dart';
+import 'package:tunify/ui/widgets/common/click_region.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class SectionHeader extends StatelessWidget {
@@ -32,7 +32,7 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final hPad = t.isDesktop ? DesktopSpacing.lg : AppSpacing.base;
+    final hPad = AppSpacing.base;
     final resolvedPadding =
         padding ?? EdgeInsets.fromLTRB(hPad, 0, hPad, t.spacing.md);
     final titleFontSize = useCompactStyle ? t.font.xxl : t.font.h3;
@@ -64,11 +64,7 @@ class SectionHeader extends StatelessWidget {
                     color: AppColorsScheme.of(context).textPrimary,
                     fontSize: titleFontSize,
                     fontWeight: FontWeight.w700,
-                    letterSpacing: t.isDesktop
-                        ? (useCompactStyle
-                            ? -0.6
-                            : t.typography.headingLetterSpacingSm)
-                        : (useCompactStyle ? -0.3 : -0.5),
+                    letterSpacing: useCompactStyle ? -0.3 : -0.5,
                   ),
                 ),
                 if (!subtitleFirst && subtitle != null) ...[
@@ -96,7 +92,7 @@ class SectionHeader extends StatelessWidget {
   Widget _buildAction(BuildContext context, AppTokens t) {
     final label = seeAllLabel;
     final text = (label != null && label.isNotEmpty) ? label : 'See All';
-    return DesktopClickRegion(
+    return ClickRegion(
       child: GestureDetector(
         onTap: onSeeAll,
         child: Text(

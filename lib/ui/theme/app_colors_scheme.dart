@@ -11,9 +11,9 @@ class AppColorsScheme extends ThemeExtension<AppColorsScheme> {
     required this.textPrimary,
     required this.textSecondary,
     required this.textMuted,
-    required this.desktopSurface,
-    required this.desktopTextSecondary,
-    required this.desktopTextMuted,
+    required this.panelSurface,
+    required this.panelTextSecondary,
+    required this.panelTextMuted,
   });
 
   final Color background;
@@ -23,9 +23,9 @@ class AppColorsScheme extends ThemeExtension<AppColorsScheme> {
   final Color textPrimary;
   final Color textSecondary;
   final Color textMuted;
-  final Color desktopSurface;
-  final Color desktopTextSecondary;
-  final Color desktopTextMuted;
+  final Color panelSurface;
+  final Color panelTextSecondary;
+  final Color panelTextMuted;
 
   static const AppColorsScheme dark = AppColorsScheme(
     background: Color(0xFF121212),
@@ -35,9 +35,9 @@ class AppColorsScheme extends ThemeExtension<AppColorsScheme> {
     textPrimary: Color(0xFFFFFFFF),
     textSecondary: Color(0xFFB3B3B3),
     textMuted: Color(0xFF9E9E9E),
-    desktopSurface: Color(0xFF121212),
-    desktopTextSecondary: Color(0xFF888888),
-    desktopTextMuted: Color(0xFF666666),
+    panelSurface: Color(0xFF121212),
+    panelTextSecondary: Color(0xFF888888),
+    panelTextMuted: Color(0xFF666666),
   );
 
   static const AppColorsScheme light = AppColorsScheme(
@@ -48,9 +48,9 @@ class AppColorsScheme extends ThemeExtension<AppColorsScheme> {
     textPrimary: Color(0xFF0D0D0D), // Near-black — sharper than 121212
     textSecondary: Color(0xFF444444), // Darker than before — readable subtitle
     textMuted: Color(0xFF777777), // Softer hints — not too light
-    desktopSurface: Color(0xFFF7F7F7), // Sidebar/panel: slightly off-white
-    desktopTextSecondary: Color(0xFF444444),
-    desktopTextMuted: Color(0xFF777777),
+    panelSurface: Color(0xFFF7F7F7), // Sidebar/panel: slightly off-white
+    panelTextSecondary: Color(0xFF444444),
+    panelTextMuted: Color(0xFF777777),
   );
 
   static AppColorsScheme of(BuildContext context) =>
@@ -65,9 +65,9 @@ class AppColorsScheme extends ThemeExtension<AppColorsScheme> {
     Color? textPrimary,
     Color? textSecondary,
     Color? textMuted,
-    Color? desktopSurface,
-    Color? desktopTextSecondary,
-    Color? desktopTextMuted,
+    Color? panelSurface,
+    Color? panelTextSecondary,
+    Color? panelTextMuted,
   }) =>
       AppColorsScheme(
         background: background ?? this.background,
@@ -77,9 +77,9 @@ class AppColorsScheme extends ThemeExtension<AppColorsScheme> {
         textPrimary: textPrimary ?? this.textPrimary,
         textSecondary: textSecondary ?? this.textSecondary,
         textMuted: textMuted ?? this.textMuted,
-        desktopSurface: desktopSurface ?? this.desktopSurface,
-        desktopTextSecondary: desktopTextSecondary ?? this.desktopTextSecondary,
-        desktopTextMuted: desktopTextMuted ?? this.desktopTextMuted,
+        panelSurface: panelSurface ?? this.panelSurface,
+        panelTextSecondary: panelTextSecondary ?? this.panelTextSecondary,
+        panelTextMuted: panelTextMuted ?? this.panelTextMuted,
       );
 
   @override
@@ -94,11 +94,10 @@ class AppColorsScheme extends ThemeExtension<AppColorsScheme> {
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,
-      desktopSurface: Color.lerp(desktopSurface, other.desktopSurface, t)!,
-      desktopTextSecondary:
-          Color.lerp(desktopTextSecondary, other.desktopTextSecondary, t)!,
-      desktopTextMuted:
-          Color.lerp(desktopTextMuted, other.desktopTextMuted, t)!,
+      panelSurface: Color.lerp(panelSurface, other.panelSurface, t)!,
+      panelTextSecondary:
+          Color.lerp(panelTextSecondary, other.panelTextSecondary, t)!,
+      panelTextMuted: Color.lerp(panelTextMuted, other.panelTextMuted, t)!,
     );
   }
 }

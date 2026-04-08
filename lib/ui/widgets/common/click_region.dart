@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class DesktopClickRegion extends StatelessWidget {
-  const DesktopClickRegion({
+class ClickRegion extends StatelessWidget {
+  const ClickRegion({
     super.key,
     required this.child,
     this.enabled = true,

@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
-import 'package:tunify/ui/widgets/common/hover_tile.dart';
+import 'package:tunify/ui/theme/app_tokens.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class LibraryThumbnailTile extends StatelessWidget {
@@ -28,7 +27,7 @@ class LibraryThumbnailTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final tile = Material(
+    return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
@@ -54,8 +53,7 @@ class LibraryThumbnailTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.base,
-                        fontWeight:
-                            t.isDesktop ? FontWeight.w600 : FontWeight.w600,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
@@ -75,11 +73,6 @@ class LibraryThumbnailTile extends StatelessWidget {
         ),
       ),
     );
-
-    if (t.isDesktop) {
-      return HoverTile(borderRadius: AppRadius.md, child: tile);
-    }
-    return tile;
   }
 }
 
@@ -89,8 +82,7 @@ class _IconThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
-    final size = t.isDesktop ? 48.0 : 52.0;
+    final size = 52.0;
     return Container(
       width: size,
       height: size,
@@ -116,8 +108,7 @@ class _Thumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
-    final size = t.isDesktop ? 48.0 : 52.0;
+    final size = 52.0;
     return ClipRRect(
       borderRadius: BorderRadius.circular(isCircle ? size / 2 : AppRadius.sm),
       child: Container(

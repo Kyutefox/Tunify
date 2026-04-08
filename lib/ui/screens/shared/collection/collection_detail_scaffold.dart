@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_tokens.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
@@ -97,8 +96,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     final origin = stackBox != null
         ? box.localToGlobal(Offset(0, box.size.height), ancestor: stackBox).dy
         : box.localToGlobal(Offset(0, box.size.height)).dy;
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final topPadding = isDesktop ? 0.0 : MediaQuery.of(context).padding.top;
+    final topPadding = MediaQuery.of(context).padding.top;
     final appBarBottom = kToolbarHeight + topPadding;
     _titleHideOffset =
         stackBox != null ? origin - appBarBottom : origin - appBarBottom;
@@ -124,14 +122,11 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final topPadding = isDesktop ? 0.0 : MediaQuery.of(context).padding.top;
+    final topPadding = MediaQuery.of(context).padding.top;
     final appBarHeight = kToolbarHeight + topPadding;
     final hasPalette = widget.paletteColor != null;
-    final hasPlayButton = widget.playButton != null && _useNewLayout && !isDesktop;
-    final pageBackground = isDesktop
-        ? AppColors.backgroundSecondary
-        : AppColorsScheme.of(context).background;
+    final hasPlayButton = widget.playButton != null && _useNewLayout;
+    final pageBackground = AppColorsScheme.of(context).background;
 
     final pinnedBg = hasPalette
         ? PaletteTheme.appBarBackground(widget.paletteColor!,
@@ -143,10 +138,8 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
       children: [
         Scaffold(
           backgroundColor: pageBackground,
-          extendBodyBehindAppBar: hasPalette && !isDesktop,
-          appBar: isDesktop
-              ? null
-              : _useNewLayout
+          extendBodyBehindAppBar: hasPalette,
+          appBar: _useNewLayout
               ? PreferredSize(
                   preferredSize: const Size.fromHeight(kToolbarHeight),
                   child: ValueListenableBuilder<double>(
@@ -214,10 +207,11 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               slivers: _useNewLayout
-                  ? _buildSlivers(isDesktop ? 0.0 : appBarHeight, hasPalette)
+                  ? _buildSlivers(appBarHeight, hasPalette)
                   : [
                       if (hasPalette)
-                        SliverToBoxAdapter(child: SizedBox(height: appBarHeight)),
+                        SliverToBoxAdapter(
+                            child: SizedBox(height: appBarHeight)),
                       if (widget.headerSliver != null) widget.headerSliver!,
                       ...widget.bodySlivers,
                     ],
@@ -240,10 +234,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
             stackKey: _stackKey,
             child: widget.playButton!,
           ),
-        if (widget.actionRow != null &&
-            _useNewLayout &&
-            !widget.isEmpty &&
-            !isDesktop)
+        if (widget.actionRow != null && _useNewLayout && !widget.isEmpty)
           _DockingActionRow(
             scrollController: _scrollController,
             appBarHeight: appBarHeight,
@@ -257,8 +248,6 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
   }
 
   List<Widget> _buildSlivers(double appBarHeight, bool hasPalette) {
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final horizontalInset = isDesktop ? AppSpacing.xl : AppSpacing.base;
     final headerSliver = SliverToBoxAdapter(
       child: hasPalette
           ? Stack(
@@ -288,35 +277,12 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     return [
       if (hasPalette) SliverToBoxAdapter(child: SizedBox(height: appBarHeight)),
       headerSliver,
-      if (isDesktop)
-        SliverToBoxAdapter(
-          child: SizedBox(
-            key: _actionRowKey,
-            height: widget.actionRowHeight,
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  left: horizontalInset,
-                  right: horizontalInset,
-                  child: widget.actionRow!,
-                ),
-                if (widget.playButton != null && !widget.isEmpty)
-                  Positioned(
-                    right: horizontalInset,
-                    top: (widget.actionRowHeight - 56) / 2,
-                    child: widget.playButton!,
-                  ),
-              ],
-            ),
-          ),
-        )
-      else
-        SliverToBoxAdapter(
-          child: SizedBox(
-            key: _actionRowKey,
-            height: widget.actionRowHeight,
-          ),
+      SliverToBoxAdapter(
+        child: SizedBox(
+          key: _actionRowKey,
+          height: widget.actionRowHeight,
         ),
+      ),
       if (widget.pills != null)
         SliverToBoxAdapter(
           child: Padding(
@@ -333,64 +299,6 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
         SliverToBoxAdapter(child: widget.searchField!),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
       ],
-      if (isDesktop && !widget.isEmpty)
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              horizontalInset,
-              AppSpacing.xs,
-              horizontalInset,
-              AppSpacing.sm,
-            ),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 28,
-                  child: Text(
-                    '#',
-                    style: TextStyle(
-                      color: AppColorsScheme.of(context)
-                          .textMuted
-                          .withValues(alpha: 0.9),
-                      fontSize: AppFontSize.sm,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    'Title',
-                    style: TextStyle(
-                      color: AppColorsScheme.of(context)
-                          .textMuted
-                          .withValues(alpha: 0.9),
-                      fontSize: AppFontSize.sm,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.access_time_outlined,
-                  size: 16,
-                  color:
-                      AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
-                ),
-                const SizedBox(width: 22),
-              ],
-            ),
-          ),
-        ),
-      if (isDesktop && !widget.isEmpty)
-        SliverToBoxAdapter(
-          child: Divider(
-            height: 1,
-            thickness: 0.5,
-            indent: horizontalInset,
-            endIndent: horizontalInset,
-            color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.2),
-          ),
-        ),
       ...widget.bodySlivers,
     ];
   }
@@ -641,62 +549,6 @@ class CollectionDetailExpandedContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final isDesktop = ShellContext.isDesktopOf(context);
-    if (isDesktop) {
-      return Padding(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.base,
-          t.spacing.xxl,
-          AppSpacing.base,
-          t.spacing.xl,
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            cover,
-            SizedBox(width: t.spacing.lg),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  if (eyebrow != null && eyebrow!.trim().isNotEmpty)
-                    Text(
-                      eyebrow!.toUpperCase(),
-                      style: TextStyle(
-                        color: AppColorsScheme.of(context)
-                            .textMuted
-                            .withValues(alpha: 0.95),
-                        fontSize: t.font.xs,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.9,
-                      ),
-                    ),
-                  if (eyebrow != null && eyebrow!.trim().isNotEmpty)
-                    SizedBox(height: t.spacing.sm),
-                  Text(
-                    key: titleKey,
-                    title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColorsScheme.of(context).textPrimary,
-                      fontSize: t.font.display2,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: -0.6,
-                    ),
-                  ),
-                  if (subtitle != null) ...[
-                    SizedBox(height: t.spacing.sm),
-                    subtitle!,
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      );
-    }
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: t.spacing.base,
@@ -712,7 +564,7 @@ class CollectionDetailExpandedContent extends StatelessWidget {
             title,
             style: TextStyle(
               color: AppColorsScheme.of(context).textPrimary,
-              fontSize: t.isDesktop ? t.font.display3 : t.font.h1,
+              fontSize: t.font.h1,
               fontWeight: FontWeight.w700,
               letterSpacing: -0.4,
             ),

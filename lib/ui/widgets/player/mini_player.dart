@@ -4,8 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/player/playback_position_provider.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
-import 'package:tunify/ui/screens/desktop/player/player_screen.dart';
+import 'package:tunify/ui/screens/mobile/player/player_screen.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/player/album_art_hero.dart';
 import '../player/../player/mini_player_play_button.dart';
@@ -17,7 +16,7 @@ void openFullPlayerRoute(BuildContext context) {
     PageRouteBuilder(
       opaque: false,
       barrierColor: Colors.transparent,
-      pageBuilder: (_, __, ___) => const PlayerScreen(),
+      pageBuilder: (_, __, ___) => const MobilePlayerScreen(),
       transitionDuration: const Duration(milliseconds: 380),
       reverseTransitionDuration: const Duration(milliseconds: 260),
       transitionsBuilder: (_, animation, __, child) {
@@ -79,9 +78,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    // Desktop has its own DesktopPlayerBar — never show the mobile mini player.
-    if (ShellContext.isDesktopOf(context)) return const SizedBox.shrink();
-
     final song = ref.watch(currentSongProvider);
     if (song == null) return const SizedBox.shrink();
 

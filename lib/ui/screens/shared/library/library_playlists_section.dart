@@ -12,7 +12,7 @@ import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/library/library_item_tile.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_tokens.dart';
 import 'package:tunify/core/utils/string_utils.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
@@ -243,7 +243,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
   /// When true, we're showing a folder's playlists; empty content shows folder empty message.
   final bool isFolderView;
 
-  /// When non-null (e.g. desktop sidebar), matches that chrome's insets.
+  /// When non-null, matches parent container insets.
   /// Defaults to symmetric [AppSpacing.base] like [LibraryAppBar] controls.
   final EdgeInsets? contentPadding;
 
@@ -788,8 +788,7 @@ class _LibraryFolderListTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
-    final thumbSize = t.isDesktop ? 48.0 : 56.0;
+    final thumbSize = 56.0;
     final tile = Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -798,7 +797,7 @@ class _LibraryFolderListTile extends StatelessWidget {
           HapticFeedback.selectionClick();
           onTap();
         },
-        hoverColor: t.isDesktop ? Colors.transparent : null,
+        hoverColor: null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
@@ -828,8 +827,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight:
-                            t.isDesktop ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -868,7 +866,7 @@ class _LibraryFolderListTile extends StatelessWidget {
                         ? box.localToGlobal(Offset.zero) & box.size
                         : null);
                   },
-                  size: t.isDesktop ? 36 : 40,
+                  size: 40,
                   iconSize: 20,
                   iconAlignment: Alignment.centerRight,
                 ),
@@ -1024,7 +1022,7 @@ class _StaticListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final thumbSize = t.isDesktop ? 48.0 : 56.0;
+    final thumbSize = 56.0;
     final tile = Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1032,7 +1030,7 @@ class _StaticListTile extends StatelessWidget {
           HapticFeedback.selectionClick();
           onTap();
         },
-        hoverColor: t.isDesktop ? Colors.transparent : null,
+        hoverColor: null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: t.spacing.xs),
@@ -1061,8 +1059,7 @@ class _StaticListTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight:
-                            t.isDesktop ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1261,7 +1258,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final thumbSize = t.isDesktop ? 48.0 : 56.0;
+    final thumbSize = 56.0;
     final tile = Material(
       color: Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -1270,7 +1267,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
           HapticFeedback.selectionClick();
           onTap();
         },
-        hoverColor: t.isDesktop ? Colors.transparent : null,
+        hoverColor: null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: t.spacing.xs),
@@ -1287,8 +1284,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textPrimary,
                         fontSize: AppFontSize.lg,
-                        fontWeight:
-                            t.isDesktop ? FontWeight.w700 : FontWeight.w600,
+                        fontWeight: FontWeight.w600,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -1324,7 +1320,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                         ? box.localToGlobal(Offset.zero) & box.size
                         : null);
                   },
-                  size: t.isDesktop ? 36 : 40,
+                  size: 40,
                   iconSize: 20,
                   iconAlignment: Alignment.centerRight,
                 ),

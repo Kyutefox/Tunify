@@ -8,7 +8,7 @@ import 'package:tunify/features/player/player_state_provider.dart';
 
 /// Shared dominant-color provider driven by the currently playing song.
 ///
-/// Consumed by [MiniPlayer], [DesktopPlayerBar], and [PlayerScreen] so the
+/// Consumed by [MiniPlayer], [PlayerBar], and [PlayerScreen] so the
 /// album-art color bleeds consistently across all player surfaces.
 ///
 /// ## Preloading

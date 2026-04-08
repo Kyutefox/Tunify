@@ -7,9 +7,8 @@ import 'package:tunify/data/models/mood.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/player/mood_browse_sheet.dart';
-import 'package:tunify/ui/widgets/common/desktop_interaction.dart';
+import 'package:tunify/ui/widgets/common/click_region.dart';
 import 'package:tunify/ui/widgets/common/section_header.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
 
 /// Mood section: moods and genres from the main home feed API.
 /// Shows skeleton while home is loading; uses [moodsProvider] when loaded.
@@ -35,15 +34,10 @@ class MoodSection extends ConsumerWidget {
     final visible =
         showAll ? moods : moods.take(_visibleCount).toList(growable: false);
     final hasSeeAll = !showAll && moods.length > _visibleCount;
-    final isDesktop = ShellContext.isDesktopOf(context);
-    final hPad = isDesktop ? 28.0 : AppSpacing.base;
+    const hPad = AppSpacing.base;
 
     void onSeeAll() {
-      if (isDesktop) {
-        ShellContext.openBrowse(context);
-      } else {
-        showMoodBrowseSheet(context, moods: moods);
-      }
+      showMoodBrowseSheet(context, moods: moods);
     }
 
     return Column(
@@ -65,11 +59,10 @@ class MoodSection extends ConsumerWidget {
 
 ({int columns, double hPad, double aspectRatio}) _moodGridLayout(
     BuildContext context) {
-  final isDesktop = ShellContext.isDesktopOf(context);
   return (
-    columns: isDesktop ? 4 : 2,
-    hPad: isDesktop ? 28.0 : AppSpacing.base,
-    aspectRatio: isDesktop ? 2.2 : 1.6,
+    columns: 2,
+    hPad: AppSpacing.base,
+    aspectRatio: 1.6,
   );
 }
 
@@ -135,7 +128,7 @@ class _MoodTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DesktopClickRegion(
+    return ClickRegion(
       child: GestureDetector(
         onTap: () {
           HapticFeedback.lightImpact();

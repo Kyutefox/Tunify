@@ -5,9 +5,8 @@ import 'package:tunify/data/models/artist.dart';
 import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/theme/app_tokens.dart';
 import 'package:tunify/ui/widgets/common/section_header.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 import 'home_sections.dart';
@@ -71,21 +70,20 @@ class _HomePageSkeletonState extends ConsumerState<HomePageSkeleton> {
 
   /// Same grid as [RecentlyPlayedSection] (not the horizontal [RecentlyPlayedRow]).
   Widget _recentlyPlayedBlock() {
-    final isDesktop = ShellContext.isDesktopOf(context);
     final layout = ContentLayout.of(
       context,
       ref,
-      itemWidth: isDesktop ? 240 : 320,
+      itemWidth: 320,
       minCols: 1,
-      maxCols: isDesktop ? 3 : 1,
+      maxCols: 1,
     );
     const gap = AppSpacing.sm;
     const rows = 2;
-    final cols = isDesktop ? 3 : 1;
+    final cols = 1;
     final itemCount = (rows * cols).clamp(0, _demoSongs.length);
     final gridSongs = _demoSongs.take(itemCount).toList(growable: false);
     final actualRows = (gridSongs.length / cols).ceil();
-    final tileH = isDesktop ? 72.0 : (cols > 2 ? 88.0 : 72.0);
+    final tileH = (cols > 2 ? 88.0 : 72.0);
     final totalGap = gap * (cols - 1);
     final tileW = ((layout.maxWidth - totalGap) / cols).floorToDouble();
     final gridH = tileH * actualRows + gap * (actualRows - 1);
@@ -154,14 +152,13 @@ class _HomePageSkeletonState extends ConsumerState<HomePageSkeleton> {
           padding: EdgeInsets.symmetric(horizontal: layout.hPad),
           child: buildGrid(gridSongs),
         ),
-        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+        SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
     final isLoading = ref.watch(homeIsLoadingProvider);
     final dynamicSections = ref.watch(homeDynamicSectionsProvider);
     final showDynamicPlaceholder = isLoading && dynamicSections.isEmpty;
@@ -215,13 +212,12 @@ class _HomePageSkeletonState extends ConsumerState<HomePageSkeleton> {
                   onPlay: widget.onPlay,
                   pageController: _quickPicksCtrl,
                 ),
-                SizedBox(
-                    height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+                SizedBox(height: AppSpacing.xxl),
               ],
             ),
             if (showDynamicPlaceholder) ...[
               const DynamicSectionsSkeleton(),
-              SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+              SizedBox(height: AppSpacing.xxl),
             ],
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,8 +237,7 @@ class _HomePageSkeletonState extends ConsumerState<HomePageSkeleton> {
                   playlists: _demoPlaylists,
                   pageController: _madeForYouCtrl,
                 ),
-                SizedBox(
-                    height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+                SizedBox(height: AppSpacing.xxl),
               ],
             ),
             Column(
@@ -263,8 +258,7 @@ class _HomePageSkeletonState extends ConsumerState<HomePageSkeleton> {
                   artists: _demoArtists,
                   pageController: _artistsCtrl,
                 ),
-                SizedBox(
-                    height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+                SizedBox(height: AppSpacing.xxl),
               ],
             ),
           ],
@@ -409,7 +403,6 @@ class DynamicSectionsSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = ShellContext.isDesktopOf(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -420,7 +413,7 @@ class DynamicSectionsSkeleton extends StatelessWidget {
           useCompactStyle: true,
         ),
         const QuickPicksRowSkeleton(),
-        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+        SizedBox(height: AppSpacing.xxl),
         const SectionHeader(
           title: 'You may like',
           useCompactStyle: true,

@@ -11,18 +11,13 @@ import 'package:tunify/data/repositories/database_repository.dart'
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
-import 'package:tunify/ui/screens/desktop/settings/desktop_settings_screen.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/screens/shared/auth/guest_profile_setup_screen.dart';
-import 'package:tunify/ui/screens/desktop/home/home_settings_sheet.dart';
+import 'package:tunify/ui/screens/shared/home/home_settings_sheet.dart';
 import 'package:tunify/ui/screens/shared/home/home_shared.dart';
-import 'package:tunify/ui/screens/desktop/home/home_user_menu.dart';
+import 'package:tunify/ui/screens/shared/home/home_user_menu.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
-import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart';
-import '../common/adaptive_menu.dart';
-import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 void _refreshProvidersForSignOut(WidgetRef ref) {
   ref.read(homeProvider.notifier).onAuthChanged(null);
@@ -34,7 +29,7 @@ void _refreshProvidersForSignOut(WidgetRef ref) {
 /// providers, renders a 36 px circular avatar, and opens the user menu on tap.
 ///
 /// Mobile: [HomeUserMenuSheet] bottom sheet (rich backdrop-blur design).
-/// Desktop: [showAdaptiveMenu] dropdown with the same options.
+/// Unified: [HomeUserMenuSheet] sheet with the same options.
 class UserAvatarButton extends ConsumerWidget {
   const UserAvatarButton({super.key, this.size = 36});
 
@@ -56,11 +51,7 @@ class UserAvatarButton extends ConsumerWidget {
 
     return GestureDetector(
       onTap: () {
-        if (ShellContext.isDesktopOf(context)) {
-          _showDesktopMenu(context, ref, username, user?.email, avatarUrl);
-        } else {
-          _showMobileSheet(context, ref, username, user?.email);
-        }
+        _showMobileSheet(context, ref, username, user?.email);
       },
       child: ClipOval(
         clipBehavior: Clip.hardEdge,
@@ -139,144 +130,13 @@ void _showMobileSheet(
   );
 }
 
-// ── Desktop: adaptive dropdown ────────────────────────────────────────────────
-
-void _showDesktopMenu(
-  BuildContext context,
-  WidgetRef ref,
-  String username,
-  String? email,
-  String avatarUrl,
-) {
-  final isGuest = ref.read(guestModeProvider);
-
-  // Compact header: avatar + name + email
-  final header = Row(
-    children: [
-      ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: avatarUrl,
-          width: 32,
-          height: 32,
-          fit: BoxFit.cover,
-          placeholder: (_, __) => Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppColors.primaryGradient,
-            ),
-          ),
-          errorWidget: (_, __, ___) => Container(
-            width: 32,
-            height: 32,
-            decoration: const BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: AppColors.primaryGradient,
-            ),
-          ),
-        ),
-      ),
-      const SizedBox(width: AppSpacing.sm + 2),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              username,
-              style: TextStyle(
-                color: AppColorsScheme.of(context).textPrimary,
-                fontSize: AppFontSize.md,
-                fontWeight: FontWeight.w600,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (email != null)
-              Text(
-                email,
-                style: TextStyle(
-                  color: AppColorsScheme.of(context).textMuted,
-                  fontSize: AppFontSize.xs,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-          ],
-        ),
-      ),
-    ],
-  );
-
-  // Build the anchor rect from the avatar widget's position.
-  // We use a post-frame callback trick: the caller (UserAvatarButton.build)
-  // already has the RenderBox — but since this is a free function we compute
-  // it from the context passed in.
-  final box = context.findRenderObject() as RenderBox?;
-  Rect? anchorRect;
-  if (box != null && box.hasSize) {
-    anchorRect = box.localToGlobal(Offset.zero) & box.size;
-  }
-
-  showAdaptiveMenu(
-    context,
-    header: header,
-    anchorRect: anchorRect,
-    entries: [
-      if (isGuest)
-        AppMenuEntry(
-          icon: AppIcons.edit,
-          label: 'Edit Profile',
-          onTap: () => ShellContext.pushDetail(
-            context,
-            const GuestProfileSetupScreen(isInitial: false),
-          ),
-        ),
-      AppMenuEntry(
-        icon: AppIcons.settings,
-        label: 'Settings',
-        onTap: () => ShellContext.pushDetail(
-          context,
-          const DesktopSettingsScreen(),
-        ),
-      ),
-      const AppMenuEntry.divider(),
-      AppMenuEntry(
-        icon: AppIcons.logout,
-        label: 'Sign Out',
-        color: AppColors.secondary,
-        onTap: () async {
-          if (isGuest) {
-            await ref.read(databaseRepositoryProvider).clearAllLocalData();
-            await ref.read(guestUsernameProvider.notifier).clearGuestData();
-            await ref.read(avatarSeedProvider.notifier).clearAvatarSeed();
-            ref.read(guestModeProvider.notifier).exitGuestMode();
-            _refreshProvidersForSignOut(ref);
-          } else {
-            await ref.read(authNotifierProvider.notifier).signOut();
-          }
-        },
-      ),
-    ],
-  );
-}
-
 /// Convenience function — call from non-widget code that already has a ref.
 void showUserMenu(BuildContext context, WidgetRef ref) {
   final user = ref.read(currentUserProvider);
   final isGuest = ref.read(guestModeProvider);
   final guestUsername = isGuest ? ref.read(guestUsernameProvider).value : null;
-  final cachedAvatarSeed = isGuest ? ref.read(avatarSeedProvider).value : null;
   final username = (user?.userMetadata?['username'] as String?) ??
       (user?.email?.split('@').first) ??
       (isGuest ? (guestUsername ?? 'Guest') : 'V');
-  final avatarSeed = cachedAvatarSeed ?? username;
-  final avatarUrl = generateBotttsAvatarUrl(avatarSeed, size: 72);
-
-  if (ShellContext.isDesktopOf(context)) {
-    _showDesktopMenu(context, ref, username, user?.email, avatarUrl);
-  } else {
-    _showMobileSheet(context, ref, username, user?.email);
-  }
+  _showMobileSheet(context, ref, username, user?.email);
 }

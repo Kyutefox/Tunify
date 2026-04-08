@@ -6,7 +6,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/widgets/common/desktop_interaction.dart';
+import 'package:tunify/ui/widgets/common/click_region.dart';
 import 'package:tunify/ui/widgets/player/now_playing_indicator.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
@@ -172,7 +172,7 @@ class _PressScaleState extends State<PressScale> {
   Widget build(BuildContext context) {
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    return DesktopClickRegion(
+    return ClickRegion(
       child: GestureDetector(
         onTapDown: (_) {
           setState(() => _pressed = true);

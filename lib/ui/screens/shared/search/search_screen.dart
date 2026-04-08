@@ -5,7 +5,6 @@ import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/connectivity_provider.dart';
 import 'package:tunify/features/settings/content_settings_provider.dart';
-import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
 import 'package:tunify/features/search/search_provider.dart';
@@ -18,13 +17,10 @@ import 'package:tunify/ui/widgets/common/recently_played_section.dart';
 import 'package:tunify/ui/screens/shared/search/search_page.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
-import 'package:tunify/ui/widgets/player/mood_browse_sheet.dart';
 import 'package:tunify/ui/widgets/library/song_list_tile.dart';
-import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
@@ -39,7 +35,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
     // the tap callback. ref.read() is called at tap time so this widget is no
     // longer subscribed to mood list changes.
     return Container(
-      height: ShellContext.isDesktopOf(context) ? 44 : 50,
+      height: 50,
       decoration: BoxDecoration(
         color: AppColorsScheme.of(context).surface,
         borderRadius: BorderRadius.circular(AppRadius.lg),
@@ -81,43 +77,7 @@ class _SearchBarPlaceholder extends ConsumerWidget {
               ),
             ),
           ),
-          // Divider + Browse — desktop only
-          if (ShellContext.isDesktopOf(context)) ...[
-            Container(
-              width: 1,
-              height: 22,
-              color:
-                  AppColorsScheme.of(context).textMuted.withValues(alpha: 0.3),
-            ),
-            GestureDetector(
-              onTap: () =>
-                  showMoodBrowseSheet(context, moods: ref.read(moodsProvider)),
-              behavior: HitTestBehavior.opaque,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    AppIcon(
-                      icon: AppIcons.gridView,
-                      color: AppColorsScheme.of(context).textSecondary,
-                      size: 18,
-                    ),
-                    const SizedBox(width: AppSpacing.xs + 2),
-                    Text(
-                      'Browse',
-                      style: TextStyle(
-                        color: AppColorsScheme.of(context).textSecondary,
-                        fontSize: AppFontSize.md,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ] else
-            const SizedBox(width: AppSpacing.md),
+          const SizedBox(width: AppSpacing.md),
         ],
       ),
     );
@@ -956,7 +916,6 @@ class _SearchFilterChipState extends State<_SearchFilterChip>
 
   @override
   Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
     return AnimatedBuilder(
       animation: _t,
       builder: (context, _) {
@@ -967,9 +926,8 @@ class _SearchFilterChipState extends State<_SearchFilterChip>
             onTap: widget.onTap,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             child: Container(
-              height: t.isDesktop ? 36 : 32,
-              padding: EdgeInsets.symmetric(
-                  horizontal: t.isDesktop ? t.spacing.md : AppSpacing.md),
+              height: 32,
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 color: Color.lerp(
@@ -997,7 +955,7 @@ class _SearchFilterChipState extends State<_SearchFilterChip>
                     Colors.black,
                     tv,
                   ),
-                  fontSize: t.font.md,
+                  fontSize: AppFontSize.md,
                   fontWeight: tv > 0.5 ? FontWeight.w700 : FontWeight.w500,
                 ),
               ),

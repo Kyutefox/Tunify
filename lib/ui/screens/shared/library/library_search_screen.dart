@@ -101,7 +101,7 @@ class _LibrarySearchScreenState extends ConsumerState<LibrarySearchScreen> {
 }
 
 /// Shared search results body used by both [LibrarySearchScreen] (mobile,
-/// full-screen) and the desktop sidebar search panel.
+/// full-screen) and the library sidebar search panel.
 ///
 /// When [onFolderTap] / [onPlaylistTap] are null the widget falls back to
 /// the mobile navigator pattern (pop with folder-id / pop then push playlist).

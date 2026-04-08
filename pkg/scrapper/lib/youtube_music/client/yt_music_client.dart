@@ -42,13 +42,15 @@ class YTMusicClient {
     this.sessionCookies,
   })  : _visitorData = visitorData,
         _apiKey = apiKey?.isNotEmpty == true ? apiKey : null,
-        _clientVersion = clientVersion?.isNotEmpty == true ? clientVersion : null,
+        _clientVersion =
+            clientVersion?.isNotEmpty == true ? clientVersion : null,
         _gl = gl?.isNotEmpty == true ? gl : null,
         _hl = hl?.isNotEmpty == true ? hl : null,
         _auth = auth;
 
   String? get visitorData => _visitorData;
   String? get clientVersion => _clientVersion;
+
   /// Geographic locale reported by YouTube (for example `NP`).
   String? get gl => _gl;
 
@@ -132,7 +134,8 @@ class YTMusicClient {
     );
 
     if (response.statusCode != 200) {
-      throw Exception('YouTube API Error ${response.statusCode}: ${response.body}');
+      throw Exception(
+          'YouTube API Error ${response.statusCode}: ${response.body}');
     }
 
     final data = jsonDecode(response.body) as Map<String, dynamic>;

@@ -15,13 +15,17 @@ class PlaylistBrowseMeta {
   final String? description;
   final String? curatorName;
   final String? curatorThumbnailUrl;
+
   /// Playlist/album subtitle (e.g. `Playlist • 2023`) or artist monthly
   /// listeners (e.g. `101M monthly audience`).
   final String? subtitle;
+
   /// Stats line (e.g. `82 songs • 5 hours, 3 minutes` or views • tracks • duration).
   final String? secondSubtitle;
+
   /// Artist: [musicImmersiveHeaderRenderer.title] (canonical channel name).
   final String? channelTitle;
+
   /// Artist: square avatar from microformat, else immersive header thumbnail.
   final String? channelThumbnailUrl;
 }

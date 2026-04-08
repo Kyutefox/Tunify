@@ -102,8 +102,8 @@ class _PlayerBlurredBackgroundState extends State<PlayerBlurredBackground>
         // the deferred layer.
         if (hasArt)
           ColoredBox(
-            color: Colors.black.withValues(
-                alpha: PaletteTheme.playerDarkOverlayAlpha),
+            color: Colors.black
+                .withValues(alpha: PaletteTheme.playerDarkOverlayAlpha),
           ),
       ],
     );
@@ -155,7 +155,8 @@ class _PlayerGlassButtonState extends State<PlayerGlassButton> {
               ),
             ),
             child: Center(
-              child: AppIcon(icon: widget.icon, color: Colors.white, size: widget.size),
+              child: AppIcon(
+                  icon: widget.icon, color: Colors.white, size: widget.size),
             ),
           ),
         ),

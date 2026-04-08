@@ -88,7 +88,8 @@ class _DesktopSettingsScreenState extends State<DesktopSettingsScreen> {
       children: [
         // ── Header ──────────────────────────────────────────────────────────
         Padding(
-          padding: EdgeInsets.fromLTRB(AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, AppSpacing.base),
+          padding: EdgeInsets.fromLTRB(
+              AppSpacing.xl, AppSpacing.xl, AppSpacing.xl, AppSpacing.base),
           child: Text(
             'Settings',
             style: TextStyle(
@@ -186,8 +187,9 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final labelColor =
-        isActive ? AppColors.primary : AppColorsScheme.of(context).textSecondary;
+    final labelColor = isActive
+        ? AppColors.primary
+        : AppColorsScheme.of(context).textSecondary;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 2),
@@ -198,8 +200,7 @@ class _NavItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(AppRadius.md),
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             decoration: BoxDecoration(
               color: isActive
                   ? AppColors.primary.withValues(alpha: 0.12)
@@ -211,7 +212,9 @@ class _NavItem extends StatelessWidget {
                 AppIcon(
                   icon: section.icon,
                   size: 18,
-                  color: isActive ? section.iconColor : AppColorsScheme.of(context).textMuted,
+                  color: isActive
+                      ? section.iconColor
+                      : AppColorsScheme.of(context).textMuted,
                 ),
                 const SizedBox(width: AppSpacing.sm + 2),
                 Expanded(
@@ -223,9 +226,8 @@ class _NavItem extends StatelessWidget {
                         style: TextStyle(
                           color: labelColor,
                           fontSize: AppFontSize.base,
-                          fontWeight: isActive
-                              ? FontWeight.w600
-                              : FontWeight.w500,
+                          fontWeight:
+                              isActive ? FontWeight.w600 : FontWeight.w500,
                         ),
                       ),
                       Text(

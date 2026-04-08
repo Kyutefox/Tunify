@@ -5,7 +5,6 @@ import 'package:tunify/data/models/song.dart';
 import 'package:tunify_database/tunify_database.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 
-
 import 'package:tunify/data/repositories/database_repository.dart';
 
 /// Shared base for boolean settings backed by SQLite + SharedPreferences.
@@ -27,10 +26,12 @@ abstract class _BoolSettingNotifier extends Notifier<bool> {
       final local = await repo.getSetting(settingKey);
       if (local != null) {
         state = local == 'true';
-        await (await SharedPreferences.getInstance()).setBool(settingKey, state);
+        await (await SharedPreferences.getInstance())
+            .setBool(settingKey, state);
       }
     } catch (e) {
-      logWarning('ContentSettings: load $settingKey failed: $e', tag: 'ContentSettings');
+      logWarning('ContentSettings: load $settingKey failed: $e',
+          tag: 'ContentSettings');
     }
   }
 
@@ -39,9 +40,12 @@ abstract class _BoolSettingNotifier extends Notifier<bool> {
     state = value;
     try {
       await (await SharedPreferences.getInstance()).setBool(settingKey, value);
-      await ref.read(databaseRepositoryProvider).savePlaybackSetting(settingKey, value);
+      await ref
+          .read(databaseRepositoryProvider)
+          .savePlaybackSetting(settingKey, value);
     } catch (e) {
-      logWarning('ContentSettings: persist $settingKey failed: $e', tag: 'ContentSettings');
+      logWarning('ContentSettings: persist $settingKey failed: $e',
+          tag: 'ContentSettings');
     }
   }
 

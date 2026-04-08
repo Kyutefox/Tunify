@@ -24,8 +24,7 @@ String? extractThumbnailUrl(dynamic node) {
   var thumbs = node['thumbnails'] as List<dynamic>?;
 
   if (thumbs == null || thumbs.isEmpty) {
-    final musicThumb =
-        node['musicThumbnailRenderer'] as Map<String, dynamic>?;
+    final musicThumb = node['musicThumbnailRenderer'] as Map<String, dynamic>?;
     final inner = musicThumb?['thumbnail'] as Map<String, dynamic>?;
     thumbs = inner?['thumbnails'] as List<dynamic>?;
   }
@@ -80,8 +79,8 @@ String? extractFixedColumnText(List<dynamic>? columns, int index) {
 /// Parses a track count from subtitle strings such as `"25 songs"`.
 int? extractTrackCount(String? subtitle) {
   if (subtitle == null || subtitle.isEmpty) return null;
-  final match = RegExp(r'(\d{1,4})\s+songs?', caseSensitive: false)
-      .firstMatch(subtitle);
+  final match =
+      RegExp(r'(\d{1,4})\s+songs?', caseSensitive: false).firstMatch(subtitle);
   if (match == null) return null;
   return int.tryParse(match.group(1)!);
 }
@@ -147,7 +146,8 @@ bool extractIsExplicitFromBadges(dynamic badges) {
     final acc = renderer['accessibility'] as Map<String, dynamic>?;
     final inner = acc?['accessibilityData'] as Map<String, dynamic>?;
     if (_isExplicitLabel(inner?['label'] as String?)) return true;
-    final iconType = (renderer['icon'] as Map<String, dynamic>?)?['iconType'] as String?;
+    final iconType =
+        (renderer['icon'] as Map<String, dynamic>?)?['iconType'] as String?;
     if (iconType != null &&
         (iconType.toUpperCase().contains('EXPLICIT') || iconType == 'E')) {
       return true;
@@ -232,7 +232,8 @@ String? extractMenuArtistId(Map<String, dynamic>? menu) {
     final nav = item['menuNavigationItemRenderer'] as Map<String, dynamic>?;
     final icon = nav?['icon']?['iconType'] as String?;
     if (icon == 'ARTIST') {
-      final browse = nav?['navigationEndpoint']?['browseEndpoint'] as Map<String, dynamic>?;
+      final browse = nav?['navigationEndpoint']?['browseEndpoint']
+          as Map<String, dynamic>?;
       return browse?['browseId'] as String?;
     }
   }

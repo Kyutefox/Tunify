@@ -48,8 +48,7 @@ class VisitorDataFetcher {
   static const String _mainPageUrl = YtConstants.innertubeHost;
 
   static const Map<String, String> _baseHeaders = {
-    'Accept':
-        'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'en-US,en;q=0.9',
     'User-Agent': YtConstants.innertubeUserAgent,
     'sec-fetch-dest': 'document',
@@ -65,7 +64,8 @@ class VisitorDataFetcher {
   /// returned instead of throwing.
   static Future<SwJsData> fetch() async {
     try {
-      final resp1 = await http.get(Uri.parse(_mainPageUrl), headers: _baseHeaders);
+      final resp1 =
+          await http.get(Uri.parse(_mainPageUrl), headers: _baseHeaders);
       if (resp1.statusCode != 200) return const SwJsData();
 
       final setCookieHeader1 = resp1.headers['set-cookie'] ?? '';
@@ -76,9 +76,8 @@ class VisitorDataFetcher {
       String? sessionCookies;
 
       if (visitorInfoCookie != null && visitorInfoCookie.isNotEmpty) {
-        final step1CookieHeader = step1Cookies.entries
-            .map((e) => '${e.key}=${e.value}')
-            .join('; ');
+        final step1CookieHeader =
+            step1Cookies.entries.map((e) => '${e.key}=${e.value}').join('; ');
         final resp2 = await http.get(
           Uri.parse(_mainPageUrl),
           headers: {..._baseHeaders, 'Cookie': step1CookieHeader},
@@ -88,9 +87,8 @@ class VisitorDataFetcher {
         final setCookie2 = resp2.headers['set-cookie'] ?? '';
         final step2Cookies = _extractCookies(setCookie2);
         final allCookies = {...step1Cookies, ...step2Cookies};
-        sessionCookies = allCookies.entries
-            .map((e) => '${e.key}=${e.value}')
-            .join('; ');
+        sessionCookies =
+            allCookies.entries.map((e) => '${e.key}=${e.value}').join('; ');
       } else {
         htmlBody = resp1.body;
       }
@@ -125,8 +123,8 @@ class VisitorDataFetcher {
       final vdMatches =
           RegExp(r'"VISITOR_DATA"\s*:\s*"([^"]+)"').allMatches(body).toList();
       if (vdMatches.isNotEmpty) {
-        vdMatches.sort(
-            (a, b) => a.group(1)!.length.compareTo(b.group(1)!.length));
+        vdMatches
+            .sort((a, b) => a.group(1)!.length.compareTo(b.group(1)!.length));
         visitorData = vdMatches.first.group(1);
       }
 
@@ -134,8 +132,8 @@ class VisitorDataFetcher {
           RegExp(r'"INNERTUBE_API_KEY"\s*:\s*"([^"]+)"').firstMatch(body);
       if (keyMatch != null) apiKey = keyMatch.group(1);
 
-      final verMatch =
-          RegExp(r'"INNERTUBE_CLIENT_VERSION"\s*:\s*"([^"]+)"').firstMatch(body);
+      final verMatch = RegExp(r'"INNERTUBE_CLIENT_VERSION"\s*:\s*"([^"]+)"')
+          .firstMatch(body);
       if (verMatch != null) clientVersion = verMatch.group(1);
 
       final glMatch = RegExp(r'"GL"\s*:\s*"([^"]+)"').firstMatch(body);
@@ -146,11 +144,9 @@ class VisitorDataFetcher {
 
       return SwJsData(
         visitorData: visitorData?.isNotEmpty == true ? visitorData : null,
-        shortVisitorData:
-            visitorData?.isNotEmpty == true ? visitorData : null,
+        shortVisitorData: visitorData?.isNotEmpty == true ? visitorData : null,
         apiKey: apiKey?.isNotEmpty == true ? apiKey : null,
-        clientVersion:
-            clientVersion?.isNotEmpty == true ? clientVersion : null,
+        clientVersion: clientVersion?.isNotEmpty == true ? clientVersion : null,
         sessionCookies:
             sessionCookies?.isNotEmpty == true ? sessionCookies : null,
         gl: gl?.isNotEmpty == true ? gl : null,

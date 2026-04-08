@@ -109,8 +109,7 @@ class PodcastRepository {
 
   Future<PlaybackPosition?> getPosition(
       String contentId, PlaybackContentType type) async {
-    final row =
-        await _bridge.getPlaybackPosition(contentId, type.name);
+    final row = await _bridge.getPlaybackPosition(contentId, type.name);
     if (row == null) return null;
     return _rowToPosition(row);
   }

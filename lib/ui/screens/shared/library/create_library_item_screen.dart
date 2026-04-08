@@ -147,8 +147,8 @@ class _CreateLibraryItemScreenState extends State<CreateLibraryItemScreen>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.white.withValues(alpha: 0.28),
-                      Colors.white.withValues(alpha: 0.10),
+                      Colors.white.withValues(alpha: UIOpacity.medium),
+                      Colors.white.withValues(alpha: UIOpacity.faint),
                       Colors.transparent,
                     ],
                     stops: const [0.0, 0.40, 1.0],
@@ -190,21 +190,21 @@ class _CreateLibraryItemScreenState extends State<CreateLibraryItemScreen>
                       hintStyle: TextStyle(
                         color: AppColorsScheme.of(context)
                             .textPrimary
-                            .withValues(alpha: 0.60),
+                            .withValues(alpha: UIOpacity.emphasis),
                         fontSize: AppFontSize.display3,
                         fontWeight: FontWeight.w500,
                       ),
                       enabledBorder: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        width: 1.2,
+                        color: Colors.white.withValues(alpha: UIOpacity.high),
+                        width: UIStroke.base,
                       ).toUnderlineInputBorder(),
                       focusedBorder: BorderSide(
                         color: Colors.white,
-                        width: 1.8,
+                        width: UIStroke.focus,
                       ).toUnderlineInputBorder(),
                       border: BorderSide(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        width: 1.2,
+                        color: Colors.white.withValues(alpha: UIOpacity.high),
+                        width: UIStroke.base,
                       ).toUnderlineInputBorder(),
                     ),
                     onSubmitted: (_) => _save(),
@@ -285,7 +285,7 @@ class _FormActionsRow extends StatelessWidget {
           child: AppButton(
             onPressed: onCancel,
             label: 'Cancel',
-            height: 44,
+            height: UISize.buttonHeightMd,
             variant: AppButtonVariant.outlined,
             foregroundColor: AppColorsScheme.of(context).textPrimary,
           ),
@@ -295,7 +295,7 @@ class _FormActionsRow extends StatelessWidget {
           child: AppButton(
             onPressed: onConfirm,
             label: confirmLabel,
-            height: 44,
+            height: UISize.buttonHeightMd,
             variant: AppButtonVariant.filled,
             backgroundColor: AppColors.primary,
             foregroundColor: Colors.black,

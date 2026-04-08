@@ -5,7 +5,8 @@ import 'package:tunify_logger/tunify_logger.dart';
 /// The instance is cached and reused throughout the app lifetime.
 class SharedPrefsService {
   static SharedPrefsService? _instance;
-  static SharedPrefsService get instance => _instance ??= SharedPrefsService._();
+  static SharedPrefsService get instance =>
+      _instance ??= SharedPrefsService._();
 
   SharedPrefsService._();
 
@@ -16,7 +17,8 @@ class SharedPrefsService {
     try {
       _prefs = await SharedPreferences.getInstance();
     } catch (e) {
-      logWarning('SharedPrefsService: Failed to initialize - $e', tag: 'SharedPrefs');
+      logWarning('SharedPrefsService: Failed to initialize - $e',
+          tag: 'SharedPrefs');
     }
   }
 

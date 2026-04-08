@@ -159,7 +159,8 @@ class DeviceDiscoveryService {
         ));
       }
     } catch (e) {
-      logWarning('DeviceDiscovery: scanNetworkDevices failed: $e', tag: 'DeviceDiscovery');
+      logWarning('DeviceDiscovery: scanNetworkDevices failed: $e',
+          tag: 'DeviceDiscovery');
     }
     return devices;
   }

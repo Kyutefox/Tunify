@@ -378,7 +378,8 @@ class _LibraryDownloadedGridCard extends ConsumerWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         child: Container(
-                          color: Colors.black.withValues(alpha: 0.5),
+                          color: Colors.black
+                              .withValues(alpha: UIOpacity.disabled),
                           child: Center(
                             child: NowPlayingIndicator(
                               size: 28,
@@ -710,7 +711,8 @@ class _DeviceMusicGridCard extends ConsumerWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(AppRadius.md),
                         child: Container(
-                          color: Colors.black.withValues(alpha: 0.5),
+                          color: Colors.black
+                              .withValues(alpha: UIOpacity.disabled),
                           child: Center(
                             child: NowPlayingIndicator(
                               size: 28,

@@ -64,7 +64,8 @@ class BackupService {
           'downloadedShuffleMode': data.downloadedShuffleMode.index,
           'recentlyPlayedShuffleMode': data.recentlyPlayedShuffleMode.index,
           'downloadsSortOrder': data.downloadsSortOrder.toString(),
-          'followedArtists': data.followedArtists.map((a) => a.toJson()).toList(),
+          'followedArtists':
+              data.followedArtists.map((a) => a.toJson()).toList(),
           'followedAlbums': data.followedAlbums.map((a) => a.toJson()).toList(),
         },
         'recentlyPlayed': recentlyPlayed.map((s) => s.toJson()).toList(),
@@ -131,17 +132,14 @@ class BackupService {
             'This backup was created by a newer version of Tunify. Please update the app.');
       }
 
-      final libraryRaw =
-          payload['library'] as Map<String, dynamic>? ?? {};
-      final recentlyPlayedRaw =
-          (payload['recentlyPlayed'] as List<dynamic>?)
+      final libraryRaw = payload['library'] as Map<String, dynamic>? ?? {};
+      final recentlyPlayedRaw = (payload['recentlyPlayed'] as List<dynamic>?)
               ?.cast<Map<String, dynamic>>() ??
-              [];
-      final recentSearchesRaw =
-          (payload['recentSearches'] as List<dynamic>?)
+          [];
+      final recentSearchesRaw = (payload['recentSearches'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
-              [];
+          [];
       final ytPersonalization =
           (payload['ytPersonalization'] as Map<String, dynamic>?) ?? {};
 
@@ -164,10 +162,10 @@ class BackupService {
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
   LibraryData _parseLibraryData(Map<String, dynamic> raw) {
-    final playlistsRaw = (raw['playlists'] as List<dynamic>? ?? [])
-        .cast<Map<String, dynamic>>();
-    final foldersRaw = (raw['folders'] as List<dynamic>? ?? [])
-        .cast<Map<String, dynamic>>();
+    final playlistsRaw =
+        (raw['playlists'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+    final foldersRaw =
+        (raw['folders'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
     final artistsRaw = (raw['followedArtists'] as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>();
     final albumsRaw = (raw['followedAlbums'] as List<dynamic>? ?? [])

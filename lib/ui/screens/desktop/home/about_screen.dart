@@ -18,7 +18,8 @@ const _kReleaseYear = '2025';
 
 const _kDeveloperName = 'MrJukeman';
 const _kDeveloperRole = 'Lead Developer';
-const _kDeveloperAvatarUrl = 'https://avatars.githubusercontent.com/u/52706390?v=4';
+const _kDeveloperAvatarUrl =
+    'https://avatars.githubusercontent.com/u/52706390?v=4';
 const _kDevGithubUrl = 'https://github.com/mrjukeman';
 const _kDevGithubLabel = 'github.com/mrjukeman';
 const _kDevWebUrl = 'https://rajuchoudhary.com.np';
@@ -91,11 +92,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   role: _kDeveloperRole,
                   avatarUrl: _kDeveloperAvatarUrl,
                   avatarIsCircle: true,
-                  avatarFallbackGradient: const LinearGradient(
-                    colors: [Color(0xFF1DB954), Color(0xFF00D2FF)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  avatarFallbackGradient: AppColors.primaryGradient,
                   githubUrl: _kDevGithubUrl,
                   githubLabel: _kDevGithubLabel,
                   webUrl: _kDevWebUrl,
@@ -109,7 +106,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   avatarUrl: _kOrgLogoUrl,
                   avatarIsCircle: false,
                   avatarFallbackGradient: const LinearGradient(
-                    colors: [Color(0xFFFF6B35), Color(0xFFFF2D78)],
+                    colors: [AppColors.accentOrange, Color(0xFFFF2D78)],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
@@ -166,7 +163,7 @@ class _HeroHeader extends StatelessWidget {
             height: 180,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.primary.withValues(alpha: 0.08),
+              color: AppColors.primary.withValues(alpha: UIOpacity.subtle),
             ),
           ),
         ),
@@ -178,7 +175,7 @@ class _HeroHeader extends StatelessWidget {
             height: 140,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: AppColors.primary.withValues(alpha: 0.06),
+              color: AppColors.primary.withValues(alpha: UIOpacity.subtle),
             ),
           ),
         ),
@@ -200,8 +197,8 @@ class _HeroHeader extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.sm),
               Container(
-                width: 96,
-                height: 96,
+                width: UISize.appLogoLg,
+                height: UISize.appLogoLg,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(AppRadius.xl),
                   boxShadow: [
@@ -216,8 +213,8 @@ class _HeroHeader extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadius.xl),
                   child: SvgPicture.asset(
                     'assets/app-icon.svg',
-                    width: 96,
-                    height: 96,
+                    width: UISize.appLogoLg,
+                    height: UISize.appLogoLg,
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -232,7 +229,7 @@ class _HeroHeader extends StatelessWidget {
                   letterSpacing: AppLetterSpacing.display,
                 ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: AppSpacing.xs),
               Text(
                 _kAppTagline,
                 style: TextStyle(
@@ -249,7 +246,8 @@ class _HeroHeader extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: AppColors.glassWhite,
                   borderRadius: BorderRadius.circular(AppRadius.full),
-                  border: Border.all(color: AppColors.glassBorder, width: 1),
+                  border: Border.all(
+                      color: AppColors.glassBorder, width: UIStroke.thin),
                 ),
                 child: Text(
                   version.isEmpty ? '' : 'v$version (build $buildNumber)',
@@ -382,7 +380,7 @@ class _PersonCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xs / 2),
                     Text(
                       role,
                       style: TextStyle(
@@ -423,13 +421,13 @@ class _PersonCard extends StatelessWidget {
   Widget _buildAvatar(String url, bool isCircle, String name) {
     if (url.endsWith('.svg')) {
       return Container(
-        width: 52,
-        height: 52,
+        width: UISize.avatar,
+        height: UISize.avatar,
         color: Colors.transparent,
         child: SvgPicture.network(
           url,
-          width: 52,
-          height: 52,
+          width: UISize.avatar,
+          height: UISize.avatar,
           fit: BoxFit.contain,
           placeholderBuilder: (_) => _GradientFallback(
             name: name,
@@ -441,8 +439,8 @@ class _PersonCard extends StatelessWidget {
     }
     return CachedNetworkImage(
       imageUrl: url,
-      width: 52,
-      height: 52,
+      width: UISize.avatar,
+      height: UISize.avatar,
       fit: BoxFit.cover,
       errorWidget: (_, __, ___) => _GradientFallback(
         name: name,
@@ -509,7 +507,8 @@ class _IconLink extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
+          onTap: () =>
+              launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication),
           borderRadius: BorderRadius.circular(AppRadius.md),
           child: Container(
             padding: const EdgeInsets.symmetric(
@@ -519,7 +518,10 @@ class _IconLink extends StatelessWidget {
             decoration: BoxDecoration(
               color: color.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(AppRadius.md),
-              border: Border.all(color: color.withValues(alpha: 0.2), width: 1),
+              border: Border.all(
+                color: color.withValues(alpha: UIOpacity.faint),
+                width: UIStroke.thin,
+              ),
             ),
             child: Row(
               children: [
@@ -593,7 +595,8 @@ class _TechChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
+      padding:
+          const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 6),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppRadius.full),
@@ -652,8 +655,8 @@ class _AboutScreenBodyState extends State<AboutScreenBody> {
         children: [
           // Compact app identity (no back button, no top padding)
           Container(
-            width: 80,
-            height: 80,
+            width: UISize.appLogoMd,
+            height: UISize.appLogoMd,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(AppRadius.xl),
               boxShadow: [
@@ -668,8 +671,8 @@ class _AboutScreenBodyState extends State<AboutScreenBody> {
               borderRadius: BorderRadius.circular(AppRadius.xl),
               child: SvgPicture.asset(
                 'assets/app-icon.svg',
-                width: 80,
-                height: 80,
+                width: UISize.appLogoMd,
+                height: UISize.appLogoMd,
                 fit: BoxFit.cover,
               ),
             ),
@@ -684,7 +687,7 @@ class _AboutScreenBodyState extends State<AboutScreenBody> {
               letterSpacing: AppLetterSpacing.display,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: AppSpacing.xs),
           Text(
             _kAppTagline,
             style: TextStyle(
@@ -723,11 +726,7 @@ class _AboutScreenBodyState extends State<AboutScreenBody> {
             role: _kDeveloperRole,
             avatarUrl: _kDeveloperAvatarUrl,
             avatarIsCircle: true,
-            avatarFallbackGradient: const LinearGradient(
-              colors: [Color(0xFF1DB954), Color(0xFF00D2FF)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
+            avatarFallbackGradient: AppColors.primaryGradient,
             githubUrl: _kDevGithubUrl,
             githubLabel: _kDevGithubLabel,
             webUrl: _kDevWebUrl,
@@ -741,7 +740,7 @@ class _AboutScreenBodyState extends State<AboutScreenBody> {
             avatarUrl: _kOrgLogoUrl,
             avatarIsCircle: false,
             avatarFallbackGradient: const LinearGradient(
-              colors: [Color(0xFFFF6B35), Color(0xFFFF2D78)],
+              colors: [AppColors.accentOrange, Color(0xFFFF2D78)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -778,15 +777,19 @@ class _FooterText extends StatelessWidget {
         const SizedBox(height: AppSpacing.md),
         Text(
           '© $_kReleaseYear $_kOrgName. All rights reserved.',
-          style: TextStyle(color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
+          style: TextStyle(
+              color: AppColorsScheme.of(context).textMuted,
+              fontSize: AppFontSize.sm),
           textAlign: TextAlign.center,
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: AppSpacing.xs),
         RichText(
           textAlign: TextAlign.center,
           text: TextSpan(
             style: TextStyle(
-              color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.6),
+              color: AppColorsScheme.of(context)
+                  .textMuted
+                  .withValues(alpha: UIOpacity.emphasis),
               fontSize: AppFontSize.xs,
             ),
             children: const [

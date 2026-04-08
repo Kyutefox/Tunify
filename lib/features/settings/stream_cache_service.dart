@@ -141,9 +141,8 @@ class StreamCacheService {
   Future<String?> getCacheFilePath(String songId) async {
     if (songId.isEmpty) return null;
     final dir = await _getCacheDir();
-    final extensions = isApplePlatform
-        ? ['m4a']
-        : ['audio', 'opus', 'webm', 'm4a'];
+    final extensions =
+        isApplePlatform ? ['m4a'] : ['audio', 'opus', 'webm', 'm4a'];
     for (final ext in extensions) {
       final path = join(dir, '$songId.$ext');
       final file = File(path);
@@ -525,7 +524,10 @@ class StreamCacheService {
       exists: true,
       filePath: path,
       cachedBytes: cachedBytes,
-      totalBytes: metadata?.totalBytes ?? (isComplete ? fileSize : (5 * 1024 * 1024)), // 5MB estimate for incomplete files
+      totalBytes: metadata?.totalBytes ??
+          (isComplete
+              ? fileSize
+              : (5 * 1024 * 1024)), // 5MB estimate for incomplete files
       isComplete: isComplete,
     );
   }

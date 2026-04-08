@@ -80,7 +80,9 @@ class _MobileAuthScreenState extends ConsumerState<MobileAuthScreen>
                       width: 36,
                       height: 4,
                       decoration: BoxDecoration(
-                        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.4),
+                        color: AppColorsScheme.of(context)
+                            .textMuted
+                            .withValues(alpha: 0.4),
                         borderRadius: BorderRadius.circular(AppRadius.full),
                       ),
                     ),

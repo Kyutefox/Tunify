@@ -58,7 +58,6 @@ class DownloadStore {
     ''');
   }
 
-
   /// Application documents subdirectory for downloaded audio files.
   static Future<String> get downloadDirectory async {
     final dir = await getApplicationDocumentsDirectory();
@@ -91,17 +90,19 @@ class DownloadStore {
       'downloads',
       orderBy: 'sort_order ASC, created_at DESC',
     );
-    return rows.map((r) => <String, dynamic>{
-      'id': r['song_id'],
-      'title': r['title'],
-      'artist': r['artist'],
-      'thumbnailUrl': r['thumbnail_url'],
-      'durationMs': r['duration_ms'],
-      'isExplicit': (r['is_explicit'] as int? ?? 0) == 1,
-      'artistBrowseId': r['artist_browse_id'],
-      'albumBrowseId': r['album_browse_id'],
-      'albumName': r['album_name'],
-    }).toList();
+    return rows
+        .map((r) => <String, dynamic>{
+              'id': r['song_id'],
+              'title': r['title'],
+              'artist': r['artist'],
+              'thumbnailUrl': r['thumbnail_url'],
+              'durationMs': r['duration_ms'],
+              'isExplicit': (r['is_explicit'] as int? ?? 0) == 1,
+              'artistBrowseId': r['artist_browse_id'],
+              'albumBrowseId': r['album_browse_id'],
+              'albumName': r['album_name'],
+            })
+        .toList();
   }
 
   /// Inserts or replaces a download row. [songJson] is stored as-is (e.g. from app's Song.toJson()).

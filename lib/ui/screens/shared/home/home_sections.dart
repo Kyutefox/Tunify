@@ -52,9 +52,8 @@ class RecentlyPlayedRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hList = ShellContext.isDesktopOf(context)
-        ? DesktopSpacing.lg
-        : AppSpacing.base;
+    final hList =
+        ShellContext.isDesktopOf(context) ? DesktopSpacing.lg : AppSpacing.base;
     return SizedBox(
       height: 188,
       child: ListView.separated(

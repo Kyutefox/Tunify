@@ -12,7 +12,8 @@ final connectivityProvider = StreamProvider<bool>((ref) async* {
 
   await for (final result in connectivity.onConnectivityChanged) {
     final isConnected = _isConnected(result);
-    logInfo('Connectivity changed: isConnected=$isConnected', tag: 'Connectivity');
+    logInfo('Connectivity changed: isConnected=$isConnected',
+        tag: 'Connectivity');
     yield isConnected;
   }
 });

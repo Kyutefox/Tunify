@@ -1,4 +1,3 @@
-
 /// Returns a copy of [list] with duplicate items removed, preserving first-occurrence order.
 ///
 /// Identity is determined by the [id] function, which must return a stable string

@@ -18,21 +18,25 @@ class PlayerFormatter {
   /// Returns an empty map when [data] does not describe a playable video.
   static Map<String, dynamic> parsePlayerResponse(Map<String, dynamic> data) {
     final videoDetails = data['videoDetails'] as Map<String, dynamic>? ?? {};
-    final microformat = data['microformat']?['microformatDataRenderer'] as Map<String, dynamic>? ?? {};
+    final microformat = data['microformat']?['microformatDataRenderer']
+            as Map<String, dynamic>? ??
+        {};
 
     final videoId = videoDetails['videoId'] as String?;
     if (videoId == null) return {};
 
     final author = videoDetails['author'] as String? ?? 'Unknown Artist';
     final title = videoDetails['title'] as String? ?? 'Unknown Title';
-    final durationSeconds = int.tryParse(videoDetails['lengthSeconds']?.toString() ?? '0') ?? 0;
-    
+    final durationSeconds =
+        int.tryParse(videoDetails['lengthSeconds']?.toString() ?? '0') ?? 0;
+
     final thumbnails = videoDetails['thumbnail']?['thumbnails'] as List?;
     String? thumbUrl;
     if (thumbnails != null && thumbnails.isNotEmpty) {
       thumbUrl = thumbnails.last['url'] as String?;
     }
-    thumbUrl = p.upgradeThumbResolution(thumbUrl ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg', videoId);
+    thumbUrl = p.upgradeThumbResolution(
+        thumbUrl ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg', videoId);
 
     final track = Track(
       id: videoId,
@@ -131,7 +135,8 @@ class PlayerFormatter {
   }
 
   static String? _extractAlbumId(Map<String, dynamic> data) {
-    final microformat = data['microformat']?['microformatDataRenderer'] as Map<String, dynamic>?;
+    final microformat = data['microformat']?['microformatDataRenderer']
+        as Map<String, dynamic>?;
 
     // Primary: urlCanonical contains list= param (e.g. OLAK5uy_...)
     final url = microformat?['urlCanonical'] as String?;
@@ -151,5 +156,4 @@ class PlayerFormatter {
 
     return null;
   }
-
 }

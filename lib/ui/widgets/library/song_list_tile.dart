@@ -88,7 +88,9 @@ class SongListTile extends ConsumerWidget {
                 child: isNowPlaying && showIndexIndicator
                     ? NowPlayingIndicator(
                         key: const ValueKey('indicator'),
-                        size: 16, barCount: 3, animate: isActivePlaying)
+                        size: 16,
+                        barCount: 3,
+                        animate: isActivePlaying)
                     : Text(
                         '$index',
                         key: ValueKey('idx_$index'),
@@ -123,9 +125,10 @@ class SongListTile extends ConsumerWidget {
                     AnimatedSize(
                       duration: AppDuration.fast,
                       curve: Curves.easeOut,
-                      child: isNowPlaying && (index == null || !showIndexIndicator)
-                          ? InlineNowPlayingDot(animate: isActivePlaying)
-                          : const SizedBox.shrink(),
+                      child:
+                          isNowPlaying && (index == null || !showIndexIndicator)
+                              ? InlineNowPlayingDot(animate: isActivePlaying)
+                              : const SizedBox.shrink(),
                     ),
                     Expanded(
                       child: AnimatedDefaultTextStyle(

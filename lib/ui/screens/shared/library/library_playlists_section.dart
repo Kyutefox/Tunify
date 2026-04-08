@@ -195,10 +195,13 @@ class MediaLibraryEntry extends LibrarySectionEntry {
   final VoidCallback onTap;
   final void Function(Rect?)? onOptions;
   final bool showPinIndicator;
+
   /// Circular cover in grid/list (e.g. artists).
   final bool circularThumbnail;
+
   /// When this entry is shown inside a folder, used for sort by recent / recent add.
   final DateTime? folderSortDate;
+
   /// Optional second line under the title row in grid layout (e.g. album artist).
   final String? gridDetailSubtitle;
 }
@@ -278,7 +281,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
                     size: 48,
                     color: AppColorsScheme.of(context)
                         .textMuted
-                        .withValues(alpha: 0.6),
+                        .withValues(alpha: UIOpacity.emphasis),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
@@ -353,7 +356,9 @@ class _SectionEmptyState extends StatelessWidget {
       ),
       margin: const EdgeInsets.only(top: AppSpacing.sm),
       decoration: BoxDecoration(
-        color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.5),
+        color: AppColorsScheme.of(context)
+            .surfaceLight
+            .withValues(alpha: UIOpacity.disabled),
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
       child: Center(child: child),
@@ -419,11 +424,7 @@ class _LibrarySectionGrid extends StatelessWidget {
               icon: AppIcons.folder,
               iconColor: Colors.white,
               backgroundColor: AppColorsScheme.of(context).surfaceLight,
-              backgroundGradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFF9F43), Color(0xFFFF6B35)],
-              ),
+              backgroundGradient: AppColors.localFilesGradient,
               title: 'Local Files',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
@@ -433,11 +434,7 @@ class _LibrarySectionGrid extends StatelessWidget {
               icon: AppIcons.bookmark,
               iconColor: Colors.white,
               backgroundColor: AppColorsScheme.of(context).surfaceLight,
-              backgroundGradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
-              ),
+              backgroundGradient: AppColors.episodesGradient,
               title: 'Episodes For Later',
               subtitle: episodeCount == 0
                   ? 'No episodes yet'
@@ -502,8 +499,8 @@ class _StaticGridCardState extends State<_StaticGridCard> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
         scale: _pressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
+        duration: AppDuration.instant,
+        curve: AppCurves.decelerate,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -586,8 +583,8 @@ class _LibraryPlaylistGridCardState extends State<_LibraryPlaylistGridCard> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
         scale: _pressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
+        duration: AppDuration.instant,
+        curve: AppCurves.decelerate,
         child: SizedBox.expand(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -695,8 +692,8 @@ class _LibraryFolderGridCardState extends State<_LibraryFolderGridCard> {
       onTapCancel: () => setState(() => _pressed = false),
       child: AnimatedScale(
         scale: _pressed ? 0.95 : 1.0,
-        duration: const Duration(milliseconds: 120),
-        curve: Curves.easeOut,
+        duration: AppDuration.instant,
+        curve: AppCurves.decelerate,
         child: SizedBox.expand(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -900,13 +897,12 @@ class _StaggeredItem extends StatelessWidget {
     final delay = Duration(milliseconds: 30 * index.clamp(0, 20));
     return child
         .animate(delay: delay)
-        .fadeIn(
-            duration: const Duration(milliseconds: 220), curve: Curves.easeOut)
+        .fadeIn(duration: AppDuration.fast, curve: AppCurves.decelerate)
         .slideY(
             begin: 0.06,
             end: 0,
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeOut);
+            duration: AppDuration.fast,
+            curve: AppCurves.decelerate);
   }
 }
 
@@ -960,11 +956,7 @@ class _LibrarySectionList extends StatelessWidget {
               icon: AppIcons.folder,
               iconColor: Colors.white,
               backgroundColor: AppColorsScheme.of(context).surfaceLight,
-              backgroundGradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFF9F43), Color(0xFFFF6B35)],
-              ),
+              backgroundGradient: AppColors.localFilesGradient,
               title: 'Local Files',
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
@@ -974,11 +966,7 @@ class _LibrarySectionList extends StatelessWidget {
               icon: AppIcons.bookmark,
               iconColor: Colors.white,
               backgroundColor: AppColorsScheme.of(context).surfaceLight,
-              backgroundGradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
-              ),
+              backgroundGradient: AppColors.episodesGradient,
               title: 'Episodes For Later',
               subtitle: episodeCount == 0
                   ? 'No episodes yet'
@@ -1108,33 +1096,33 @@ class MediaLibraryGridCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mediaChild = entry.thumbnailUrl != null &&
-            entry.thumbnailUrl!.isNotEmpty
-        ? CachedNetworkImage(
-            imageUrl: entry.thumbnailUrl!,
-            width: double.infinity,
-            fit: BoxFit.cover,
-            errorWidget: (_, __, ___) => Container(
-              color: AppColorsScheme.of(context).surfaceLight,
-              child: Center(
-                child: AppIcon(
-                  icon: entry.placeholderIcon,
-                  color: AppColorsScheme.of(context).textMuted,
-                  size: 36,
+    final mediaChild =
+        entry.thumbnailUrl != null && entry.thumbnailUrl!.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: entry.thumbnailUrl!,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorWidget: (_, __, ___) => Container(
+                  color: AppColorsScheme.of(context).surfaceLight,
+                  child: Center(
+                    child: AppIcon(
+                      icon: entry.placeholderIcon,
+                      color: AppColorsScheme.of(context).textMuted,
+                      size: 36,
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          )
-        : Container(
-            color: AppColorsScheme.of(context).surfaceLight,
-            child: Center(
-              child: AppIcon(
-                icon: entry.placeholderIcon,
-                color: AppColorsScheme.of(context).textMuted,
-                size: 36,
-              ),
-            ),
-          );
+              )
+            : Container(
+                color: AppColorsScheme.of(context).surfaceLight,
+                child: Center(
+                  child: AppIcon(
+                    icon: entry.placeholderIcon,
+                    color: AppColorsScheme.of(context).textMuted,
+                    size: 36,
+                  ),
+                ),
+              );
 
     final detailLine = entry.gridDetailSubtitle ?? entry.subtitle;
 

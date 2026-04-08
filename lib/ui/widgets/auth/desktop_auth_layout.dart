@@ -24,7 +24,7 @@ class AuthBranding extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: AppColors.primary.withValues(alpha: 0.5),
+                color: AppColors.primary.withValues(alpha: UIOpacity.disabled),
                 blurRadius: 24,
                 spreadRadius: 2,
               ),
@@ -118,7 +118,9 @@ class _DesktopLeftPanel extends StatelessWidget {
                 colors: [
                   Colors.transparent,
                   AppColorsScheme.of(context).background.withValues(alpha: 0.2),
-                  AppColorsScheme.of(context).background.withValues(alpha: 0.5),
+                  AppColorsScheme.of(context)
+                      .background
+                      .withValues(alpha: UIOpacity.disabled),
                 ],
                 stops: const [0.0, 0.5, 1.0],
                 begin: Alignment.topCenter,

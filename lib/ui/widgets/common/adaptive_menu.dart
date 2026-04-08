@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
+import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart';
@@ -106,7 +107,8 @@ class _MenuSheetBody extends StatelessWidget {
           if (header != null) ...[
             header!,
             const SizedBox(height: AppSpacing.md),
-            Divider(color: AppColorsScheme.of(context).surfaceHighlight, height: 1),
+            Divider(
+                color: AppColorsScheme.of(context).surfaceHighlight, height: 1),
             const SizedBox(height: AppSpacing.sm),
           ] else if (title != null) ...[
             Padding(
@@ -125,17 +127,19 @@ class _MenuSheetBody extends StatelessWidget {
           for (final entry in entries)
             if (entry.isDivider)
               Padding(
-                padding:
-                    const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                 child: Divider(
-                    color: Colors.white.withValues(alpha: 0.08), height: 1),
+                    color: Colors.white.withValues(alpha: UIOpacity.subtle),
+                    height: UIStroke.thin),
               )
             else
               SheetOptionTile(
                 icon: entry.icon,
                 label: entry.label,
-                iconColor: entry.color ?? AppColorsScheme.of(context).textSecondary,
-                labelColor: entry.color ?? AppColorsScheme.of(context).textPrimary,
+                iconColor:
+                    entry.color ?? AppColorsScheme.of(context).textSecondary,
+                labelColor:
+                    entry.color ?? AppColorsScheme.of(context).textPrimary,
                 showChevron: entry.showChevron || entry.subEntries != null,
                 onTap: () {
                   Navigator.of(context).pop();
@@ -158,25 +162,25 @@ const double _kSubPanelWidth = 212.0;
 const double _kItemVertPad = 9.0;
 const double _kItemHeight = 16.0 + _kItemVertPad * 2 + 2; // icon + pad + margin
 const double _kPanelGap = 6.0;
-const double _kScreenMargin = 8.0;
-const Duration _kOpenDur = Duration(milliseconds: 150);
-const Duration _kHoverDelay = Duration(milliseconds: 110);
+const double _kScreenMargin = AppSpacing.sm;
+const Duration _kOpenDur = AppDuration.fast;
+const Duration _kHoverDelay = AppDuration.instant;
 
 BoxDecoration _panelDecoration() => BoxDecoration(
-      color: const Color(0xFF1C1C1E),
+      color: AppColors.surfaceElevated,
       borderRadius: BorderRadius.circular(AppRadius.md),
       border: Border.all(
-        color: Colors.white.withValues(alpha: 0.10),
-        width: 0.5,
+        color: Colors.white.withValues(alpha: UIOpacity.faint),
+        width: UIStroke.hairline,
       ),
       boxShadow: [
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.55),
+          color: Colors.black.withValues(alpha: UIOpacity.emphasis),
           blurRadius: 36,
-          offset: const Offset(0, 12),
+          offset: const Offset(0, AppSpacing.md),
         ),
         BoxShadow(
-          color: Colors.black.withValues(alpha: 0.22),
+          color: Colors.black.withValues(alpha: UIOpacity.medium),
           blurRadius: 6,
           offset: const Offset(0, 2),
         ),
@@ -276,7 +280,9 @@ class _DropdownOverlayState extends State<_DropdownOverlay>
     _timers[parentLevel]?.cancel();
     if (!mounted) return;
     setState(() {
-      while (_subLevels.length > parentLevel) { _subLevels.removeLast(); }
+      while (_subLevels.length > parentLevel) {
+        _subLevels.removeLast();
+      }
       _subLevels.add(_SubLevel(
         entries: entry.subEntries!,
         itemRect: itemRect,
@@ -291,7 +297,9 @@ class _DropdownOverlayState extends State<_DropdownOverlay>
     _timers[parentLevel] = Timer(_kHoverDelay, () {
       if (!mounted) return;
       setState(() {
-        while (_subLevels.length > parentLevel) { _subLevels.removeLast(); }
+        while (_subLevels.length > parentLevel) {
+          _subLevels.removeLast();
+        }
       });
     });
   }
@@ -299,17 +307,23 @@ class _DropdownOverlayState extends State<_DropdownOverlay>
   /// Cancels close timers for `level` **and all ancestors** so that moving
   /// from a parent panel into a child panel keeps the entire chain alive.
   void _cancelClose(int level) {
-    for (var i = 0; i <= level; i++) { _timers[i]?.cancel(); }
+    for (var i = 0; i <= level; i++) {
+      _timers[i]?.cancel();
+    }
   }
 
   void _dismiss() {
-    for (final t in _timers.values) { t.cancel(); }
+    for (final t in _timers.values) {
+      t.cancel();
+    }
     _ctrl.reverse().then((_) => widget.onDismiss());
   }
 
   @override
   void dispose() {
-    for (final t in _timers.values) { t.cancel(); }
+    for (final t in _timers.values) {
+      t.cancel();
+    }
     _ctrl.dispose();
     super.dispose();
   }
@@ -332,8 +346,10 @@ class _DropdownOverlayState extends State<_DropdownOverlay>
       top = widget.anchorRect.top - panelH - 4;
     }
     double left = widget.anchorRect.right - _kPanelWidth;
-    left = left.clamp(_kScreenMargin, screen.width - _kPanelWidth - _kScreenMargin);
-    return Offset(left, top.clamp(_kScreenMargin, screen.height - _kScreenMargin));
+    left = left.clamp(
+        _kScreenMargin, screen.width - _kPanelWidth - _kScreenMargin);
+    return Offset(
+        left, top.clamp(_kScreenMargin, screen.height - _kScreenMargin));
   }
 
   /// Positions a sub-panel to the right/left of its trigger item row.
@@ -342,12 +358,14 @@ class _DropdownOverlayState extends State<_DropdownOverlay>
     if (left + _kSubPanelWidth > screen.width - _kScreenMargin) {
       left = itemRect.left - _kSubPanelWidth - _kPanelGap;
     }
-    left = left.clamp(_kScreenMargin, screen.width - _kSubPanelWidth - _kScreenMargin);
+    left = left.clamp(
+        _kScreenMargin, screen.width - _kSubPanelWidth - _kScreenMargin);
     double top = itemRect.top - 4;
     if (top + panelH > screen.height - _kScreenMargin) {
       top = screen.height - panelH - _kScreenMargin;
     }
-    return Offset(left, top.clamp(_kScreenMargin, screen.height - _kScreenMargin));
+    return Offset(
+        left, top.clamp(_kScreenMargin, screen.height - _kScreenMargin));
   }
 
   // ── Build ─────────────────────────────────────────────────────────────────
@@ -390,7 +408,10 @@ class _DropdownOverlayState extends State<_DropdownOverlay>
               title: widget.title,
               header: widget.header,
               activeEntries: activeEntries,
-              onTap: (e) { e.onTap(); _dismiss(); },
+              onTap: (e) {
+                e.onTap();
+                _dismiss();
+              },
               onSubHover: (e, r) => _openLevel(0, e, r),
               onSubLeave: () => _scheduleClose(0),
               onRegularHover: () {
@@ -409,8 +430,7 @@ class _DropdownOverlayState extends State<_DropdownOverlay>
     );
   }
 
-  Widget _buildSubPanel(
-      Size screen, int i, Set<AppMenuEntry> activeEntries) {
+  Widget _buildSubPanel(Size screen, int i, Set<AppMenuEntry> activeEntries) {
     final level = _subLevels[i];
     final panelH = _estimateH(level.entries);
     final origin = _subOrigin(screen, level.itemRect, panelH);
@@ -427,7 +447,7 @@ class _DropdownOverlayState extends State<_DropdownOverlay>
         child: TweenAnimationBuilder<double>(
           key: ValueKey(level.parentEntry.label),
           tween: Tween(begin: 0.0, end: 1.0),
-          duration: const Duration(milliseconds: 130),
+          duration: AppDuration.fast,
           curve: Curves.easeOutCubic,
           builder: (_, t, child) => Opacity(
             opacity: t.clamp(0.0, 1.0),
@@ -441,13 +461,18 @@ class _DropdownOverlayState extends State<_DropdownOverlay>
             entries: level.entries,
             activeEntries: activeEntries,
             emptyLabel: 'No playlists yet',
-            onTap: (e) { e.onTap(); _dismiss(); },
+            onTap: (e) {
+              e.onTap();
+              _dismiss();
+            },
             onSubHover: (e, r) => _openLevel(i + 1, e, r),
             onSubLeave: () => _scheduleClose(i + 1),
             onRegularHover: () {
               if (_subLevels.length > i + 1) {
                 setState(() {
-                  while (_subLevels.length > i + 1) { _subLevels.removeLast(); }
+                  while (_subLevels.length > i + 1) {
+                    _subLevels.removeLast();
+                  }
                 });
               }
             },
@@ -491,71 +516,72 @@ class _MenuPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
-      child: Container(
-      constraints: const BoxConstraints(maxHeight: 360),
-      decoration: _panelDecoration(),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (header != null) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
-                  child: header!,
-                ),
-                const _PanelDivider(),
-              ] else if (title != null) ...[
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 5),
-                  child: Text(
-                    title!,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: AppColorsScheme.of(context).textMuted,
-                      fontSize: AppFontSize.xs,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: AppLetterSpacing.normal,
+        color: Colors.transparent,
+        child: Container(
+          constraints: const BoxConstraints(maxHeight: 360),
+          decoration: _panelDecoration(),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (header != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 6),
+                      child: header!,
                     ),
-                  ),
-                ),
-                const _PanelDivider(),
-              ],
-              if (entries.isEmpty && emptyLabel != null)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 14, vertical: 10),
-                  child: Text(
-                    emptyLabel!,
-                    style: TextStyle(
-                        color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.md),
-                  ),
-                ),
-              for (final e in entries)
-                if (e.isDivider)
-                  const _PanelDivider()
-                else
-                  _MenuItem(
-                    entry: e,
-                    isActive: activeEntries.contains(e),
-                    onTap: () => onTap(e),
-                    onSubHover: e.subEntries != null
-                        ? (rect) => onSubHover(e, rect)
-                        : null,
-                    onSubLeave: e.subEntries != null ? onSubLeave : null,
-                    onRegularHover:
-                        e.subEntries == null ? onRegularHover : null,
-                  ),
-            ],
+                    const _PanelDivider(),
+                  ] else if (title != null) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 5),
+                      child: Text(
+                        title!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColorsScheme.of(context).textMuted,
+                          fontSize: AppFontSize.xs,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: AppLetterSpacing.normal,
+                        ),
+                      ),
+                    ),
+                    const _PanelDivider(),
+                  ],
+                  if (entries.isEmpty && emptyLabel != null)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 14, vertical: 10),
+                      child: Text(
+                        emptyLabel!,
+                        style: TextStyle(
+                            color: AppColorsScheme.of(context).textMuted,
+                            fontSize: AppFontSize.md),
+                      ),
+                    ),
+                  for (final e in entries)
+                    if (e.isDivider)
+                      const _PanelDivider()
+                    else
+                      _MenuItem(
+                        entry: e,
+                        isActive: activeEntries.contains(e),
+                        onTap: () => onTap(e),
+                        onSubHover: e.subEntries != null
+                            ? (rect) => onSubHover(e, rect)
+                            : null,
+                        onSubLeave: e.subEntries != null ? onSubLeave : null,
+                        onRegularHover:
+                            e.subEntries == null ? onRegularHover : null,
+                      ),
+                ],
+              ),
+            ),
           ),
-        ),
-      ),
-    ));
+        ));
   }
 }
 
@@ -618,13 +644,13 @@ class _MenuItemState extends State<_MenuItem> {
         onTap: e.subEntries != null ? null : widget.onTap,
         child: AnimatedContainer(
           key: _key,
-          duration: const Duration(milliseconds: 80),
+          duration: AppDuration.instant,
           margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-          padding: EdgeInsets.symmetric(
-              horizontal: 10, vertical: _kItemVertPad),
+          padding:
+              EdgeInsets.symmetric(horizontal: 10, vertical: _kItemVertPad),
           decoration: BoxDecoration(
             color: highlighted
-                ? Colors.white.withValues(alpha: 0.07)
+                ? Colors.white.withValues(alpha: UIOpacity.subtle)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(AppRadius.xs),
           ),
@@ -708,8 +734,8 @@ class _PanelDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 3),
-      height: 0.5,
-      color: Colors.white.withValues(alpha: 0.08),
+      height: UIStroke.hairline,
+      color: Colors.white.withValues(alpha: UIOpacity.subtle),
     );
   }
 }

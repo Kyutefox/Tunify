@@ -31,6 +31,7 @@ class LibraryItemTile extends StatelessWidget {
   final void Function(Rect?)? onOptions;
   final List<List<dynamic>> placeholderIcon;
   final bool showPinIndicator;
+
   /// When true, the thumbnail is circular (e.g. artists).
   final bool circularThumbnail;
 

@@ -77,7 +77,8 @@ class CrossfadeEngine {
   /// Not forwarded — always reflects the live primary player.
   /// [TunifyAudioHandler] reads this as a point-in-time value, not a persistent
   /// subscription, so it does not need to survive a primary swap.
-  Stream<Duration> get bufferedPositionStream => _primary.bufferedPositionStream;
+  Stream<Duration> get bufferedPositionStream =>
+      _primary.bufferedPositionStream;
 
   /// Sequence state is not forwarded — only the primary CAS exposes it.
   Stream<ja.SequenceState?> get sequenceStateStream =>
@@ -219,7 +220,8 @@ class CrossfadeEngine {
     // before the fade window opens. Load failure is non-fatal — beginCrossfade
     // detects the invalid secondary via the identity check and falls back cleanly.
     secondary.setAudioSourceForCrossfade(source).catchError((Object e) {
-      logWarning('CrossfadeEngine: preload source failed — $e', tag: 'Crossfade');
+      logWarning('CrossfadeEngine: preload source failed — $e',
+          tag: 'Crossfade');
       if (!_disposed && !_isCrossfading && identical(_secondary, secondary)) {
         _secondary = null;
         secondary.dispose();
@@ -263,9 +265,11 @@ class CrossfadeEngine {
       // Reuse the preloaded secondary — the source URL was already resolved and
       // ExoPlayer has had extra time to reach STATE_READY.
       secondary = _secondary!;
-      logDebug('CrossfadeEngine: reusing preloaded secondary', tag: 'Crossfade');
+      logDebug('CrossfadeEngine: reusing preloaded secondary',
+          tag: 'Crossfade');
     } else {
-      assert(source != null, 'source is required when no secondary is preloaded');
+      assert(
+          source != null, 'source is required when no secondary is preloaded');
       // Dedicated crossfade constructor skips audio-session management so the
       // secondary does not steal audio focus from the primary.
       secondary = AudioPlayerService.forCrossfade();
@@ -275,8 +279,8 @@ class CrossfadeEngine {
         if (normalizationEnabled) await secondary.setNormalization(true);
         secondary.applyCrossfadeVolume(0.0);
       } catch (e) {
-        logWarning(
-            'CrossfadeEngine: secondary init failed — $e', tag: 'Crossfade');
+        logWarning('CrossfadeEngine: secondary init failed — $e',
+            tag: 'Crossfade');
         secondary.dispose();
         _secondary = null;
         _isCrossfading = false;

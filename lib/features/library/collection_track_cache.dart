@@ -147,6 +147,7 @@ class CacheEntry {
   final String? curatorThumbnailUrl;
   final String? headerSubtitle;
   final String? headerSecondSubtitle;
+
   /// Browse canonical name (e.g. artist channel title from immersive header).
   final String? collectionTitle;
 }

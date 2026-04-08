@@ -22,8 +22,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
 
   Future<void> _doBackup() async {
     setState(() => _backupBusy = true);
-    final result =
-        await ref.read(backupServiceProvider).createBackup();
+    final result = await ref.read(backupServiceProvider).createBackup();
     if (!mounted) return;
     setState(() => _backupBusy = false);
     _showSnack(result.isSuccess ? result.message! : result.error!,
@@ -39,8 +38,7 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
     );
     if (!confirmed) return;
     setState(() => _restoreBusy = true);
-    final result =
-        await ref.read(backupServiceProvider).restoreBackup();
+    final result = await ref.read(backupServiceProvider).restoreBackup();
     if (!mounted) return;
     setState(() => _restoreBusy = false);
     _showSnack(result.isSuccess ? result.message! : result.error!,
@@ -141,9 +139,12 @@ class _BackupRestoreScreenState extends ConsumerState<BackupRestoreScreen> {
           const SizedBox(height: AppSpacing.xl),
           _InfoBox(
             children: [
-              _infoLine(context, 'Backup includes playlists, liked songs, followed artists & albums, listening history and recent searches.'),
-              _infoLine(context, 'Downloads and stream cache are not included in the backup.'),
-              _infoLine(context, 'After restoring, restart the app to see all changes reflected.'),
+              _infoLine(context,
+                  'Backup includes playlists, liked songs, followed artists & albums, listening history and recent searches.'),
+              _infoLine(context,
+                  'Downloads and stream cache are not included in the backup.'),
+              _infoLine(context,
+                  'After restoring, restart the app to see all changes reflected.'),
             ],
           ),
         ],

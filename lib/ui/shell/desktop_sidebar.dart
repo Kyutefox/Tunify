@@ -199,19 +199,17 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
     ];
 
     final rawAlbums = showAlbums
-        ? library.followedAlbums
-            .where((a) {
-              if (q.isNotEmpty &&
-                  !a.title.toLowerCase().contains(q) &&
-                  !a.artistName.toLowerCase().contains(q)) {
-                return false;
-              }
-              if (_filter == null && inFolderIds.contains(a.id)) {
-                return false;
-              }
-              return true;
-            })
-            .toList()
+        ? library.followedAlbums.where((a) {
+            if (q.isNotEmpty &&
+                !a.title.toLowerCase().contains(q) &&
+                !a.artistName.toLowerCase().contains(q)) {
+              return false;
+            }
+            if (_filter == null && inFolderIds.contains(a.id)) {
+              return false;
+            }
+            return true;
+          }).toList()
         : <LibraryAlbum>[];
     final albums = List<LibraryAlbum>.from(rawAlbums)
       ..sort((a, b) {
@@ -228,17 +226,15 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
     final visibleAlbums = [...sortedPinnedAlbums, ...sortedUnpinnedAlbums];
 
     final rawArtists = showArtists
-        ? library.followedArtists
-            .where((a) {
-              if (q.isNotEmpty && !a.name.toLowerCase().contains(q)) {
-                return false;
-              }
-              if (_filter == null && inFolderIds.contains(a.id)) {
-                return false;
-              }
-              return true;
-            })
-            .toList()
+        ? library.followedArtists.where((a) {
+            if (q.isNotEmpty && !a.name.toLowerCase().contains(q)) {
+              return false;
+            }
+            if (_filter == null && inFolderIds.contains(a.id)) {
+              return false;
+            }
+            return true;
+          }).toList()
         : <LibraryArtist>[];
     final artists = List<LibraryArtist>.from(rawArtists)
       ..sort((a, b) {
@@ -540,6 +536,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
           return titleOf(a).toLowerCase().compareTo(titleOf(b).toLowerCase());
       }
     }
+
     allRegularEntries.sort(compareAllRegularEntries);
 
     final allModeEntries = <LibrarySectionEntry>[
@@ -851,31 +848,32 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                       ? AppIcons.podcast
                                       : _filter == LibraryFilter.folders
                                           ? AppIcons.folder
-                                      : _filter == LibraryFilter.audiobooks
-                                          ? AppIcons.bookOpen
-                                  : _filter == LibraryFilter.artists
-                                      ? AppIcons.artist
-                                      : AppIcons.playlist,
+                                          : _filter == LibraryFilter.audiobooks
+                                              ? AppIcons.bookOpen
+                                              : _filter == LibraryFilter.artists
+                                                  ? AppIcons.artist
+                                                  : AppIcons.playlist,
                               message: _filter == LibraryFilter.playlists
                                   ? 'Playlists you create will appear here'
                                   : _filter == LibraryFilter.folders
                                       ? 'Folders you create will appear here'
-                                  : _filter == LibraryFilter.podcasts
-                                      ? 'Podcasts you save will appear here'
-                                      : _filter == LibraryFilter.audiobooks
-                                          ? 'Audiobooks you save will appear here'
-                                  : _filter == LibraryFilter.albums
-                                      ? 'Albums you save will appear here'
-                                      : _filter == LibraryFilter.artists
-                                          ? 'Artists you follow will appear here'
-                                          : 'Your library is empty.\nTap + to get started.',
+                                      : _filter == LibraryFilter.podcasts
+                                          ? 'Podcasts you save will appear here'
+                                          : _filter == LibraryFilter.audiobooks
+                                              ? 'Audiobooks you save will appear here'
+                                              : _filter == LibraryFilter.albums
+                                                  ? 'Albums you save will appear here'
+                                                  : _filter ==
+                                                          LibraryFilter.artists
+                                                      ? 'Artists you follow will appear here'
+                                                      : 'Your library is empty.\nTap + to get started.',
                             )
                           : ListView(
                               padding: const EdgeInsets.only(
                                   top: AppSpacing.xs, bottom: 8),
                               children: [
                                 // Folder open: show only that folder's playlists
-                                  if (folderEntries != null) ...[
+                                if (folderEntries != null) ...[
                                   if (folderEntries.isEmpty)
                                     Padding(
                                       padding: EdgeInsets.all(AppSpacing.xl),
@@ -892,8 +890,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                     LibraryPlaylistsSection(
                                       entries: folderEntries,
                                       viewMode: viewMode,
-                                      contentPadding:
-                                          const EdgeInsets.fromLTRB(
+                                      contentPadding: const EdgeInsets.fromLTRB(
                                         DesktopSpacing.base,
                                         0,
                                         DesktopSpacing.sm,
@@ -916,8 +913,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                     LibraryPlaylistsSection(
                                       entries: allModeEntries,
                                       viewMode: viewMode,
-                                      contentPadding:
-                                          const EdgeInsets.fromLTRB(
+                                      contentPadding: const EdgeInsets.fromLTRB(
                                         DesktopSpacing.base,
                                         0,
                                         DesktopSpacing.sm,
@@ -934,13 +930,11 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                               context, ref, f,
                                               anchorRect: rect),
                                     ),
-                                  if (!showAll &&
-                                      playlistEntries.isNotEmpty)
+                                  if (!showAll && playlistEntries.isNotEmpty)
                                     LibraryPlaylistsSection(
                                       entries: playlistEntries,
                                       viewMode: viewMode,
-                                      contentPadding:
-                                          const EdgeInsets.fromLTRB(
+                                      contentPadding: const EdgeInsets.fromLTRB(
                                         DesktopSpacing.base,
                                         0,
                                         DesktopSpacing.sm,
@@ -970,7 +964,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                             0),
                                         child: LibraryItemTile(
                                           title: p.title,
-                                          subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
+                                          subtitle: _typedSubtitle(
+                                              'Podcast', p.author ?? 'Podcast'),
                                           thumbnailUrl: p.thumbnailUrl,
                                           placeholderIcon: AppIcons.podcast,
                                           onTap: () => widget.onNavigateTo(
@@ -1062,10 +1057,12 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                             0),
                                         child: LibraryItemTile(
                                           title: a.title,
-                                          subtitle: _typedSubtitle('Album', a.artistName),
-                                          thumbnailUrl: a.thumbnailUrl.isNotEmpty
-                                              ? a.thumbnailUrl
-                                              : null,
+                                          subtitle: _typedSubtitle(
+                                              'Album', a.artistName),
+                                          thumbnailUrl:
+                                              a.thumbnailUrl.isNotEmpty
+                                                  ? a.thumbnailUrl
+                                                  : null,
                                           placeholderIcon: AppIcons.album,
                                           showPinIndicator: a.isPinned,
                                           onTap: () => _openAlbum(a),
@@ -1080,7 +1077,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                       ),
                                   ],
 
-                                  if (!showAll && visibleArtists.isNotEmpty) ...[
+                                  if (!showAll &&
+                                      visibleArtists.isNotEmpty) ...[
                                     if (showAll)
                                       const _SectionLabel(label: 'ARTISTS'),
                                     for (final a in visibleArtists)
@@ -1093,9 +1091,10 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                         child: LibraryItemTile(
                                           title: a.name,
                                           subtitle: 'Artist',
-                                          thumbnailUrl: a.thumbnailUrl.isNotEmpty
-                                              ? a.thumbnailUrl
-                                              : null,
+                                          thumbnailUrl:
+                                              a.thumbnailUrl.isNotEmpty
+                                                  ? a.thumbnailUrl
+                                                  : null,
                                           placeholderIcon: AppIcons.person,
                                           showPinIndicator: a.isPinned,
                                           circularThumbnail: true,

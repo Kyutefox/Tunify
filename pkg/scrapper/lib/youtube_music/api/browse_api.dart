@@ -315,7 +315,9 @@ class BrowseApi {
 
       // Follow every continuation page until there are no more tokens or we hit
       // the safety cap.
-      while (nextToken != null && nextToken.isNotEmpty && allTracks.length < maxTracks) {
+      while (nextToken != null &&
+          nextToken.isNotEmpty &&
+          allTracks.length < maxTracks) {
         try {
           final contPayload = <String, dynamic>{
             'context': _client.context(),

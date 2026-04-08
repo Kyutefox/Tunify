@@ -36,15 +36,19 @@ class SheetOptionTile extends StatelessWidget {
   final VoidCallback onTap;
   final Color? iconColor;
   final Color? labelColor;
+
   /// If null, uses [kSheetTileVerticalPadding] (12). Pass [kSheetTileVerticalPaddingCompact] (8) for tighter.
   final double? verticalPadding;
+
   /// True when this item opens a new page; false for in-place actions (e.g. Pin, Delete).
   final bool showChevron;
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = this.iconColor ?? AppColorsScheme.of(context).textSecondary;
-    final labelColor = this.labelColor ?? AppColorsScheme.of(context).textPrimary;
+    final iconColor =
+        this.iconColor ?? AppColorsScheme.of(context).textSecondary;
+    final labelColor =
+        this.labelColor ?? AppColorsScheme.of(context).textPrimary;
     final vertical = verticalPadding ?? kSheetTileVerticalPadding;
     return Material(
       color: Colors.transparent,
@@ -113,9 +117,8 @@ class AppSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: maxHeight != null
-          ? BoxConstraints(maxHeight: maxHeight!)
-          : null,
+      constraints:
+          maxHeight != null ? BoxConstraints(maxHeight: maxHeight!) : null,
       decoration: BoxDecoration(
         color: AppColorsScheme.of(context).surface,
         borderRadius: const BorderRadius.vertical(
@@ -132,9 +135,7 @@ class AppSheet extends StatelessWidget {
       ),
       padding: EdgeInsets.only(
         top: showDragHandle ? _handleTopPadding : 0,
-        bottom: useSafeAreaBottom
-            ? MediaQuery.of(context).padding.bottom
-            : 0,
+        bottom: useSafeAreaBottom ? MediaQuery.of(context).padding.bottom : 0,
       ),
       child: Column(
         mainAxisSize: maxHeight != null ? MainAxisSize.max : MainAxisSize.min,
@@ -144,7 +145,9 @@ class AppSheet extends StatelessWidget {
               width: _handleWidth,
               height: _handleHeight,
               decoration: BoxDecoration(
-                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.4),
+                color: AppColorsScheme.of(context)
+                    .textMuted
+                    .withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(AppRadius.xs),
               ),
             ),
@@ -217,7 +220,9 @@ class AppDraggableSheet extends StatelessWidget {
                   width: _handleWidth,
                   height: _handleHeight,
                   decoration: BoxDecoration(
-                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.4),
+                    color: AppColorsScheme.of(context)
+                        .textMuted
+                        .withValues(alpha: 0.4),
                     borderRadius: BorderRadius.circular(AppRadius.xs),
                   ),
                 ),
@@ -254,7 +259,7 @@ void showRawSheet(
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.5),
+    barrierColor: Colors.black.withValues(alpha: UIOpacity.disabled),
     builder: (_) => child,
   );
 }
@@ -276,7 +281,7 @@ void showAppSheet(
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.5),
+    barrierColor: Colors.black.withValues(alpha: UIOpacity.disabled),
     builder: (_) => AppSheet(
       showDragHandle: showDragHandle,
       useSafeAreaBottom: useSafeAreaBottom,
@@ -304,7 +309,7 @@ void showAppDraggableSheet(
     isDismissible: isDismissible,
     enableDrag: enableDrag,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black.withValues(alpha: 0.5),
+    barrierColor: Colors.black.withValues(alpha: UIOpacity.disabled),
     builder: (_) => AppDraggableSheet(
       initialChildSize: initialChildSize,
       minChildSize: minChildSize,

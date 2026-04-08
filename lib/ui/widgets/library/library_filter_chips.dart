@@ -274,7 +274,8 @@ class _FilterChipState extends State<_FilterChip>
           child: Text(
             widget.filter.label,
             style: TextStyle(
-              color: Color.lerp(AppColorsScheme.of(context).textSecondary, AppColors.primary, t),
+              color: Color.lerp(AppColorsScheme.of(context).textSecondary,
+                  AppColors.primary, t),
               fontSize: AppTokens.of(context).font.md,
               fontWeight: t > 0.5 ? FontWeight.w600 : FontWeight.w500,
             ),

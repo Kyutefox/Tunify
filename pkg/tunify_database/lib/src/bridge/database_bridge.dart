@@ -6,7 +6,9 @@ import '../supabase/supabase_remote.dart';
 /// [pullFromSupabase] once on login to seed SQLite; background sync calls
 /// [pushToSupabase] for logged-in users. Guests use SQLite only.
 class DatabaseBridge {
-  DatabaseBridge() : _db = PrimaryDatabase(), _remote = SupabaseRemote();
+  DatabaseBridge()
+      : _db = PrimaryDatabase(),
+        _remote = SupabaseRemote();
 
   final PrimaryDatabase _db;
   final SupabaseRemote _remote;
@@ -15,19 +17,23 @@ class DatabaseBridge {
   Future<Map<String, dynamic>> loadLibraryData() async => _db.loadLibraryData();
 
   /// Saves full library to SQLite.
-  Future<void> saveLibraryData(Map<String, dynamic> data) async => _db.saveLibraryData(data);
+  Future<void> saveLibraryData(Map<String, dynamic> data) async =>
+      _db.saveLibraryData(data);
 
   /// Loads recently played from SQLite.
-  Future<List<Map<String, dynamic>>> loadRecentlyPlayed() async => _db.loadRecentlyPlayed();
+  Future<List<Map<String, dynamic>>> loadRecentlyPlayed() async =>
+      _db.loadRecentlyPlayed();
 
   /// Saves recently played to SQLite.
-  Future<void> saveRecentlyPlayed(List<Map<String, dynamic>> songs) async => _db.saveRecentlyPlayed(songs);
+  Future<void> saveRecentlyPlayed(List<Map<String, dynamic>> songs) async =>
+      _db.saveRecentlyPlayed(songs);
 
   /// Reads a setting by [key] from SQLite.
   Future<String?> getSetting(String key) async => _db.getSetting(key);
 
   /// Writes a setting [key]=[value] to SQLite.
-  Future<void> setSetting(String key, String value) async => _db.setSetting(key, value);
+  Future<void> setSetting(String key, String value) async =>
+      _db.setSetting(key, value);
 
   /// Loads playback settings from SQLite (volume, explicit, shuffle, crossfade, gapless).
   Future<Map<String, dynamic>> loadPlaybackSettings() async {
@@ -61,19 +67,24 @@ class DatabaseBridge {
   Future<List<String>> loadRecentSearches() async => _db.loadRecentSearches();
 
   /// Saves recent searches to SQLite.
-  Future<void> saveRecentSearches(List<String> queries) async => _db.saveRecentSearches(queries);
+  Future<void> saveRecentSearches(List<String> queries) async =>
+      _db.saveRecentSearches(queries);
 
   /// Loads downloaded song IDs from SQLite.
-  Future<List<String>> loadDownloadedSongIds() async => _db.loadDownloadedSongIds();
+  Future<List<String>> loadDownloadedSongIds() async =>
+      _db.loadDownloadedSongIds();
 
   /// Saves downloaded song IDs to SQLite.
-  Future<void> saveDownloadedSongIds(List<String> ids) async => _db.saveDownloadedSongIds(ids);
+  Future<void> saveDownloadedSongIds(List<String> ids) async =>
+      _db.saveDownloadedSongIds(ids);
 
   /// Loads YT personalization from SQLite.
-  Future<Map<String, dynamic>> loadYtPersonalization() async => _db.loadYtPersonalization();
+  Future<Map<String, dynamic>> loadYtPersonalization() async =>
+      _db.loadYtPersonalization();
 
   /// Saves YT personalization to SQLite.
-  Future<void> saveYtPersonalization(Map<String, dynamic> data) async => _db.saveYtPersonalization(data);
+  Future<void> saveYtPersonalization(Map<String, dynamic> data) async =>
+      _db.saveYtPersonalization(data);
 
   /// Pulls all data from Supabase into SQLite. Call once after login (or clear data + re-login).
   /// After this, SQLite is the source of truth until next login.
@@ -82,7 +93,8 @@ class DatabaseBridge {
       final library = await _remote.fetchLibraryData(userId);
       if (library != null) {
         // Ensure all Supabase-sourced playlists are marked as library entries
-        final playlists = (library['playlists'] as List<dynamic>? ?? []).map((p) {
+        final playlists =
+            (library['playlists'] as List<dynamic>? ?? []).map((p) {
           final map = Map<String, dynamic>.from(p as Map);
           map['is_saved'] = 1;
           return map;
@@ -92,7 +104,9 @@ class DatabaseBridge {
       }
 
       final recent = await _remote.fetchRecentlyPlayed(userId);
-      if (recent != null && recent.isNotEmpty) await _db.saveRecentlyPlayed(recent);
+      if (recent != null && recent.isNotEmpty) {
+        await _db.saveRecentlyPlayed(recent);
+      }
 
       final playback = await _remote.fetchPlaybackSettings(userId);
       if (playback != null) {
@@ -102,13 +116,19 @@ class DatabaseBridge {
       }
 
       final searches = await _remote.fetchRecentSearches(userId);
-      if (searches != null && searches.isNotEmpty) await _db.saveRecentSearches(searches);
+      if (searches != null && searches.isNotEmpty) {
+        await _db.saveRecentSearches(searches);
+      }
 
       final downloaded = await _remote.fetchDownloadedSongIds(userId);
-      if (downloaded != null && downloaded.isNotEmpty) await _db.saveDownloadedSongIds(downloaded);
+      if (downloaded != null && downloaded.isNotEmpty) {
+        await _db.saveDownloadedSongIds(downloaded);
+      }
 
       final yt = await _remote.fetchYtPersonalization(userId);
-      if (yt != null && (yt['visitor_data']?.toString().isNotEmpty == true || yt['api_key'] != null)) {
+      if (yt != null &&
+          (yt['visitor_data']?.toString().isNotEmpty == true ||
+              yt['api_key'] != null)) {
         await _db.saveYtPersonalization(yt);
       }
     } catch (_) {}
@@ -139,7 +159,8 @@ class DatabaseBridge {
       await _remote.pushDownloadedSongIds(userId, downloaded);
 
       final yt = await _db.loadYtPersonalization();
-      if ((yt['visitor_data']?.toString().isNotEmpty ?? false) || yt['api_key'] != null) {
+      if ((yt['visitor_data']?.toString().isNotEmpty ?? false) ||
+          yt['api_key'] != null) {
         await _remote.pushYtPersonalization(userId, yt);
       }
     } catch (_) {}
@@ -205,7 +226,8 @@ class DatabaseBridge {
     String quality,
     DateTime expiresAt,
   ) =>
-      _db.upsertStreamUrlCache(videoId, url, headers, bitrate, quality, expiresAt);
+      _db.upsertStreamUrlCache(
+          videoId, url, headers, bitrate, quality, expiresAt);
 
   Future<void> deleteStreamUrlCache(String videoId) =>
       _db.deleteStreamUrlCache(videoId);
@@ -218,7 +240,8 @@ class DatabaseBridge {
 
   // ── Playlist Cache ────────────────────────────────────────────────────────
 
-  Future<void> upsertPlaylistCache(String browseId, int? paletteColor, String? imageUrl) =>
+  Future<void> upsertPlaylistCache(
+          String browseId, int? paletteColor, String? imageUrl) =>
       _db.upsertPlaylistCache(browseId, paletteColor, imageUrl);
 
   Future<int?> getPlaylistPaletteColor(String browseId) =>
@@ -251,8 +274,7 @@ class DatabaseBridge {
   Future<void> upsertSavedAudiobook(Map<String, dynamic> data) =>
       _db.upsertSavedAudiobook(data);
 
-  Future<void> deleteSavedAudiobook(String id) =>
-      _db.deleteSavedAudiobook(id);
+  Future<void> deleteSavedAudiobook(String id) => _db.deleteSavedAudiobook(id);
 
   // ── Episodes For Later ────────────────────────────────────────────────────
 

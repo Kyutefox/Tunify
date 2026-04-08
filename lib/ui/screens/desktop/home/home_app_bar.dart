@@ -11,6 +11,7 @@ import 'package:tunify/ui/theme/app_colors_scheme.dart';
 class HomeAppBar extends ConsumerWidget {
   const HomeAppBar({super.key, required this.greeting, this.asSliver = true});
   final String greeting;
+
   /// When true (default), returns [SliverAppBar]. When false, returns a fixed header widget.
   final bool asSliver;
 
@@ -18,7 +19,8 @@ class HomeAppBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(currentUserProvider);
     final isGuest = ref.watch(guestModeProvider);
-    final guestUsername = isGuest ? ref.watch(guestUsernameProvider).value : null;
+    final guestUsername =
+        isGuest ? ref.watch(guestUsernameProvider).value : null;
     final username = (user?.userMetadata?['username'] as String?) ??
         (user?.email?.split('@').first) ??
         (isGuest ? (guestUsername ?? 'Guest') : 'V');
@@ -75,5 +77,4 @@ class HomeAppBar extends ConsumerWidget {
       ),
     );
   }
-
 }

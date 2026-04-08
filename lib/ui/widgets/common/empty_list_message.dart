@@ -19,11 +19,15 @@ class EmptyListMessage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final text = query.isEmpty ? 'No $emptyLabel yet' : 'No results for "$query"';
+    final text =
+        query.isEmpty ? 'No $emptyLabel yet' : 'No results for "$query"';
     return Center(
       child: Text(
         text,
-        style: style ?? TextStyle(color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.base),
+        style: style ??
+            TextStyle(
+                color: AppColorsScheme.of(context).textMuted,
+                fontSize: AppFontSize.base),
       ),
     );
   }

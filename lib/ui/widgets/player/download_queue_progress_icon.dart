@@ -73,9 +73,8 @@ class _DownloadQueueProgressIconState
     } else {
       final sum = validProgress.fold<double>(
         0,
-        (acc, e) => acc +
-            (e.downloadedBytes! / e.expectedBytes!)
-                .clamp(0.0, 1.0),
+        (acc, e) =>
+            acc + (e.downloadedBytes! / e.expectedBytes!).clamp(0.0, 1.0),
       );
       avgProgress = (sum / validProgress.length).clamp(0.0, 1.0);
     }
@@ -96,9 +95,7 @@ class _DownloadQueueProgressIconState
                 size: Size(widget.iconSize + 8, widget.iconSize + 8),
                 painter: DownloadProgressRingPainter(
                   progress: painterProgress,
-                  rotation: _rotationController!.value *
-                      2 *
-                      3.14159265359,
+                  rotation: _rotationController!.value * 2 * 3.14159265359,
                   trackColor: AppColorsScheme.of(context).textMuted,
                   progressColor: AppColors.accentGreen,
                   strokeWidth: 2,
@@ -116,4 +113,3 @@ class _DownloadQueueProgressIconState
     );
   }
 }
-

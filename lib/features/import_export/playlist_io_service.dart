@@ -68,6 +68,7 @@ class ParsedTrack {
   final String title;
   final String artist;
   final int? durationSeconds;
+
   /// YouTube video ID — present when importing from a Tunify JSON export.
   final String? ytVideoId;
   final String? thumbnailUrl;
@@ -213,8 +214,7 @@ class PlaylistIOService {
           playlists: pls,
         );
       } else {
-        final pl =
-            _parseM3u(content, p.basenameWithoutExtension(filePath));
+        final pl = _parseM3u(content, p.basenameWithoutExtension(filePath));
         return (
           result: const PlaylistIOResult.success('Playlist parsed'),
           playlists: [pl],
@@ -246,8 +246,8 @@ class PlaylistIOService {
         final newId = 'lib_${now.millisecondsSinceEpoch}';
 
         final songs = pl.tracks.map((t) {
-          final id = t.ytVideoId ??
-              'import_${(t.title + t.artist).hashCode.abs()}';
+          final id =
+              t.ytVideoId ?? 'import_${(t.title + t.artist).hashCode.abs()}';
           return Song(
             id: id,
             title: t.title,
@@ -344,23 +344,27 @@ class PlaylistIOService {
 
   /// Parses a Tunify JSON export file.
   List<ParsedPlaylist> _parseJson(String content, String fallbackName) {
-    final Map<String, dynamic> root = json.decode(content) as Map<String, dynamic>;
+    final Map<String, dynamic> root =
+        json.decode(content) as Map<String, dynamic>;
 
     // Tunify export format: { playlists: [...] }
     if (root.containsKey('playlists')) {
-      final raw = (root['playlists'] as List<dynamic>).cast<Map<String, dynamic>>();
+      final raw =
+          (root['playlists'] as List<dynamic>).cast<Map<String, dynamic>>();
       return raw.map((pl) {
-        final songs = (pl['songs'] as List<dynamic>? ?? [])
-            .cast<Map<String, dynamic>>();
-        final tracks = songs.map((s) => ParsedTrack(
-              title: s['title'] as String? ?? '',
-              artist: s['artist'] as String? ?? '',
-              durationSeconds: s['durationMs'] != null
-                  ? ((s['durationMs'] as int) ~/ 1000)
-                  : null,
-              ytVideoId: s['id'] as String?,
-              thumbnailUrl: s['thumbnailUrl'] as String?,
-            )).toList();
+        final songs =
+            (pl['songs'] as List<dynamic>? ?? []).cast<Map<String, dynamic>>();
+        final tracks = songs
+            .map((s) => ParsedTrack(
+                  title: s['title'] as String? ?? '',
+                  artist: s['artist'] as String? ?? '',
+                  durationSeconds: s['durationMs'] != null
+                      ? ((s['durationMs'] as int) ~/ 1000)
+                      : null,
+                  ytVideoId: s['id'] as String?,
+                  thumbnailUrl: s['thumbnailUrl'] as String?,
+                ))
+            .toList();
         return ParsedPlaylist(
           name: pl['name'] as String? ?? fallbackName,
           tracks: tracks,
@@ -370,12 +374,15 @@ class PlaylistIOService {
 
     // Generic flat format: { name, tracks: [{title, artist, ...}] }
     if (root.containsKey('tracks')) {
-      final raw = (root['tracks'] as List<dynamic>).cast<Map<String, dynamic>>();
-      final tracks = raw.map((t) => ParsedTrack(
-            title: t['title'] as String? ?? t['name'] as String? ?? '',
-            artist: t['artist'] as String? ?? t['creator'] as String? ?? '',
-            durationSeconds: t['duration'] as int?,
-          )).toList();
+      final raw =
+          (root['tracks'] as List<dynamic>).cast<Map<String, dynamic>>();
+      final tracks = raw
+          .map((t) => ParsedTrack(
+                title: t['title'] as String? ?? t['name'] as String? ?? '',
+                artist: t['artist'] as String? ?? t['creator'] as String? ?? '',
+                durationSeconds: t['duration'] as int?,
+              ))
+          .toList();
       return [
         ParsedPlaylist(
             name: root['name'] as String? ?? fallbackName, tracks: tracks)
@@ -390,7 +397,8 @@ class PlaylistIOService {
   String? _extractYtId(String uri) {
     try {
       final u = Uri.parse(uri);
-      if (u.host.contains('youtube.com') || u.host.contains('music.youtube.com')) {
+      if (u.host.contains('youtube.com') ||
+          u.host.contains('music.youtube.com')) {
         return u.queryParameters['v'];
       }
       if (u.host == 'youtu.be') {

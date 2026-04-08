@@ -386,7 +386,7 @@ class _HomeBtn extends StatelessWidget {
                 ? AppColorsScheme.of(context).textPrimary
                 : AppColorsScheme.of(context)
                     .textPrimary
-                    .withValues(alpha: 0.5),
+                    .withValues(alpha: UIOpacity.disabled),
           ),
         ),
       ),

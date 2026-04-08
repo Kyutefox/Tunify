@@ -66,15 +66,15 @@ extension PlaybackPositionProgress on PlaybackPosition {
   }
 
   bool get isNearlyComplete => progress >= 0.95;
-  
+
   String get timeRemaining {
     final remaining = durationSeconds - positionSeconds;
     if (remaining <= 0) return 'Completed';
-    
+
     final duration = Duration(seconds: remaining);
     final hours = duration.inHours;
     final minutes = duration.inMinutes.remainder(60);
-    
+
     if (hours > 0) {
       return '$hours hr $minutes min left';
     } else {

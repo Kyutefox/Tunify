@@ -54,10 +54,10 @@ class AppButton extends StatelessWidget {
 
     Widget child = isLoading
         ? SizedBox(
-            width: 22,
-            height: 22,
+            width: UISize.loader,
+            height: UISize.loader,
             child: CircularProgressIndicator(
-              strokeWidth: 2.5,
+              strokeWidth: UIStroke.loader,
               color: effectiveForeground,
             ),
           )
@@ -91,7 +91,7 @@ class AppButton extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadius.input),
     );
 
-    final h = height ?? 52;
+    final h = height ?? UISize.buttonHeightLg;
     if (variant == AppButtonVariant.text) {
       return SizedBox(
         width: fullWidth ? double.infinity : null,
@@ -133,20 +133,14 @@ class AppButton extends StatelessWidget {
         width: fullWidth ? double.infinity : null,
         height: h,
         child: Opacity(
-          opacity: isDisabled ? 0.5 : 1.0,
+          opacity: isDisabled ? UIOpacity.disabled : 1.0,
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(AppRadius.input),
               boxShadow: isDisabled
                   ? null
-                  : [
-                      BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.35),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                  : [UIShadow.glow(AppColors.primary, alpha: 0.35)],
             ),
             child: Material(
               color: Colors.transparent,
@@ -184,8 +178,8 @@ class AppIconButton extends StatelessWidget {
     this.onPressed,
     this.tooltip,
     this.style = AppIconButtonStyle.ghost,
-    this.size = 48,
-    this.iconSize = 24,
+    this.size = UISize.buttonHeightLg - AppSpacing.xs,
+    this.iconSize = UISize.iconLg,
     this.color,
     this.onPressedWithContext,
     this.iconAlignment = Alignment.center,
@@ -263,7 +257,7 @@ class AppIconButton extends StatelessWidget {
               color: AppColorsScheme.of(context).surfaceLight,
               border: Border.all(
                   color: AppColorsScheme.of(context).surfaceHighlight,
-                  width: 0.5),
+                  width: UIStroke.hairline),
             ),
             child: Material(
               color: Colors.transparent,

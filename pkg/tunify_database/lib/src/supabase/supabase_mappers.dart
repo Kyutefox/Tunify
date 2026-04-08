@@ -19,7 +19,8 @@ class SupabaseMappers {
   }
 
   /// Converts an app song map to a Supabase track row for [userId], [playlistId], [position].
-  static Map<String, dynamic> songMapToTrackRow(String userId, String? playlistId, int position, Map<String, dynamic> s) {
+  static Map<String, dynamic> songMapToTrackRow(
+      String userId, String? playlistId, int position, Map<String, dynamic> s) {
     final durMs = s['durationMs'] as int? ?? 0;
     return {
       if (playlistId != null) 'playlist_id': playlistId,

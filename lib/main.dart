@@ -54,7 +54,7 @@ final supabaseInitProvider = FutureProvider<void>((ref) async {
 Future<void> main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
-    
+
     await Future.wait([
       HiveService.instance.init(),
       SharedPrefsService.instance.init(),
@@ -143,12 +143,12 @@ class _TunifyAppContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeProvider);
-    
+
     // Initialize CarPlay service for iOS
     if (Platform.isIOS) {
       ref.read(carPlayProvider);
     }
-    
+
     final init = ref.watch(supabaseInitProvider);
 
     if (init.isLoading) {
@@ -261,9 +261,8 @@ class _TunifyAppContent extends ConsumerWidget {
 
     // Use the Spotify-style desktop shell on macOS; the standard mobile
     // shell (bottom nav + mini player) on iOS and Android.
-    Widget shell() => Platform.isMacOS
-        ? const DesktopShell()
-        : const MobileShell();
+    Widget shell() =>
+        Platform.isMacOS ? const DesktopShell() : const MobileShell();
 
     return MaterialApp(
       title: AppStrings.appName,
@@ -366,7 +365,8 @@ class _InitErrorScreen extends StatelessWidget {
               Text(
                 'Please check your connection and try again.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: AppColorsScheme.of(context).textSecondary),
+                style:
+                    TextStyle(color: AppColorsScheme.of(context).textSecondary),
               ),
               const SizedBox(height: AppSpacing.base),
               AppButton(

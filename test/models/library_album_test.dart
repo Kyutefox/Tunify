@@ -56,9 +56,17 @@ void main() {
     group('equality', () {
       test('equal when IDs match regardless of other fields', () {
         final a1 = LibraryAlbum(
-            id: 'x', title: 'Album A', artistName: 'Artist', thumbnailUrl: '', followedAt: DateTime(2024));
+            id: 'x',
+            title: 'Album A',
+            artistName: 'Artist',
+            thumbnailUrl: '',
+            followedAt: DateTime(2024));
         final a2 = LibraryAlbum(
-            id: 'x', title: 'Album B', artistName: 'Other', thumbnailUrl: 'diff', followedAt: DateTime(2025));
+            id: 'x',
+            title: 'Album B',
+            artistName: 'Other',
+            thumbnailUrl: 'diff',
+            followedAt: DateTime(2025));
         expect(a1, equals(a2));
       });
 

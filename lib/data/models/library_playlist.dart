@@ -21,8 +21,10 @@ extension ShuffleModeX on ShuffleMode {
 enum PlaylistTrackSortOrder {
   /// User-defined drag-drop ordering (default).
   customOrder,
+
   /// Alphabetical by track title.
   title,
+
   /// Most recently added tracks first (reversal of insertion order).
   recentlyAdded,
 }
@@ -60,12 +62,16 @@ class LibraryPlaylist {
   final String id;
   final String name;
   final String description;
+
   /// Creator / channel name for remote or imported playlists (in-memory; optional).
   final String? curatorName;
+
   /// Optional profile image URL for [curatorName].
   final String? curatorThumbnailUrl;
+
   /// YouTube Music header line (e.g. `Playlist • 2026`); from browse [subtitle].
   final String? headerSubtitle;
+
   /// YouTube Music stats line (songs, duration, views); from [secondSubtitle].
   final String? headerSecondSubtitle;
   final DateTime createdAt;
@@ -74,16 +80,21 @@ class LibraryPlaylist {
   final PlaylistTrackSortOrder sortOrder;
   final ShuffleMode shuffleMode;
   final bool isPinned;
+
   /// Custom cover image URL (user-selected); null uses first track art.
   final String? customImageUrl;
+
   /// True when this playlist was saved from a remote source (e.g. home page).
   /// Remote-saved playlists always re-fetch fresh data when opened and are not editable.
   final bool isImported;
+
   /// Browse ID used to re-fetch remote playlist data. Only set for [isImported] playlists.
   final String? browseId;
+
   /// Cached palette color (ARGB int) extracted from the cover image.
   /// Stored so the gradient shows instantly on re-open without re-extraction.
   final int? cachedPaletteColor;
+
   /// Track count from the remote API, stored at import time.
   /// Used as a fallback display value for imported playlists whose songs are
   /// not persisted locally (songs list stays empty between sessions).
@@ -149,8 +160,7 @@ class LibraryPlaylist {
       curatorName: curatorName ?? this.curatorName,
       curatorThumbnailUrl: curatorThumbnailUrl ?? this.curatorThumbnailUrl,
       headerSubtitle: headerSubtitle ?? this.headerSubtitle,
-      headerSecondSubtitle:
-          headerSecondSubtitle ?? this.headerSecondSubtitle,
+      headerSecondSubtitle: headerSecondSubtitle ?? this.headerSecondSubtitle,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       songs: songs ?? this.songs,
@@ -187,7 +197,8 @@ class LibraryPlaylist {
         'name': name,
         'description': description,
         if (curatorName != null) 'curatorName': curatorName,
-        if (curatorThumbnailUrl != null) 'curatorThumbnailUrl': curatorThumbnailUrl,
+        if (curatorThumbnailUrl != null)
+          'curatorThumbnailUrl': curatorThumbnailUrl,
         if (headerSubtitle != null) 'headerSubtitle': headerSubtitle,
         if (headerSecondSubtitle != null)
           'headerSecondSubtitle': headerSecondSubtitle,
@@ -200,7 +211,8 @@ class LibraryPlaylist {
         if (customImageUrl != null) 'customImageUrl': customImageUrl,
         'isImported': isImported,
         if (browseId != null) 'browseId': browseId,
-        if (cachedPaletteColor != null) 'cachedPaletteColor': cachedPaletteColor,
+        if (cachedPaletteColor != null)
+          'cachedPaletteColor': cachedPaletteColor,
         if (remoteTrackCount != null) 'remoteTrackCount': remoteTrackCount,
       };
 

@@ -131,16 +131,19 @@ class AppInputField extends StatelessWidget {
                   child: Center(child: suffixIcon),
                 )
               : null,
-          suffixIconConstraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+          suffixIconConstraints:
+              const BoxConstraints(minWidth: 48, minHeight: 48),
           filled: true,
           fillColor: fillColor ?? AppColorsScheme.of(context).surfaceLight,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),
-            borderSide: BorderSide(color: AppColorsScheme.of(context).surfaceHighlight),
+            borderSide:
+                BorderSide(color: AppColorsScheme.of(context).surfaceHighlight),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),
-            borderSide: BorderSide(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
+            borderSide: BorderSide(
+                color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),
@@ -152,7 +155,8 @@ class AppInputField extends StatelessWidget {
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(AppRadius.input),
-            borderSide: const BorderSide(color: AppColors.accentRed, width: 1.5),
+            borderSide:
+                const BorderSide(color: AppColors.accentRed, width: 1.5),
           ),
           errorStyle: const TextStyle(
             color: AppColors.accentRed,

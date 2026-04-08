@@ -217,20 +217,20 @@ void _showDesktopSongMenu(
       AppMenuEntry(
         icon: AppIcons.artist,
         label: 'Go to Artist',
-      showChevron: true,
-      onTap: () {
-        final page = LibraryPlaylistScreen.artist(
-          artistName: song.artist,
-          thumbnailUrl: song.thumbnailUrl,
-          browseId: song.artistBrowseId,
-        );
-        if (pushDetail != null) {
-          pushDetail(page);
-        } else {
-          navigator.push(appPageRoute<void>(builder: (_) => page));
-        }
-      },
-    ),
+        showChevron: true,
+        onTap: () {
+          final page = LibraryPlaylistScreen.artist(
+            artistName: song.artist,
+            thumbnailUrl: song.thumbnailUrl,
+            browseId: song.artistBrowseId,
+          );
+          if (pushDetail != null) {
+            pushDetail(page);
+          } else {
+            navigator.push(appPageRoute<void>(builder: (_) => page));
+          }
+        },
+      ),
     if (showGoToAlbum)
       AppMenuEntry(
         icon: AppIcons.album,
@@ -249,9 +249,9 @@ void _showDesktopSongMenu(
             pushDetail(page);
           } else {
             navigator.push(appPageRoute<void>(builder: (_) => page));
-        }
-      },
-    ),
+          }
+        },
+      ),
     for (final extra in extraOptions)
       AppMenuEntry(icon: extra.icon, label: extra.label, onTap: extra.onTap),
   ];
@@ -264,7 +264,6 @@ void _showDesktopSongMenu(
     forceDesktop: true,
   );
 }
-
 
 Rect? _rectFromContext(BuildContext context) {
   final obj = context.findRenderObject();
@@ -450,7 +449,7 @@ class _SongOptionsContent extends ConsumerWidget {
                   ),
                 );
               },
-          ),
+            ),
           if (showGoToAlbum)
             SheetOptionTile(
               icon: AppIcons.album,
@@ -473,8 +472,9 @@ class _SongOptionsContent extends ConsumerWidget {
             ),
           if (showAddToQueue)
             SheetOptionTile(
-              icon:
-                  isInQueue ? AppIcons.removeCircleOutline : AppIcons.queueMusic,
+              icon: isInQueue
+                  ? AppIcons.removeCircleOutline
+                  : AppIcons.queueMusic,
               label: isInQueue ? 'Remove from queue' : 'Add to queue',
               onTap: () {
                 Navigator.of(context).pop();

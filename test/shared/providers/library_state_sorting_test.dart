@@ -154,8 +154,10 @@ void main() {
     test('contains IDs of all liked songs', () {
       final state = LibraryState(playlists: [
         LibraryPlaylist(
-          id: 'liked', name: 'Liked Songs',
-          createdAt: DateTime(2024), updatedAt: DateTime(2024),
+          id: 'liked',
+          name: 'Liked Songs',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
           songs: [_song('s1'), _song('s2'), _song('s3')],
         ),
       ]);
@@ -170,8 +172,10 @@ void main() {
     test('membership test is O(1) and correct', () {
       final state = LibraryState(playlists: [
         LibraryPlaylist(
-          id: 'liked', name: 'Liked Songs',
-          createdAt: DateTime(2024), updatedAt: DateTime(2024),
+          id: 'liked',
+          name: 'Liked Songs',
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
           songs: [_song('s1')],
         ),
       ]);

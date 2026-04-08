@@ -93,7 +93,8 @@ class _GuestProfileSetupFormState extends ConsumerState<GuestProfileSetupForm> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.5),
+                  color:
+                      AppColors.primary.withValues(alpha: UIOpacity.disabled),
                   width: 2.5,
                 ),
                 boxShadow: [

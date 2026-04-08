@@ -63,7 +63,8 @@ class _LoadingScreenState extends State<LoadingScreen>
             AnimatedBuilder(
               animation: _waveController,
               builder: (_, __) => CustomPaint(
-                painter: _LoadingWavePainter(_waveController.value, isDark: isDark),
+                painter:
+                    _LoadingWavePainter(_waveController.value, isDark: isDark),
               ),
             ),
             // Dark gradient overlay so content stays readable
@@ -73,8 +74,12 @@ class _LoadingScreenState extends State<LoadingScreen>
                   gradient: LinearGradient(
                     colors: [
                       Colors.transparent,
-                      AppColorsScheme.of(context).background.withValues(alpha: 0.45),
-                      AppColorsScheme.of(context).background.withValues(alpha: 0.85),
+                      AppColorsScheme.of(context)
+                          .background
+                          .withValues(alpha: 0.45),
+                      AppColorsScheme.of(context)
+                          .background
+                          .withValues(alpha: 0.85),
                       AppColorsScheme.of(context).background,
                     ],
                     stops: const [0.0, 0.3, 0.6, 1.0],
@@ -111,7 +116,9 @@ class _LoadingScreenState extends State<LoadingScreen>
                   Text(
                     'Loading your music…',
                     style: TextStyle(
-                      color: AppColorsScheme.of(context).textSecondary.withValues(alpha: 0.95),
+                      color: AppColorsScheme.of(context)
+                          .textSecondary
+                          .withValues(alpha: 0.95),
                       fontSize: AppFontSize.lg,
                       fontWeight: FontWeight.w500,
                       letterSpacing: AppLetterSpacing.normal,
@@ -165,5 +172,6 @@ class _LoadingWavePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_LoadingWavePainter old) => old.t != t || old.isDark != isDark;
+  bool shouldRepaint(_LoadingWavePainter old) =>
+      old.t != t || old.isDark != isDark;
 }

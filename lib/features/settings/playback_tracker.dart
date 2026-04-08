@@ -33,7 +33,8 @@ class PlaybackTracker {
 
     try {
       final cpn = _generateCpn();
-      final result = await _streamManager.getPlayerResponseForTracking(videoId, cpn: cpn);
+      final result =
+          await _streamManager.getPlayerResponseForTracking(videoId, cpn: cpn);
       final playbackTracking =
           result['playbackTracking'] as Map<String, dynamic>?;
 
@@ -47,8 +48,7 @@ class PlaybackTracker {
               as Map<String, dynamic>?)?['baseUrl'] as String?,
           atrUrl: playbackTracking['atrUrl']?['baseUrl'] as String?,
           ptrackingUrl: (playbackTracking['ptrackingUrl']
-                  as Map<String, dynamic>?)?['baseUrl']
-              as String?,
+              as Map<String, dynamic>?)?['baseUrl'] as String?,
         );
       }
     } catch (_) {
@@ -82,8 +82,7 @@ class PlaybackTracker {
 
     _reportingTimer = Timer.periodic(
       _reportInterval,
-      (timer) => _reportPlayback(
-          timer.tick * _reportInterval.inSeconds),
+      (timer) => _reportPlayback(timer.tick * _reportInterval.inSeconds),
     );
   }
 

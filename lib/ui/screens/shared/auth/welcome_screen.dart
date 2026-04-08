@@ -355,7 +355,9 @@ class _DesktopButton extends StatelessWidget {
           gradient: filled ? AppColors.primaryGradient : null,
           border: filled
               ? null
-              : Border.all(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
+              : Border.all(
+                  color: AppColorsScheme.of(context).surfaceHighlight,
+                  width: 1),
           borderRadius: BorderRadius.circular(AppRadius.md),
           color: filled ? null : AppColorsScheme.of(context).surfaceLight,
         ),
@@ -363,7 +365,8 @@ class _DesktopButton extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: filled ? Colors.white : AppColorsScheme.of(context).textPrimary,
+            color:
+                filled ? Colors.white : AppColorsScheme.of(context).textPrimary,
             fontSize: AppFontSize.base,
             fontWeight: FontWeight.w700,
             letterSpacing: AppLetterSpacing.normal,
@@ -397,8 +400,12 @@ class _MobileWelcomeScreen extends StatelessWidget {
                 gradient: LinearGradient(
                   colors: [
                     Colors.transparent,
-                    AppColorsScheme.of(context).background.withValues(alpha: 0.55),
-                    AppColorsScheme.of(context).background.withValues(alpha: 0.92),
+                    AppColorsScheme.of(context)
+                        .background
+                        .withValues(alpha: 0.55),
+                    AppColorsScheme.of(context)
+                        .background
+                        .withValues(alpha: 0.92),
                     AppColorsScheme.of(context).background,
                   ],
                   stops: const [0.0, 0.3, 0.6, 1.0],
@@ -470,7 +477,9 @@ class _MobileButton extends StatelessWidget {
           gradient: filled ? AppColors.primaryGradient : null,
           border: filled
               ? null
-              : Border.all(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
+              : Border.all(
+                  color: AppColorsScheme.of(context).surfaceHighlight,
+                  width: 1),
           borderRadius: BorderRadius.circular(AppRadius.input),
           color: filled ? null : AppColorsScheme.of(context).surfaceLight,
         ),
@@ -478,7 +487,8 @@ class _MobileButton extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            color: filled ? Colors.white : AppColorsScheme.of(context).textPrimary,
+            color:
+                filled ? Colors.white : AppColorsScheme.of(context).textPrimary,
             fontSize: AppFontSize.xl,
             fontWeight: FontWeight.w700,
             letterSpacing: AppLetterSpacing.normal,

@@ -56,8 +56,6 @@ void main() {
         expect(f.playlistIds, isEmpty);
         expect(f.isPinned, false);
       });
-
-
     });
 
     group('equality', () {
@@ -89,7 +87,8 @@ void main() {
 
     group('copyWith', () {
       test('preserves unspecified fields', () {
-        final f = _folder(name: 'Original', isPinned: true, playlistIds: ['p1']);
+        final f =
+            _folder(name: 'Original', isPinned: true, playlistIds: ['p1']);
         final copy = f.copyWith(name: 'Updated');
         expect(copy.name, 'Updated');
         expect(copy.isPinned, true);

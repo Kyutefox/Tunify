@@ -9,11 +9,13 @@ class Playlist {
   final String description;
   final String coverUrl;
   final String? curatorName;
+
   /// Channel / profile image URL when the API exposes it (often null).
   final String? curatorThumbnailUrl;
   final int trackCount;
   final Duration? totalDuration;
   final List<Song>? tracks;
+
   /// Up to four album art URLs used to render a mosaic cover when no single [coverUrl] is set.
   final List<String>? previewUrls;
 

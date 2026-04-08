@@ -20,7 +20,8 @@ import 'crossfade_engine.dart';
 /// Stream subscriptions are made against [CrossfadeEngine]'s forwarded broadcast
 /// controllers, so they automatically reflect the active (post-swap) primary player
 /// without any re-subscription after a crossfade transition.
-class TunifyAudioHandler extends BaseAudioHandler with SeekHandler, QueueHandler {
+class TunifyAudioHandler extends BaseAudioHandler
+    with SeekHandler, QueueHandler {
   final CrossfadeEngine _engine;
 
   void Function()? onPlay;
@@ -106,7 +107,8 @@ class TunifyAudioHandler extends BaseAudioHandler with SeekHandler, QueueHandler
       return onGetMediaLibrary?.call() ?? [];
     } else if (parentMediaId.startsWith(MediaItemId.playlistPrefix)) {
       // Return tracks for a specific playlist
-      final playlistId = parentMediaId.replaceFirst(MediaItemId.playlistPrefix, '');
+      final playlistId =
+          parentMediaId.replaceFirst(MediaItemId.playlistPrefix, '');
       return _getPlaylistTracks(playlistId);
     }
     return [];

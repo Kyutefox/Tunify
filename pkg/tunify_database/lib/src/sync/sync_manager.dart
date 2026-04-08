@@ -15,6 +15,7 @@ class SyncManager {
 
   /// Delay after last [requestSync] before a push runs.
   static const Duration debounceDuration = Duration(seconds: 2);
+
   /// Interval for fallback push when no requestSync occurred.
   static const Duration fallbackInterval = Duration(minutes: 1);
 

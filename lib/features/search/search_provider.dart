@@ -148,6 +148,7 @@ class AudiobookSearchResult {
 /// on first selection and cached for the life of the query.
 class SearchState {
   final bool isLoading;
+
   /// True while a load-more page is being fetched (not an initial fetch).
   final bool isLoadingMore;
   final String? error;
@@ -156,20 +157,28 @@ class SearchState {
 
   /// Songs filter results.
   final List<Song> songResults;
+
   /// Videos filter results (playable like songs).
   final List<Song> videoResults;
+
   /// Artists filter results (from the real Artists API endpoint).
   final List<ArtistSearchResult> artistResults;
+
   /// Albums filter results (from the real Albums API endpoint).
   final List<AlbumSearchResult> albumResults;
+
   /// Community playlists filter results.
   final List<PlaylistSearchResult> playlistResults;
+
   /// Featured playlists filter results.
   final List<PlaylistSearchResult> featuredPlaylistResults;
+
   /// Podcasts filter results.
   final List<PodcastSearchResult> podcastResults;
+
   /// Audiobooks filter results.
   final List<AudiobookSearchResult> audiobookResults;
+
   /// Profiles filter results.
   final List<ArtistSearchResult> profileResults;
 
@@ -234,7 +243,8 @@ class SearchState {
       artistResults: artistResults ?? this.artistResults,
       albumResults: albumResults ?? this.albumResults,
       playlistResults: playlistResults ?? this.playlistResults,
-      featuredPlaylistResults: featuredPlaylistResults ?? this.featuredPlaylistResults,
+      featuredPlaylistResults:
+          featuredPlaylistResults ?? this.featuredPlaylistResults,
       podcastResults: podcastResults ?? this.podcastResults,
       audiobookResults: audiobookResults ?? this.audiobookResults,
       profileResults: profileResults ?? this.profileResults,
@@ -246,16 +256,26 @@ class SearchState {
   /// True when the currently selected filter has results to show.
   bool get hasResults {
     switch (filter) {
-      case SearchFilter.all:                return allResults.isNotEmpty;
-      case SearchFilter.songs:              return songResults.isNotEmpty;
-      case SearchFilter.videos:             return videoResults.isNotEmpty;
-      case SearchFilter.artists:            return artistResults.isNotEmpty;
-      case SearchFilter.albums:             return albumResults.isNotEmpty;
-      case SearchFilter.podcasts:           return podcastResults.isNotEmpty;
-      case SearchFilter.audiobooks:         return audiobookResults.isNotEmpty;
-      case SearchFilter.communityPlaylists: return playlistResults.isNotEmpty;
-      case SearchFilter.featuredPlaylists:  return featuredPlaylistResults.isNotEmpty;
-      case SearchFilter.profiles:           return profileResults.isNotEmpty;
+      case SearchFilter.all:
+        return allResults.isNotEmpty;
+      case SearchFilter.songs:
+        return songResults.isNotEmpty;
+      case SearchFilter.videos:
+        return videoResults.isNotEmpty;
+      case SearchFilter.artists:
+        return artistResults.isNotEmpty;
+      case SearchFilter.albums:
+        return albumResults.isNotEmpty;
+      case SearchFilter.podcasts:
+        return podcastResults.isNotEmpty;
+      case SearchFilter.audiobooks:
+        return audiobookResults.isNotEmpty;
+      case SearchFilter.communityPlaylists:
+        return playlistResults.isNotEmpty;
+      case SearchFilter.featuredPlaylists:
+        return featuredPlaylistResults.isNotEmpty;
+      case SearchFilter.profiles:
+        return profileResults.isNotEmpty;
     }
   }
 }
@@ -326,47 +346,72 @@ class SearchNotifier extends Notifier<SearchState> {
           );
 
         case SearchFilter.artists:
-          final page = await player.continueMapSearch(token, scrapper.SearchFormatter.parseArtistResults);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final page = await player.continueMapSearch(
+              token, scrapper.SearchFormatter.parseArtistResults);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoadingMore: false,
-            artistResults: [...state.artistResults, ...page.items.map(ArtistSearchResult.fromMap)],
+            artistResults: [
+              ...state.artistResults,
+              ...page.items.map(ArtistSearchResult.fromMap)
+            ],
             continuations: newConts,
           );
 
         case SearchFilter.albums:
-          final page = await player.continueMapSearch(token, scrapper.SearchFormatter.parseAlbumResults);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final page = await player.continueMapSearch(
+              token, scrapper.SearchFormatter.parseAlbumResults);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoadingMore: false,
-            albumResults: [...state.albumResults, ...page.items.map(AlbumSearchResult.fromMap)],
+            albumResults: [
+              ...state.albumResults,
+              ...page.items.map(AlbumSearchResult.fromMap)
+            ],
             continuations: newConts,
           );
 
         case SearchFilter.communityPlaylists:
-          final page = await player.continueMapSearch(token, scrapper.SearchFormatter.parsePlaylistResults);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final page = await player.continueMapSearch(
+              token, scrapper.SearchFormatter.parsePlaylistResults);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoadingMore: false,
-            playlistResults: [...state.playlistResults, ...page.items.map(PlaylistSearchResult.fromMap)],
+            playlistResults: [
+              ...state.playlistResults,
+              ...page.items.map(PlaylistSearchResult.fromMap)
+            ],
             continuations: newConts,
           );
 
         case SearchFilter.featuredPlaylists:
-          final page = await player.continueMapSearch(token, scrapper.SearchFormatter.parsePlaylistResults);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final page = await player.continueMapSearch(
+              token, scrapper.SearchFormatter.parsePlaylistResults);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoadingMore: false,
-            featuredPlaylistResults: [...state.featuredPlaylistResults, ...page.items.map(PlaylistSearchResult.fromMap)],
+            featuredPlaylistResults: [
+              ...state.featuredPlaylistResults,
+              ...page.items.map(PlaylistSearchResult.fromMap)
+            ],
             continuations: newConts,
           );
 
         case SearchFilter.profiles:
-          final page = await player.continueMapSearch(token, scrapper.SearchFormatter.parseProfileResults);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final page = await player.continueMapSearch(
+              token, scrapper.SearchFormatter.parseProfileResults);
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoadingMore: false,
-            profileResults: [...state.profileResults, ...page.items.map(ArtistSearchResult.fromMap)],
+            profileResults: [
+              ...state.profileResults,
+              ...page.items.map(ArtistSearchResult.fromMap)
+            ],
             continuations: newConts,
           );
         case SearchFilter.podcasts:
@@ -397,7 +442,8 @@ class SearchNotifier extends Notifier<SearchState> {
 
         case SearchFilter.videos:
           final page = await player.searchVideosPage(query);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoading: false,
             videoResults: page.items,
@@ -407,7 +453,8 @@ class SearchNotifier extends Notifier<SearchState> {
 
         case SearchFilter.artists:
           final page = await player.searchArtistsPage(query);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoading: false,
             artistResults: page.items.map(ArtistSearchResult.fromMap).toList(),
@@ -417,7 +464,8 @@ class SearchNotifier extends Notifier<SearchState> {
 
         case SearchFilter.albums:
           final page = await player.searchAlbumsPage(query);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoading: false,
             albumResults: page.items.map(AlbumSearchResult.fromMap).toList(),
@@ -427,27 +475,32 @@ class SearchNotifier extends Notifier<SearchState> {
 
         case SearchFilter.communityPlaylists:
           final page = await player.searchCommunityPlaylistsPage(query);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoading: false,
-            playlistResults: page.items.map(PlaylistSearchResult.fromMap).toList(),
+            playlistResults:
+                page.items.map(PlaylistSearchResult.fromMap).toList(),
             continuations: newConts,
             fetched: {...state._fetched, filter},
           );
 
         case SearchFilter.featuredPlaylists:
           final page = await player.searchFeaturedPlaylistsPage(query);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoading: false,
-            featuredPlaylistResults: page.items.map(PlaylistSearchResult.fromMap).toList(),
+            featuredPlaylistResults:
+                page.items.map(PlaylistSearchResult.fromMap).toList(),
             continuations: newConts,
             fetched: {...state._fetched, filter},
           );
 
         case SearchFilter.profiles:
           final page = await player.searchProfilesPage(query);
-          final newConts = Map<SearchFilter, String?>.from(state._continuations)..[filter] = page.continuation;
+          final newConts = Map<SearchFilter, String?>.from(state._continuations)
+            ..[filter] = page.continuation;
           state = state.copyWith(
             isLoading: false,
             profileResults: page.items.map(ArtistSearchResult.fromMap).toList(),
@@ -455,7 +508,8 @@ class SearchNotifier extends Notifier<SearchState> {
             fetched: {...state._fetched, filter},
           );
         case SearchFilter.podcasts:
-          final raw = await ref.read(streamManagerProvider).searchPodcasts(query);
+          final raw =
+              await ref.read(streamManagerProvider).searchPodcasts(query);
           state = state.copyWith(
             isLoading: false,
             continuations: Map<SearchFilter, String?>.from(state._continuations)

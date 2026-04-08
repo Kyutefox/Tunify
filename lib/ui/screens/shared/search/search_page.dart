@@ -84,8 +84,7 @@ class SharedSearchPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final isDesktop = ShellContext.isDesktopOf(context);
-    final searchBarHPad =
-        isDesktop ? DesktopSpacing.lg : AppSpacing.base;
+    final searchBarHPad = isDesktop ? DesktopSpacing.lg : AppSpacing.base;
     final overlayStyle = isDark
         ? SystemUiOverlayStyle.light
             .copyWith(statusBarColor: Colors.transparent)

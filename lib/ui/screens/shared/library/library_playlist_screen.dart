@@ -290,7 +290,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   void _initSync() {
     // Liked songs — pre-load its fixed pink color for smooth transition
     if (widget.playlistId == 'liked') {
-      _paletteColor = const Color(0xFFE91E8C);
+      _paletteColor = AppColors.loveThemeColorFor('liked_songs');
       return;
     }
 
@@ -307,7 +307,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     // Episodes For Later — always local, never needs loading
     if (widget.playlistId == 'episodesForLater' ||
         widget.remotePlaylist?.id == 'episodesForLater') {
-      _paletteColor = const Color(0xFF9333EA); // Purple color for episodes
+      _paletteColor = AppColors.episodesAccent;
       return;
     }
 
@@ -407,10 +407,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 description: (cachedDesc != null && cachedDesc.isNotEmpty)
                     ? cachedDesc
                     : local.description,
-                curatorName:
-                    (cachedCurator != null && cachedCurator.isNotEmpty)
-                        ? cachedCurator
-                        : local.curatorName,
+                curatorName: (cachedCurator != null && cachedCurator.isNotEmpty)
+                    ? cachedCurator
+                    : local.curatorName,
                 curatorThumbnailUrl: (cachedCuratorThumb != null &&
                         cachedCuratorThumb.isNotEmpty)
                     ? cachedCuratorThumb
@@ -575,12 +574,11 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   : ((entry.curatorName?.trim().isNotEmpty ?? false)
                       ? entry.curatorName!.trim()
                       : pl.curatorName),
-              curatorThumbnailUrl:
-                  widget._isPodcast
-                      ? null
-                      : ((entry.curatorThumbnailUrl?.trim().isNotEmpty ?? false)
-                          ? entry.curatorThumbnailUrl!.trim()
-                          : pl.curatorThumbnailUrl),
+              curatorThumbnailUrl: widget._isPodcast
+                  ? null
+                  : ((entry.curatorThumbnailUrl?.trim().isNotEmpty ?? false)
+                      ? entry.curatorThumbnailUrl!.trim()
+                      : pl.curatorThumbnailUrl),
               headerSubtitle: entry.headerSubtitle?.trim().isNotEmpty == true
                   ? entry.headerSubtitle!.trim()
                   : null,
@@ -664,8 +662,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               if (_remoteAsLocal != null) {
                 final updated = [..._remoteAsLocal!.songs, ...newSongs];
                 _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
-                CollectionTrackCache.instance
-                    .put(
+                CollectionTrackCache.instance.put(
                   pl.id,
                   updated,
                   imageUrl: imageUrl,
@@ -705,11 +702,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               songs,
               imageUrl: imageUrl,
               description: (d != null && d.isNotEmpty) ? d : pl.description,
-              curatorName:
-                  (cn != null && cn.isNotEmpty) ? cn : pl.curatorName,
-              curatorThumbnailUrl: (ct != null && ct.isNotEmpty)
-                  ? ct
-                  : pl.curatorThumbnailUrl,
+              curatorName: (cn != null && cn.isNotEmpty) ? cn : pl.curatorName,
+              curatorThumbnailUrl:
+                  (ct != null && ct.isNotEmpty) ? ct : pl.curatorThumbnailUrl,
               headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
               headerSecondSubtitle:
                   (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
@@ -725,9 +720,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 description: (d != null && d.isNotEmpty) ? d : pl.description,
                 curatorName:
                     (cn != null && cn.isNotEmpty) ? cn : pl.curatorName,
-                curatorThumbnailUrl: (ct != null && ct.isNotEmpty)
-                    ? ct
-                    : pl.curatorThumbnailUrl,
+                curatorThumbnailUrl:
+                    (ct != null && ct.isNotEmpty) ? ct : pl.curatorThumbnailUrl,
                 headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
                 headerSecondSubtitle:
                     (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
@@ -746,8 +740,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               if (_remoteAsLocal != null) {
                 final updated = [..._remoteAsLocal!.songs, ...newSongs];
                 _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
-                CollectionTrackCache.instance
-                    .put(
+                CollectionTrackCache.instance.put(
                   pl.id,
                   updated,
                   imageUrl: imageUrl,
@@ -806,10 +799,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               description: (cachedDesc != null && cachedDesc.isNotEmpty)
                   ? cachedDesc
                   : '',
-              curatorName:
-                  (cachedCurator != null && cachedCurator.isNotEmpty)
-                      ? cachedCurator
-                      : null,
+              curatorName: (cachedCurator != null && cachedCurator.isNotEmpty)
+                  ? cachedCurator
+                  : null,
               curatorThumbnailUrl:
                   (cachedCuratorThumb != null && cachedCuratorThumb.isNotEmpty)
                       ? cachedCuratorThumb
@@ -1022,10 +1014,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
             headerSecondSubtitle:
                 (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
-            collectionTitle:
-                (channelTitle != null && channelTitle.isNotEmpty)
-                    ? channelTitle
-                    : null,
+            collectionTitle: (channelTitle != null && channelTitle.isNotEmpty)
+                ? channelTitle
+                : null,
           );
           final color =
               _paletteColor ?? await _extractPaletteColor(resolvedImage);
@@ -1119,10 +1110,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             headerSubtitle: (cachedSub != null && cachedSub.isNotEmpty)
                 ? cachedSub
                 : local.headerSubtitle,
-            headerSecondSubtitle:
-                (cachedSub2 != null && cachedSub2.isNotEmpty)
-                    ? cachedSub2
-                    : local.headerSecondSubtitle,
+            headerSecondSubtitle: (cachedSub2 != null && cachedSub2.isNotEmpty)
+                ? cachedSub2
+                : local.headerSecondSubtitle,
             songs: cached,
             imageUrl: local.customImageUrl ?? cachedEntry?.imageUrl,
             browseId: browseId,
@@ -1164,11 +1154,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             songs,
             imageUrl: imageUrl,
             description: (d != null && d.isNotEmpty) ? d : local.description,
-            curatorName:
-                (cn != null && cn.isNotEmpty) ? cn : local.curatorName,
-            curatorThumbnailUrl: (ct != null && ct.isNotEmpty)
-                ? ct
-                : local.curatorThumbnailUrl,
+            curatorName: (cn != null && cn.isNotEmpty) ? cn : local.curatorName,
+            curatorThumbnailUrl:
+                (ct != null && ct.isNotEmpty) ? ct : local.curatorThumbnailUrl,
             headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
             headerSecondSubtitle:
                 (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
@@ -1188,9 +1176,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               curatorThumbnailUrl: (ct != null && ct.isNotEmpty)
                   ? ct
                   : local.curatorThumbnailUrl,
-              headerSubtitle: (sub != null && sub.isNotEmpty)
-                  ? sub
-                  : local.headerSubtitle,
+              headerSubtitle:
+                  (sub != null && sub.isNotEmpty) ? sub : local.headerSubtitle,
               headerSecondSubtitle: (sub2 != null && sub2.isNotEmpty)
                   ? sub2
                   : local.headerSecondSubtitle,
@@ -1211,8 +1198,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             if (_remoteAsLocal != null) {
               final updated = [..._remoteAsLocal!.songs, ...newSongs];
               _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
-              CollectionTrackCache.instance
-                  .put(
+              CollectionTrackCache.instance.put(
                 browseId,
                 updated,
                 imageUrl: imageUrl,
@@ -1415,7 +1401,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       final sortedSongs = _sortBySortOrder(songs, sortOrder);
       final filteredSongs = filterByExplicitSetting(sortedSongs, showExplicit);
       final hasSong = ref.watch(currentSongProvider) != null;
-      const downloadsColor = Color(0xFF0EA5E9);
+      const downloadsColor = AppColors.accentCyan;
       return CollectionDetailScaffold(
         isEmpty: songs.isEmpty,
         paletteColor: downloadsColor,
@@ -1505,7 +1491,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       final sortedSongs = _sortBySortOrder(songs, sortOrder);
       final filteredSongs = filterByExplicitSetting(sortedSongs, showExplicit);
       final hasSong = ref.watch(currentSongProvider) != null;
-      const localFilesColor = Color(0xFFFF9F43);
+      const localFilesColor = AppColors.localFilesAccent;
       return CollectionDetailScaffold(
         isEmpty: songs.isEmpty,
         paletteColor: localFilesColor,
@@ -1766,8 +1752,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     // Prefer browse-loaded art (correct for "Go to artist" before follow / stale route args).
     final coverUrl = _isRemote
         ? () {
-            final fromBrowse =
-                _remoteAsLocal?.customImageUrl?.trim() ?? '';
+            final fromBrowse = _remoteAsLocal?.customImageUrl?.trim() ?? '';
             if (fromBrowse.isNotEmpty) return fromBrowse;
             if (_isImportedLocal) {
               return _remoteAsLocal?.customImageUrl;
@@ -1786,9 +1771,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     return CollectionDetailScaffold(
       isEmpty: songs.isEmpty,
       paletteColor: isLiked
-          ? const Color(0xFFE91E8C)
+          ? AppColors.loveThemeColorFor('liked_songs')
           : isEpisodesForLater
-              ? const Color(0xFF9333EA)
+              ? AppColors.episodesAccent
               : (songs.isEmpty ? const Color(0xFF404040) : _paletteColor),
       title: isLiked
           ? 'Liked Songs'
@@ -2100,8 +2085,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final customDisplayName = (user?.userMetadata?['username'] as String?) ??
         (user?.email?.split('@').first) ??
         (isGuest ? (guestUsername ?? 'Guest') : 'You');
-    final customAvatarUrl =
-        generateBotttsAvatarUrl(cachedAvatarSeed ?? customDisplayName, size: 128);
+    final customAvatarUrl = generateBotttsAvatarUrl(
+        cachedAvatarSeed ?? customDisplayName,
+        size: 128);
 
     final String ownerName;
     final String? ownerImageUrl;
@@ -2237,8 +2223,7 @@ class _PlaylistCuratorHeaderTrailing extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final trimmed = name.trim();
-    final letter =
-        trimmed.isEmpty ? '?' : trimmed[0].toUpperCase();
+    final letter = trimmed.isEmpty ? '?' : trimmed[0].toUpperCase();
     final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
     final isOfficialYtm = trimmed.toLowerCase() == 'youtube music';
 
@@ -2375,7 +2360,7 @@ class _PlaylistCover extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
-                  color: const Color(0xFF0EA5E9).withValues(alpha: 0.35),
+                  color: AppColors.accentCyan.withValues(alpha: 0.35),
                   blurRadius: 20,
                   offset: const Offset(0, 6))
             ],
@@ -2394,15 +2379,11 @@ class _PlaylistCover extends StatelessWidget {
           width: _size,
           height: _size,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFFF9F43), Color(0xFFFF6B35)],
-            ),
+            gradient: AppColors.localFilesGradient,
             borderRadius: BorderRadius.circular(AppRadius.sm),
             boxShadow: [
               BoxShadow(
-                  color: const Color(0xFFFF9F43).withValues(alpha: 0.35),
+                  color: AppColors.localFilesAccent.withValues(alpha: 0.35),
                   blurRadius: 20,
                   offset: const Offset(0, 6))
             ],
@@ -2467,7 +2448,8 @@ class _PlaylistCover extends StatelessWidget {
               borderRadius: BorderRadius.circular(AppRadius.sm),
               boxShadow: [
                 BoxShadow(
-                    color: const Color(0xFFE91E8C).withValues(alpha: 0.35),
+                    color: AppColors.loveThemeColorFor('liked_songs')
+                        .withValues(alpha: 0.35),
                     blurRadius: 20,
                     offset: const Offset(0, 6))
               ],
@@ -2484,15 +2466,11 @@ class _PlaylistCover extends StatelessWidget {
             width: _size,
             height: _size,
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
-              ),
+              gradient: AppColors.episodesGradient,
               borderRadius: BorderRadius.circular(AppRadius.sm),
               boxShadow: [
                 BoxShadow(
-                    color: const Color(0xFF9333EA).withValues(alpha: 0.35),
+                    color: AppColors.episodesAccent.withValues(alpha: 0.35),
                     blurRadius: 20,
                     offset: const Offset(0, 6))
               ],
@@ -3009,7 +2987,9 @@ class _MacOSFolderPrompt extends StatelessWidget {
         Icon(
           Icons.folder_open_outlined,
           size: 48,
-          color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5),
+          color: AppColorsScheme.of(context)
+              .textMuted
+              .withValues(alpha: UIOpacity.disabled),
         ),
         const SizedBox(height: AppSpacing.md),
         Text(
@@ -3475,8 +3455,9 @@ class _Pill extends StatelessWidget {
             horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
           border: Border.all(
-              color:
-                  AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5)),
+              color: AppColorsScheme.of(context)
+                  .textMuted
+                  .withValues(alpha: UIOpacity.disabled)),
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [

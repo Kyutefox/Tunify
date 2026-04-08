@@ -44,7 +44,8 @@ class RightSidebarTabNotifier extends Notifier<RightSidebarTab?> {
 
 /// Which tab is open in the right sidebar. `null` = sidebar is closed.
 final rightSidebarTabProvider =
-    NotifierProvider<RightSidebarTabNotifier, RightSidebarTab?>(RightSidebarTabNotifier.new);
+    NotifierProvider<RightSidebarTabNotifier, RightSidebarTab?>(
+        RightSidebarTabNotifier.new);
 
 const double kDesktopRightSidebarWidth = 320.0;
 
@@ -164,11 +165,11 @@ class _SidebarTabBar extends ConsumerWidget {
             ),
           ),
           GestureDetector(
-            onTap: () =>
-                ref.read(rightSidebarTabProvider.notifier).set(null),
+            onTap: () => ref.read(rightSidebarTabProvider.notifier).set(null),
             behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.md),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: DesktopSpacing.md),
               child: AppIcon(
                 icon: AppIcons.chevronRight,
                 size: DesktopIconSize.sm,
@@ -195,7 +196,8 @@ class _TabButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = isActive ? AppColors.primary : AppColorsScheme.of(context).textMuted;
+    final color =
+        isActive ? AppColors.primary : AppColorsScheme.of(context).textMuted;
 
     return GestureDetector(
       onTap: onTap,

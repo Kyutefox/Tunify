@@ -30,16 +30,18 @@ class SearchApi {
         safety++;
         final contPayload = _client.basePayload();
         contPayload['continuation'] = token;
-        
+
         final contData = await _client.post('search', contPayload);
         final nextResults = SearchFormatter.parseSearchResults(contData);
         if (nextResults.isEmpty) break;
-        
+
         results.addAll(nextResults);
         token = SearchFormatter.extractContinuationToken(contData);
       }
 
-      return results.length > maxResults ? results.sublist(0, maxResults) : results;
+      return results.length > maxResults
+          ? results.sublist(0, maxResults)
+          : results;
     } catch (e) {
       return [];
     }
@@ -68,13 +70,15 @@ class SearchApi {
   /// keys, whose values may be `null` when nothing relevant is found. When
   /// [preferredArtistName] is supplied, the formatter will try to favour
   /// matches whose artist text equals that name.
-  Future<Map<String, String?>> searchResolveBrowseIds(String query, {String? preferredArtistName}) async {
+  Future<Map<String, String?>> searchResolveBrowseIds(String query,
+      {String? preferredArtistName}) async {
     try {
       final payload = _client.basePayload();
       payload['query'] = query;
 
       final data = await _client.post('search', payload);
-      return SearchFormatter.parseBrowseIds(data, preferredArtistName: preferredArtistName);
+      return SearchFormatter.parseBrowseIds(data,
+          preferredArtistName: preferredArtistName);
     } catch (e) {
       return {'artistBrowseId': null, 'albumBrowseId': null};
     }
@@ -128,7 +132,8 @@ class SearchApi {
   }
 
   /// Performs a search for albums matching [query].
-  Future<List<Map<String, dynamic>>> searchAlbums(String query, {int maxResults = 24}) async {
+  Future<List<Map<String, dynamic>>> searchAlbums(String query,
+      {int maxResults = 24}) async {
     try {
       final payload = _client.basePayload();
       payload['query'] = query;
@@ -141,7 +146,8 @@ class SearchApi {
   }
 
   /// Performs a search for artists matching [query].
-  Future<List<Map<String, dynamic>>> searchArtists(String query, {int maxResults = 24}) async {
+  Future<List<Map<String, dynamic>>> searchArtists(String query,
+      {int maxResults = 24}) async {
     try {
       final payload = _client.basePayload();
       payload['query'] = query;
@@ -154,7 +160,8 @@ class SearchApi {
   }
 
   /// Performs a search for community playlists matching [query].
-  Future<List<Map<String, dynamic>>> searchCommunityPlaylists(String query, {int maxResults = 24}) async {
+  Future<List<Map<String, dynamic>>> searchCommunityPlaylists(String query,
+      {int maxResults = 24}) async {
     try {
       final payload = _client.basePayload();
       payload['query'] = query;
@@ -167,7 +174,8 @@ class SearchApi {
   }
 
   /// Performs a search for featured playlists matching [query].
-  Future<List<Map<String, dynamic>>> searchFeaturedPlaylists(String query, {int maxResults = 24}) async {
+  Future<List<Map<String, dynamic>>> searchFeaturedPlaylists(String query,
+      {int maxResults = 24}) async {
     try {
       final payload = _client.basePayload();
       payload['query'] = query;
@@ -180,7 +188,8 @@ class SearchApi {
   }
 
   /// Performs a search for profiles matching [query].
-  Future<List<Map<String, dynamic>>> searchProfiles(String query, {int maxResults = 24}) async {
+  Future<List<Map<String, dynamic>>> searchProfiles(String query,
+      {int maxResults = 24}) async {
     try {
       final payload = _client.basePayload();
       payload['query'] = query;
@@ -195,7 +204,8 @@ class SearchApi {
   /// Performs a search for podcasts matching [query].
   ///
   /// The search is restricted to podcasts by using [YtConstants.searchFilterPodcasts].
-  Future<List<Map<String, dynamic>>> searchPodcasts(String query, {int maxResults = 24}) async {
+  Future<List<Map<String, dynamic>>> searchPodcasts(String query,
+      {int maxResults = 24}) async {
     try {
       final payload = _client.basePayload();
       payload['query'] = query;
@@ -211,7 +221,8 @@ class SearchApi {
   /// Performs a search for podcast episodes matching [query].
   ///
   /// The search is restricted to episodes by using [YtConstants.searchFilterEpisodes].
-  Future<List<Map<String, dynamic>>> searchEpisodes(String query, {int maxResults = 24}) async {
+  Future<List<Map<String, dynamic>>> searchEpisodes(String query,
+      {int maxResults = 24}) async {
     try {
       final payload = _client.basePayload();
       payload['query'] = query;
@@ -227,14 +238,16 @@ class SearchApi {
   /// Performs a search for audiobooks matching [query].
   ///
   /// The search is restricted to audiobooks by using [YtConstants.searchFilterAudiobooks].
-  Future<List<Map<String, dynamic>>> searchAudiobooks(String query, {int maxResults = 24}) async {
+  Future<List<Map<String, dynamic>>> searchAudiobooks(String query,
+      {int maxResults = 24}) async {
     try {
       final payload = _client.basePayload();
       payload['query'] = query;
       payload['params'] = YtConstants.searchFilterAudiobooks;
 
       final data = await _client.post('search', payload);
-      return SearchFormatter.parseAudiobookResults(data, maxResults: maxResults);
+      return SearchFormatter.parseAudiobookResults(data,
+          maxResults: maxResults);
     } catch (e) {
       return [];
     }

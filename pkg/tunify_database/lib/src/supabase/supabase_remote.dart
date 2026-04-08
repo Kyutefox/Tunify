@@ -24,7 +24,8 @@ class SupabaseRemote {
   late final SupabaseDeleteController _deleteController;
 
   /// Fetches full library for [userId] from Supabase.
-  Future<Map<String, dynamic>?> fetchLibraryData(String userId) async => _getController.fetchLibraryData(userId);
+  Future<Map<String, dynamic>?> fetchLibraryData(String userId) async =>
+      _getController.fetchLibraryData(userId);
 
   /// Pushes library [data] to Supabase for [userId] (incremental playlists/folders, full replace liked).
   Future<void> pushLibraryData(String userId, Map<String, dynamic> data) async {
@@ -32,8 +33,12 @@ class SupabaseRemote {
       await _updateController.upsertLibrarySettings(userId, data);
 
       final playlists = data['playlists'] as List<dynamic>? ?? [];
-      final localPlaylistIds = playlists.map((p) => (p as Map)['id'] as String?).whereType<String>().toSet();
-      final remote = await _getController.fetchRemoteLibraryStateForCompare(userId);
+      final localPlaylistIds = playlists
+          .map((p) => (p as Map)['id'] as String?)
+          .whereType<String>()
+          .toSet();
+      final remote =
+          await _getController.fetchRemoteLibraryStateForCompare(userId);
       final existingIds = remote.playlistUpdatedAt.keys.toList();
 
       for (final id in existingIds) {
@@ -53,13 +58,19 @@ class SupabaseRemote {
 
         await _updateController.upsertPlaylist(userId, map);
         await _deleteController.deletePlaylistTracks(userId, pid);
-        final songs = (map['songs'] as List<dynamic>? ?? []).map((e) => Map<String, dynamic>.from(e as Map)).toList();
+        final songs = (map['songs'] as List<dynamic>? ?? [])
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
         await _createController.insertPlaylistTracks(userId, pid, songs);
-        await _updateController.upsertPlaylistShuffle(userId, pid, map['shuffleEnabled'] == true);
+        await _updateController.upsertPlaylistShuffle(
+            userId, pid, map['shuffleEnabled'] == true);
       }
 
       final folders = data['folders'] as List<dynamic>? ?? [];
-      final localFolderIds = folders.map((f) => (f as Map)['id'] as String?).whereType<String>().toSet();
+      final localFolderIds = folders
+          .map((f) => (f as Map)['id'] as String?)
+          .whereType<String>()
+          .toSet();
       final existingFolderIds = remote.folderName.keys.toList();
 
       for (final id in existingFolderIds) {
@@ -72,47 +83,61 @@ class SupabaseRemote {
         final fid = map['id'] as String?;
         if (fid == null) continue;
         final localName = map['name']?.toString() ?? '';
-        final localPids = (map['playlistIds'] as List<dynamic>? ?? []).map((e) => e.toString()).toList();
+        final localPids = (map['playlistIds'] as List<dynamic>? ?? [])
+            .map((e) => e.toString())
+            .toList();
         final remoteName = remote.folderName[fid];
         final remotePids = remote.folderPlaylistIds[fid] ?? [];
         final isNew = remoteName == null;
-        final isChanged = !isNew && (remoteName != localName || !SupabaseMappers.listEquals(remotePids, localPids));
+        final isChanged = !isNew &&
+            (remoteName != localName ||
+                !SupabaseMappers.listEquals(remotePids, localPids));
         if (!isNew && !isChanged) continue;
 
         await _updateController.upsertFolder(userId, map);
         await _deleteController.deleteFolderPlaylists(userId, fid);
-        final pids = (map['playlistIds'] as List<dynamic>? ?? []).map((e) => e.toString()).toList();
+        final pids = (map['playlistIds'] as List<dynamic>? ?? [])
+            .map((e) => e.toString())
+            .toList();
         await _createController.insertFolderPlaylists(userId, fid, pids);
       }
 
       final likedSongs = data['likedSongs'] as List<dynamic>? ?? [];
       await _deleteController.deleteAllLikedSongs(userId);
       if (likedSongs.isNotEmpty) {
-        final rows = likedSongs.map((s) => Map<String, dynamic>.from(s as Map)).toList();
+        final rows =
+            likedSongs.map((s) => Map<String, dynamic>.from(s as Map)).toList();
         await _createController.insertLikedSongs(userId, rows);
       }
 
       final followedArtists = data['followedArtists'] as List<dynamic>? ?? [];
       await _deleteController.deleteAllFollowedArtists(userId);
       if (followedArtists.isNotEmpty) {
-        final rows = followedArtists.map((a) => Map<String, dynamic>.from(a as Map)).toList();
+        final rows = followedArtists
+            .map((a) => Map<String, dynamic>.from(a as Map))
+            .toList();
         await _createController.insertFollowedArtists(userId, rows);
       }
 
       final followedAlbums = data['followedAlbums'] as List<dynamic>? ?? [];
       await _deleteController.deleteAllFollowedAlbums(userId);
       if (followedAlbums.isNotEmpty) {
-        final rows = followedAlbums.map((a) => Map<String, dynamic>.from(a as Map)).toList();
+        final rows = followedAlbums
+            .map((a) => Map<String, dynamic>.from(a as Map))
+            .toList();
         await _createController.insertFollowedAlbums(userId, rows);
       }
     } catch (_) {}
   }
 
   /// Fetches recently played for [userId].
-  Future<List<Map<String, dynamic>>?> fetchRecentlyPlayed(String userId) async => _getController.fetchRecentlyPlayed(userId);
+  Future<List<Map<String, dynamic>>?> fetchRecentlyPlayed(
+          String userId) async =>
+      _getController.fetchRecentlyPlayed(userId);
 
   /// Replaces recently played for [userId] with [songs].
-  Future<void> pushRecentlyPlayed(String userId, List<Map<String, dynamic>> songs) async {
+  Future<void> pushRecentlyPlayed(
+      String userId, List<Map<String, dynamic>> songs) async {
     try {
       await _deleteController.deleteAllRecentlyPlayed(userId);
       await _createController.insertRecentlyPlayed(userId, songs);
@@ -120,13 +145,17 @@ class SupabaseRemote {
   }
 
   /// Fetches playback settings for [userId].
-  Future<Map<String, dynamic>?> fetchPlaybackSettings(String userId) async => _getController.fetchPlaybackSettings(userId);
+  Future<Map<String, dynamic>?> fetchPlaybackSettings(String userId) async =>
+      _getController.fetchPlaybackSettings(userId);
 
   /// Pushes playback [settings] for [userId].
-  Future<void> pushPlaybackSettings(String userId, Map<String, dynamic> settings) async => _updateController.upsertPlaybackSettings(userId, settings);
+  Future<void> pushPlaybackSettings(
+          String userId, Map<String, dynamic> settings) async =>
+      _updateController.upsertPlaybackSettings(userId, settings);
 
   /// Fetches recent searches for [userId].
-  Future<List<String>?> fetchRecentSearches(String userId) async => _getController.fetchRecentSearches(userId);
+  Future<List<String>?> fetchRecentSearches(String userId) async =>
+      _getController.fetchRecentSearches(userId);
 
   /// Replaces recent searches for [userId] with [queries].
   Future<void> pushRecentSearches(String userId, List<String> queries) async {
@@ -137,7 +166,8 @@ class SupabaseRemote {
   }
 
   /// Fetches downloaded song IDs for [userId].
-  Future<List<String>?> fetchDownloadedSongIds(String userId) async => _getController.fetchDownloadedSongIds(userId);
+  Future<List<String>?> fetchDownloadedSongIds(String userId) async =>
+      _getController.fetchDownloadedSongIds(userId);
 
   /// Replaces downloaded song IDs for [userId] with [ids].
   Future<void> pushDownloadedSongIds(String userId, List<String> ids) async {
@@ -148,8 +178,11 @@ class SupabaseRemote {
   }
 
   /// Fetches YT personalization for [userId].
-  Future<Map<String, dynamic>?> fetchYtPersonalization(String userId) async => _getController.fetchYtPersonalization(userId);
+  Future<Map<String, dynamic>?> fetchYtPersonalization(String userId) async =>
+      _getController.fetchYtPersonalization(userId);
 
   /// Pushes YT personalization [data] for [userId].
-  Future<void> pushYtPersonalization(String userId, Map<String, dynamic> data) async => _updateController.upsertYtPersonalization(userId, data);
+  Future<void> pushYtPersonalization(
+          String userId, Map<String, dynamic> data) async =>
+      _updateController.upsertYtPersonalization(userId, data);
 }

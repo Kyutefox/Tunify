@@ -1,5 +1,5 @@
-import 'logger_config_stub.dart'
-    if (dart.library.io) 'logger_config_io.dart' as logger_config;
+import 'logger_config_stub.dart' if (dart.library.io) 'logger_config_io.dart'
+    as logger_config;
 
 import 'package:logger/logger.dart';
 

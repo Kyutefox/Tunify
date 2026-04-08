@@ -142,8 +142,7 @@ class LibrarySearchBody extends ConsumerWidget {
             final confirmed = await showConfirmDialog(
               context,
               title: 'Remove podcast?',
-              message:
-                  '${podcast.title} will be removed from your library.',
+              message: '${podcast.title} will be removed from your library.',
               confirmLabel: 'Remove',
             );
             if (confirmed) {
@@ -183,8 +182,7 @@ class LibrarySearchBody extends ConsumerWidget {
             final confirmed = await showConfirmDialog(
               context,
               title: 'Remove audiobook?',
-              message:
-                  '${audiobook.title} will be removed from your library.',
+              message: '${audiobook.title} will be removed from your library.',
               confirmLabel: 'Remove',
             );
             if (confirmed) {
@@ -247,8 +245,7 @@ class LibrarySearchBody extends ConsumerWidget {
         .toList();
     final filteredArtists =
         artists.where((a) => a.name.toLowerCase().contains(query)).toList();
-    final hasResults =
-        filteredPlaylists.isNotEmpty ||
+    final hasResults = filteredPlaylists.isNotEmpty ||
         filteredFolders.isNotEmpty ||
         filteredPodcasts.isNotEmpty ||
         filteredAudiobooks.isNotEmpty ||
@@ -351,7 +348,8 @@ class LibrarySearchBody extends ConsumerWidget {
 
     return ListView(
       physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.max),
+      padding:
+          const EdgeInsets.only(top: AppSpacing.xs, bottom: AppSpacing.max),
       children: [
         LibraryPlaylistsSection(
           entries: entries,

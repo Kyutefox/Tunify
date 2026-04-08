@@ -76,11 +76,13 @@ class AuthNotifier extends Notifier<AuthActionState> {
     } on TimeoutException {
       logWarning('Auth: signIn timeout after 10 seconds', tag: 'Auth');
       state = state.copyWith(
-          isLoading: false, error: 'Connection timed out. Please check your internet.');
+          isLoading: false,
+          error: 'Connection timed out. Please check your internet.');
       return false;
     } catch (e, st) {
       logError('Auth: signIn unexpected error: $e\n$st', tag: 'Auth');
-      state = state.copyWith(isLoading: false, error: 'Sign in failed. Please try again.');
+      state = state.copyWith(
+          isLoading: false, error: 'Sign in failed. Please try again.');
       return false;
     }
   }
@@ -102,7 +104,8 @@ class AuthNotifier extends Notifier<AuthActionState> {
       if (response.session == null) {
         state =
             state.copyWith(isLoading: false, emailConfirmationPending: true);
-        logInfo('Auth: signUp completed, email confirmation required', tag: 'Auth');
+        logInfo('Auth: signUp completed, email confirmation required',
+            tag: 'Auth');
       } else {
         state = state.copyWith(isLoading: false);
         logInfo('Auth: signUp completed, user logged in', tag: 'Auth');
@@ -116,11 +119,13 @@ class AuthNotifier extends Notifier<AuthActionState> {
       logWarning('Auth: signUp timeout after 10 seconds', tag: 'Auth');
       state = state.copyWith(
           isLoading: false,
-          error: 'Connection timed out. Please check your internet and try again.');
+          error:
+              'Connection timed out. Please check your internet and try again.');
       return false;
     } catch (e, st) {
       logError('Auth: signUp unexpected error: $e\n$st', tag: 'Auth');
-      state = state.copyWith(isLoading: false, error: 'Sign up failed. Please try again.');
+      state = state.copyWith(
+          isLoading: false, error: 'Sign up failed. Please try again.');
       return false;
     }
   }
@@ -185,4 +190,5 @@ class GuestModeNotifier extends Notifier<bool> {
   }
 }
 
-final guestModeProvider = NotifierProvider<GuestModeNotifier, bool>(GuestModeNotifier.new);
+final guestModeProvider =
+    NotifierProvider<GuestModeNotifier, bool>(GuestModeNotifier.new);

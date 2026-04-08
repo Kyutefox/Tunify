@@ -21,7 +21,8 @@ class MultiDownloadButton extends ConsumerStatefulWidget {
   final double iconSize;
 
   @override
-  ConsumerState<MultiDownloadButton> createState() => _MultiDownloadButtonState();
+  ConsumerState<MultiDownloadButton> createState() =>
+      _MultiDownloadButtonState();
 }
 
 class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
@@ -64,8 +65,8 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
       if (e.expectedBytes != null &&
           e.expectedBytes! > 0 &&
           e.downloadedBytes != null) {
-        final itemProgress = (e.downloadedBytes! / e.expectedBytes!)
-            .clamp(0.0, 1.0);
+        final itemProgress =
+            (e.downloadedBytes! / e.expectedBytes!).clamp(0.0, 1.0);
         combinedProgress += itemProgress / total;
         break;
       }
@@ -103,8 +104,7 @@ class _MultiDownloadButtonState extends ConsumerState<MultiDownloadButton>
                   size: Size(widget.size + 8, widget.size + 8),
                   painter: DownloadProgressRingPainter(
                     progress: combinedProgress < 1.0 ? combinedProgress : null,
-                    rotation:
-                        _rotationController!.value * 2 * 3.14159265359,
+                    rotation: _rotationController!.value * 2 * 3.14159265359,
                     trackColor: AppColorsScheme.of(context).textMuted,
                     progressColor: AppColors.accentGreen,
                     strokeWidth: 2,

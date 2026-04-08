@@ -46,7 +46,8 @@ class UserAvatarButton extends ConsumerWidget {
     final isGuest = ref.watch(guestModeProvider);
     final guestUsername =
         isGuest ? ref.watch(guestUsernameProvider).value : null;
-    final cachedAvatarSeed = isGuest ? ref.watch(avatarSeedProvider).value : null;
+    final cachedAvatarSeed =
+        isGuest ? ref.watch(avatarSeedProvider).value : null;
     final username = (user?.userMetadata?['username'] as String?) ??
         (user?.email?.split('@').first) ??
         (isGuest ? (guestUsername ?? 'Guest') : 'V');

@@ -177,7 +177,9 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
     final canPop = _pages.length > 1;
     final homeMoods = ref.watch(moodsProvider);
     final isRootPage = _pages.isNotEmpty && _pages.first == currentPage;
-    final skipRootGrid = isRootPage && (_loading || _openingWithInitialMood) && widget.initialMood != null;
+    final skipRootGrid = isRootPage &&
+        (_loading || _openingWithInitialMood) &&
+        widget.initialMood != null;
     final effectiveMoods = skipRootGrid
         ? <Mood>[]
         : (currentPage.moods != null && currentPage.moods!.isNotEmpty
@@ -190,84 +192,123 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
         return Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            kSheetHorizontalPadding,
-            AppSpacing.sm,
-            kSheetHorizontalPadding,
-            AppSpacing.sm,
-          ),
-          child: Row(
-            children: [
-              if (canPop)
-                GestureDetector(
-                  onTap: _popPage,
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: AppSpacing.md),
-                    child: AppIcon(
-                      icon: AppIcons.back,
-                      color: AppColorsScheme.of(context).textPrimary,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              Expanded(
-                child: Text(
-                  currentPage.title,
-                  style: TextStyle(
-                    color: AppColorsScheme.of(context).textPrimary,
-                    fontSize: AppFontSize.h3,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: AppLetterSpacing.heading,
-                  ),
-                ),
-              ),
-              GestureDetector(
-                onTap: () => Navigator.of(context).pop(),
-                child: AppIcon(
-                  icon: AppIcons.close,
-                  color: AppColorsScheme.of(context).textSecondary,
-                  size: 24,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (_loading)
-          Padding(
-            padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
-            child: LinearProgressIndicator(
-              color: AppColors.primary,
-              backgroundColor: AppColorsScheme.of(context).surfaceLight,
-              minHeight: 2,
-            ),
-          ),
-        ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxContentHeight),
-          child: AnimatedSwitcher(
-            duration: AppDuration.fast,
-            child: SingleChildScrollView(
-              key: ValueKey(_pages.length),
-              controller: _scrollController,
+            Padding(
               padding: const EdgeInsets.fromLTRB(
                 kSheetHorizontalPadding,
                 AppSpacing.sm,
                 kSheetHorizontalPadding,
-                AppSpacing.max,
+                AppSpacing.sm,
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Row(
                 children: [
-                    // Only show mood chips when there are no playlists (e.g. root page or sub-mood with no playlists).
-                    if (effectiveMoods.isNotEmpty &&
-                        (currentPage.playlists == null ||
-                            currentPage.playlists!.isEmpty)) ...[
-                      if (_pages.length > 1)
+                  if (canPop)
+                    GestureDetector(
+                      onTap: _popPage,
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: AppSpacing.md),
+                        child: AppIcon(
+                          icon: AppIcons.back,
+                          color: AppColorsScheme.of(context).textPrimary,
+                          size: 20,
+                        ),
+                      ),
+                    ),
+                  Expanded(
+                    child: Text(
+                      currentPage.title,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.h3,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: AppLetterSpacing.heading,
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: AppIcon(
+                      icon: AppIcons.close,
+                      color: AppColorsScheme.of(context).textSecondary,
+                      size: 24,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (_loading)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.sm),
+                child: LinearProgressIndicator(
+                  color: AppColors.primary,
+                  backgroundColor: AppColorsScheme.of(context).surfaceLight,
+                  minHeight: 2,
+                ),
+              ),
+            ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: maxContentHeight),
+              child: AnimatedSwitcher(
+                duration: AppDuration.fast,
+                child: SingleChildScrollView(
+                  key: ValueKey(_pages.length),
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(
+                    kSheetHorizontalPadding,
+                    AppSpacing.sm,
+                    kSheetHorizontalPadding,
+                    AppSpacing.max,
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Only show mood chips when there are no playlists (e.g. root page or sub-mood with no playlists).
+                      if (effectiveMoods.isNotEmpty &&
+                          (currentPage.playlists == null ||
+                              currentPage.playlists!.isEmpty)) ...[
+                        if (_pages.length > 1)
+                          Padding(
+                            padding: EdgeInsets.only(bottom: AppSpacing.md),
+                            child: Text(
+                              'Categories',
+                              style: TextStyle(
+                                color:
+                                    AppColorsScheme.of(context).textSecondary,
+                                fontSize: AppFontSize.base,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          cacheExtent: 1000,
+                          addAutomaticKeepAlives: true,
+                          addRepaintBoundaries: true,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: AppSpacing.md,
+                            mainAxisSpacing: AppSpacing.md,
+                            childAspectRatio: 3.0,
+                          ),
+                          itemCount: effectiveMoods.length,
+                          itemBuilder: (ctx, i) {
+                            final mood = effectiveMoods[i];
+                            return _SheetMoodTile(
+                              mood: mood,
+                              onTap: () => _browseMood(mood),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                      ],
+
+                      if (currentPage.playlists != null &&
+                          currentPage.playlists!.isNotEmpty) ...[
                         Padding(
                           padding: EdgeInsets.only(bottom: AppSpacing.md),
                           child: Text(
-                            'Categories',
+                            'Playlists',
                             style: TextStyle(
                               color: AppColorsScheme.of(context).textSecondary,
                               fontSize: AppFontSize.base,
@@ -275,75 +316,37 @@ class _MoodBrowseSheetState extends ConsumerState<_MoodBrowseSheet> {
                             ),
                           ),
                         ),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        cacheExtent: 1000,
-                        addAutomaticKeepAlives: true,
-                        addRepaintBoundaries: true,
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: AppSpacing.md,
-                          mainAxisSpacing: AppSpacing.md,
-                          childAspectRatio: 3.0,
-                        ),
-                        itemCount: effectiveMoods.length,
-                        itemBuilder: (ctx, i) {
-                          final mood = effectiveMoods[i];
-                          return _SheetMoodTile(
-                            mood: mood,
-                            onTap: () => _browseMood(mood),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: AppSpacing.xxl),
-                    ],
-
-                    if (currentPage.playlists != null &&
-                        currentPage.playlists!.isNotEmpty) ...[
-                      Padding(
-                        padding: EdgeInsets.only(bottom: AppSpacing.md),
-                        child: Text(
-                          'Playlists',
-                          style: TextStyle(
-                            color: AppColorsScheme.of(context).textSecondary,
-                            fontSize: AppFontSize.base,
-                            fontWeight: FontWeight.w600,
+                        ...currentPage.playlists!.map(
+                          (pl) => _PlaylistRow(
+                            playlist: pl,
+                            onTap: () => _playPlaylist(pl),
                           ),
                         ),
-                      ),
-                      ...currentPage.playlists!.map(
-                        (pl) => _PlaylistRow(
-                          playlist: pl,
-                          onTap: () => _playPlaylist(pl),
-                        ),
-                      ),
-                    ],
-                    if (effectiveMoods.isEmpty &&
-                        (currentPage.playlists == null ||
-                            currentPage.playlists!.isEmpty) &&
-                        _pages.length > 1)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            vertical: AppSpacing.xxl),
-                        child: Center(
-                          child: Text(
-                            'No subcategories or playlists for this mood.',
-                            style: TextStyle(
-                              color: AppColorsScheme.of(context).textMuted,
-                              fontSize: AppFontSize.base,
+                      ],
+                      if (effectiveMoods.isEmpty &&
+                          (currentPage.playlists == null ||
+                              currentPage.playlists!.isEmpty) &&
+                          _pages.length > 1)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: AppSpacing.xxl),
+                          child: Center(
+                            child: Text(
+                              'No subcategories or playlists for this mood.',
+                              style: TextStyle(
+                                color: AppColorsScheme.of(context).textMuted,
+                                fontSize: AppFontSize.base,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                ],
+                    ],
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      ],
-    );
+          ],
+        );
       },
     );
   }

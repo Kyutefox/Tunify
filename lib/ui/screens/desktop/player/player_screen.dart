@@ -94,7 +94,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
     super.initState();
     _artScaleCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: AppDuration.medium,
       value: 1.0,
     );
     _artScale = Tween<double>(begin: 0.92, end: 1.0).animate(
@@ -103,7 +103,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
     _entryCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 300),
+      duration: AppDuration.normal,
     );
     _songInfoFade = CurvedAnimation(
       parent: _entryCtrl,
@@ -153,7 +153,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
       // extra build (cheap — no expensive providers change) but moves the
       // ImageFilter.blur GPU computation off frame 0.
       setState(() => _bgVisible = true);
-      Future.delayed(const Duration(milliseconds: 80), () {
+      Future.delayed(AppDuration.instant, () {
         if (mounted) _entryCtrl.forward();
       });
     });
@@ -188,7 +188,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
 
     if (song == null) {
       return const Scaffold(
-        backgroundColor: Color(0xFF000000),
+        backgroundColor: AppColors.backgroundSecondary,
         body: Center(
           child:
               Text('Nothing playing', style: TextStyle(color: Colors.white54)),
@@ -232,7 +232,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
           },
           onVerticalDragCancel: () => _dragDy = 0,
           child: Scaffold(
-            backgroundColor: const Color(0xFF000000),
+            backgroundColor: AppColors.backgroundSecondary,
             body: Stack(
               fit: StackFit.expand,
               children: [
@@ -243,7 +243,7 @@ class _PlayerScreenState extends ConsumerState<PlayerScreen>
                           dominantColor: dominantColor,
                         ),
                       )
-                    : const ColoredBox(color: Color(0xFF000000)),
+                    : const ColoredBox(color: AppColors.backgroundSecondary),
                 SafeArea(
                   child: Padding(
                     padding:
@@ -852,7 +852,9 @@ class _SleepTimerHero extends StatelessWidget {
             spreadRadius: 0,
           ),
           BoxShadow(
-            color: AppColorsScheme.of(context).surface.withValues(alpha: 0.5),
+            color: AppColorsScheme.of(context)
+                .surface
+                .withValues(alpha: UIOpacity.disabled),
             blurRadius: 40,
             spreadRadius: -8,
           ),
@@ -1017,7 +1019,7 @@ class _DevicesPanelContentState extends State<DevicesPanelContent>
     super.initState();
     _pulseCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: AppDuration.xslow,
     )..repeat(reverse: true);
     _loadDevices();
   }
@@ -1350,7 +1352,7 @@ class _ActiveIndicator extends StatelessWidget {
         shape: BoxShape.circle,
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.5),
+            color: color.withValues(alpha: UIOpacity.disabled),
             blurRadius: 6,
             spreadRadius: 1,
           ),
@@ -1469,7 +1471,7 @@ class _PlayerDownloadButtonState extends ConsumerState<_PlayerDownloadButton>
     super.initState();
     _rotationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: AppDuration.xslow,
     );
   }
 
@@ -2157,8 +2159,8 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
       if (ctx != null) {
         Scrollable.ensureVisible(
           ctx,
-          duration: const Duration(milliseconds: 400),
-          curve: Curves.easeOut,
+          duration: AppDuration.medium,
+          curve: AppCurves.decelerate,
           alignment: 0.3,
         );
       }
@@ -2261,7 +2263,8 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                   onTap: _toggleShareSelectionMode,
                   behavior: HitTestBehavior.opaque,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
                     child: Text(
                       _isShareSelectionMode ? 'Cancel' : 'Share',
                       style: TextStyle(
@@ -2286,7 +2289,9 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
         Expanded(
           child: _buildLyricsContent(lyricsState),
         ),
-        if (_isShareSelectionMode && lyricsState.hasLyrics && lyricsState.lyrics!.isSynced)
+        if (_isShareSelectionMode &&
+            lyricsState.hasLyrics &&
+            lyricsState.lyrics!.isSynced)
           Padding(
             padding: const EdgeInsets.fromLTRB(
               kSheetHorizontalPadding,
@@ -2461,7 +2466,9 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
       child: Container(
         decoration: BoxDecoration(
           color: isSelected
-              ? AppColorsScheme.of(context).surfaceHighlight.withValues(alpha: 0.65)
+              ? AppColorsScheme.of(context)
+                  .surfaceHighlight
+                  .withValues(alpha: 0.65)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(AppRadius.md),
         ),
@@ -2601,10 +2608,8 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
     });
   }
 
-  Color get _customStart =>
-      (_customGradient ?? _gradientPresets.first).first;
-  Color get _customEnd =>
-      (_customGradient ?? _gradientPresets.first).last;
+  Color get _customStart => (_customGradient ?? _gradientPresets.first).first;
+  Color get _customEnd => (_customGradient ?? _gradientPresets.first).last;
 
   String _toHex(Color c) {
     final rgb = c.toARGB32() & 0xFFFFFF;
@@ -2637,9 +2642,7 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
   }
 
   void _applyHex(bool isStart) {
-    final parsed = _parseHex(isStart
-        ? _startHexCtrl.text
-        : _endHexCtrl.text);
+    final parsed = _parseHex(isStart ? _startHexCtrl.text : _endHexCtrl.text);
     if (parsed == null) return;
     final list = [...(_customGradient ?? _gradientPresets.first)];
     list[isStart ? 0 : 1] = parsed;
@@ -2651,7 +2654,8 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
     final colors = _selectedGradient == -1
         ? (_customGradient ?? _gradientPresets.first)
         : _gradientPresets[_selectedGradient];
-    final gradientAngle = _selectedGradient == -1 ? _customGradientAngle : 135.0;
+    final gradientAngle =
+        _selectedGradient == -1 ? _customGradientAngle : 135.0;
     return AppPageScaffold(
       resizeToAvoidBottomInset: false,
       body: Container(
@@ -2660,8 +2664,8 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
             begin: _gradientBegin(gradientAngle),
             end: _gradientEnd(gradientAngle),
             colors: [
-              colors.first.withValues(alpha: 0.45),
-              colors.last.withValues(alpha: 0.28),
+              colors.first.withValues(alpha: UIOpacity.strong),
+              colors.last.withValues(alpha: UIOpacity.medium),
               AppColorsScheme.of(context).background,
             ],
             stops: const [0.0, 0.45, 1.0],
@@ -2714,7 +2718,8 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                             end: _gradientEnd(gradientAngle),
                             colors: colors,
                           ),
-                          borderRadius: BorderRadius.circular(20),
+                          borderRadius:
+                              BorderRadius.circular(UISize.cardRadius),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -2726,12 +2731,12 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                                   borderRadius: BorderRadius.circular(10),
                                   child: Image.network(
                                     widget.song.thumbnailUrl,
-                                    width: 50,
-                                    height: 50,
+                                    width: UISize.mediaThumb,
+                                    height: UISize.mediaThumb,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, __, ___) => Container(
-                                      width: 50,
-                                      height: 50,
+                                      width: UISize.mediaThumb,
+                                      height: UISize.mediaThumb,
                                       color: Colors.white12,
                                       child: const Icon(Icons.music_note,
                                           color: Colors.white70, size: 20),
@@ -2741,7 +2746,8 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                                 const SizedBox(width: 10),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         widget.song.title,
@@ -2802,9 +2808,9 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                 ),
                 const SizedBox(height: 12),
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  switchInCurve: Curves.easeOut,
-                  switchOutCurve: Curves.easeIn,
+                  duration: AppDuration.fastPlus,
+                  switchInCurve: AppCurves.decelerate,
+                  switchOutCurve: AppCurves.standard,
                   child: !_isCustomMode
                       ? Column(
                           key: const ValueKey('preset-controls'),
@@ -2812,25 +2818,28 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                             Align(
                               alignment: Alignment.center,
                               child: SizedBox(
-                                height: 44,
+                                height: UISize.swatchSize,
                                 child: ListView.separated(
                                   shrinkWrap: true,
                                   scrollDirection: Axis.horizontal,
                                   itemCount: _gradientPresets.length + 1,
-                                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                                  separatorBuilder: (_, __) =>
+                                      const SizedBox(width: 10),
                                   itemBuilder: (context, index) {
                                     if (index == 0) {
                                       final selected = _selectedGradient == -1;
                                       return GestureDetector(
                                         onTap: _enterCustomMode,
                                         child: Container(
-                                          width: 44,
-                                          height: 44,
+                                          width: UISize.swatchSize,
+                                          height: UISize.swatchSize,
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
                                             gradient: LinearGradient(
-                                              begin: _gradientBegin(_customGradientAngle),
-                                              end: _gradientEnd(_customGradientAngle),
+                                              begin: _gradientBegin(
+                                                  _customGradientAngle),
+                                              end: _gradientEnd(
+                                                  _customGradientAngle),
                                               colors: _customGradient ??
                                                   const [
                                                     Color(0xFF5B86E5),
@@ -2838,7 +2847,9 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                                                   ],
                                             ),
                                             border: Border.all(
-                                              color: selected ? Colors.white : Colors.white24,
+                                              color: selected
+                                                  ? Colors.white
+                                                  : Colors.white24,
                                               width: selected ? 2 : 1,
                                             ),
                                           ),
@@ -2850,15 +2861,16 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                                       );
                                     }
                                     final preset = _gradientPresets[index - 1];
-                                    final selected = (index - 1) == _selectedGradient;
+                                    final selected =
+                                        (index - 1) == _selectedGradient;
                                     return GestureDetector(
                                       onTap: () => setState(() {
                                         _selectedGradient = index - 1;
                                         _isCustomMode = false;
                                       }),
                                       child: Container(
-                                        width: 44,
-                                        height: 44,
+                                        width: UISize.swatchSize,
+                                        height: UISize.swatchSize,
                                         decoration: BoxDecoration(
                                           shape: BoxShape.circle,
                                           gradient: LinearGradient(
@@ -2867,7 +2879,9 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                                             colors: preset,
                                           ),
                                           border: Border.all(
-                                            color: selected ? Colors.white : Colors.white24,
+                                            color: selected
+                                                ? Colors.white
+                                                : Colors.white24,
                                             width: selected ? 2 : 1,
                                           ),
                                         ),
@@ -2883,11 +2897,15 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                               child: SizedBox(
                                 width: 180,
                                 child: ElevatedButton(
-                                  onPressed: _isSharing ? null : _shareCardImage,
+                                  onPressed:
+                                      _isSharing ? null : _shareCardImage,
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColorsScheme.of(context).surfaceHighlight,
-                                    foregroundColor: AppColorsScheme.of(context).textPrimary,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    backgroundColor: AppColorsScheme.of(context)
+                                        .surfaceHighlight,
+                                    foregroundColor:
+                                        AppColorsScheme.of(context).textPrimary,
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 12),
                                   ),
                                   child: Text(
                                     _isSharing ? 'Preparing...' : 'Share',
@@ -2919,7 +2937,8 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                               Row(
                                 children: [
                                   GestureDetector(
-                                    onTap: () => setState(() => _editingStart = true),
+                                    onTap: () =>
+                                        setState(() => _editingStart = true),
                                     child: Container(
                                       width: 28,
                                       height: 28,
@@ -2953,7 +2972,8 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                                   ),
                                   const SizedBox(width: 12),
                                   GestureDetector(
-                                    onTap: () => setState(() => _editingStart = false),
+                                    onTap: () =>
+                                        setState(() => _editingStart = false),
                                     child: Container(
                                       width: 28,
                                       height: 28,
@@ -2993,7 +3013,8 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                                   Text(
                                     'Angle ${_customGradientAngle.round()}°',
                                     style: TextStyle(
-                                      color: AppColorsScheme.of(context).textSecondary,
+                                      color: AppColorsScheme.of(context)
+                                          .textSecondary,
                                       fontSize: AppFontSize.xs,
                                     ),
                                   ),
@@ -3003,18 +3024,20 @@ class _LyricsShareComposerState extends State<LyricsShareComposer> {
                                       min: 0,
                                       max: 360,
                                       value: _customGradientAngle,
-                                      onChanged: (v) =>
-                                          setState(() => _customGradientAngle = v),
+                                      onChanged: (v) => setState(
+                                          () => _customGradientAngle = v),
                                     ),
                                   ),
                                   TextButton(
-                                    onPressed: () => setState(() => _isCustomMode = false),
+                                    onPressed: () =>
+                                        setState(() => _isCustomMode = false),
                                     child: const Text('Done'),
                                   ),
                                 ],
                               ),
                               ColorPicker(
-                                color: _editingStart ? _customStart : _customEnd,
+                                color:
+                                    _editingStart ? _customStart : _customEnd,
                                 onColorChanged: _onInlineColorChanged,
                                 pickersEnabled: const <ColorPickerType, bool>{
                                   ColorPickerType.wheel: true,

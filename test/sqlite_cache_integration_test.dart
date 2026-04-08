@@ -128,9 +128,9 @@ void main() {
       final result = await get.getStreamUrlCache(videoId);
 
       expect(result, isNotNull,
-          reason: 'iteration $i: expected non-null result for videoId=$videoId');
-      expect(result!['url'], equals(url),
-          reason: 'iteration $i: url mismatch');
+          reason:
+              'iteration $i: expected non-null result for videoId=$videoId');
+      expect(result!['url'], equals(url), reason: 'iteration $i: url mismatch');
       expect(result['bitrate'], equals(bitrate),
           reason: 'iteration $i: bitrate mismatch');
       expect(result['quality'], equals(quality),
@@ -152,10 +152,12 @@ void main() {
       final videoId = _randomId(rng);
       final url = _randomUrl(rng);
       // expires_at in the past
-      final expiresAt =
-          DateTime.now().toUtc().subtract(Duration(seconds: rng.nextInt(3600) + 1));
+      final expiresAt = DateTime.now()
+          .toUtc()
+          .subtract(Duration(seconds: rng.nextInt(3600) + 1));
 
-      await create.upsertStreamUrlCache(db, videoId, url, {}, 128000, 'medium', expiresAt);
+      await create.upsertStreamUrlCache(
+          db, videoId, url, {}, 128000, 'medium', expiresAt);
       final result = await get.getStreamUrlCache(videoId);
 
       expect(result, isNull,
@@ -173,7 +175,8 @@ void main() {
 
   // ── P3: Stream URL cache trim ────────────────────────────────────────────
 
-  test('P3: stream URL cache trim — count ≤ 180 after reaching ≥ 200', () async {
+  test('P3: stream URL cache trim — count ≤ 180 after reaching ≥ 200',
+      () async {
     final rng = Random(44);
     final db = await _openTestDb();
     final create = SqliteCreateController();
@@ -182,8 +185,7 @@ void main() {
     // Insert 205 rows with varying expiry times so LRU ordering works
     for (var i = 0; i < 205; i++) {
       final videoId = 'vid_${i.toString().padLeft(4, '0')}';
-      final expiresAt =
-          DateTime.now().toUtc().add(Duration(minutes: i + 1));
+      final expiresAt = DateTime.now().toUtc().add(Duration(minutes: i + 1));
       await create.upsertStreamUrlCache(
           db, videoId, _randomUrl(rng), {}, 128000, 'medium', expiresAt);
     }
@@ -206,7 +208,8 @@ void main() {
 
   // ── P4: loadLibraryData returns only regular is_saved=1 playlists ────────
 
-  test('P4: loadLibraryData returns only regular is_saved=1 playlists', () async {
+  test('P4: loadLibraryData returns only regular is_saved=1 playlists',
+      () async {
     final rng = Random(45);
 
     for (var i = 0; i < iterations; i++) {
@@ -295,10 +298,11 @@ void main() {
       });
 
       // Attempt to overwrite with cache entry
-      await create.upsertPlaylistCache(db, browseId, 0xFF123456, 'https://img.example.com/cover.jpg');
+      await create.upsertPlaylistCache(
+          db, browseId, 0xFF123456, 'https://img.example.com/cover.jpg');
 
-      final rows = await db.query('playlist_info',
-          where: 'id = ?', whereArgs: [browseId]);
+      final rows = await db
+          .query('playlist_info', where: 'id = ?', whereArgs: [browseId]);
       expect(rows.length, equals(1));
       expect(rows.first['is_saved'], equals(1),
           reason: 'iteration $i: is_saved should remain 1');
@@ -311,7 +315,8 @@ void main() {
 
   // ── P6: loadLibraryData separates artists and albums from playlists ───────
 
-  test('P6: loadLibraryData separates artists and albums from regular playlists',
+  test(
+      'P6: loadLibraryData separates artists and albums from regular playlists',
       () async {
     final rng = Random(47);
 
@@ -326,26 +331,50 @@ void main() {
 
       for (var j = 0; j < playlistCount; j++) {
         await db.insert('playlist_info', {
-          'id': 'pl_${i}_$j', 'name': 'Playlist $j', 'description': '',
-          'sort_order': 'customOrder', 'created_at': now, 'updated_at': now,
-          'is_imported': 0, 'is_saved': 1, 'shuffle_enabled': 0,
-          'is_pinned': 0, 'is_artist': 0, 'is_album': 0,
+          'id': 'pl_${i}_$j',
+          'name': 'Playlist $j',
+          'description': '',
+          'sort_order': 'customOrder',
+          'created_at': now,
+          'updated_at': now,
+          'is_imported': 0,
+          'is_saved': 1,
+          'shuffle_enabled': 0,
+          'is_pinned': 0,
+          'is_artist': 0,
+          'is_album': 0,
         });
       }
       for (var j = 0; j < artistCount; j++) {
         await db.insert('playlist_info', {
-          'id': 'ar_${i}_$j', 'name': 'Artist $j', 'description': '',
-          'sort_order': 'customOrder', 'created_at': now, 'updated_at': now,
-          'is_imported': 0, 'is_saved': 1, 'shuffle_enabled': 0,
-          'is_pinned': 0, 'is_artist': 1, 'is_album': 0,
+          'id': 'ar_${i}_$j',
+          'name': 'Artist $j',
+          'description': '',
+          'sort_order': 'customOrder',
+          'created_at': now,
+          'updated_at': now,
+          'is_imported': 0,
+          'is_saved': 1,
+          'shuffle_enabled': 0,
+          'is_pinned': 0,
+          'is_artist': 1,
+          'is_album': 0,
         });
       }
       for (var j = 0; j < albumCount; j++) {
         await db.insert('playlist_info', {
-          'id': 'al_${i}_$j', 'name': 'Album $j', 'description': 'Artist Name',
-          'sort_order': 'customOrder', 'created_at': now, 'updated_at': now,
-          'is_imported': 0, 'is_saved': 1, 'shuffle_enabled': 0,
-          'is_pinned': 0, 'is_artist': 0, 'is_album': 1,
+          'id': 'al_${i}_$j',
+          'name': 'Album $j',
+          'description': 'Artist Name',
+          'sort_order': 'customOrder',
+          'created_at': now,
+          'updated_at': now,
+          'is_imported': 0,
+          'is_saved': 1,
+          'shuffle_enabled': 0,
+          'is_pinned': 0,
+          'is_artist': 0,
+          'is_album': 1,
         });
       }
 
@@ -376,24 +405,26 @@ void main() {
       final now = DateTime.now().toUtc().toIso8601String();
       final count = rng.nextInt(5) + 1;
 
-      final playlists = List.generate(count, (j) => {
-            'id': 'pl_${i}_$j',
-            'name': 'Playlist $j',
-            'description': '',
-            'sort_order': 'customOrder',
-            'songs': <Map>[],
-            'created_at': now,
-            'updated_at': now,
-            'is_imported': false,
-            'browse_id': null,
-            'palette_color': null,
-            'cover_url': null,
-            'total_track_count_remote': null,
-            'shuffle_enabled': false,
-            'is_pinned': false,
-            'is_artist': false,
-            'is_album': false,
-          });
+      final playlists = List.generate(
+          count,
+          (j) => {
+                'id': 'pl_${i}_$j',
+                'name': 'Playlist $j',
+                'description': '',
+                'sort_order': 'customOrder',
+                'songs': <Map>[],
+                'created_at': now,
+                'updated_at': now,
+                'is_imported': false,
+                'browse_id': null,
+                'palette_color': null,
+                'cover_url': null,
+                'total_track_count_remote': null,
+                'shuffle_enabled': false,
+                'is_pinned': false,
+                'is_artist': false,
+                'is_album': false,
+              });
 
       await db.transaction((txn) async {
         await create.upsertPlaylists(txn, playlists);
@@ -467,8 +498,8 @@ void main() {
       await delete.clearAllStreamUrlCache(db);
 
       // Verify: zero cache-only playlists
-      final cachePlaylists = await db.query('playlist_info',
-          where: 'is_saved = ?', whereArgs: [0]);
+      final cachePlaylists = await db
+          .query('playlist_info', where: 'is_saved = ?', whereArgs: [0]);
       expect(cachePlaylists, isEmpty,
           reason: 'iteration $i: no cache-only playlists should remain');
 
@@ -478,8 +509,8 @@ void main() {
           reason: 'iteration $i: no stream URL cache rows should remain');
 
       // Verify: library rows preserved
-      final libRows = await db.query('playlist_info',
-          where: 'is_saved = ?', whereArgs: [1]);
+      final libRows = await db
+          .query('playlist_info', where: 'is_saved = ?', whereArgs: [1]);
       expect(libRows.length, equals(libCount),
           reason: 'iteration $i: library rows should be preserved');
 

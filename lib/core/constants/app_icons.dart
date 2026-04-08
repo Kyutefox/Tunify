@@ -86,11 +86,12 @@ class AppIcons {
 
   /// Returns a love-theme gradient color deterministically derived from [id].
   /// Delegates to [AppColors.loveThemeColorFor]; provided as a convenience on [AppIcons].
-  static Color favouriteColorFor(String? id) =>
-      AppColors.loveThemeColorFor(id);
+  static Color favouriteColorFor(String? id) => AppColors.loveThemeColorFor(id);
 
-  static List<List<dynamic>> get moreVert => HugeIcons.strokeRoundedMoreVertical;
-  static List<List<dynamic>> get moreHoriz => HugeIcons.strokeRoundedMoreHorizontal;
+  static List<List<dynamic>> get moreVert =>
+      HugeIcons.strokeRoundedMoreVertical;
+  static List<List<dynamic>> get moreHoriz =>
+      HugeIcons.strokeRoundedMoreHorizontal;
 
   static List<List<dynamic>> get artist => HugeIcons.strokeRoundedMic01;
   static List<List<dynamic>> get album => HugeIcons.strokeRoundedAlbum01;
@@ -127,22 +128,26 @@ class AppIcons {
       HugeIcons.strokeRoundedSpeaker01;
   static List<List<dynamic>> get wifiFind =>
       HugeIcons.strokeRoundedWifiLocation;
-  static List<List<dynamic>> get volumeHigh => HugeIcons.strokeRoundedVolumeHigh;
+  static List<List<dynamic>> get volumeHigh =>
+      HugeIcons.strokeRoundedVolumeHigh;
   static List<List<dynamic>> get volumeLow => HugeIcons.strokeRoundedVolumeLow;
   static List<List<dynamic>> get volumeOff => HugeIcons.strokeRoundedVolumeOff;
   static List<List<dynamic>> get refresh => HugeIcons.strokeRoundedRefresh;
   static List<List<dynamic>> get settings => HugeIcons.strokeRoundedSettings01;
   static List<List<dynamic>> get radar => HugeIcons.strokeRoundedRadar01;
   static List<List<dynamic>> get share => HugeIcons.strokeRoundedShare01;
-  static List<List<dynamic>> get fileExport => HugeIcons.strokeRoundedFileExport;
+  static List<List<dynamic>> get fileExport =>
+      HugeIcons.strokeRoundedFileExport;
   static List<List<dynamic>> get podcast => HugeIcons.strokeRoundedPodcast;
   static List<List<dynamic>> get bookOpen => HugeIcons.strokeRoundedBookOpen01;
   static List<List<dynamic>> get bookmark => HugeIcons.strokeRoundedBookmark01;
-  static List<List<dynamic>> get bookmarkOutline => HugeIcons.strokeRoundedBookmark02;
+  static List<List<dynamic>> get bookmarkOutline =>
+      HugeIcons.strokeRoundedBookmark02;
 
   static List<List<dynamic>> get cloudOff =>
       HugeIcons.strokeRoundedWifiNoSignal;
-  static List<List<dynamic>> get brokenImage => HugeIcons.strokeRoundedImageNotFound01;
+  static List<List<dynamic>> get brokenImage =>
+      HugeIcons.strokeRoundedImageNotFound01;
   static List<List<dynamic>> get wifiOff => HugeIcons.strokeRoundedWifiOff01;
 
   static List<List<dynamic>> get psychology => HugeIcons.strokeRoundedBrain;
@@ -153,7 +158,8 @@ class AppIcons {
       HugeIcons.strokeRoundedFireworks;
   static List<List<dynamic>> get bolt => HugeIcons.strokeRoundedFire02;
   static List<List<dynamic>> get bedtime => HugeIcons.strokeRoundedMoon02;
-  static List<List<dynamic>> get playbackSpeed => HugeIcons.strokeRoundedTimer01;
+  static List<List<dynamic>> get playbackSpeed =>
+      HugeIcons.strokeRoundedTimer01;
   static List<List<dynamic>> get sun => HugeIcons.strokeRoundedSun01;
   static List<List<dynamic>> get moon => HugeIcons.strokeRoundedMoon01;
   static List<List<dynamic>> get github => HugeIcons.strokeRoundedGithub;
@@ -217,10 +223,13 @@ class FavouriteIcon extends StatelessWidget {
   final bool isLiked;
   final String? songId;
   final double size;
+
   /// Solid fill color when liked. Defaults to [AppColors.loveThemeColorFor] derived from [songId].
   final Color? fillColor;
+
   /// Gradient fill when liked; takes precedence over [fillColor] when non-null.
   final Gradient? gradient;
+
   /// Outline color when not liked. Defaults to `Color(0xFFB3B3B3)`.
   final Color? emptyColor;
 

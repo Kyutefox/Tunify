@@ -6,41 +6,46 @@ import 'app_colors.dart';
 // One-off sizes (17, 26, 30, 32) are NOT in the scale — use the nearest step.
 
 abstract final class AppFontSize {
-  static const double micro  = 10.0; // timestamps, badges
-  static const double xs     = 11.0; // nav labels, captions
-  static const double sm     = 12.0; // secondary captions, error text
-  static const double md     = 13.0; // list subtitles, labels
-  static const double base   = 14.0; // body text
-  static const double lg     = 15.0; // list tile titles, settings rows
-  static const double xl     = 16.0; // button labels, prominent body
-  static const double xxl    = 18.0; // screen titles, app bar
-  static const double h3     = 20.0; // section headings
-  static const double h2     = 22.0; // sheet headings
-  static const double h1     = 24.0; // page headings
+  static const double micro = 10.0; // timestamps, badges
+  static const double xs = 11.0; // nav labels, captions
+  static const double sm = 12.0; // secondary captions, error text
+  static const double md = 13.0; // list subtitles, labels
+  static const double base = 14.0; // body text
+  static const double lg = 15.0; // list tile titles, settings rows
+  static const double xl = 16.0; // button labels, prominent body
+  static const double xxl = 18.0; // screen titles, app bar
+  static const double h3 = 20.0; // section headings
+  static const double h2 = 22.0; // sheet headings
+  static const double h1 = 24.0; // page headings
   static const double display3 = 28.0; // collection titles
   static const double display2 = 36.0; // large display
   static const double display1 = 48.0; // hero display
-  static const double hero     = 56.0; // welcome screen
+  static const double hero = 56.0; // welcome screen
 }
 
 // ─── Letter spacing ───────────────────────────────────────────────────────────
 abstract final class AppLetterSpacing {
   /// Tight — large display text (≥ 24px)
   static const double display = -0.5;
+
   /// Snug — headings (18–22px)
   static const double heading = -0.3;
+
   /// Normal — body / titles (13–16px)
-  static const double normal  = 0.0;
+  static const double normal = 0.0;
+
   /// Wide — uppercase labels / caps
-  static const double label   = 1.2;
+  static const double label = 1.2;
 }
 
 // ─── Line height ──────────────────────────────────────────────────────────────
 abstract final class AppLineHeight {
   /// Tight — display / hero text
-  static const double tight   = 1.0;
+  static const double tight = 1.0;
+
   /// Default — most UI text
-  static const double normal  = 1.3;
+  static const double normal = 1.3;
+
   /// Relaxed — body / readable paragraphs
   static const double relaxed = 1.5;
 }
@@ -198,8 +203,8 @@ abstract final class AppSpacing {
 
 abstract final class AppRadius {
   static const double xs = 4.0;
-  static const double sm = 8.0;
   static const double input = 8.0;
+  static const double sm = input;
   static const double md = 12.0;
   static const double lg = 16.0;
   static const double xl = 20.0;
@@ -210,9 +215,11 @@ abstract final class AppRadius {
 abstract final class AppDuration {
   static const Duration instant = Duration(milliseconds: 100);
   static const Duration fast = Duration(milliseconds: 200);
+  static const Duration fastPlus = Duration(milliseconds: 220);
   static const Duration normal = Duration(milliseconds: 300);
   static const Duration medium = Duration(milliseconds: 400);
   static const Duration slow = Duration(milliseconds: 600);
+  static const Duration xslow = Duration(milliseconds: 1200);
   static const Duration page = Duration(milliseconds: 500);
 }
 
@@ -223,4 +230,58 @@ abstract final class AppCurves {
   static const Curve spring = Cubic(0.34, 1.56, 0.64, 1.0);
 
   static const Curve emphasized = Cubic(0.2, 0.0, 0.0, 1.0);
+}
+
+// ─── Shared UI token groups ───────────────────────────────────────────────────
+abstract final class UIOpacity {
+  static const double disabled = 0.50;
+  static const double muted = disabled;
+  static const double subtle = 0.08;
+  static const double faint = 0.12;
+  static const double medium = 0.28;
+  static const double strong = 0.45;
+  static const double emphasis = 0.60;
+  static const double high = 0.75;
+}
+
+abstract final class UIStroke {
+  static const double hairline = 0.5;
+  static const double thin = 1.0;
+  static const double base = 1.2;
+  static const double focus = 1.8;
+  static const double loader = 2.5;
+}
+
+abstract final class UISize {
+  static const double iconSm = 16.0;
+  static const double iconMd = 20.0;
+  static const double iconLg = 24.0;
+  static const double iconXl = 28.0;
+  static const double iconXxl = 36.0;
+  static const double iconHero = 56.0;
+  static const double loader = 22.0;
+
+  static const double buttonHeightSm = 40.0;
+  static const double buttonHeightMd = 44.0;
+  static const double buttonHeightLg = 52.0;
+  static const double listLeading = 48.0;
+  static const double tileLeading = listLeading;
+  static const double avatar = 52.0;
+  static const double appLogoMd = 80.0;
+  static const double appLogoLg = 96.0;
+
+  static const double cardRadius = 20.0;
+  static const double swatchSize = buttonHeightMd;
+  static const double mediaThumb = 50.0;
+  static const double thumbSize = mediaThumb;
+  static const double checkbox = 22.0;
+}
+
+abstract final class UIShadow {
+  static BoxShadow glow(Color color, {double alpha = UIOpacity.medium}) =>
+      BoxShadow(
+        color: color.withValues(alpha: alpha),
+        blurRadius: 20,
+        offset: const Offset(0, 8),
+      );
 }

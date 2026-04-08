@@ -38,7 +38,8 @@ class LibraryArtist {
         'thumbnailUrl': thumbnailUrl,
         'browseId': browseId,
         'followedAt': followedAt.toUtc().toIso8601String(),
-        if (cachedPaletteColor != null) 'cachedPaletteColor': cachedPaletteColor,
+        if (cachedPaletteColor != null)
+          'cachedPaletteColor': cachedPaletteColor,
         'isPinned': isPinned,
       };
 
@@ -47,7 +48,8 @@ class LibraryArtist {
     String? thumbnailUrl,
     int? cachedPaletteColor,
     bool? isPinned,
-  }) => LibraryArtist(
+  }) =>
+      LibraryArtist(
         id: id,
         name: name ?? this.name,
         thumbnailUrl: thumbnailUrl ?? this.thumbnailUrl,

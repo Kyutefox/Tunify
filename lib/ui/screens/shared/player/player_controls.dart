@@ -22,9 +22,7 @@ class PlayerControls extends ConsumerWidget {
   final Color dominantColor;
 
   List<List<dynamic>> _repeatIcon(PlayerRepeatMode mode) =>
-      mode == PlayerRepeatMode.one
-          ? AppIcons.repeatOne
-          : AppIcons.repeat;
+      mode == PlayerRepeatMode.one ? AppIcons.repeatOne : AppIcons.repeat;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -108,7 +106,8 @@ class _ShuffleControlIcon extends StatelessWidget {
     final targetColor = isActive ? AppColors.primary : _kIconInactive;
     return Semantics(
       button: true,
-      label: isSmart ? 'Smart Shuffle' : (isActive ? 'Shuffle on' : 'Shuffle off'),
+      label:
+          isSmart ? 'Smart Shuffle' : (isActive ? 'Shuffle on' : 'Shuffle off'),
       child: GestureDetector(
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
@@ -237,55 +236,57 @@ class _PlayerBigPlayButtonState extends State<PlayerBigPlayButton>
       button: true,
       label: widget.isPlaying ? 'Pause' : 'Play',
       child: GestureDetector(
-      onTapDown: (_) => _scale.reverse(),
-      onTapUp: (_) {
-        _scale.forward();
-        HapticFeedback.lightImpact();
-        widget.onTap();
-      },
-      onTapCancel: () => _scale.forward(),
-      child: ScaleTransition(
-        scale: _curvedScale,
-        child: Container(
-          width: 72,
-          height: 72,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: widget.dominantColor.withValues(alpha: PaletteTheme.playerArtGlowAlpha),
-                blurRadius: 28,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Center(
-            child: widget.isLoading
-                ? const SizedBox(
-                    width: 26,
-                    height: 26,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF121212)),
+        onTapDown: (_) => _scale.reverse(),
+        onTapUp: (_) {
+          _scale.forward();
+          HapticFeedback.lightImpact();
+          widget.onTap();
+        },
+        onTapCancel: () => _scale.forward(),
+        child: ScaleTransition(
+          scale: _curvedScale,
+          child: Container(
+            width: 72,
+            height: 72,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: widget.dominantColor
+                      .withValues(alpha: PaletteTheme.playerArtGlowAlpha),
+                  blurRadius: 28,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: Center(
+              child: widget.isLoading
+                  ? const SizedBox(
+                      width: 26,
+                      height: 26,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.5,
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Color(0xFF121212)),
+                      ),
+                    )
+                  : AnimatedSwitcher(
+                      duration: AppDuration.fast,
+                      transitionBuilder: (child, anim) =>
+                          ScaleTransition(scale: anim, child: child),
+                      child: AppIcon(
+                        key: ValueKey(widget.isPlaying),
+                        icon: widget.isPlaying ? AppIcons.pause : AppIcons.play,
+                        size: 38,
+                        color: const Color(0xFF121212),
+                      ),
                     ),
-                  )
-                : AnimatedSwitcher(
-                    duration: AppDuration.fast,
-                    transitionBuilder: (child, anim) =>
-                        ScaleTransition(scale: anim, child: child),
-                    child: AppIcon(
-                      key: ValueKey(widget.isPlaying),
-                      icon: widget.isPlaying ? AppIcons.pause : AppIcons.play,
-                      size: 38,
-                      color: const Color(0xFF121212),
-                    ),
-                  ),
+            ),
           ),
         ),
-      ),
       ), // GestureDetector
-    );   // Semantics
+    ); // Semantics
   }
 }
 

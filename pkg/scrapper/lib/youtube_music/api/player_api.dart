@@ -24,7 +24,8 @@ class PlayerApi {
   /// The returned map contains a `track` entry, a `metadata` map and any
   /// `playbackTracking` block from the raw response when available. On error
   /// an empty map is returned.
-  Future<Map<String, dynamic>> fetchPlayer(String videoId, {String? cpn}) async {
+  Future<Map<String, dynamic>> fetchPlayer(String videoId,
+      {String? cpn}) async {
     try {
       final payload = _client.basePayload();
       payload['videoId'] = videoId;
@@ -51,7 +52,8 @@ class PlayerApi {
         if (webData != null) {
           final webResult = PlayerFormatter.parsePlayerResponse(webData);
           if (webResult['metadata']?['loudnessDb'] != null) {
-            result['metadata']['loudnessDb'] = webResult['metadata']['loudnessDb'];
+            result['metadata']['loudnessDb'] =
+                webResult['metadata']['loudnessDb'];
           }
         }
       }
@@ -104,7 +106,8 @@ class PlayerApi {
       params['c'] = YtConstants.innertubeClientName;
       if (clientVersion != null) params['cver'] = clientVersion;
       final fullUrl = uri.replace(queryParameters: params);
-      await http.get(fullUrl, headers: _trackingHeaders(visitorData, sessionCookies));
+      await http.get(fullUrl,
+          headers: _trackingHeaders(visitorData, sessionCookies));
     } catch (_) {}
   }
 
@@ -130,7 +133,8 @@ class PlayerApi {
       params['c'] = YtConstants.innertubeClientName;
       if (clientVersion != null) params['cver'] = clientVersion;
       final fullUrl = uri.replace(queryParameters: params);
-      await http.get(fullUrl, headers: _trackingHeaders(visitorData, sessionCookies));
+      await http.get(fullUrl,
+          headers: _trackingHeaders(visitorData, sessionCookies));
     } catch (_) {}
   }
 
@@ -150,7 +154,8 @@ class PlayerApi {
       final params = Map<String, String>.from(uri.queryParameters);
       params['cpn'] = cpn;
       final fullUrl = uri.replace(queryParameters: params);
-      await http.get(fullUrl, headers: _trackingHeaders(visitorData, sessionCookies));
+      await http.get(fullUrl,
+          headers: _trackingHeaders(visitorData, sessionCookies));
     } catch (_) {}
   }
 

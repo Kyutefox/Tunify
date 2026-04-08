@@ -17,7 +17,9 @@ sealed class Result<T, E> {
       };
 
   /// Pattern-matches on the result, calling [ok] for success or [err] for failure.
-  R when<R>({required R Function(T value) ok, required R Function(E error) err}) =>
+  R when<R>(
+          {required R Function(T value) ok,
+          required R Function(E error) err}) =>
       switch (this) {
         Ok(:final value) => ok(value),
         Err(:final error) => err(error),

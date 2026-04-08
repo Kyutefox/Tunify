@@ -33,26 +33,43 @@ void main() {
   group('LibraryPlaylist', () {
     group('sortedSongs', () {
       test('customOrder returns original insertion order', () {
-        final songs = [_song('1', 'Zebra'), _song('2', 'Apple'), _song('3', 'Mango')];
-        final p = _playlist(songs: songs, sortOrder: PlaylistTrackSortOrder.customOrder);
+        final songs = [
+          _song('1', 'Zebra'),
+          _song('2', 'Apple'),
+          _song('3', 'Mango')
+        ];
+        final p = _playlist(
+            songs: songs, sortOrder: PlaylistTrackSortOrder.customOrder);
         expect(p.sortedSongs.map((s) => s.id).toList(), ['1', '2', '3']);
       });
 
       test('title sorts alphabetically case-insensitively', () {
-        final songs = [_song('1', 'Zebra'), _song('2', 'apple'), _song('3', 'Mango')];
-        final p = _playlist(songs: songs, sortOrder: PlaylistTrackSortOrder.title);
-        expect(p.sortedSongs.map((s) => s.title).toList(), ['apple', 'Mango', 'Zebra']);
+        final songs = [
+          _song('1', 'Zebra'),
+          _song('2', 'apple'),
+          _song('3', 'Mango')
+        ];
+        final p =
+            _playlist(songs: songs, sortOrder: PlaylistTrackSortOrder.title);
+        expect(p.sortedSongs.map((s) => s.title).toList(),
+            ['apple', 'Mango', 'Zebra']);
       });
 
       test('recentlyAdded reverses insertion order', () {
-        final songs = [_song('1', 'First'), _song('2', 'Second'), _song('3', 'Third')];
-        final p = _playlist(songs: songs, sortOrder: PlaylistTrackSortOrder.recentlyAdded);
+        final songs = [
+          _song('1', 'First'),
+          _song('2', 'Second'),
+          _song('3', 'Third')
+        ];
+        final p = _playlist(
+            songs: songs, sortOrder: PlaylistTrackSortOrder.recentlyAdded);
         expect(p.sortedSongs.map((s) => s.id).toList(), ['3', '2', '1']);
       });
 
       test('sortedSongs does not mutate original songs list', () {
         final songs = [_song('1', 'Zebra'), _song('2', 'Apple')];
-        final p = _playlist(songs: songs, sortOrder: PlaylistTrackSortOrder.title);
+        final p =
+            _playlist(songs: songs, sortOrder: PlaylistTrackSortOrder.title);
         final sorted = p.sortedSongs;
         sorted.clear();
         expect(p.songs.length, 2);
@@ -123,23 +140,33 @@ void main() {
     group('equality', () {
       test('equal when id, songs.length, updatedAt, and sortOrder match', () {
         final now = DateTime(2024);
-        final p1 = LibraryPlaylist(id: 'x', name: 'A', createdAt: now, updatedAt: now);
-        final p2 = LibraryPlaylist(id: 'x', name: 'B', createdAt: now, updatedAt: now);
+        final p1 =
+            LibraryPlaylist(id: 'x', name: 'A', createdAt: now, updatedAt: now);
+        final p2 =
+            LibraryPlaylist(id: 'x', name: 'B', createdAt: now, updatedAt: now);
         expect(p1, equals(p2));
       });
 
       test('not equal when id differs', () {
         final now = DateTime(2024);
-        final p1 = LibraryPlaylist(id: 'x', name: 'A', createdAt: now, updatedAt: now);
-        final p2 = LibraryPlaylist(id: 'y', name: 'A', createdAt: now, updatedAt: now);
+        final p1 =
+            LibraryPlaylist(id: 'x', name: 'A', createdAt: now, updatedAt: now);
+        final p2 =
+            LibraryPlaylist(id: 'y', name: 'A', createdAt: now, updatedAt: now);
         expect(p1, isNot(equals(p2)));
       });
 
       test('not equal when updatedAt differs', () {
         final p1 = LibraryPlaylist(
-            id: 'x', name: 'A', createdAt: DateTime(2024), updatedAt: DateTime(2024, 1, 1));
+            id: 'x',
+            name: 'A',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024, 1, 1));
         final p2 = LibraryPlaylist(
-            id: 'x', name: 'A', createdAt: DateTime(2024), updatedAt: DateTime(2024, 1, 2));
+            id: 'x',
+            name: 'A',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024, 1, 2));
         expect(p1, isNot(equals(p2)));
       });
     });
@@ -157,11 +184,13 @@ void main() {
 
   group('PlaylistTrackSortOrder serialization', () {
     test('fromString returns customOrder for unknown value', () {
-      expect(PlaylistTrackSortOrderX.fromString('unknown'), PlaylistTrackSortOrder.customOrder);
+      expect(PlaylistTrackSortOrderX.fromString('unknown'),
+          PlaylistTrackSortOrder.customOrder);
     });
 
     test('fromString returns customOrder for null', () {
-      expect(PlaylistTrackSortOrderX.fromString(null), PlaylistTrackSortOrder.customOrder);
+      expect(PlaylistTrackSortOrderX.fromString(null),
+          PlaylistTrackSortOrder.customOrder);
     });
 
     test('value round-trips through fromString', () {

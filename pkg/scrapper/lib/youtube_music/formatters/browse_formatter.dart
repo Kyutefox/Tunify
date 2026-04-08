@@ -16,8 +16,9 @@ class BrowseFormatter {
         (watch?['videoId'] as String?) ?? (playlistData?['videoId'] as String?);
     if (videoId == null || videoId.isEmpty) {
       final overlayWatch = item['overlay']?['musicItemThumbnailOverlayRenderer']
-              ?['content']?['musicPlayButtonRenderer']?['playNavigationEndpoint']
-          ?['watchEndpoint'] as Map<String, dynamic>?;
+                  ?['content']?['musicPlayButtonRenderer']
+              ?['playNavigationEndpoint']?['watchEndpoint']
+          as Map<String, dynamic>?;
       videoId = overlayWatch?['videoId'] as String?;
     }
     if (videoId == null || videoId.isEmpty) return null;
@@ -120,30 +121,35 @@ class BrowseFormatter {
     final nav = item['navigationEndpoint'] as Map<String, dynamic>?;
     final navWatch = nav?['watchEndpoint'] as Map<String, dynamic>?;
     String? videoId = navWatch?['videoId'] as String?;
-    
+
     // If no videoId in nav, try overlay play button
     if (videoId == null || videoId.isEmpty) {
-      final overlay = item['overlay']?['musicItemThumbnailOverlayRenderer']?['content']?['musicPlayButtonRenderer']?['playNavigationEndpoint']?['watchEndpoint'] as Map<String, dynamic>?;
+      final overlay = item['overlay']?['musicItemThumbnailOverlayRenderer']
+                  ?['content']?['musicPlayButtonRenderer']
+              ?['playNavigationEndpoint']?['watchEndpoint']
+          as Map<String, dynamic>?;
       videoId = overlay?['videoId'] as String?;
     }
-    
+
     if (videoId == null || videoId.isEmpty) return null;
 
     // Title is directly in the 'title' field (runs format)
     final title = p.extractRunsText(item['title']) ?? 'Unknown title';
-    
+
     // Subtitle contains date info (e.g., "1d ago", "Mar 21")
     final subtitle = p.extractRunsText(item['subtitle']) ?? '';
-    
+
     // Description
     final description = p.extractRunsText(item['description']);
-    
+
     // Thumbnail
     final thumb = item['thumbnail'] as Map<String, dynamic>?;
-    final thumbnail = p.extractThumbnailUrl(thumb) ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
+    final thumbnail = p.extractThumbnailUrl(thumb) ??
+        'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
 
     // Get duration from playbackProgress
-    final playbackProgress = item['playbackProgress']?['musicPlaybackProgressRenderer'];
+    final playbackProgress =
+        item['playbackProgress']?['musicPlaybackProgressRenderer'];
     final durationText = p.extractRunsText(playbackProgress?['durationText']);
     final duration = _parseDurationText(durationText);
 
@@ -162,17 +168,19 @@ class BrowseFormatter {
 
   /// Parse duration from text like "1 hr 44 min" or "45 min" or "30 sec"
   static Duration _parseDurationText(String? text) {
-    if (text == null || text.isEmpty) return ParserConstants.defaultTrackDuration;
-    
+    if (text == null || text.isEmpty) {
+      return ParserConstants.defaultTrackDuration;
+    }
+
     int hours = 0;
     int minutes = 0;
     int seconds = 0;
-    
+
     // Match patterns like "1 hr 44 min", "45 min", "30 sec"
     final hrMatch = RegExp(r'(\d+)\s*hr').firstMatch(text);
     final minMatch = RegExp(r'(\d+)\s*min').firstMatch(text);
     final secMatch = RegExp(r'(\d+)\s*sec').firstMatch(text);
-    
+
     if (hrMatch != null) {
       hours = int.parse(hrMatch.group(1)!);
     }
@@ -182,11 +190,11 @@ class BrowseFormatter {
     if (secMatch != null) {
       seconds = int.parse(secMatch.group(1)!);
     }
-    
+
     if (hours > 0 || minutes > 0 || seconds > 0) {
       return Duration(hours: hours, minutes: minutes, seconds: seconds);
     }
-    
+
     return ParserConstants.defaultTrackDuration;
   }
 
@@ -255,14 +263,14 @@ class BrowseFormatter {
       if (singleColumn != null) {
         walk(singleColumn);
       }
-      
+
       // Try twoColumnBrowseResultsRenderer for podcast/show pages
       final twoColumn = contents['twoColumnBrowseResultsRenderer'];
       if (twoColumn != null) {
         walk(twoColumn);
       }
     }
-    
+
     // Handle continuation contents (e.g. musicPlaylistShelfContinuation)
     final continuationContents = browseData['continuationContents'];
     if (continuationContents is Map<String, dynamic>) {
@@ -271,10 +279,12 @@ class BrowseFormatter {
 
     // Handle onResponseReceivedActions (used by playlist/track-list continuations)
     final onResponseReceivedActions = browseData['onResponseReceivedActions'];
-    if (onResponseReceivedActions is List && onResponseReceivedActions.isNotEmpty) {
+    if (onResponseReceivedActions is List &&
+        onResponseReceivedActions.isNotEmpty) {
       final action = onResponseReceivedActions[0];
       if (action is Map<String, dynamic>) {
-        final items = action['appendContinuationItemsAction']?['continuationItems'];
+        final items =
+            action['appendContinuationItemsAction']?['continuationItems'];
         if (items is List) {
           for (final item in items) {
             walk(item);
@@ -288,13 +298,14 @@ class BrowseFormatter {
     if (tracks.isEmpty) {
       walk(browseData);
     }
-    
+
     return tracks;
   }
 
   /// Extracts the continuation token from a browse response for playlists/albums.
   /// Returns null if no continuation is available.
-  static String? extractBrowseContinuationToken(Map<String, dynamic> browseData) {
+  static String? extractBrowseContinuationToken(
+      Map<String, dynamic> browseData) {
     try {
       final contents = browseData['contents'];
       if (contents is Map<String, dynamic>) {
@@ -315,8 +326,10 @@ class BrowseFormatter {
         if (twoColumn != null) {
           // Secondary contents holds the track list for playlists/artists
           final secondaryContents = twoColumn['secondaryContents'];
-          final secondarySectionList = secondaryContents?['sectionListRenderer'];
-          final secondaryToken = _extractTokenFromSectionList(secondarySectionList);
+          final secondarySectionList =
+              secondaryContents?['sectionListRenderer'];
+          final secondaryToken =
+              _extractTokenFromSectionList(secondarySectionList);
           if (secondaryToken != null) return secondaryToken;
 
           // Primary contents fallback
@@ -329,10 +342,12 @@ class BrowseFormatter {
 
       // Continuation responses — token is in onResponseReceivedActions
       final onResponseReceivedActions = browseData['onResponseReceivedActions'];
-      if (onResponseReceivedActions is List && onResponseReceivedActions.isNotEmpty) {
+      if (onResponseReceivedActions is List &&
+          onResponseReceivedActions.isNotEmpty) {
         final action = onResponseReceivedActions[0];
         if (action is Map<String, dynamic>) {
-          final items = action['appendContinuationItemsAction']?['continuationItems'];
+          final items =
+              action['appendContinuationItemsAction']?['continuationItems'];
           if (items is List) {
             final token = _extractTokenFromContinuationItems(items);
             if (token != null) return token;
@@ -343,13 +358,18 @@ class BrowseFormatter {
       // Continuation responses — sectionListContinuation / musicPlaylistShelfContinuation
       final continuationContents = browseData['continuationContents'];
       if (continuationContents is Map<String, dynamic>) {
-        for (final key in ['sectionListContinuation', 'musicPlaylistShelfContinuation', 'musicShelfContinuation']) {
+        for (final key in [
+          'sectionListContinuation',
+          'musicPlaylistShelfContinuation',
+          'musicShelfContinuation'
+        ]) {
           final shelf = continuationContents[key];
           if (shelf is Map<String, dynamic>) {
             // Check shelf-level continuations list
             final continuations = shelf['continuations'] as List?;
             if (continuations != null && continuations.isNotEmpty) {
-              final token = continuations[0]?['nextContinuationData']?['continuation'] as String?;
+              final token = continuations[0]?['nextContinuationData']
+                  ?['continuation'] as String?;
               if (token != null) return token;
             }
             // Check continuationItemRenderer inside contents
@@ -371,7 +391,8 @@ class BrowseFormatter {
       if (item is Map<String, dynamic>) {
         final renderer = item['continuationItemRenderer'];
         if (renderer is Map<String, dynamic>) {
-          final token = renderer['continuationEndpoint']?['continuationCommand']?['token'] as String?;
+          final token = renderer['continuationEndpoint']?['continuationCommand']
+              ?['token'] as String?;
           if (token != null) return token;
         }
       }
@@ -404,7 +425,8 @@ class BrowseFormatter {
           // 2. shelf-level continuations field
           final continuations = shelf['continuations'] as List?;
           if (continuations != null && continuations.isNotEmpty) {
-            final token = continuations[0]?['nextContinuationData']?['continuation'] as String?;
+            final token = continuations[0]?['nextContinuationData']
+                ?['continuation'] as String?;
             if (token != null) return token;
           }
         }
@@ -414,7 +436,8 @@ class BrowseFormatter {
     // 3. Top-level continuations on sectionListRenderer itself
     final topContinuations = sectionList['continuations'] as List?;
     if (topContinuations != null && topContinuations.isNotEmpty) {
-      final token = topContinuations[0]?['nextContinuationData']?['continuation'] as String?;
+      final token = topContinuations[0]?['nextContinuationData']
+          ?['continuation'] as String?;
       if (token != null) return token;
     }
 
@@ -1119,11 +1142,10 @@ class BrowseFormatter {
 
     // Hero cover: immersive header thumb (largest run, e.g. w1000-h416). Do not run
     // [upgradeThumbResolution] — it forces =w544-h544 and replaces the official crop.
-    String? channelThumb =
-        p.extractThumbnailUrl(immersive['thumbnail']);
+    String? channelThumb = p.extractThumbnailUrl(immersive['thumbnail']);
     if (channelThumb == null || channelThumb.isEmpty) {
-      final microThumbNode = browseData['microformat']
-          ?['microformatDataRenderer']?['thumbnail'];
+      final microThumbNode =
+          browseData['microformat']?['microformatDataRenderer']?['thumbnail'];
       channelThumb = p.extractThumbnailUrl(microThumbNode);
       if (channelThumb != null && channelThumb.isNotEmpty) {
         channelThumb = p.upgradeThumbResolution(channelThumb, '');
@@ -1145,8 +1167,9 @@ class BrowseFormatter {
       channelTitle: (channelTitle != null && channelTitle.isNotEmpty)
           ? channelTitle
           : null,
-      channelThumbnailUrl:
-          (channelThumb != null && channelThumb.isNotEmpty) ? channelThumb : null,
+      channelThumbnailUrl: (channelThumb != null && channelThumb.isNotEmpty)
+          ? channelThumb
+          : null,
     );
   }
 

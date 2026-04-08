@@ -137,7 +137,7 @@ class PrimaryDatabase {
         expires_at TEXT NOT NULL
       )
     ''');
-    
+
     // Podcast tables
     await db.execute('''
       CREATE TABLE IF NOT EXISTS podcast_subscriptions (
@@ -183,10 +183,9 @@ class PrimaryDatabase {
         sort_order_sequence INTEGER NOT NULL DEFAULT 0
       )
     ''');
-    
+
     await _createController.runOnCreate(db);
   }
-
 
   /// Loads full library (playlists, folders, settings).
   Future<Map<String, dynamic>> loadLibraryData() async =>
@@ -203,7 +202,8 @@ class PrimaryDatabase {
     // Convert artist/album entries to playlist_info row maps.
     final artistRows = artistsRaw.map((a) {
       final m = Map<String, dynamic>.from(a as Map);
-      final now = m['followedAt'] as String? ?? DateTime.now().toUtc().toIso8601String();
+      final now = m['followedAt'] as String? ??
+          DateTime.now().toUtc().toIso8601String();
       return <String, dynamic>{
         'id': m['id'],
         'name': m['name'] ?? '',
@@ -227,7 +227,8 @@ class PrimaryDatabase {
 
     final albumRows = albumsRaw.map((a) {
       final m = Map<String, dynamic>.from(a as Map);
-      final now = m['followedAt'] as String? ?? DateTime.now().toUtc().toIso8601String();
+      final now = m['followedAt'] as String? ??
+          DateTime.now().toUtc().toIso8601String();
       return <String, dynamic>{
         'id': m['id'],
         'name': m['title'] ?? '',
@@ -252,8 +253,7 @@ class PrimaryDatabase {
     final allRows = [...playlists, ...artistRows, ...albumRows];
 
     await db.transaction((txn) async {
-      final currentIds =
-          allRows.map((p) => (p as Map)['id'] as String).toSet();
+      final currentIds = allRows.map((p) => (p as Map)['id'] as String).toSet();
       final currentFolderIds =
           folders.map((f) => (f as Map)['id'] as String).toSet();
 
@@ -269,11 +269,12 @@ class PrimaryDatabase {
           txn, 'sort_order', data['sortOrder']?.toString() ?? 'recent');
       await _createController.setSettingInTransaction(
           txn, 'view_mode', data['viewMode']?.toString() ?? 'list');
-      await _createController.setSettingInTransaction(txn,
-          'downloaded_shuffle', (data['downloadedShuffleMode'] as int? ?? 0).toString());
-      await _createController.setSettingInTransaction(txn,
-          'downloads_sort_order', data['downloadsSortOrder']?.toString() ?? 'customOrder');
-
+      await _createController.setSettingInTransaction(txn, 'downloaded_shuffle',
+          (data['downloadedShuffleMode'] as int? ?? 0).toString());
+      await _createController.setSettingInTransaction(
+          txn,
+          'downloads_sort_order',
+          data['downloadsSortOrder']?.toString() ?? 'customOrder');
     });
   }
 
@@ -339,7 +340,8 @@ class PrimaryDatabase {
   /// Adds a playlist to a folder's junction table.
   Future<void> addPlaylistToFolder(String folderId, String playlistId) async {
     final db = await _getDb();
-    await _createController.insertSingleFolderPlaylist(db, folderId, playlistId);
+    await _createController.insertSingleFolderPlaylist(
+        db, folderId, playlistId);
   }
 
   /// Removes a playlist from a folder's junction table.
@@ -394,7 +396,8 @@ class PrimaryDatabase {
 
   Future<void> saveRecentSearches(List<String> queries) async {
     final db = await _getDb();
-    await _createController.replaceRecentSearches(db, queries.take(20).toList());
+    await _createController.replaceRecentSearches(
+        db, queries.take(20).toList());
   }
 
   Future<List<String>> loadDownloadedSongIds() async =>
@@ -415,13 +418,15 @@ class PrimaryDatabase {
 
   Future<void> saveYtPersonalization(Map<String, dynamic> data) async {
     if (data.containsKey('visitor_data')) {
-      await setSetting('yt_visitor_data', data['visitor_data']?.toString() ?? '');
+      await setSetting(
+          'yt_visitor_data', data['visitor_data']?.toString() ?? '');
     }
     if (data.containsKey('api_key')) {
       await setSetting('yt_api_key', data['api_key']?.toString() ?? '');
     }
     if (data.containsKey('client_version')) {
-      await setSetting('yt_client_version', data['client_version']?.toString() ?? '');
+      await setSetting(
+          'yt_client_version', data['client_version']?.toString() ?? '');
     }
   }
 
@@ -475,7 +480,8 @@ class PrimaryDatabase {
   Future<void> upsertPlaylistCache(
       String browseId, int? paletteColor, String? imageUrl) async {
     final db = await _getDb();
-    await _createController.upsertPlaylistCache(db, browseId, paletteColor, imageUrl);
+    await _createController.upsertPlaylistCache(
+        db, browseId, paletteColor, imageUrl);
   }
 
   Future<int?> getPlaylistPaletteColor(String browseId) async =>
@@ -526,14 +532,16 @@ class PrimaryDatabase {
 
   Future<List<Map<String, dynamic>>> loadEpisodesForLater() async {
     final db = await _getDb();
-    return db.query('episodes_for_later', orderBy: 'sort_order_sequence ASC, saved_at DESC');
+    return db.query('episodes_for_later',
+        orderBy: 'sort_order_sequence ASC, saved_at DESC');
   }
 
   Future<void> upsertEpisodeForLater(Map<String, dynamic> data) async {
     final db = await _getDb();
     // If no sort_order_sequence provided, use the current max + 1
     if (!data.containsKey('sort_order_sequence')) {
-      final result = await db.rawQuery('SELECT MAX(sort_order_sequence) as max_seq FROM episodes_for_later');
+      final result = await db.rawQuery(
+          'SELECT MAX(sort_order_sequence) as max_seq FROM episodes_for_later');
       final maxSeq = result.firstOrNull?['max_seq'] as int? ?? -1;
       data['sort_order_sequence'] = maxSeq + 1;
     }
@@ -592,5 +600,4 @@ class PrimaryDatabase {
         where: 'content_id = ? AND content_type = ?',
         whereArgs: [contentId, contentType]);
   }
-
 }

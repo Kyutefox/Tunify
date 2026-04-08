@@ -65,5 +65,4 @@ class LibraryFolder {
       isPinned: json['isPinned'] as bool? ?? false,
     );
   }
-
 }

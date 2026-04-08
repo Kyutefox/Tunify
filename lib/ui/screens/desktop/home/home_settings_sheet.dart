@@ -206,14 +206,14 @@ class _ThemeToggleCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
               color: AppColorsScheme.of(context).surfaceHighlight,
-              width: 1,
+              width: UIStroke.thin,
             ),
           ),
           child: Row(
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: UISize.iconHero,
+                height: UISize.iconHero,
                 decoration: BoxDecoration(
                   color: AppColors.accentCyan.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -222,7 +222,7 @@ class _ThemeToggleCard extends StatelessWidget {
                   child: AppIcon(
                     icon: isLight ? AppIcons.sun : AppIcons.moon,
                     color: AppColors.accentCyan,
-                    size: 26,
+                    size: UISize.iconXl,
                   ),
                 ),
               ),
@@ -239,7 +239,7 @@ class _ThemeToggleCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xs / 2),
                     Text(
                       isLight ? 'Light theme' : 'Dark theme',
                       style: TextStyle(
@@ -256,7 +256,8 @@ class _ThemeToggleCard extends StatelessWidget {
                 activeThumbColor: AppColors.primary,
                 activeTrackColor: AppColors.primary.withValues(alpha: 0.4),
                 inactiveThumbColor: AppColorsScheme.of(context).textMuted,
-                inactiveTrackColor: AppColorsScheme.of(context).surfaceHighlight,
+                inactiveTrackColor:
+                    AppColorsScheme.of(context).surfaceHighlight,
               ),
             ],
           ),
@@ -297,20 +298,21 @@ class _SettingsCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
               color: AppColorsScheme.of(context).surfaceHighlight,
-              width: 1,
+              width: UIStroke.thin,
             ),
           ),
           child: Row(
             children: [
               Container(
-                width: 56,
-                height: 56,
+                width: UISize.iconHero,
+                height: UISize.iconHero,
                 decoration: BoxDecoration(
                   color: iconBgColor,
                   borderRadius: BorderRadius.circular(AppRadius.sm),
                 ),
                 child: Center(
-                  child: AppIcon(icon: icon, color: iconColor, size: 26),
+                  child: AppIcon(
+                      icon: icon, color: iconColor, size: UISize.iconXl),
                 ),
               ),
               const SizedBox(width: AppSpacing.base),
@@ -326,7 +328,7 @@ class _SettingsCard extends StatelessWidget {
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xs / 2),
                     Text(
                       subtitle,
                       style: TextStyle(
@@ -340,7 +342,7 @@ class _SettingsCard extends StatelessWidget {
               AppIcon(
                   icon: AppIcons.chevronRight,
                   color: AppColorsScheme.of(context).textMuted,
-                  size: 22),
+                  size: AppFontSize.h2),
             ],
           ),
         ),
@@ -384,7 +386,8 @@ class _CrossfadeTile extends StatelessWidget {
                     Text(
                       value == 0 ? 'Off' : '$value seconds',
                       style: TextStyle(
-                          color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
+                          color: AppColorsScheme.of(context).textMuted,
+                          fontSize: AppFontSize.sm),
                     ),
                   ],
                 ),
@@ -397,9 +400,11 @@ class _CrossfadeTile extends StatelessWidget {
               inactiveTrackColor: AppColorsScheme.of(context).surfaceLight,
               thumbColor: AppColors.primary,
               overlayColor: AppColors.primary.withValues(alpha: 0.12),
-              trackHeight: 3,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+              trackHeight: UIStroke.base + UIStroke.base + UIStroke.hairline,
+              thumbShape: const RoundSliderThumbShape(
+                  enabledThumbRadius: AppSpacing.sm - UIStroke.thin),
+              overlayShape:
+                  const RoundSliderOverlayShape(overlayRadius: AppSpacing.base),
             ),
             child: Slider(
               value: value.toDouble(),
@@ -440,7 +445,7 @@ class _BassBoostTile extends StatelessWidget {
               AppIcon(
                   icon: AppIcons.equalizer,
                   color: AppColorsScheme.of(context).textSecondary,
-                  size: 22),
+                  size: AppFontSize.h2),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -457,7 +462,8 @@ class _BassBoostTile extends StatelessWidget {
                     Text(
                       _label,
                       style: TextStyle(
-                          color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
+                          color: AppColorsScheme.of(context).textMuted,
+                          fontSize: AppFontSize.sm),
                     ),
                   ],
                 ),
@@ -470,9 +476,11 @@ class _BassBoostTile extends StatelessWidget {
               inactiveTrackColor: AppColorsScheme.of(context).surfaceLight,
               thumbColor: AppColors.primary,
               overlayColor: AppColors.primary.withValues(alpha: 0.12),
-              trackHeight: 3,
-              thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 7),
-              overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
+              trackHeight: UIStroke.base + UIStroke.base + UIStroke.hairline,
+              thumbShape: const RoundSliderThumbShape(
+                  enabledThumbRadius: AppSpacing.sm - UIStroke.thin),
+              overlayShape:
+                  const RoundSliderOverlayShape(overlayRadius: AppSpacing.base),
             ),
             child: Slider(
               value: value,
@@ -578,7 +586,10 @@ class _DataTile extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
           child: Row(
             children: [
-              AppIcon(icon: icon, color: AppColorsScheme.of(context).textSecondary, size: 22),
+              AppIcon(
+                  icon: icon,
+                  color: AppColorsScheme.of(context).textSecondary,
+                  size: AppFontSize.h2),
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: Column(
@@ -595,7 +606,8 @@ class _DataTile extends StatelessWidget {
                     Text(
                       subtitle,
                       style: TextStyle(
-                          color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
+                          color: AppColorsScheme.of(context).textMuted,
+                          fontSize: AppFontSize.sm),
                     ),
                   ],
                 ),
@@ -732,9 +744,12 @@ class PlaybackSettingsBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final normEnabled = ref.watch(playerProvider.select((s) => s.isNormalizationEnabled));
-    final isGaplessEnabled = ref.watch(playerProvider.select((s) => s.isGaplessEnabled));
-    final crossfadeDuration = ref.watch(playerProvider.select((s) => s.crossfadeDurationSeconds));
+    final normEnabled =
+        ref.watch(playerProvider.select((s) => s.isNormalizationEnabled));
+    final isGaplessEnabled =
+        ref.watch(playerProvider.select((s) => s.isGaplessEnabled));
+    final crossfadeDuration =
+        ref.watch(playerProvider.select((s) => s.crossfadeDurationSeconds));
     final bassBoost = ref.watch(playerProvider.select((s) => s.bassBoostLevel));
     final showExplicit = ref.watch(showExplicitContentProvider);
 
@@ -773,8 +788,7 @@ class PlaybackSettingsBody extends ConsumerWidget {
         ),
         _BassBoostTile(
           value: bassBoost,
-          onChanged: (v) =>
-              ref.read(playerProvider.notifier).setBassBoost(v),
+          onChanged: (v) => ref.read(playerProvider.notifier).setBassBoost(v),
         ),
       ],
     );
@@ -813,7 +827,10 @@ class _PlaybackToggleTile extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.md),
       child: Row(
         children: [
-          AppIcon(icon: icon, color: AppColorsScheme.of(context).textSecondary, size: 22),
+          AppIcon(
+              icon: icon,
+              color: AppColorsScheme.of(context).textSecondary,
+              size: AppFontSize.h2),
           const SizedBox(width: AppSpacing.md),
           Expanded(
             child: Column(
@@ -830,7 +847,8 @@ class _PlaybackToggleTile extends StatelessWidget {
                 Text(
                   subtitle,
                   style: TextStyle(
-                      color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
+                      color: AppColorsScheme.of(context).textMuted,
+                      fontSize: AppFontSize.sm),
                 ),
               ],
             ),

@@ -9,8 +9,13 @@ import 'package:tunify/features/player/lyrics_provider.dart';
 import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/screens/desktop/player/player_screen.dart'
-    show showQueueSheet, showLyricsSheet, showDevicesSheet, showSleepTimerSheet,
-        showPlaybackSpeedSheet, SpeedExtraButton;
+    show
+        showQueueSheet,
+        showLyricsSheet,
+        showDevicesSheet,
+        showSleepTimerSheet,
+        showPlaybackSpeedSheet,
+        SpeedExtraButton;
 import 'package:tunify/ui/screens/shared/player/song_options_sheet.dart'
     show showSongOptionsSheet;
 import 'package:tunify/ui/theme/app_colors.dart';
@@ -77,8 +82,8 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
       return const Scaffold(
         backgroundColor: Color(0xFF121212),
         body: Center(
-          child: Text('Nothing playing',
-              style: TextStyle(color: Colors.white54)),
+          child:
+              Text('Nothing playing', style: TextStyle(color: Colors.white54)),
         ),
       );
     }
@@ -181,9 +186,9 @@ class _MobilePlayerScreenState extends ConsumerState<MobilePlayerScreen>
               ),
             ],
           ),
-        ),      // Scaffold
-      ),        // GestureDetector
-    );          // AnimatedBuilder
+        ), // Scaffold
+      ), // GestureDetector
+    ); // AnimatedBuilder
   }
 
   Widget _buildTopBar() {

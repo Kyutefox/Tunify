@@ -4,7 +4,6 @@ import 'package:scrapper/youtube_music/formatters/next_formatter.dart';
 
 /// Wrapper around the YouTube Music `next` endpoint for queue/Up-Next data.
 class NextApi {
-
   final YTMusicClient _client;
 
   /// Creates a new [NextApi] bound to the given [client].
@@ -57,7 +56,9 @@ class NextApi {
           automixPayload['playlistId'] = automixPlaylistId;
           final automixVideoId = automixEndpoint['videoId'] as String?;
           final automixParams = automixEndpoint['params'] as String?;
-          if (automixVideoId != null) automixPayload['videoId'] = automixVideoId;
+          if (automixVideoId != null) {
+            automixPayload['videoId'] = automixVideoId;
+          }
           if (automixParams != null) automixPayload['params'] = automixParams;
 
           final automixData = await _client.post('next', automixPayload);
@@ -72,7 +73,9 @@ class NextApi {
       int continuationRounds = 0;
       const maxContinuationRounds = 5;
 
-      while (panel != null && list.length < maxResults && continuationRounds < maxContinuationRounds) {
+      while (panel != null &&
+          list.length < maxResults &&
+          continuationRounds < maxContinuationRounds) {
         continuationRounds++;
         final token = NextFormatter.getContinuationToken(panel);
         if (token == null || token.isEmpty) break;
@@ -112,8 +115,9 @@ class NextApi {
         payload['playlistId'] = playlistId;
       }
       final data = await _client.post('next', payload);
-      final tabs = data['contents']?['singleColumnMusicWatchNextResultsRenderer']
-          ?['tabbedRenderer']?['watchNextTabbedResultsRenderer']?['tabs'];
+      final tabs = data['contents']
+              ?['singleColumnMusicWatchNextResultsRenderer']?['tabbedRenderer']
+          ?['watchNextTabbedResultsRenderer']?['tabs'];
       if (tabs is! List || tabs.length < 3) return null;
       final tab2 = tabs[2] as Map<String, dynamic>?;
       final endpoint = tab2?['tabRenderer']?['endpoint']?['browseEndpoint'];
@@ -135,8 +139,9 @@ class NextApi {
       final payload = _client.basePayload();
       payload['videoId'] = videoId;
       final data = await _client.post('next', payload);
-      final tabs = data['contents']?['singleColumnMusicWatchNextResultsRenderer']
-          ?['tabbedRenderer']?['watchNextTabbedResultsRenderer']?['tabs'];
+      final tabs = data['contents']
+              ?['singleColumnMusicWatchNextResultsRenderer']?['tabbedRenderer']
+          ?['watchNextTabbedResultsRenderer']?['tabs'];
       if (tabs is! List || tabs.length < 2) return null;
       final tab1 = tabs[1] as Map<String, dynamic>?;
       final endpoint = tab1?['tabRenderer']?['endpoint']?['browseEndpoint'];

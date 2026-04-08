@@ -142,8 +142,12 @@ class DatabaseRepository {
     if (isPinned != null) fields['is_pinned'] = isPinned ? 1 : 0;
     if (coverUrl != null) fields['cover_url'] = coverUrl;
     if (paletteColor != null) fields['palette_color'] = paletteColor;
-    if (remoteTrackCount != null) fields['total_track_count_remote'] = remoteTrackCount;
-    if (touchUpdatedAt) fields['updated_at'] = DateTime.now().toUtc().toIso8601String();
+    if (remoteTrackCount != null) {
+      fields['total_track_count_remote'] = remoteTrackCount;
+    }
+    if (touchUpdatedAt) {
+      fields['updated_at'] = DateTime.now().toUtc().toIso8601String();
+    }
     if (fields.isEmpty) return;
     await _bridge.updatePlaylistMeta(id, fields);
     _syncManager.requestSync();
@@ -367,7 +371,8 @@ class _HydrationProgressNotifier extends Notifier<bool> {
 
 /// True while a Supabase → SQLite hydration pull is in progress after login.
 final databaseHydrationInProgressProvider =
-    NotifierProvider<_HydrationProgressNotifier, bool>(_HydrationProgressNotifier.new);
+    NotifierProvider<_HydrationProgressNotifier, bool>(
+        _HydrationProgressNotifier.new);
 
 final databaseRepositoryProvider = Provider<DatabaseRepository>((ref) {
   return DatabaseRepository(

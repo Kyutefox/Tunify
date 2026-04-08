@@ -11,3 +11,6 @@ dependencies:
   path_provider: ^2.1.2
   sqflite: ^2.3.2
   supabase_flutter: ^2.8.4
+
+dev_dependencies:
+  lints: ^6.0.0

@@ -4,7 +4,6 @@ import 'package:scrapper/youtube_music/parsers/inner_tube_parsers.dart' as p;
 
 /// Helpers for parsing YouTube Music `next` endpoint responses.
 class NextFormatter {
-
   /// Main entry point to parse the `next` API response.
   ///
   /// Only parses `playlistPanelVideoRenderer` items; preview items rendered
@@ -36,14 +35,18 @@ class NextFormatter {
     final last = contents.last;
     if (last is! Map<String, dynamic>) return null;
 
-    final automix = last['automixPreviewVideoRenderer'] as Map<String, dynamic>?;
+    final automix =
+        last['automixPreviewVideoRenderer'] as Map<String, dynamic>?;
     if (automix == null) return null;
 
     final content = automix['content'] as Map<String, dynamic>?;
-    final automixRenderer = content?['automixPlaylistVideoRenderer'] as Map<String, dynamic>?;
-    final navEndpoint = automixRenderer?['navigationEndpoint'] as Map<String, dynamic>?;
+    final automixRenderer =
+        content?['automixPlaylistVideoRenderer'] as Map<String, dynamic>?;
+    final navEndpoint =
+        automixRenderer?['navigationEndpoint'] as Map<String, dynamic>?;
 
-    final watchPlaylist = navEndpoint?['watchPlaylistEndpoint'] as Map<String, dynamic>?;
+    final watchPlaylist =
+        navEndpoint?['watchPlaylistEndpoint'] as Map<String, dynamic>?;
     if (watchPlaylist != null) return watchPlaylist;
 
     return navEndpoint?['watchEndpoint'] as Map<String, dynamic>?;
@@ -64,14 +67,17 @@ class NextFormatter {
     final title = p.extractRunsText(titleRuns) ?? 'Unknown title';
 
     final longByline = item['longBylineText'] as Map<String, dynamic>?;
-    final metadata = longByline != null ? p.extractTrackMetadata(longByline) : <String, String?>{};
+    final metadata = longByline != null
+        ? p.extractTrackMetadata(longByline)
+        : <String, String?>{};
 
     final thumb = item['thumbnail'] as Map<String, dynamic>?;
     final thumbUrl = p.extractOrFallbackThumbnail(thumb, videoId);
 
     final lengthRuns = item['lengthText'] as Map<String, dynamic>?;
     final lengthText = p.extractRunsText(lengthRuns);
-    final duration = p.parseDuration(lengthText) ?? ParserConstants.defaultTrackDuration;
+    final duration =
+        p.parseDuration(lengthText) ?? ParserConstants.defaultTrackDuration;
 
     return Track(
       id: videoId,
@@ -82,7 +88,8 @@ class NextFormatter {
       albumBrowseId: metadata['albumBrowseId'],
       thumbnailUrl: thumbUrl,
       duration: duration,
-      isExplicit: p.extractIsExplicitFromBadges(item['badges'] as List<dynamic>?),
+      isExplicit:
+          p.extractIsExplicitFromBadges(item['badges'] as List<dynamic>?),
     );
   }
 
@@ -104,7 +111,8 @@ class NextFormatter {
 
     final lengthRuns = item['lengthText'] as Map<String, dynamic>?;
     final lengthText = p.extractRunsText(lengthRuns);
-    final duration = p.parseDuration(lengthText) ?? ParserConstants.defaultTrackDuration;
+    final duration =
+        p.parseDuration(lengthText) ?? ParserConstants.defaultTrackDuration;
 
     final badges = item['badges'] as List<dynamic>?;
     final isExplicit = p.extractIsExplicitFromBadges(badges);
@@ -126,10 +134,11 @@ class NextFormatter {
   /// Returns the playlistPanelRenderer map from a next response (for continuations).
   static Map<String, dynamic>? extractPlaylistPanel(Map<String, dynamic> data) {
     try {
-      final panel = data['contents']?['singleColumnMusicWatchNextResultsRenderer']
-          ?['tabbedRenderer']?['watchNextTabbedResultsRenderer']?['tabs']?[0]
-          ?['tabRenderer']?['content']?['musicQueueRenderer']?['content']
-          ?['playlistPanelRenderer'];
+      final panel = data['contents']
+                      ?['singleColumnMusicWatchNextResultsRenderer']
+                  ?['tabbedRenderer']?['watchNextTabbedResultsRenderer']
+              ?['tabs']?[0]?['tabRenderer']?['content']?['musicQueueRenderer']
+          ?['content']?['playlistPanelRenderer'];
       return panel is Map<String, dynamic> ? panel : null;
     } catch (_) {
       return null;
@@ -145,12 +154,14 @@ class NextFormatter {
     if (first == null) return null;
     final nextData = first['nextContinuationData'] as Map<String, dynamic>?;
     if (nextData != null) return nextData['continuation'] as String?;
-    final radioData = first['nextRadioContinuationData'] as Map<String, dynamic>?;
+    final radioData =
+        first['nextRadioContinuationData'] as Map<String, dynamic>?;
     return radioData?['continuation'] as String?;
   }
 
   /// Result of parsing a continuation response (playlistPanelContinuation).
-  static ContinuationResult? parseContinuationResponse(Map<String, dynamic> data) {
+  static ContinuationResult? parseContinuationResponse(
+      Map<String, dynamic> data) {
     final panel = data['continuationContents']?['playlistPanelContinuation']
         as Map<String, dynamic>?;
     if (panel == null) return null;
@@ -159,7 +170,8 @@ class NextFormatter {
     for (final item in contents.whereType<Map<String, dynamic>>()) {
       Track? track = parsePlaylistPanelVideo(_extractPanelVideoRenderer(item));
       if (track == null) {
-        final automix = item['automixPreviewVideoRenderer'] as Map<String, dynamic>?;
+        final automix =
+            item['automixPreviewVideoRenderer'] as Map<String, dynamic>?;
         track = parseAutomixPreviewVideo(automix);
       }
       if (track != null) tracks.add(track);
@@ -169,11 +181,14 @@ class NextFormatter {
 
   /// Resolves a playlistPanelVideoRenderer from a panel content item,
   /// handling both direct and wrapper variants.
-  static Map<String, dynamic>? _extractPanelVideoRenderer(Map<String, dynamic> item) {
-    final wrapper = item['playlistPanelVideoWrapperRenderer'] as Map<String, dynamic>?;
-    final renderer = item['playlistPanelVideoRenderer'] as Map<String, dynamic>?
-        ?? wrapper?['primaryRenderer'] as Map<String, dynamic>?
-        ?? wrapper?['primary'] as Map<String, dynamic>?;
+  static Map<String, dynamic>? _extractPanelVideoRenderer(
+      Map<String, dynamic> item) {
+    final wrapper =
+        item['playlistPanelVideoWrapperRenderer'] as Map<String, dynamic>?;
+    final renderer =
+        item['playlistPanelVideoRenderer'] as Map<String, dynamic>? ??
+            wrapper?['primaryRenderer'] as Map<String, dynamic>? ??
+            wrapper?['primary'] as Map<String, dynamic>?;
     if (renderer != null) return renderer;
     final content = item['content'] as Map<String, dynamic>?;
     return content?['playlistPanelVideoRenderer'] as Map<String, dynamic>?;
@@ -183,12 +198,14 @@ class NextFormatter {
   /// .tabbedRenderer.watchNextTabbedResultsRenderer.tabs[0].tabRenderer.content
   /// .musicQueueRenderer.content.playlistPanelRenderer.contents
   /// (per next API response; no fallbacks — other panels can be single-item.)
-  static List<dynamic>? _extractPlaylistPanelContents(Map<String, dynamic> data) {
+  static List<dynamic>? _extractPlaylistPanelContents(
+      Map<String, dynamic> data) {
     try {
-      final contents = data['contents']?['singleColumnMusicWatchNextResultsRenderer']
-          ?['tabbedRenderer']?['watchNextTabbedResultsRenderer']?['tabs']?[0]
-          ?['tabRenderer']?['content']?['musicQueueRenderer']?['content']
-          ?['playlistPanelRenderer']?['contents'];
+      final contents = data['contents']
+                      ?['singleColumnMusicWatchNextResultsRenderer']
+                  ?['tabbedRenderer']?['watchNextTabbedResultsRenderer']
+              ?['tabs']?[0]?['tabRenderer']?['content']?['musicQueueRenderer']
+          ?['content']?['playlistPanelRenderer']?['contents'];
 
       if (contents is List) return contents;
       return null;

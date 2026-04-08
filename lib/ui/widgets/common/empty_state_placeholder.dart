@@ -29,7 +29,8 @@ class EmptyStatePlaceholder extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
+        padding:
+            padding ?? const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -48,7 +49,9 @@ class EmptyStatePlaceholder extends StatelessWidget {
               Text(
                 subtitle!,
                 style: TextStyle(
-                  color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.8),
+                  color: AppColorsScheme.of(context)
+                      .textMuted
+                      .withValues(alpha: 0.8),
                   fontSize: AppFontSize.base,
                 ),
                 textAlign: TextAlign.center,

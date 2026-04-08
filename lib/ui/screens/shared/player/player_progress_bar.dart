@@ -8,7 +8,6 @@ import 'package:tunify/core/utils/duration_format.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 
-
 // PERF: Hoisted as a file-level const to avoid allocation inside build().
 // FontFeature('tnum') is the const equivalent of FontFeature.tabularFigures().
 const TextStyle _kTimeStyle = TextStyle(
@@ -177,8 +176,7 @@ class _PlayerProgressBarState extends ConsumerState<PlayerProgressBar>
                   onChanged: (v) => setState(() => _dragValue = v),
                   onChangeEnd: (v) {
                     final target = Duration(
-                      milliseconds:
-                          (v * safeDuration.inMilliseconds).round(),
+                      milliseconds: (v * safeDuration.inMilliseconds).round(),
                     );
                     ref.read(playerProvider.notifier).seekTo(target);
                     setState(() {

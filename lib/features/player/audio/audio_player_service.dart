@@ -139,8 +139,8 @@ class AudioPlayerService {
           )
           .timeout(
             const Duration(seconds: 15),
-            onTimeout: () =>
-                throw TimeoutException('setAudioSource timed out on Apple platform'),
+            onTimeout: () => throw TimeoutException(
+                'setAudioSource timed out on Apple platform'),
           );
     } else {
       await _player
@@ -186,7 +186,8 @@ class AudioPlayerService {
     // with Origin/Referer set. Signed YouTube URLs are self-authenticating.
     // Disable LockCachingAudioSource as it conflicts with our custom cache system
     // Use regular AudioSource.uri and let our cache handle the optimization
-    final audioSource = AudioSource.uri(Uri.parse(url), headers: requestHeaders);
+    final audioSource =
+        AudioSource.uri(Uri.parse(url), headers: requestHeaders);
 
     await _audioSessionReady;
     await _player.setAudioSource(

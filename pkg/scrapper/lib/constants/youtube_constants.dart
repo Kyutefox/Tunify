@@ -31,22 +31,27 @@ class YtConstants {
   static const String searchFilterArtists = 'EgWKAQIgAWoKEAkQBRAKEAMQBA%3D%3D';
 
   /// InnerTube `params` value that filters search results to Community Playlists only.
-  static const String searchFilterCommunityPlaylists = 'EgWKAQIoAWoKEAkQBRAKEAMQBA%3D%3D';
+  static const String searchFilterCommunityPlaylists =
+      'EgWKAQIoAWoKEAkQBRAKEAMQBA%3D%3D';
 
   /// InnerTube `params` value that filters search results to Featured Playlists only.
-  static const String searchFilterFeaturedPlaylists = 'EgeKAQQoADgMABCAggBagoQBBADEAkQBRAK%3D%3D';
+  static const String searchFilterFeaturedPlaylists =
+      'EgeKAQQoADgMABCAggBagoQBBADEAkQBRAK%3D%3D';
 
   /// InnerTube `params` value that filters search results to Profiles only.
   static const String searchFilterProfiles = 'EgWKAQJYAWoKEAkQBRAKEAMQBA%3D%3D';
 
   /// InnerTube `params` value that filters search results to Podcasts only.
-  static const String searchFilterPodcasts = 'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
+  static const String searchFilterPodcasts =
+      'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
 
   /// InnerTube `params` value that filters search results to Episodes only.
-  static const String searchFilterEpisodes = 'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
+  static const String searchFilterEpisodes =
+      'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
 
   /// InnerTube `params` value that filters search results to Audiobooks only.
-  static const String searchFilterAudiobooks = 'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
+  static const String searchFilterAudiobooks =
+      'EgWKAQJQAWoSEAMQBBAFEBAQCRAKEBUQDhAR';
 
   // --- Player ---
   static const int playerSignatureTimestamp = 20515;

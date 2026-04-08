@@ -42,7 +42,8 @@ class LibraryAlbum {
         'thumbnailUrl': thumbnailUrl,
         'browseId': browseId,
         'followedAt': followedAt.toUtc().toIso8601String(),
-        if (cachedPaletteColor != null) 'cachedPaletteColor': cachedPaletteColor,
+        if (cachedPaletteColor != null)
+          'cachedPaletteColor': cachedPaletteColor,
         'isPinned': isPinned,
       };
 
@@ -52,7 +53,8 @@ class LibraryAlbum {
     String? thumbnailUrl,
     int? cachedPaletteColor,
     bool? isPinned,
-  }) => LibraryAlbum(
+  }) =>
+      LibraryAlbum(
         id: id,
         title: title ?? this.title,
         artistName: artistName ?? this.artistName,

@@ -24,7 +24,6 @@ extension AudioQualityExtension on AudioQuality {
         return 'Auto';
     }
   }
-
 }
 
 /// A resolved audio stream URL with its codec, bitrate, and request headers.

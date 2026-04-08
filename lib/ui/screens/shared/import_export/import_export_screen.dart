@@ -9,14 +9,14 @@ import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/common/back_title_app_bar.dart';
-import 'package:tunify/ui/widgets/common/sheet.dart' show kSheetHorizontalPadding, AppSheet;
+import 'package:tunify/ui/widgets/common/sheet.dart'
+    show kSheetHorizontalPadding, AppSheet;
 
 class ImportExportScreen extends ConsumerStatefulWidget {
   const ImportExportScreen({super.key});
 
   @override
-  ConsumerState<ImportExportScreen> createState() =>
-      _ImportExportScreenState();
+  ConsumerState<ImportExportScreen> createState() => _ImportExportScreenState();
 }
 
 class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
@@ -65,7 +65,7 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
+      barrierColor: Colors.black.withValues(alpha: UIOpacity.disabled),
       builder: (_) => AppSheet(
         child: _ImportPreviewSheet(playlists: playlists),
       ),
@@ -132,7 +132,7 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
+      barrierColor: Colors.black.withValues(alpha: UIOpacity.disabled),
       builder: (_) => AppSheet(
         child: _PlaylistPickerSheet(playlists: playlists),
       ),
@@ -144,7 +144,7 @@ class _ImportExportScreenState extends ConsumerState<ImportExportScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.5),
+      barrierColor: Colors.black.withValues(alpha: UIOpacity.disabled),
       builder: (_) => const AppSheet(
         child: _FormatPickerSheet(),
       ),
@@ -306,17 +306,15 @@ class _ImportPreviewSheet extends StatelessWidget {
               itemBuilder: (_, i) {
                 final pl = playlists[i];
                 return Padding(
-                  padding:
-                      const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
                   child: Row(
                     children: [
                       Container(
-                        width: 36,
+                        width: UISize.iconXxl,
                         height: 36,
                         decoration: BoxDecoration(
                           color: AppColors.primary.withValues(alpha: 0.15),
-                          borderRadius:
-                              BorderRadius.circular(AppRadius.xs),
+                          borderRadius: BorderRadius.circular(AppRadius.xs),
                         ),
                         child: Center(
                           child: AppIcon(
@@ -333,8 +331,7 @@ class _ImportPreviewSheet extends StatelessWidget {
                             Text(
                               pl.name,
                               style: TextStyle(
-                                color:
-                                    AppColorsScheme.of(context).textPrimary,
+                                color: AppColorsScheme.of(context).textPrimary,
                                 fontSize: AppFontSize.md,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -344,8 +341,7 @@ class _ImportPreviewSheet extends StatelessWidget {
                             Text(
                               '${pl.tracks.length} track${pl.tracks.length == 1 ? '' : 's'}',
                               style: TextStyle(
-                                color:
-                                    AppColorsScheme.of(context).textMuted,
+                                color: AppColorsScheme.of(context).textMuted,
                                 fontSize: AppFontSize.sm,
                               ),
                             ),
@@ -378,7 +374,8 @@ class _ImportPreviewSheet extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + AppSpacing.md),
+          SizedBox(
+              height: MediaQuery.of(context).padding.bottom + AppSpacing.md),
         ],
       ),
     );
@@ -447,14 +444,14 @@ class _PlaylistPickerSheetState extends State<_PlaylistPickerSheet> {
                     }),
                     borderRadius: BorderRadius.circular(AppRadius.sm),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          vertical: AppSpacing.sm),
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.sm),
                       child: Row(
                         children: [
                           AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            width: 22,
-                            height: 22,
+                            duration: AppDuration.instant,
+                            width: UISize.checkbox,
+                            height: UISize.checkbox,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: isSelected
@@ -482,8 +479,8 @@ class _PlaylistPickerSheetState extends State<_PlaylistPickerSheet> {
                                 Text(
                                   pl.name,
                                   style: TextStyle(
-                                    color: AppColorsScheme.of(context)
-                                        .textPrimary,
+                                    color:
+                                        AppColorsScheme.of(context).textPrimary,
                                     fontSize: AppFontSize.md,
                                     fontWeight: FontWeight.w500,
                                   ),
@@ -493,8 +490,8 @@ class _PlaylistPickerSheetState extends State<_PlaylistPickerSheet> {
                                 Text(
                                   pl.trackCountLabel,
                                   style: TextStyle(
-                                    color: AppColorsScheme.of(context)
-                                        .textMuted,
+                                    color:
+                                        AppColorsScheme.of(context).textMuted,
                                     fontSize: AppFontSize.sm,
                                   ),
                                 ),
@@ -522,7 +519,8 @@ class _PlaylistPickerSheetState extends State<_PlaylistPickerSheet> {
               const SizedBox(width: AppSpacing.md),
               Expanded(
                 child: _SheetButton(
-                  label: 'Export${_selected.isNotEmpty ? ' (${_selected.length})' : ''}',
+                  label:
+                      'Export${_selected.isNotEmpty ? ' (${_selected.length})' : ''}',
                   onTap: _selected.isEmpty
                       ? null
                       : () => Navigator.of(context).pop(
@@ -535,7 +533,8 @@ class _PlaylistPickerSheetState extends State<_PlaylistPickerSheet> {
               ),
             ],
           ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + AppSpacing.md),
+          SizedBox(
+              height: MediaQuery.of(context).padding.bottom + AppSpacing.md),
         ],
       ),
     );
@@ -580,7 +579,8 @@ class _FormatPickerSheet extends StatelessWidget {
                 'Universal format compatible with VLC, Winamp, and most media players.',
             iconColor: AppColors.accentCyan,
           ),
-          SizedBox(height: MediaQuery.of(context).padding.bottom + AppSpacing.lg),
+          SizedBox(
+              height: MediaQuery.of(context).padding.bottom + AppSpacing.lg),
         ],
       ),
     );
@@ -613,13 +613,14 @@ class _FormatOption extends StatelessWidget {
             color: AppColorsScheme.of(context).surfaceLight,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-                color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
+                color: AppColorsScheme.of(context).surfaceHighlight,
+                width: UIStroke.thin),
           ),
           child: Row(
             children: [
               Container(
-                width: 44,
-                height: 44,
+                width: UISize.buttonHeightMd,
+                height: UISize.buttonHeightMd,
                 decoration: BoxDecoration(
                   color: iconColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -646,7 +647,7 @@ class _FormatOption extends StatelessWidget {
                           fontSize: AppFontSize.lg,
                           fontWeight: FontWeight.w600,
                         )),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xs / 2),
                     Text(description,
                         style: TextStyle(
                           color: AppColorsScheme.of(context).textMuted,
@@ -694,7 +695,7 @@ class _SectionTitle extends StatelessWidget {
             color: iconColor,
             fontSize: AppFontSize.lg,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
+            letterSpacing: AppLetterSpacing.heading.abs(),
           ),
         ),
       ],
@@ -732,13 +733,14 @@ class _ActionTile extends StatelessWidget {
             color: AppColorsScheme.of(context).surfaceLight,
             borderRadius: BorderRadius.circular(AppRadius.md),
             border: Border.all(
-                color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
+                color: AppColorsScheme.of(context).surfaceHighlight,
+                width: UIStroke.thin),
           ),
           child: Row(
             children: [
               Container(
-                width: 48,
-                height: 48,
+                width: UISize.listLeading,
+                height: UISize.listLeading,
                 decoration: BoxDecoration(
                   color: iconColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(AppRadius.sm),
@@ -754,7 +756,8 @@ class _ActionTile extends StatelessWidget {
                                 AlwaysStoppedAnimation<Color>(iconColor),
                           ),
                         )
-                      : AppIcon(icon: icon, color: iconColor, size: 22),
+                      : AppIcon(
+                          icon: icon, color: iconColor, size: AppFontSize.h2),
                 ),
               ),
               const SizedBox(width: AppSpacing.md),
@@ -768,7 +771,7 @@ class _ActionTile extends StatelessWidget {
                           fontSize: AppFontSize.lg,
                           fontWeight: FontWeight.w600,
                         )),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: AppSpacing.xs / 2),
                     Text(busy ? 'Working…' : subtitle,
                         style: TextStyle(
                           color: AppColorsScheme.of(context).textMuted,
@@ -781,7 +784,7 @@ class _ActionTile extends StatelessWidget {
                 AppIcon(
                     icon: AppIcons.chevronRight,
                     color: AppColorsScheme.of(context).textMuted,
-                    size: 20),
+                    size: UISize.iconMd),
             ],
           ),
         ),
@@ -804,11 +807,12 @@ class _FormatChips extends StatelessWidget {
         final color = colors[i % colors.length];
         return Container(
           padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.sm, vertical: 4),
+              horizontal: AppSpacing.sm, vertical: AppSpacing.xs),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(AppRadius.xs),
-            border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
+            border: Border.all(
+                color: color.withValues(alpha: 0.3), width: UIStroke.thin),
           ),
           child: Text(
             labels[i],
@@ -837,7 +841,8 @@ class _InfoBox extends StatelessWidget {
         color: AppColorsScheme.of(context).surfaceLight,
         borderRadius: BorderRadius.circular(AppRadius.md),
         border: Border.all(
-            color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
+            color: AppColorsScheme.of(context).surfaceHighlight,
+            width: UIStroke.thin),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -877,7 +882,7 @@ class _SheetButton extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          height: 48,
+          height: UISize.listLeading,
           decoration: BoxDecoration(
             color: isPrimary
                 ? AppColors.primary

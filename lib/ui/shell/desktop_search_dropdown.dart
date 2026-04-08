@@ -94,7 +94,7 @@ class _DesktopSearchDropdownState extends ConsumerState<DesktopSearchDropdown> {
           borderRadius: BorderRadius.circular(AppRadius.md),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withValues(alpha: 0.5),
+              color: Colors.black.withValues(alpha: UIOpacity.disabled),
               blurRadius: 24,
               offset: const Offset(0, 8),
             ),

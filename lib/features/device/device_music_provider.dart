@@ -355,4 +355,5 @@ class DeviceMusicNotifier extends Notifier<DeviceMusicState> {
 }
 
 final deviceMusicProvider =
-    NotifierProvider<DeviceMusicNotifier, DeviceMusicState>(DeviceMusicNotifier.new);
+    NotifierProvider<DeviceMusicNotifier, DeviceMusicState>(
+        DeviceMusicNotifier.new);

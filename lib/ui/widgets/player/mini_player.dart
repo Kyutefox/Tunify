@@ -101,9 +101,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
         final nextY = (_dragY + d.delta.dy).clamp(-80.0, 120.0);
         final shouldOpen = nextY < -24;
 
-        if (!shouldOpen &&
-            !_didTriggerOpenHaptic &&
-            nextY < -8) {
+        if (!shouldOpen && !_didTriggerOpenHaptic && nextY < -8) {
           _didTriggerOpenHaptic = true;
           HapticFeedback.selectionClick();
         }
@@ -121,8 +119,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
               _dragOpacity = 1.0;
             } else if (_dragY > 0) {
               _dragScale = 0;
-              _dragOpacity =
-                  (1.0 - (_dragY / 120.0) * 0.35).clamp(0.65, 1.0);
+              _dragOpacity = (1.0 - (_dragY / 120.0) * 0.35).clamp(0.65, 1.0);
             } else {
               _dragScale = 0;
               _dragOpacity = 1.0;

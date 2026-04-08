@@ -9,7 +9,8 @@ class UsernameGenerator {
 
   static const _adjectives = [
     // Colors & Visual
-    'Neon', 'Cosmic', 'Solar', 'Lunar', 'Crystal', 'Golden', 'Silver', 'Crimson',
+    'Neon', 'Cosmic', 'Solar', 'Lunar', 'Crystal', 'Golden', 'Silver',
+    'Crimson',
     'Azure', 'Violet', 'Emerald', 'Obsidian', 'Prismatic', 'Radiant', 'Glowing',
     // Personality
     'Epic', 'Mystic', 'Swift', 'Brave', 'Chill', 'Wild', 'Lucky', 'Clever',
@@ -19,19 +20,24 @@ class UsernameGenerator {
     // Tech & Cyber
     'Cyber', 'Digital', 'Pixel', 'Quantum', 'Turbo', 'Hyper', 'Ultra', 'Mega',
     // Mystical
-    'Shadow', 'Phantom', 'Ghost', 'Spirit', 'Astral', 'Ethereal', 'Arcane', 'Mythic',
+    'Shadow', 'Phantom', 'Ghost', 'Spirit', 'Astral', 'Ethereal', 'Arcane',
+    'Mythic',
     // Fun
     'Funky', 'Groovy', 'Jazzy', 'Snazzy', 'Zippy', 'Zesty', 'Spicy', 'Sassy',
-    'Fluffy', 'Sparkly', 'Bouncy', 'Wobbly', 'Giggly', 'Bubbly', 'Dizzy', 'Fizzy',
+    'Fluffy', 'Sparkly', 'Bouncy', 'Wobbly', 'Giggly', 'Bubbly', 'Dizzy',
+    'Fizzy',
   ];
 
   static const _nouns = [
     // Animals
     'Wolf', 'Dragon', 'Fox', 'Bear', 'Tiger', 'Panda', 'Hawk', 'Lynx', 'Raven',
-    'Phoenix', 'Falcon', 'Panther', 'Otter', 'Badger', 'Owl', 'Koala', 'Penguin',
-    'Dolphin', 'Shark', 'Octopus', 'Raccoon', 'Sloth', 'Llama', 'Alpaca', 'Moose',
+    'Phoenix', 'Falcon', 'Panther', 'Otter', 'Badger', 'Owl', 'Koala',
+    'Penguin',
+    'Dolphin', 'Shark', 'Octopus', 'Raccoon', 'Sloth', 'Llama', 'Alpaca',
+    'Moose',
     // Mythical
-    'Unicorn', 'Griffin', 'Sphinx', 'Hydra', 'Kraken', 'Yeti', 'Goblin', 'Wizard',
+    'Unicorn', 'Griffin', 'Sphinx', 'Hydra', 'Kraken', 'Yeti', 'Goblin',
+    'Wizard',
     'Knight', 'Ninja', 'Samurai', 'Viking', 'Pirate', 'Mage', 'Druid', 'Bard',
     // Space & Nature
     'Comet', 'Meteor', 'Nebula', 'Nova', 'Pulsar', 'Quasar', 'Star', 'Moon',
@@ -40,24 +46,53 @@ class UsernameGenerator {
     'Echo', 'Sage', 'Cipher', 'Glitch', 'Byte', 'Pixel', 'Vortex', 'Prism',
     'Ripple', 'Whisper', 'Shadow', 'Specter', 'Phantom', 'Wraith', 'Spirit',
     // Food & Fun
-    'Waffle', 'Pickle', 'Muffin', 'Cookie', 'Noodle', 'Taco', 'Pretzel', 'Donut',
+    'Waffle', 'Pickle', 'Muffin', 'Cookie', 'Noodle', 'Taco', 'Pretzel',
+    'Donut',
     'Cupcake', 'Pancake', 'Nugget', 'Biscuit', 'Dumpling', 'Burrito', 'Nacho',
   ];
 
   static const _prefixes = [
-    'The', 'Sir', 'Captain', 'Lord', 'Lady', 'Dr', 'Agent', 'Chief',
-    'Master', 'Grand', 'Super', 'Ultra', 'Mega', 'Pro', 'Elite', 'Prime',
+    'The',
+    'Sir',
+    'Captain',
+    'Lord',
+    'Lady',
+    'Dr',
+    'Agent',
+    'Chief',
+    'Master',
+    'Grand',
+    'Super',
+    'Ultra',
+    'Mega',
+    'Pro',
+    'Elite',
+    'Prime',
   ];
 
   static const _suffixes = [
-    'Master', 'Lord', 'King', 'Queen', 'Boss', 'Chief', 'Pro', 'Star',
-    'Hero', 'Legend', 'Ace', 'Champion', 'Guru', 'Wizard', 'Ninja', 'Sage',
+    'Master',
+    'Lord',
+    'King',
+    'Queen',
+    'Boss',
+    'Chief',
+    'Pro',
+    'Star',
+    'Hero',
+    'Legend',
+    'Ace',
+    'Champion',
+    'Guru',
+    'Wizard',
+    'Ninja',
+    'Sage',
   ];
 
   /// Generates a random username using various patterns.
   static String generate() {
     final pattern = _random.nextInt(6);
-    
+
     switch (pattern) {
       case 0:
         // AdjectiveNoun123 (classic)
@@ -82,6 +117,7 @@ class UsernameGenerator {
   }
 
   static String _pick(List<String> list) => list[_random.nextInt(list.length)];
-  
-  static int _randomNumber(int min, int max) => min + _random.nextInt(max - min + 1);
+
+  static int _randomNumber(int min, int max) =>
+      min + _random.nextInt(max - min + 1);
 }

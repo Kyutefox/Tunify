@@ -52,9 +52,15 @@ void main() {
     group('equality', () {
       test('equal when IDs match regardless of other fields', () {
         final a1 = LibraryArtist(
-            id: 'x', name: 'Artist A', thumbnailUrl: '', followedAt: DateTime(2024));
+            id: 'x',
+            name: 'Artist A',
+            thumbnailUrl: '',
+            followedAt: DateTime(2024));
         final a2 = LibraryArtist(
-            id: 'x', name: 'Artist B', thumbnailUrl: 'different', followedAt: DateTime(2025));
+            id: 'x',
+            name: 'Artist B',
+            thumbnailUrl: 'different',
+            followedAt: DateTime(2025));
         expect(a1, equals(a2));
       });
 

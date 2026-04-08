@@ -207,8 +207,7 @@ class RelatedHomeFeed {
   });
 
   /// Flattened list of all tracks from track shelves.
-  List<Track> get tracks =>
-      trackShelves.expand((s) => s.tracks).toList();
+  List<Track> get tracks => trackShelves.expand((s) => s.tracks).toList();
 
   /// Flattened list of all playlists from playlist shelves.
   List<RelatedPlaylist> get playlists =>
@@ -219,10 +218,10 @@ class RelatedHomeFeed {
       artistShelves.expand((s) => s.artists).toList();
 
   Map<String, dynamic> toJson() => {
-    'trackShelves': trackShelves.map((e) => e.toJson()).toList(),
-    'playlistShelves': playlistShelves.map((e) => e.toJson()).toList(),
-    'artistShelves': artistShelves.map((e) => e.toJson()).toList(),
-    'shelves': shelves.map((e) => e.toJson()).toList(),
-    'moodItems': moodItems.map((e) => e.toJson()).toList(),
-  };
+        'trackShelves': trackShelves.map((e) => e.toJson()).toList(),
+        'playlistShelves': playlistShelves.map((e) => e.toJson()).toList(),
+        'artistShelves': artistShelves.map((e) => e.toJson()).toList(),
+        'shelves': shelves.map((e) => e.toJson()).toList(),
+        'moodItems': moodItems.map((e) => e.toJson()).toList(),
+      };
 }

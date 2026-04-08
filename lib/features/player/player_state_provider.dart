@@ -19,7 +19,7 @@ import 'package:tunify/features/player/audio/crossfade_engine.dart';
 import 'package:tunify/features/player/audio/audio_handler.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 
-import 'package:tunify/data/models/library_playlist.dart'; 
+import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/features/device/device_music_provider.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
@@ -56,6 +56,7 @@ class PlayerState {
   final StreamQuality quality;
   final int bitrate;
   final bool isNormalizationEnabled;
+
   /// IDs of songs appended to the queue by Smart Shuffle recommendations.
   final Set<String> smartShuffleSongIds;
 
@@ -158,10 +159,12 @@ class PlayerState {
           crossfadeDurationSeconds ?? this.crossfadeDurationSeconds,
       playbackSpeed: playbackSpeed ?? this.playbackSpeed,
       bassBoostLevel: bassBoostLevel ?? this.bassBoostLevel,
-      smartShuffleSongIds:
-          clearSmartShuffleIds ? const {} : (smartShuffleSongIds ?? this.smartShuffleSongIds),
+      smartShuffleSongIds: clearSmartShuffleIds
+          ? const {}
+          : (smartShuffleSongIds ?? this.smartShuffleSongIds),
       activeShuffleMode: activeShuffleMode ?? this.activeShuffleMode,
-      isSmartShuffleLoading: isSmartShuffleLoading ?? this.isSmartShuffleLoading,
+      isSmartShuffleLoading:
+          isSmartShuffleLoading ?? this.isSmartShuffleLoading,
     );
   }
 
@@ -387,7 +390,10 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
     // Count unplayed ✨ songs still ahead.
     final unplayedSmart = currentIdx + 1 < queue.length
-        ? queue.sublist(currentIdx + 1).where((s) => smartIds.contains(s.id)).length
+        ? queue
+            .sublist(currentIdx + 1)
+            .where((s) => smartIds.contains(s.id))
+            .length
         : 0;
     if (unplayedSmart >= 2) return;
 
@@ -397,8 +403,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
     state = state.copyWith(isSmartShuffleLoading: true);
     try {
       // Rotate seed through original playlist songs for varied recommendations.
-      final seed =
-          _smartShufflePlaylistSongs[_smartSeedIndex % _smartShufflePlaylistSongs.length];
+      final seed = _smartShufflePlaylistSongs[
+          _smartSeedIndex % _smartShufflePlaylistSongs.length];
       _smartSeedIndex++;
 
       final smartPlaylistId = _playlistContextIdForRecommendations(
@@ -460,9 +466,11 @@ class PlayerNotifier extends Notifier<PlayerState> {
   ShuffleMode _readActiveShuffleMode(String? source, String? playlistId) {
     final lib = ref.read(libraryProvider);
     return switch (source) {
-      'playlist' =>
-        lib.playlists.where((p) => p.id == playlistId).firstOrNull?.shuffleMode ??
-            ShuffleMode.none,
+      'playlist' => lib.playlists
+              .where((p) => p.id == playlistId)
+              .firstOrNull
+              ?.shuffleMode ??
+          ShuffleMode.none,
       'downloads' || 'device' => lib.downloadedShuffleMode,
       'liked' => lib.likedPlaylist.shuffleMode,
       'recently_played' => lib.recentlyPlayedShuffleMode,
@@ -518,14 +526,16 @@ class PlayerNotifier extends Notifier<PlayerState> {
     final recentSongs = ref.read(recentlyPlayedProvider);
 
     // Convert songs to MediaItems for car browsing
-    return recentSongs.map((song) => MediaItem(
-      id: song.id,
-      title: song.title,
-      artist: song.artist,
-      artUri: Uri.parse(song.thumbnailUrl),
-      duration: song.duration,
-      playable: true,
-    )).toList();
+    return recentSongs
+        .map((song) => MediaItem(
+              id: song.id,
+              title: song.title,
+              artist: song.artist,
+              artUri: Uri.parse(song.thumbnailUrl),
+              duration: song.duration,
+              playable: true,
+            ))
+        .toList();
   }
 
   /// Plays media selected from Android Auto/CarPlay browser
@@ -611,9 +621,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // playlist) with a single patchSongDuration() that emits ONE state update.
     // Previously each call triggered a full libraryProvider rebuild cascade,
     // causing all library-subscribed widgets to rebuild N times.
-    ref
-        .read(libraryProvider.notifier)
-        .patchSongDuration(song.id, realDuration);
+    ref.read(libraryProvider.notifier).patchSongDuration(song.id, realDuration);
   }
 
   void _maybeFetchAndApplyNormalizationGain(Song song) {
@@ -704,7 +712,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
         // Restore position to dedicated provider
         if (posMs > 0) {
-          ref.read(playbackPositionProvider.notifier).update(Duration(milliseconds: posMs));
+          ref
+              .read(playbackPositionProvider.notifier)
+              .update(Duration(milliseconds: posMs));
         }
 
         // Restore full queue if available, otherwise fall back to single song.
@@ -827,8 +837,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
       final queue = state.queue;
       if (queue.isNotEmpty) {
         futures.addAll([
-          box.put(StorageKeys.hiveKeyQueue,
-              queue.map((s) => s.toJson()).toList()),
+          box.put(
+              StorageKeys.hiveKeyQueue, queue.map((s) => s.toJson()).toList()),
           box.put(StorageKeys.hiveKeyQueueIndex, state.currentIndex),
           box.put(StorageKeys.hiveKeyActiveShuffleMode,
               state.activeShuffleMode.index),
@@ -922,7 +932,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
     if (_lastRecentlyPlayedRecordedSongId == song.id) return;
     _lastRecentlyPlayedRecordedSongId = song.id;
-    _recordRecentlyPlayedIfConfirmed(song);
+    ref.read(homeProvider.notifier).addToRecentlyPlayed(song);
   }
 
   void _initializeListeners() {
@@ -1023,8 +1033,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
                 'pos=${position.inMilliseconds}ms dur=${dur?.inMilliseconds}ms',
                 tag: 'Player',
               );
-              state =
-                  state.copyWith(status: PlayerStatus.paused);
+              state = state.copyWith(status: PlayerStatus.paused);
               _macosLastPositionMs = null;
               _handleCompletion();
               return;
@@ -1237,8 +1246,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // are appended lazily by _extendPlaylistTo when playNext() is called.
     final List<Song> effectiveQueue;
     final int effectiveIndex;
-    if (((isApplePlatform) ||
-            state.crossfadeDurationSeconds > 0) &&
+    if (((isApplePlatform) || state.crossfadeDurationSeconds > 0) &&
         index > 0) {
       // Apple platforms (iOS, macOS): AVQueuePlayer single-source mode always
       // starts at index 0. Android+crossfade: maxItems=1, so toResolve=[queue[0..0]]
@@ -1269,10 +1277,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
       // any auto-advance; ProcessingState.completed at song end is blocked by
       // the isCrossfading guard, and _extendPlaylistTo / _handleCompletion
       // provide the correct fallback if the crossfade itself fails.
-      final maxItems = ((isApplePlatform) ||
-              state.crossfadeDurationSeconds > 0)
-          ? 1
-          : 5;
+      final maxItems =
+          ((isApplePlatform) || state.crossfadeDurationSeconds > 0) ? 1 : 5;
       final toResolve = effectiveQueue.take(maxItems).toList();
       final sources = <ja.AudioSource>[];
 
@@ -1561,7 +1567,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
           : (dur != null && dur.inMilliseconds > 0)
               ? dur
               : state.duration;
-      
+
       if (newDuration != state.duration) {
         state = state.copyWith(duration: newDuration);
       }
@@ -1737,10 +1743,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
       // For smart shuffle single-song: mark all non-seed songs as ✨.
       final smartIdsForSingleSong = isSmart
-          ? newQueue
-              .where((s) => s.id != song.id)
-              .map((s) => s.id)
-              .toSet()
+          ? newQueue.where((s) => s.id != song.id).map((s) => s.id).toSet()
           : state.smartShuffleSongIds;
 
       // For single-song smart shuffle seed rotation, store the seed song.
@@ -1770,8 +1773,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
           // ConcatenatingAudioSource and emit the combined duration of the
           // current + next song, breaking the seek bar. Queue advance is
           // handled by _syncPlaylistToQueue reloading per song on those platforms.
-          if (state.crossfadeDurationSeconds == 0 &&
-              !isApplePlatform) {
+          if (state.crossfadeDurationSeconds == 0 && !isApplePlatform) {
             // Gapless mode (Android only): append upcoming songs directly to
             // avoid the brief audio gap that setPlaylist() would cause.
             const maxTotal = 5;
@@ -1936,9 +1938,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // causes just_audio to wrap into a ConcatenatingAudioSource and emit the
     // combined duration of both songs, breaking the seek bar. Queue advance is
     // handled by _syncPlaylistToQueue reloading per song on those platforms.
-    if (_usingPlaylist &&
-        _hasLoadedSource &&
-        !isApplePlatform) {
+    if (_usingPlaylist && _hasLoadedSource && !isApplePlatform) {
       try {
         final source = await _audioRepository
             .resolveToAudioSource(song)
@@ -2166,37 +2166,44 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _syncPlaylistToQueue(shouldPlay: true);
         return;
       }
-      
+
       // Universal cache-aware logic for all platforms
       if (nextIndex < _loadedPlaylistLength) {
         final nextSong = state.queue[nextIndex];
-        
+
         // Check if we have SIGNIFICANT cache that would provide clear benefit
         // Only rebuild if we have substantial cached data AND the current source is a stream
         // (i.e., we're upgrading from stream to cached file, not just rebuilding for no reason)
         final cacheInfo = await _audioRepository.getCacheInfo(nextSong.id);
-        final hasSubstantialCache = cacheInfo.exists && cacheInfo.filePath != null && 
-                                   (cacheInfo.isComplete || cacheInfo.cachedBytes >= (5 * 1024 * 1024)); // 5MB+ or complete
-        
+        final hasSubstantialCache = cacheInfo.exists &&
+            cacheInfo.filePath != null &&
+            (cacheInfo.isComplete ||
+                cacheInfo.cachedBytes >= (5 * 1024 * 1024)); // 5MB+ or complete
+
         // Additional check: only rebuild if we're confident the current source is a stream
         // This prevents unnecessary rebuilds when cache might not provide clear benefit
         var shouldRebuild = hasSubstantialCache;
-        
+
         if (hasSubstantialCache) {
           // Check if the current playlist source is likely a stream (not already a file)
           // If we're in the first few songs and cache was recently added, it's likely upgrading
-          final isLikelyUpgrading = nextIndex < 5 && cacheInfo.cachedBytes > (3 * 1024 * 1024); // 3MB+ in first 5 songs
+          final isLikelyUpgrading = nextIndex < 5 &&
+              cacheInfo.cachedBytes >
+                  (3 * 1024 * 1024); // 3MB+ in first 5 songs
           shouldRebuild = isLikelyUpgrading;
-          
-          logDebug('Player: playNext cache analysis for ${nextSong.id}: '
+
+          logDebug(
+              'Player: playNext cache analysis for ${nextSong.id}: '
               'substantial=$hasSubstantialCache, likelyUpgrading=$isLikelyUpgrading, '
               'cachedBytes=${cacheInfo.cachedBytes}',
               tag: 'Player');
         }
-        
+
         if (shouldRebuild) {
-          logDebug('Player: playNext rebuilding playlist to use cached file for ${nextSong.id}', tag: 'Player');
-          
+          logDebug(
+              'Player: playNext rebuilding playlist to use cached file for ${nextSong.id}',
+              tag: 'Player');
+
           // Update state immediately to prevent UI glitch
           final oldState = state;
           state = state.copyWith(
@@ -2205,28 +2212,33 @@ class PlayerNotifier extends Notifier<PlayerState> {
             status: PlayerStatus.loading,
           );
           _recordRecentlyPlayedIfConfirmed(nextSong);
-          
+
           try {
             // Force playlist rebuild to use cached file instead of original stream
             _transitionGeneration++;
             _isTransitioning = false;
             _hasLoadedSource = false; // Force full re-resolution
-            
+
             await _syncPlaylistToQueue(shouldPlay: true);
             return;
           } catch (e) {
             // Fallback to normal transition if rebuild fails
-            logWarning('Player: Cache rebuild failed, using normal transition: $e', tag: 'Player');
-            state = oldState.copyWith(currentIndex: nextIndex, currentSong: nextSong);
+            logWarning(
+                'Player: Cache rebuild failed, using normal transition: $e',
+                tag: 'Player');
+            state = oldState.copyWith(
+                currentIndex: nextIndex, currentSong: nextSong);
             await _audioPlayer.setPlaylistIndex(nextIndex);
             await _audioPlayer.play();
             state = state.copyWith(status: PlayerStatus.playing);
             return;
           }
         }
-        
+
         // No substantial cache or not worth rebuilding, use normal instant playlist transition
-        logDebug('Player: playNext using normal instant transition for ${nextSong.id}', tag: 'Player');
+        logDebug(
+            'Player: playNext using normal instant transition for ${nextSong.id}',
+            tag: 'Player');
         state = state.copyWith(
           currentIndex: nextIndex,
           currentSong: nextSong,
@@ -2235,7 +2247,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _audioPlayer.play();
         return;
       }
-      
+
       // just_audio playlist is only loaded with first 5 items; extend if we're going past.
       if (nextIndex >= _loadedPlaylistLength) {
         await _extendPlaylistTo(nextIndex);
@@ -2324,38 +2336,45 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _syncPlaylistToQueue(shouldPlay: true);
         return;
       }
-      
+
       // Universal cache-aware logic for all platforms
       final prevIndex = state.currentIndex - 1;
       if (prevIndex >= 0 && prevIndex < _loadedPlaylistLength) {
         final prevSong = state.queue[prevIndex];
-        
+
         // Check if we have SIGNIFICANT cache that would provide clear benefit
         // Only rebuild if we have substantial cached data AND the current source is a stream
         // (i.e., we're upgrading from stream to cached file, not just rebuilding for no reason)
         final cacheInfo = await _audioRepository.getCacheInfo(prevSong.id);
-        final hasSubstantialCache = cacheInfo.exists && cacheInfo.filePath != null && 
-                                   (cacheInfo.isComplete || cacheInfo.cachedBytes >= (5 * 1024 * 1024)); // 5MB+ or complete
-        
+        final hasSubstantialCache = cacheInfo.exists &&
+            cacheInfo.filePath != null &&
+            (cacheInfo.isComplete ||
+                cacheInfo.cachedBytes >= (5 * 1024 * 1024)); // 5MB+ or complete
+
         // Additional check: only rebuild if we're confident the current source is a stream
         // This prevents unnecessary rebuilds when cache might not provide clear benefit
         var shouldRebuild = hasSubstantialCache;
-        
+
         if (hasSubstantialCache) {
           // Check if the current playlist source is likely a stream (not already a file)
           // If we're in the first few songs and cache was recently added, it's likely upgrading
-          final isLikelyUpgrading = prevIndex < 5 && cacheInfo.cachedBytes > (3 * 1024 * 1024); // 3MB+ in first 5 songs
+          final isLikelyUpgrading = prevIndex < 5 &&
+              cacheInfo.cachedBytes >
+                  (3 * 1024 * 1024); // 3MB+ in first 5 songs
           shouldRebuild = isLikelyUpgrading;
-          
-          logDebug('Player: playPrevious cache analysis for ${prevSong.id}: '
+
+          logDebug(
+              'Player: playPrevious cache analysis for ${prevSong.id}: '
               'substantial=$hasSubstantialCache, likelyUpgrading=$isLikelyUpgrading, '
               'cachedBytes=${cacheInfo.cachedBytes}',
               tag: 'Player');
         }
-        
+
         if (shouldRebuild) {
-          logDebug('Player: playPrevious rebuilding playlist to use cached file for ${prevSong.id}', tag: 'Player');
-          
+          logDebug(
+              'Player: playPrevious rebuilding playlist to use cached file for ${prevSong.id}',
+              tag: 'Player');
+
           // Update state immediately to prevent UI glitch
           final oldState = state;
           state = state.copyWith(
@@ -2363,28 +2382,33 @@ class PlayerNotifier extends Notifier<PlayerState> {
             currentSong: prevSong,
             status: PlayerStatus.loading,
           );
-          
+
           try {
             // Force playlist rebuild to use cached file instead of original stream
             _transitionGeneration++;
             _isTransitioning = false;
             _hasLoadedSource = false; // Force full re-resolution
-            
+
             await _syncPlaylistToQueue(shouldPlay: true);
             return;
           } catch (e) {
             // Fallback to normal transition if rebuild fails
-            logWarning('Player: Cache rebuild failed, using normal transition: $e', tag: 'Player');
-            state = oldState.copyWith(currentIndex: prevIndex, currentSong: prevSong);
+            logWarning(
+                'Player: Cache rebuild failed, using normal transition: $e',
+                tag: 'Player');
+            state = oldState.copyWith(
+                currentIndex: prevIndex, currentSong: prevSong);
             await _audioPlayer.setPlaylistIndex(prevIndex);
             await _audioPlayer.play();
             state = state.copyWith(status: PlayerStatus.playing);
             return;
           }
         }
-        
+
         // No substantial cache or not worth rebuilding, use normal instant playlist transition
-        logDebug('Player: playPrevious using normal instant transition for ${prevSong.id}', tag: 'Player');
+        logDebug(
+            'Player: playPrevious using normal instant transition for ${prevSong.id}',
+            tag: 'Player');
         state = state.copyWith(
           currentIndex: prevIndex,
           currentSong: prevSong,
@@ -2393,7 +2417,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
         await _audioPlayer.play();
         return;
       }
-      
+
       await _audioPlayer.setPlaylistIndex(state.currentIndex - 1);
       await _audioPlayer.play();
       return;
@@ -2705,7 +2729,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
         activeShuffleMode: ShuffleMode.smart,
       );
       // Fill recs in background — same path as single-song smart shuffle.
-      unawaited(_loadQueueInBackground(currentSong, playlistId: _lastPlaylistId));
+      unawaited(
+          _loadQueueInBackground(currentSong, playlistId: _lastPlaylistId));
     } else {
       // ── Turning smart shuffle OFF ─────────────────────────────────────────
       // Remove all ✨ songs that are still ahead of the current position.
@@ -2716,7 +2741,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
         // Keep everything up to and including the current song unchanged.
         ...state.queue.sublist(0, currentIdx + 1),
         // Drop ✨ songs ahead; keep manually-added / original playlist songs.
-        ...state.queue.sublist(currentIdx + 1).where((s) => !smartIds.contains(s.id)),
+        ...state.queue
+            .sublist(currentIdx + 1)
+            .where((s) => !smartIds.contains(s.id)),
       ];
 
       _smartShufflePlaylistSongs = [];
@@ -2739,16 +2766,18 @@ class PlayerNotifier extends Notifier<PlayerState> {
   /// Each leg delegates to the existing [toggleShuffle] / [toggleSmartShuffle]
   /// so all queue-pruning and seed logic stays in one place.
   void cycleShuffleMode() {
-    if (!state.isShuffleEnabled && state.activeShuffleMode == ShuffleMode.none) {
+    if (!state.isShuffleEnabled &&
+        state.activeShuffleMode == ShuffleMode.none) {
       // off → regular shuffle
       toggleShuffle();
-    } else if (state.isShuffleEnabled && state.activeShuffleMode == ShuffleMode.none) {
+    } else if (state.isShuffleEnabled &&
+        state.activeShuffleMode == ShuffleMode.none) {
       // regular → smart shuffle: turn regular off first, then smart on
-      toggleShuffle();           // restores original queue order
-      toggleSmartShuffle();      // enables smart mode + triggers rec fill
+      toggleShuffle(); // restores original queue order
+      toggleSmartShuffle(); // enables smart mode + triggers rec fill
     } else {
       // smart → off (or any other active state → off)
-      toggleSmartShuffle();      // prunes ✨ songs and clears smart mode
+      toggleSmartShuffle(); // prunes ✨ songs and clears smart mode
     }
   }
 
@@ -2818,7 +2847,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
         state = state.copyWith(bassBoostLevel: bass);
       }
     } catch (e) {
-      logWarning('Player: _restorePlaybackSettings (prefs) failed: $e', tag: 'Player');
+      logWarning('Player: _restorePlaybackSettings (prefs) failed: $e',
+          tag: 'Player');
     }
   }
 
@@ -2914,58 +2944,100 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }
   }
 
-  Future<({List<Song> items, String? continuation})> searchSongsPage(String query) async {
+  Future<({List<Song> items, String? continuation})> searchSongsPage(
+      String query) async {
     try {
       final page = await _streamManager.searchSongsPage(query);
-      return (items: page.items.map((t) => Song.fromTrack(t)).toList(), continuation: page.continuation);
+      return (
+        items: page.items.map((t) => Song.fromTrack(t)).toList(),
+        continuation: page.continuation
+      );
     } catch (e) {
       return (items: <Song>[], continuation: null);
     }
   }
 
-  Future<({List<Song> items, String? continuation})> searchVideosPage(String query) async {
+  Future<({List<Song> items, String? continuation})> searchVideosPage(
+      String query) async {
     try {
       final page = await _streamManager.searchVideosPage(query);
-      return (items: page.items.map((t) => Song.fromTrack(t)).toList(), continuation: page.continuation);
+      return (
+        items: page.items.map((t) => Song.fromTrack(t)).toList(),
+        continuation: page.continuation
+      );
     } catch (e) {
       return (items: <Song>[], continuation: null);
     }
   }
 
-  Future<({List<Map<String, dynamic>> items, String? continuation})> searchArtistsPage(String query) async {
-    try { return await _streamManager.searchArtistsPage(query); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  Future<({List<Map<String, dynamic>> items, String? continuation})>
+      searchArtistsPage(String query) async {
+    try {
+      return await _streamManager.searchArtistsPage(query);
+    } catch (e) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
   }
 
-  Future<({List<Map<String, dynamic>> items, String? continuation})> searchAlbumsPage(String query) async {
-    try { return await _streamManager.searchAlbumsPage(query); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  Future<({List<Map<String, dynamic>> items, String? continuation})>
+      searchAlbumsPage(String query) async {
+    try {
+      return await _streamManager.searchAlbumsPage(query);
+    } catch (e) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
   }
 
-  Future<({List<Map<String, dynamic>> items, String? continuation})> searchCommunityPlaylistsPage(String query) async {
-    try { return await _streamManager.searchCommunityPlaylistsPage(query); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  Future<({List<Map<String, dynamic>> items, String? continuation})>
+      searchCommunityPlaylistsPage(String query) async {
+    try {
+      return await _streamManager.searchCommunityPlaylistsPage(query);
+    } catch (e) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
   }
 
-  Future<({List<Map<String, dynamic>> items, String? continuation})> searchFeaturedPlaylistsPage(String query) async {
-    try { return await _streamManager.searchFeaturedPlaylistsPage(query); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  Future<({List<Map<String, dynamic>> items, String? continuation})>
+      searchFeaturedPlaylistsPage(String query) async {
+    try {
+      return await _streamManager.searchFeaturedPlaylistsPage(query);
+    } catch (e) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
   }
 
-  Future<({List<Map<String, dynamic>> items, String? continuation})> searchProfilesPage(String query) async {
-    try { return await _streamManager.searchProfilesPage(query); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+  Future<({List<Map<String, dynamic>> items, String? continuation})>
+      searchProfilesPage(String query) async {
+    try {
+      return await _streamManager.searchProfilesPage(query);
+    } catch (e) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
   }
 
-  Future<({List<Song> items, String? continuation})> continueTrackSearch(String token) async {
+  Future<({List<Song> items, String? continuation})> continueTrackSearch(
+      String token) async {
     try {
       final page = await _streamManager.continueTrackSearch(token);
-      return (items: page.items.map((t) => Song.fromTrack(t)).toList(), continuation: page.continuation);
+      return (
+        items: page.items.map((t) => Song.fromTrack(t)).toList(),
+        continuation: page.continuation
+      );
     } catch (e) {
       return (items: <Song>[], continuation: null);
     }
   }
 
-  Future<({List<Map<String, dynamic>> items, String? continuation})> continueMapSearch(
+  Future<({List<Map<String, dynamic>> items, String? continuation})>
+      continueMapSearch(
     String token,
     List<Map<String, dynamic>> Function(Map<String, dynamic>) parseResults,
   ) async {
-    try { return await _streamManager.continueMapSearch(token, parseResults); } catch (e) { return (items: <Map<String, dynamic>>[], continuation: null); }
+    try {
+      return await _streamManager.continueMapSearch(token, parseResults);
+    } catch (e) {
+      return (items: <Map<String, dynamic>>[], continuation: null);
+    }
   }
 
   Future<List<Song>> searchVideos(String query) async {
@@ -2999,7 +3071,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> searchCommunityPlaylists(String query) async {
+  Future<List<Map<String, dynamic>>> searchCommunityPlaylists(
+      String query) async {
     if (query.trim().isEmpty) return [];
     try {
       return await _streamManager.searchCommunityPlaylists(query);
@@ -3009,7 +3082,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
     }
   }
 
-  Future<List<Map<String, dynamic>>> searchFeaturedPlaylists(String query) async {
+  Future<List<Map<String, dynamic>>> searchFeaturedPlaylists(
+      String query) async {
     if (query.trim().isEmpty) return [];
     try {
       return await _streamManager.searchFeaturedPlaylists(query);

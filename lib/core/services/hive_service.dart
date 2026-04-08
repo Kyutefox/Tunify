@@ -18,7 +18,7 @@ class HiveService {
   Future<void> init() async {
     try {
       await Hive.initFlutter();
-      
+
       // Open all boxes in parallel
       final results = await Future.wait([
         Hive.openBox<dynamic>('player_state'),

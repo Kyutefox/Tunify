@@ -10,7 +10,8 @@ class SqliteCreateController {
   Future<void> runOnCreate(Database db) async {
     await db.insert('settings', {'key': 'sort_order', 'value': 'recent'});
     await db.insert('settings', {'key': 'view_mode', 'value': 'list'});
-    await db.insert('settings', {'key': 'downloads_sort_order', 'value': 'customOrder'});
+    await db.insert(
+        'settings', {'key': 'downloads_sort_order', 'value': 'customOrder'});
   }
 
   /// Upserts playlists into playlist_info and replaces their songs in playlist_songs.
@@ -37,7 +38,9 @@ class SqliteCreateController {
           'palette_color': map['palette_color'],
           'is_saved': 1,
           'total_track_count_remote': map['total_track_count_remote'],
-          'shuffle_enabled': map['shuffle_enabled'] is int ? map['shuffle_enabled'] as int : ((map['shuffle_enabled'] == true) ? 1 : 0),
+          'shuffle_enabled': map['shuffle_enabled'] is int
+              ? map['shuffle_enabled'] as int
+              : ((map['shuffle_enabled'] == true) ? 1 : 0),
           'is_pinned': (map['is_pinned'] == true) ? 1 : 0,
           'is_artist': (map['is_artist'] == true) ? 1 : 0,
           'is_album': (map['is_album'] == true) ? 1 : 0,
@@ -49,7 +52,8 @@ class SqliteCreateController {
 
       // Replace all songs for this playlist (cascade handles nothing here — we
       // delete directly so imported playlists with songs=[] clear old rows).
-      await txn.delete('playlist_songs', where: 'playlist_id = ?', whereArgs: [id]);
+      await txn
+          .delete('playlist_songs', where: 'playlist_id = ?', whereArgs: [id]);
 
       final songs = map['songs'] as List<dynamic>? ?? [];
       for (var i = 0; i < songs.length; i++) {
@@ -134,7 +138,8 @@ class SqliteCreateController {
 
   /// Inserts a followed artist as a playlist_info row (INSERT OR IGNORE).
   Future<void> insertArtist(Database db, Map<String, dynamic> map) async {
-    final now = map['followedAt'] as String? ?? DateTime.now().toUtc().toIso8601String();
+    final now = map['followedAt'] as String? ??
+        DateTime.now().toUtc().toIso8601String();
     await db.insert(
       'playlist_info',
       {
@@ -161,7 +166,8 @@ class SqliteCreateController {
 
   /// Inserts a followed album as a playlist_info row (INSERT OR IGNORE).
   Future<void> insertAlbum(Database db, Map<String, dynamic> map) async {
-    final now = map['followedAt'] as String? ?? DateTime.now().toUtc().toIso8601String();
+    final now = map['followedAt'] as String? ??
+        DateTime.now().toUtc().toIso8601String();
     await db.insert(
       'playlist_info',
       {
@@ -190,8 +196,8 @@ class SqliteCreateController {
   ///
   /// Deletes existing rows first, then inserts the new list with
   /// contiguous sort_order_sequence values. Does NOT touch playlist_info.
-  Future<void> replaceSongsInTransaction(
-      Transaction txn, String playlistId, List<Map<String, dynamic>> songs) async {
+  Future<void> replaceSongsInTransaction(Transaction txn, String playlistId,
+      List<Map<String, dynamic>> songs) async {
     await txn.delete('playlist_songs',
         where: 'playlist_id = ?', whereArgs: [playlistId]);
     for (var i = 0; i < songs.length; i++) {
@@ -243,7 +249,8 @@ class SqliteCreateController {
           'artist': s['artist'] ?? '',
           'thumbnail_url': s['thumbnailUrl'] ?? '',
           'duration_seconds': s['durationSeconds'] ?? 0,
-          'last_played_at': s['lastPlayed'] ?? DateTime.now().toUtc().toIso8601String(),
+          'last_played_at':
+              s['lastPlayed'] ?? DateTime.now().toUtc().toIso8601String(),
         },
         conflictAlgorithm: ConflictAlgorithm.replace,
       );

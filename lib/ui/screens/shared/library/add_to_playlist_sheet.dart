@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/ui/widgets/common/input_field.dart';
-import 'package:tunify/ui/widgets/common/sheet.dart' show showAppSheet, kSheetHorizontalPadding;
+import 'package:tunify/ui/widgets/common/sheet.dart'
+    show showAppSheet, kSheetHorizontalPadding;
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/library/library_provider.dart';
@@ -158,7 +159,9 @@ class _AddToPlaylistSheetContentState
                   ? 'No playlists match "$_query"'
                   : 'Create a playlist in Library first',
               style: TextStyle(
-                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
+                color: AppColorsScheme.of(context)
+                    .textMuted
+                    .withValues(alpha: 0.9),
                 fontSize: AppFontSize.base,
               ),
             ),
@@ -174,7 +177,8 @@ class _AddToPlaylistSheetContentState
               itemBuilder: (context, index) {
                 final p = playlists[index];
                 final pSongIds = p.songs.map((s) => s.id).toSet();
-                final allAlreadyIn = widget.songs.every((s) => pSongIds.contains(s.id));
+                final allAlreadyIn =
+                    widget.songs.every((s) => pSongIds.contains(s.id));
                 return ListTile(
                   contentPadding: const EdgeInsets.symmetric(
                     horizontal: AppSpacing.base,

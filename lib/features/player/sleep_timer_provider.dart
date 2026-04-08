@@ -46,7 +46,8 @@ class SleepTimerNotifier extends Notifier<SleepTimerState> {
     _sleepTimer = Timer(duration, _onTimerFired);
     _tickTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.endTime == null) return;
-      state = SleepTimerState(endTime: state.endTime, endOfTrack: state.endOfTrack);
+      state =
+          SleepTimerState(endTime: state.endTime, endOfTrack: state.endOfTrack);
     });
   }
 
@@ -87,4 +88,5 @@ class SleepTimerNotifier extends Notifier<SleepTimerState> {
 }
 
 final sleepTimerProvider =
-    NotifierProvider<SleepTimerNotifier, SleepTimerState>(SleepTimerNotifier.new);
+    NotifierProvider<SleepTimerNotifier, SleepTimerState>(
+        SleepTimerNotifier.new);

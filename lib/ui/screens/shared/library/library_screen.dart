@@ -187,12 +187,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       ];
 
       final pinnedEntries = <LibrarySectionEntry>[
-        ...rootPlaylists
-            .where((p) => p.isPinned)
-            .map((p) => PlaylistEntry(p)),
-        ...podcasts
-            .where((p) => p.isPinned)
-            .map(
+        ...rootPlaylists.where((p) => p.isPinned).map((p) => PlaylistEntry(p)),
+        ...podcasts.where((p) => p.isPinned).map(
               (p) => MediaLibraryEntry(
                 title: p.title,
                 subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
@@ -225,9 +221,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 ),
               ),
             ),
-        ...audiobooks
-            .where((a) => a.isPinned)
-            .map(
+        ...audiobooks.where((a) => a.isPinned).map(
               (a) => MediaLibraryEntry(
                 title: a.title,
                 subtitle: 'Audiobook',
@@ -260,9 +254,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 ),
               ),
             ),
-        ...albums
-            .where((a) => a.isPinned)
-            .map(
+        ...albums.where((a) => a.isPinned).map(
               (album) => MediaLibraryEntry(
                 title: album.title,
                 subtitle: _typedSubtitle('Album', album.artistName),
@@ -291,9 +283,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 ),
               ),
             ),
-        ...artists
-            .where((a) => a.isPinned)
-            .map(
+        ...artists.where((a) => a.isPinned).map(
               (artist) => MediaLibraryEntry(
                 title: artist.name,
                 subtitle: 'Artist',
@@ -324,82 +314,74 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       ];
 
       final allEntries = <LibrarySectionEntry>[
-        ...rootPlaylists
-            .where((p) => !p.isPinned)
-            .map((p) => PlaylistEntry(p)),
-        ...podcasts
-            .where((p) => !p.isPinned)
-            .map(
-          (p) => MediaLibraryEntry(
-            title: p.title,
-            subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
-            thumbnailUrl: p.thumbnailUrl,
-            placeholderIcon: AppIcons.podcast,
-            showPinIndicator: p.isPinned,
-            onTap: () {
-              Navigator.of(context).push(
-                appPageRoute<void>(
-                  builder: (_) => LibraryPlaylistScreen.podcast(
-                    playlist: Playlist(
-                      id: p.browseId ?? p.id,
-                      title: p.title,
-                      description: p.author ?? '',
-                      coverUrl: p.thumbnailUrl ?? '',
-                    ),
-                  ),
-                ),
-              );
-            },
-            onOptions: (rect) => _onPlaylistOptions(
-              _mediaAsLibraryPlaylist(
-                id: p.browseId ?? p.id,
+        ...rootPlaylists.where((p) => !p.isPinned).map((p) => PlaylistEntry(p)),
+        ...podcasts.where((p) => !p.isPinned).map(
+              (p) => MediaLibraryEntry(
                 title: p.title,
-                subtitle: p.author ?? '',
+                subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
                 thumbnailUrl: p.thumbnailUrl,
-                isPinned: p.isPinned,
-              ),
-              rect,
-            ),
-          ),
-        ),
-        ...audiobooks
-            .where((a) => !a.isPinned)
-            .map(
-          (a) => MediaLibraryEntry(
-            title: a.title,
-            subtitle: 'Audiobook',
-            thumbnailUrl: a.thumbnailUrl,
-            placeholderIcon: AppIcons.bookOpen,
-            showPinIndicator: a.isPinned,
-            onTap: () {
-              Navigator.of(context).push(
-                appPageRoute<void>(
-                  builder: (_) => LibraryPlaylistScreen.podcast(
-                    playlist: Playlist(
-                      id: a.browseId ?? a.id,
-                      title: a.title,
-                      description: a.author ?? '',
-                      coverUrl: a.thumbnailUrl ?? '',
+                placeholderIcon: AppIcons.podcast,
+                showPinIndicator: p.isPinned,
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => LibraryPlaylistScreen.podcast(
+                        playlist: Playlist(
+                          id: p.browseId ?? p.id,
+                          title: p.title,
+                          description: p.author ?? '',
+                          coverUrl: p.thumbnailUrl ?? '',
+                        ),
+                      ),
                     ),
+                  );
+                },
+                onOptions: (rect) => _onPlaylistOptions(
+                  _mediaAsLibraryPlaylist(
+                    id: p.browseId ?? p.id,
+                    title: p.title,
+                    subtitle: p.author ?? '',
+                    thumbnailUrl: p.thumbnailUrl,
+                    isPinned: p.isPinned,
                   ),
+                  rect,
                 ),
-              );
-            },
-            onOptions: (rect) => _onPlaylistOptions(
-              _mediaAsLibraryPlaylist(
-                id: a.browseId ?? a.id,
-                title: a.title,
-                subtitle: a.author ?? '',
-                thumbnailUrl: a.thumbnailUrl,
-                isPinned: a.isPinned,
               ),
-              rect,
             ),
-          ),
-        ),
-        ...albums
-            .where((a) => !a.isPinned)
-            .map(
+        ...audiobooks.where((a) => !a.isPinned).map(
+              (a) => MediaLibraryEntry(
+                title: a.title,
+                subtitle: 'Audiobook',
+                thumbnailUrl: a.thumbnailUrl,
+                placeholderIcon: AppIcons.bookOpen,
+                showPinIndicator: a.isPinned,
+                onTap: () {
+                  Navigator.of(context).push(
+                    appPageRoute<void>(
+                      builder: (_) => LibraryPlaylistScreen.podcast(
+                        playlist: Playlist(
+                          id: a.browseId ?? a.id,
+                          title: a.title,
+                          description: a.author ?? '',
+                          coverUrl: a.thumbnailUrl ?? '',
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                onOptions: (rect) => _onPlaylistOptions(
+                  _mediaAsLibraryPlaylist(
+                    id: a.browseId ?? a.id,
+                    title: a.title,
+                    subtitle: a.author ?? '',
+                    thumbnailUrl: a.thumbnailUrl,
+                    isPinned: a.isPinned,
+                  ),
+                  rect,
+                ),
+              ),
+            ),
+        ...albums.where((a) => !a.isPinned).map(
               (album) => MediaLibraryEntry(
                 title: album.title,
                 subtitle: _typedSubtitle('Album', album.artistName),
@@ -429,9 +411,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 ),
               ),
             ),
-        ...artists
-            .where((a) => !a.isPinned)
-            .map(
+        ...artists.where((a) => !a.isPinned).map(
               (artist) => MediaLibraryEntry(
                 title: artist.name,
                 subtitle: 'Artist',
@@ -461,8 +441,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               ),
             ),
       ];
-      allEntries.sort((a, b) =>
-          _compareMainAllEntries(a, b, sortOrder));
+      allEntries.sort((a, b) => _compareMainAllEntries(a, b, sortOrder));
 
       return [
         ...staticEntries,
@@ -496,9 +475,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
 
     DateTime dateOf(LibrarySectionEntry e) {
       return switch (e) {
-        PlaylistEntry(:final playlist) => sortOrder == LibrarySortOrder.recentlyAdded
-            ? playlist.createdAt
-            : playlist.updatedAt,
+        PlaylistEntry(:final playlist) =>
+          sortOrder == LibrarySortOrder.recentlyAdded
+              ? playlist.createdAt
+              : playlist.updatedAt,
         MediaLibraryEntry(:final folderSortDate) =>
           folderSortDate ?? DateTime.fromMillisecondsSinceEpoch(0),
         FolderEntry(:final folder) => folder.createdAt,
@@ -602,8 +582,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     Widget buildScrollView(bool withRefresh) {
       if (isLoading) {
         return Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
           child: LibrarySkeletonList(viewMode: viewMode),
         );
       }
@@ -816,7 +795,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: podcasts.length,
-                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: AppSpacing.xs),
                 itemBuilder: (context, index) {
                   final podcast = podcasts[index];
                   return LibraryItemTile(
@@ -875,7 +855,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
                 itemCount: audiobooks.length,
-                separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
+                separatorBuilder: (_, __) =>
+                    const SizedBox(height: AppSpacing.xs),
                 itemBuilder: (context, index) {
                   final audiobook = audiobooks[index];
                   return LibraryItemTile(
@@ -1058,9 +1039,9 @@ class _FollowedArtistsList extends ConsumerWidget {
               ),
             ),
           ),
-          onOptions: (rect) =>
-              showFollowedArtistOptionsSheet(context, ref, artist,
-                  anchorRect: rect),
+          onOptions: (rect) => showFollowedArtistOptionsSheet(
+              context, ref, artist,
+              anchorRect: rect),
         );
       },
     );
@@ -1106,9 +1087,9 @@ class _FollowedArtistsGrid extends ConsumerWidget {
                 ),
               ),
             ),
-            onOptions: (rect) =>
-                showFollowedArtistOptionsSheet(context, ref, artist,
-                    anchorRect: rect),
+            onOptions: (rect) => showFollowedArtistOptionsSheet(
+                context, ref, artist,
+                anchorRect: rect),
           ),
         );
       },
@@ -1148,9 +1129,9 @@ class _FollowedAlbumsList extends ConsumerWidget {
               ),
             ),
           ),
-          onOptions: (rect) =>
-              showFollowedAlbumOptionsSheet(context, ref, album,
-                  anchorRect: rect),
+          onOptions: (rect) => showFollowedAlbumOptionsSheet(
+              context, ref, album,
+              anchorRect: rect),
         );
       },
     );
@@ -1197,9 +1178,9 @@ class _FollowedAlbumsGrid extends ConsumerWidget {
                 ),
               ),
             ),
-            onOptions: (rect) =>
-                showFollowedAlbumOptionsSheet(context, ref, album,
-                    anchorRect: rect),
+            onOptions: (rect) => showFollowedAlbumOptionsSheet(
+                context, ref, album,
+                anchorRect: rect),
           ),
         );
       },
@@ -1229,8 +1210,9 @@ class LibraryFilterPlaceholder extends StatelessWidget {
           children: [
             AppIcon(
               icon: icon,
-              color:
-                  AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5),
+              color: AppColorsScheme.of(context).textMuted.withValues(
+                    alpha: UIOpacity.disabled,
+                  ),
               size: 64,
             ),
             const SizedBox(height: AppSpacing.lg),
@@ -1590,9 +1572,7 @@ void showFollowedAlbumOptionsSheet(
         AppMenuEntry(
           icon: album.isPinned ? AppIcons.pinOff : AppIcons.pin,
           label: album.isPinned ? 'Unpin' : 'Pin to top',
-          onTap: () => ref
-              .read(libraryProvider.notifier)
-              .toggleAlbumPin(album),
+          onTap: () => ref.read(libraryProvider.notifier).toggleAlbumPin(album),
         ),
         if (folders.isNotEmpty)
           AppMenuEntry(
@@ -1615,9 +1595,7 @@ void showFollowedAlbumOptionsSheet(
               confirmLabel: 'Remove',
             );
             if (confirmed) {
-              await ref
-                  .read(libraryProvider.notifier)
-                  .toggleFollowAlbum(album);
+              await ref.read(libraryProvider.notifier).toggleFollowAlbum(album);
             }
           },
         ),
@@ -1701,9 +1679,8 @@ void showFollowedArtistOptionsSheet(
         AppMenuEntry(
           icon: artist.isPinned ? AppIcons.pinOff : AppIcons.pin,
           label: artist.isPinned ? 'Unpin' : 'Pin to top',
-          onTap: () => ref
-              .read(libraryProvider.notifier)
-              .toggleArtistPin(artist),
+          onTap: () =>
+              ref.read(libraryProvider.notifier).toggleArtistPin(artist),
         ),
         if (folders.isNotEmpty)
           AppMenuEntry(
@@ -1858,9 +1835,9 @@ List<LibrarySectionEntry> buildSortedFolderSectionEntries({
               ),
             );
           },
-          onOptions: (rect) =>
-              showFollowedAlbumOptionsSheet(context, ref, album,
-                  anchorRect: rect),
+          onOptions: (rect) => showFollowedAlbumOptionsSheet(
+              context, ref, album,
+              anchorRect: rect),
         ),
       );
       continue;
@@ -1888,9 +1865,9 @@ List<LibrarySectionEntry> buildSortedFolderSectionEntries({
               ),
             );
           },
-          onOptions: (rect) =>
-              showFollowedArtistOptionsSheet(context, ref, artist,
-                  anchorRect: rect),
+          onOptions: (rect) => showFollowedArtistOptionsSheet(
+              context, ref, artist,
+              anchorRect: rect),
         ),
       );
     }

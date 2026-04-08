@@ -17,7 +17,7 @@ abstract final class AppColors {
   // ——— Surface layers (elevated, card, hover) ———
   /// surface_elevated
   static const Color surface = Color(0xFF181818);
-  static const Color surfaceElevated = Color(0xFF181818);
+  static const Color surfaceElevated = surface;
 
   /// surface_card — cards, list tiles
   static const Color card = Color(0xFF282828);
@@ -33,14 +33,16 @@ abstract final class AppColors {
   static const Color primaryContainer = PrimaryPalette.primaryContainer;
 
   /// Brighter green for active icon states on dark surfaces — more punch than [primary].
-  static const Color primaryIcon = PrimaryPalette.primaryLight;
-  static const Color secondary = PrimaryPalette.primaryLight;
-  static const Color secondaryLight = PrimaryPalette.primaryLight;
-  static const Color accent = PrimaryPalette.primary;
-  static const Color accentGreen = PrimaryPalette.primary;
+  static const Color primaryIcon = primaryLight;
+  static const Color secondary = primaryLight;
+  static const Color secondaryLight = secondary;
+  static const Color accent = primary;
+  static const Color accentGreen = accent;
   static const Color accentOrange = Color(0xFFFF6B35);
   static const Color accentRed = Color(0xFFE91429);
   static const Color accentCyan = Color(0xFF00D2FF);
+  static const Color localFilesAccent = Color(0xFFFF9F43);
+  static const Color episodesAccent = Color(0xFF9333EA);
 
   // ——— Text ———
   static const Color textPrimary = Color(0xFFFFFFFF);
@@ -94,6 +96,18 @@ abstract final class AppColors {
   /// gradient_downloads — teal-to-blue for the Downloads fixed playlist
   static const LinearGradient downloadGradient = LinearGradient(
     colors: [Color(0xFF0EA5E9), Color(0xFF6366F1)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient localFilesGradient = LinearGradient(
+    colors: [Color(0xFFFF9F43), Color(0xFFFF6B35)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient episodesGradient = LinearGradient(
+    colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

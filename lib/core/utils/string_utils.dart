@@ -1,4 +1,3 @@
-
 /// Capitalizes the first character of a string, leaving the rest unchanged.
 extension StringCapitalize on String {
   /// Returns this string with its first character uppercased.

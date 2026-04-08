@@ -90,12 +90,14 @@ class CarPlayService {
 
   List<Map<String, dynamic>> _getPlaylists() {
     final playlists = _ref.read(libraryProvider).playlists;
-    return playlists.map((playlist) => {
-      'id': '${MediaItemId.playlistPrefix}${playlist.id}',
-      'title': playlist.name,
-      'artist': '${playlist.songs.length} songs',
-      'playable': false,
-    }).toList();
+    return playlists
+        .map((playlist) => {
+              'id': '${MediaItemId.playlistPrefix}${playlist.id}',
+              'title': playlist.name,
+              'artist': '${playlist.songs.length} songs',
+              'playable': false,
+            })
+        .toList();
   }
 
   Future<void> _playFromMediaId(String mediaId) async {
@@ -136,9 +138,9 @@ class CarPlayService {
 
     if (song != null) {
       await _ref.read(playerProvider.notifier).playSong(
-        song,
-        queueSource: 'carplay',
-      );
+            song,
+            queueSource: 'carplay',
+          );
     }
   }
 
@@ -190,7 +192,8 @@ class CarPlayService {
       });
     } catch (e) {
       // CarPlay might not be connected, ignore errors
-      logDebug('CarPlay: Update now playing failed (not connected?): $e', tag: 'CarPlay');
+      logDebug('CarPlay: Update now playing failed (not connected?): $e',
+          tag: 'CarPlay');
     }
   }
 }

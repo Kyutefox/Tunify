@@ -45,8 +45,8 @@ class AppCenteredFormBody extends StatelessWidget {
     return Padding(
       padding: EdgeInsets.only(bottom: keyboardOpen ? keyboardShift : 0),
       child: AnimatedAlign(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
+        duration: AppDuration.fast,
+        curve: AppCurves.decelerate,
         alignment: keyboardOpen ? const Alignment(0, -0.22) : Alignment.center,
         child: SingleChildScrollView(
           keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,

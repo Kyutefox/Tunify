@@ -6,8 +6,8 @@ class SqliteDeleteController {
   /// ON DELETE CASCADE removes corresponding playlist_songs rows automatically.
   Future<void> deletePlaylistsNotIn(
       Transaction txn, Set<String> currentIds) async {
-    final existing = await txn
-        .query('playlist_info', columns: ['id'], where: 'is_saved = 1');
+    final existing = await txn.query('playlist_info',
+        columns: ['id'], where: 'is_saved = 1');
     for (final row in existing) {
       final id = row['id'] as String;
       if (!currentIds.contains(id)) {
@@ -25,8 +25,8 @@ class SqliteDeleteController {
     for (final row in existingFolders) {
       final id = row['id'] as String;
       if (!currentFolderIds.contains(id)) {
-        await txn
-            .delete('folder_playlists', where: 'folder_id = ?', whereArgs: [id]);
+        await txn.delete('folder_playlists',
+            where: 'folder_id = ?', whereArgs: [id]);
         await txn.delete('folders', where: 'id = ?', whereArgs: [id]);
       }
     }
@@ -69,8 +69,8 @@ class SqliteDeleteController {
   Future<void> clearExpiredStreamUrlCache(Database db) async {
     try {
       final now = DateTime.now().toUtc().toIso8601String();
-      await db
-          .delete('stream_url_cache', where: 'expires_at < ?', whereArgs: [now]);
+      await db.delete('stream_url_cache',
+          where: 'expires_at < ?', whereArgs: [now]);
     } catch (_) {}
   }
 

@@ -54,7 +54,8 @@ class PodcastState {
         subscriptions: subscriptions ?? this.subscriptions,
         savedAudiobooks: savedAudiobooks ?? this.savedAudiobooks,
         episodesForLater: episodesForLater ?? this.episodesForLater,
-        episodesForLaterSortOrder: episodesForLaterSortOrder ?? this.episodesForLaterSortOrder,
+        episodesForLaterSortOrder:
+            episodesForLaterSortOrder ?? this.episodesForLaterSortOrder,
         positions: positions ?? this.positions,
         isLoading: isLoading ?? this.isLoading,
       );
@@ -78,17 +79,18 @@ class PodcastNotifier extends Notifier<PodcastState> {
     final books = await _repo.loadSavedAudiobooks();
     final episodes = await _repo.loadEpisodesForLater();
     final positions = await _repo.loadAllPositions();
-    
+
     // Load sort order from settings
     final bridge = DatabaseBridge();
-    final sortOrderStr = await bridge.getSetting('episodes_for_later_sort_order');
+    final sortOrderStr =
+        await bridge.getSetting('episodes_for_later_sort_order');
     final sortOrder = sortOrderStr != null
         ? PlaylistTrackSortOrder.values.firstWhere(
             (e) => e.name == sortOrderStr,
             orElse: () => PlaylistTrackSortOrder.recentlyAdded,
           )
         : PlaylistTrackSortOrder.recentlyAdded;
-    
+
     state = PodcastState(
       subscriptions: subs,
       savedAudiobooks: books,
@@ -137,8 +139,7 @@ class PodcastNotifier extends Notifier<PodcastState> {
     await _repo.savePosition(pos);
   }
 
-  Future<void> clearPosition(
-      String contentId, PlaybackContentType type) async {
+  Future<void> clearPosition(String contentId, PlaybackContentType type) async {
     final key = '${contentId}_${type.name}';
     final updated = Map<String, PlaybackPosition>.from(state.positions);
     updated.remove(key);
@@ -182,7 +183,8 @@ class PodcastNotifier extends Notifier<PodcastState> {
     final isAlreadySaved = state.episodesForLater.any((s) => s.id == song.id);
     if (isAlreadySaved) {
       state = state.copyWith(
-        episodesForLater: state.episodesForLater.where((s) => s.id != song.id).toList(),
+        episodesForLater:
+            state.episodesForLater.where((s) => s.id != song.id).toList(),
       );
       await _repo.removeEpisodeForLater(song.id);
     } else {
@@ -193,7 +195,8 @@ class PodcastNotifier extends Notifier<PodcastState> {
     }
   }
 
-  Future<void> setEpisodesForLaterSortOrder(PlaylistTrackSortOrder order) async {
+  Future<void> setEpisodesForLaterSortOrder(
+      PlaylistTrackSortOrder order) async {
     state = state.copyWith(episodesForLaterSortOrder: order);
     // Persist sort order to settings
     final bridge = DatabaseBridge();
@@ -271,5 +274,3 @@ final audiobookSearchResultsProvider =
           ))
       .toList();
 });
-
-

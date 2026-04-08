@@ -83,11 +83,13 @@ class AudioRepository {
     final cacheInfo = await _streamCache.getCacheInfo(song.id);
     if (cacheInfo.exists && cacheInfo.filePath != null) {
       // Use partial cache immediately if we have enough data buffered
-      final hasEnoughData = cacheInfo.cachedBytes >= (2 * 1024 * 1024) || // 2MB minimum
-                          cacheInfo.progress >= 0.30; // or 30% of expected size
-      
+      final hasEnoughData =
+          cacheInfo.cachedBytes >= (2 * 1024 * 1024) || // 2MB minimum
+              cacheInfo.progress >= 0.30; // or 30% of expected size
+
       if (hasEnoughData || cacheInfo.isComplete) {
-        log('PlayFlow: resolveSource cache HIT (${stepSw.elapsedMilliseconds}ms) progress: ${(cacheInfo.progress * 100).toStringAsFixed(1)}% '
+        log(
+            'PlayFlow: resolveSource cache HIT (${stepSw.elapsedMilliseconds}ms) progress: ${(cacheInfo.progress * 100).toStringAsFixed(1)}% '
             '(${hasEnoughData ? 'sufficient' : 'complete'})',
             tag: 'PlayFlow');
         return ResolvedAudioSourceFile(
@@ -127,7 +129,8 @@ class AudioRepository {
 
     final cacheInfo = await _streamCache.getCacheInfo(song.id);
 
-    log('PlayFlow: resolveForPlayback cache check: exists=${cacheInfo.exists} '
+    log(
+        'PlayFlow: resolveForPlayback cache check: exists=${cacheInfo.exists} '
         'bytes=${cacheInfo.cachedBytes} total=${cacheInfo.totalBytes} '
         'progress=${(cacheInfo.progress * 100).toStringAsFixed(1)}% '
         'complete=${cacheInfo.isComplete}',
@@ -136,16 +139,19 @@ class AudioRepository {
     if (cacheInfo.exists && cacheInfo.filePath != null) {
       // Use partial cache immediately if we have enough data buffered
       // This eliminates the 1-2 second network fetch delay on next/prev
-      final hasEnoughData = cacheInfo.cachedBytes >= (2 * 1024 * 1024) || // 2MB minimum
-                          cacheInfo.progress >= 0.30; // or 30% of expected size
-      
-      log('PlayFlow: resolveForPlayback cache decision: hasEnoughData=$hasEnoughData '
+      final hasEnoughData =
+          cacheInfo.cachedBytes >= (2 * 1024 * 1024) || // 2MB minimum
+              cacheInfo.progress >= 0.30; // or 30% of expected size
+
+      log(
+          'PlayFlow: resolveForPlayback cache decision: hasEnoughData=$hasEnoughData '
           '(bytes>=2MB: ${cacheInfo.cachedBytes >= 2 * 1024 * 1024}, '
           'progress>=30%: ${cacheInfo.progress >= 0.30})',
           tag: 'PlayFlow');
-      
+
       if (hasEnoughData || cacheInfo.isComplete) {
-        log('PlayFlow: resolveForPlayback cache HIT (${stepSw.elapsedMilliseconds}ms) '
+        log(
+            'PlayFlow: resolveForPlayback cache HIT (${stepSw.elapsedMilliseconds}ms) '
             'cached: ${cacheInfo.cachedBytes} bytes progress: ${(cacheInfo.progress * 100).toStringAsFixed(1)}% '
             '(${hasEnoughData ? 'sufficient' : 'complete'})',
             tag: 'PlayFlow');

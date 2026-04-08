@@ -1,10 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 import 'package:skeletonizer/skeletonizer.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flex_color_picker/flex_color_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import 'package:tunify/ui/widgets/common/sheet.dart'
     show showAppDraggableSheet, showAppSheet, kSheetHorizontalPadding;
+import 'package:tunify/core/constants/app_strings.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_playlist.dart' show ShuffleMode;
 import 'package:tunify/data/models/song.dart';
@@ -27,7 +36,9 @@ import 'package:tunify/ui/widgets/library/song_list_tile.dart';
 import 'package:tunify/ui/widgets/player/mini_player_play_button.dart';
 import 'package:tunify/ui/widgets/common/empty_state_placeholder.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/widgets/common/page_foundation.dart';
 import 'package:tunify/ui/screens/shared/player/player_controls.dart';
+import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/screens/shared/player/player_progress_bar.dart';
 import 'package:tunify/ui/screens/shared/player/player_shared.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
@@ -2102,6 +2113,8 @@ class LyricsPanelContent extends ConsumerStatefulWidget {
 class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
   List<GlobalKey> _lineKeys = [];
   int _activeIndex = -1;
+  bool _isShareSelectionMode = false;
+  final List<int> _selectedLineIndices = <int>[];
   ProviderSubscription<Duration>? _positionSubscription;
 
   @override
@@ -2152,6 +2165,65 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
     });
   }
 
+  void _toggleShareSelectionMode() {
+    setState(() {
+      _isShareSelectionMode = !_isShareSelectionMode;
+      _selectedLineIndices.clear();
+    });
+  }
+
+  void _onTapLyricLine(int index, bool isSynced) {
+    if (!_isShareSelectionMode || !isSynced) return;
+    setState(() {
+      if (_selectedLineIndices.isEmpty) {
+        _selectedLineIndices.add(index);
+        return;
+      }
+      final last = _selectedLineIndices.last;
+      if (index == last) {
+        _selectedLineIndices.removeLast();
+        return;
+      }
+      if (_selectedLineIndices.length >= 5) return;
+      if (index == last + 1) {
+        _selectedLineIndices.add(index);
+      }
+    });
+  }
+
+  void _onLongPressLyricLine(int index, bool isSynced) {
+    if (!isSynced) return;
+    if (!_isShareSelectionMode) {
+      setState(() {
+        _isShareSelectionMode = true;
+        _selectedLineIndices
+          ..clear()
+          ..add(index);
+      });
+      return;
+    }
+    _onTapLyricLine(index, isSynced);
+  }
+
+  Future<void> _openShareComposer(LyricsState state) async {
+    final song = ref.read(currentSongProvider);
+    if (song == null || !state.hasLyrics) return;
+    final selectedLines = _selectedLineIndices
+        .where((i) => i >= 0 && i < state.lyrics!.lines.length)
+        .map((i) => state.lyrics!.lines[i].text.trim())
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (selectedLines.isEmpty) return;
+    await Navigator.of(context).push(
+      appPageRoute<void>(
+        builder: (_) => LyricsShareComposer(
+          song: song,
+          lyricsLines: selectedLines,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final lyricsState = ref.watch(lyricsProvider);
@@ -2184,6 +2256,22 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
                 ),
               ),
               const Spacer(),
+              if (lyricsState.hasLyrics && lyricsState.lyrics!.isSynced)
+                GestureDetector(
+                  onTap: _toggleShareSelectionMode,
+                  behavior: HitTestBehavior.opaque,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    child: Text(
+                      _isShareSelectionMode ? 'Cancel' : 'Share',
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.sm,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
               if (lyricsState.hasLyrics && lyricsState.lyrics!.source != null)
                 Text(
                   lyricsState.lyrics!.source!,
@@ -2198,6 +2286,35 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
         Expanded(
           child: _buildLyricsContent(lyricsState),
         ),
+        if (_isShareSelectionMode && lyricsState.hasLyrics && lyricsState.lyrics!.isSynced)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              kSheetHorizontalPadding,
+              8,
+              kSheetHorizontalPadding,
+              16,
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectedLineIndices.isEmpty
+                    ? null
+                    : () => _openShareComposer(lyricsState),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColorsScheme.of(context).surfaceHighlight,
+                  foregroundColor: AppColorsScheme.of(context).textPrimary,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text(
+                  'Next',
+                  style: TextStyle(
+                    fontSize: AppFontSize.base,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -2335,27 +2452,588 @@ class _LyricsPanelContentState extends ConsumerState<LyricsPanelContent> {
     if (isEmpty) return const SizedBox(height: AppSpacing.lg);
 
     final isActive = isSynced && index == _activeIndex;
+    final isSelected = _selectedLineIndices.contains(index);
 
-    return AnimatedDefaultTextStyle(
-      key: _lineKeys[index],
-      duration: const Duration(milliseconds: 250),
-      curve: Curves.easeOut,
-      style: TextStyle(
-        color: isSynced
-            ? (isActive
-                ? AppColorsScheme.of(context).textPrimary
-                : AppColorsScheme.of(context)
-                    .textPrimary
-                    .withValues(alpha: 0.3))
-            : AppColorsScheme.of(context).textPrimary,
-        fontSize: isActive ? 22 : 20,
-        fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
-        height: AppLineHeight.relaxed,
-        letterSpacing: AppLetterSpacing.heading,
+    return GestureDetector(
+      onTap: () => _onTapLyricLine(index, isSynced),
+      onLongPress: () => _onLongPressLyricLine(index, isSynced),
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        decoration: BoxDecoration(
+          color: isSelected
+              ? AppColorsScheme.of(context).surfaceHighlight.withValues(alpha: 0.65)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+        ),
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+        child: AnimatedDefaultTextStyle(
+          key: _lineKeys[index],
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOut,
+          style: TextStyle(
+            color: isSynced
+                ? (isActive
+                    ? AppColorsScheme.of(context).textPrimary
+                    : AppColorsScheme.of(context)
+                        .textPrimary
+                        .withValues(alpha: 0.3))
+                : AppColorsScheme.of(context).textPrimary,
+            fontSize: isActive ? 22 : 20,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+            height: AppLineHeight.relaxed,
+            letterSpacing: AppLetterSpacing.heading,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6),
+            child: Text(line.text),
+          ),
+        ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Text(line.text),
+    );
+  }
+}
+
+class LyricsShareComposer extends StatefulWidget {
+  const LyricsShareComposer({
+    super.key,
+    required this.song,
+    required this.lyricsLines,
+  });
+
+  final Song song;
+  final List<String> lyricsLines;
+
+  @override
+  State<LyricsShareComposer> createState() => _LyricsShareComposerState();
+}
+
+class _LyricsShareComposerState extends State<LyricsShareComposer> {
+  static const List<List<Color>> _gradientPresets = [
+    [Color(0xFF5B86E5), Color(0xFF36D1DC)],
+    [Color(0xFF2B1055), Color(0xFF7597DE)],
+    [Color(0xFF42275A), Color(0xFF734B6D)],
+    [Color(0xFF11998E), Color(0xFF38EF7D)],
+    [Color(0xFFE96443), Color(0xFF904E95)],
+    [Color(0xFF1D4350), Color(0xFFA43931)],
+  ];
+
+  final GlobalKey _cardKey = GlobalKey();
+  int _selectedGradient = 0;
+  List<Color>? _customGradient;
+  double _customGradientAngle = 135;
+  bool _isCustomMode = false;
+  bool _editingStart = true;
+  TextEditingController? _startHexController;
+  TextEditingController? _endHexController;
+  bool _isSharing = false;
+
+  TextEditingController get _startHexCtrl =>
+      _startHexController ??= TextEditingController();
+  TextEditingController get _endHexCtrl =>
+      _endHexController ??= TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _startHexController = TextEditingController();
+    _endHexController = TextEditingController();
+    _syncHexControllers();
+  }
+
+  @override
+  void dispose() {
+    _startHexController?.dispose();
+    _endHexController?.dispose();
+    super.dispose();
+  }
+
+  Future<void> _shareCardImage() async {
+    if (_isSharing) return;
+    setState(() => _isSharing = true);
+    try {
+      final boundary =
+          _cardKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) return;
+      final image = await boundary.toImage(pixelRatio: 3);
+      final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) return;
+      final bytes = byteData.buffer.asUint8List();
+      final dir = await getTemporaryDirectory();
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final file = File('${dir.path}/tunify_lyrics_$timestamp.png');
+      await file.writeAsBytes(bytes, flush: true);
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path)],
+          text: '${widget.song.title} - ${widget.song.artist}',
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _isSharing = false);
+    }
+  }
+
+  Alignment _gradientBegin(double angleDeg) {
+    final rad = angleDeg * (math.pi / 180.0);
+    final x = math.cos(rad);
+    final y = math.sin(rad);
+    return Alignment(-x, -y);
+  }
+
+  Alignment _gradientEnd(double angleDeg) {
+    final rad = angleDeg * (math.pi / 180.0);
+    final x = math.cos(rad);
+    final y = math.sin(rad);
+    return Alignment(x, y);
+  }
+
+  void _enterCustomMode() {
+    setState(() {
+      _isCustomMode = true;
+      _selectedGradient = -1;
+      _customGradient ??= [
+        _gradientPresets.first.first,
+        _gradientPresets.first.last,
+      ];
+      _editingStart = true;
+      _syncHexControllers();
+    });
+  }
+
+  Color get _customStart =>
+      (_customGradient ?? _gradientPresets.first).first;
+  Color get _customEnd =>
+      (_customGradient ?? _gradientPresets.first).last;
+
+  String _toHex(Color c) {
+    final rgb = c.toARGB32() & 0xFFFFFF;
+    return rgb.toRadixString(16).padLeft(6, '0').toUpperCase();
+  }
+
+  Color? _parseHex(String input) {
+    final hex = input.replaceAll('#', '').trim();
+    if (hex.length != 6) return null;
+    final value = int.tryParse(hex, radix: 16);
+    if (value == null) return null;
+    return Color(0xFF000000 | value);
+  }
+
+  void _syncHexControllers() {
+    _startHexCtrl.text = _toHex(_customStart);
+    _endHexCtrl.text = _toHex(_customEnd);
+  }
+
+  void _onInlineColorChanged(Color color) {
+    final list = [...(_customGradient ?? _gradientPresets.first)];
+    if (_editingStart) {
+      list[0] = color;
+      _startHexCtrl.text = _toHex(color);
+    } else {
+      list[1] = color;
+      _endHexCtrl.text = _toHex(color);
+    }
+    setState(() => _customGradient = list);
+  }
+
+  void _applyHex(bool isStart) {
+    final parsed = _parseHex(isStart
+        ? _startHexCtrl.text
+        : _endHexCtrl.text);
+    if (parsed == null) return;
+    final list = [...(_customGradient ?? _gradientPresets.first)];
+    list[isStart ? 0 : 1] = parsed;
+    setState(() => _customGradient = list);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _selectedGradient == -1
+        ? (_customGradient ?? _gradientPresets.first)
+        : _gradientPresets[_selectedGradient];
+    final gradientAngle = _selectedGradient == -1 ? _customGradientAngle : 135.0;
+    return AppPageScaffold(
+      resizeToAvoidBottomInset: false,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: _gradientBegin(gradientAngle),
+            end: _gradientEnd(gradientAngle),
+            colors: [
+              colors.first.withValues(alpha: 0.45),
+              colors.last.withValues(alpha: 0.28),
+              AppColorsScheme.of(context).background,
+            ],
+            stops: const [0.0, 0.45, 1.0],
+          ),
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              kSheetHorizontalPadding,
+              8,
+              kSheetHorizontalPadding,
+              16,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    AppIconButton(
+                      icon: AppIcon(
+                        icon: AppIcons.back,
+                        size: 22,
+                        color: AppColorsScheme.of(context).textPrimary,
+                      ),
+                      onPressed: () => Navigator.of(context).pop(),
+                      iconSize: 22,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Share Lyrics',
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.xl,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Expanded(
+                  child: Center(
+                    child: RepaintBoundary(
+                      key: _cardKey,
+                      child: Container(
+                        width: 340,
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: _gradientBegin(gradientAngle),
+                            end: _gradientEnd(gradientAngle),
+                            colors: colors,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Row(
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Image.network(
+                                    widget.song.thumbnailUrl,
+                                    width: 50,
+                                    height: 50,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      width: 50,
+                                      height: 50,
+                                      color: Colors.white12,
+                                      child: const Icon(Icons.music_note,
+                                          color: Colors.white70, size: 20),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        widget.song.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        widget.song.artist,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Container(
+                              height: 1,
+                              color: Colors.white.withValues(alpha: 0.18),
+                            ),
+                            const SizedBox(height: 12),
+                            for (final line in widget.lyricsLines)
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 6),
+                                child: Text(
+                                  line,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w700,
+                                    height: 1.25,
+                                  ),
+                                ),
+                              ),
+                            const SizedBox(height: 8),
+                            SvgPicture.asset(
+                              AppStrings.logoAsset,
+                              width: 20,
+                              height: 20,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 220),
+                  switchInCurve: Curves.easeOut,
+                  switchOutCurve: Curves.easeIn,
+                  child: !_isCustomMode
+                      ? Column(
+                          key: const ValueKey('preset-controls'),
+                          children: [
+                            Align(
+                              alignment: Alignment.center,
+                              child: SizedBox(
+                                height: 44,
+                                child: ListView.separated(
+                                  shrinkWrap: true,
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: _gradientPresets.length + 1,
+                                  separatorBuilder: (_, __) => const SizedBox(width: 10),
+                                  itemBuilder: (context, index) {
+                                    if (index == 0) {
+                                      final selected = _selectedGradient == -1;
+                                      return GestureDetector(
+                                        onTap: _enterCustomMode,
+                                        child: Container(
+                                          width: 44,
+                                          height: 44,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            gradient: LinearGradient(
+                                              begin: _gradientBegin(_customGradientAngle),
+                                              end: _gradientEnd(_customGradientAngle),
+                                              colors: _customGradient ??
+                                                  const [
+                                                    Color(0xFF5B86E5),
+                                                    Color(0xFF904E95),
+                                                  ],
+                                            ),
+                                            border: Border.all(
+                                              color: selected ? Colors.white : Colors.white24,
+                                              width: selected ? 2 : 1,
+                                            ),
+                                          ),
+                                          child: const Center(
+                                            child: Icon(Icons.tune,
+                                                size: 18, color: Colors.white),
+                                          ),
+                                        ),
+                                      );
+                                    }
+                                    final preset = _gradientPresets[index - 1];
+                                    final selected = (index - 1) == _selectedGradient;
+                                    return GestureDetector(
+                                      onTap: () => setState(() {
+                                        _selectedGradient = index - 1;
+                                        _isCustomMode = false;
+                                      }),
+                                      child: Container(
+                                        width: 44,
+                                        height: 44,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: preset,
+                                          ),
+                                          border: Border.all(
+                                            color: selected ? Colors.white : Colors.white24,
+                                            width: selected ? 2 : 1,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            Align(
+                              alignment: Alignment.center,
+                              child: SizedBox(
+                                width: 180,
+                                child: ElevatedButton(
+                                  onPressed: _isSharing ? null : _shareCardImage,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColorsScheme.of(context).surfaceHighlight,
+                                    foregroundColor: AppColorsScheme.of(context).textPrimary,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                  child: Text(
+                                    _isSharing ? 'Preparing...' : 'Share',
+                                    style: TextStyle(
+                                      fontSize: AppFontSize.base,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Container(
+                          key: const ValueKey('custom-controls'),
+                          padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                          decoration: BoxDecoration(
+                            color: AppColorsScheme.of(context)
+                                .surface
+                                .withValues(alpha: 0.65),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.08),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
+                                children: [
+                                  GestureDetector(
+                                    onTap: () => setState(() => _editingStart = true),
+                                    child: Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: _customStart,
+                                        border: Border.all(
+                                          color: _editingStart
+                                              ? Colors.white
+                                              : Colors.white38,
+                                          width: _editingStart ? 2 : 1,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _startHexCtrl,
+                                      textCapitalization:
+                                          TextCapitalization.characters,
+                                      maxLength: 6,
+                                      decoration: const InputDecoration(
+                                        counterText: '',
+                                        prefixText: '#',
+                                        hintText: 'START HEX',
+                                        isDense: true,
+                                      ),
+                                      onSubmitted: (_) => _applyHex(true),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  GestureDetector(
+                                    onTap: () => setState(() => _editingStart = false),
+                                    child: Container(
+                                      width: 28,
+                                      height: 28,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: _customEnd,
+                                        border: Border.all(
+                                          color: !_editingStart
+                                              ? Colors.white
+                                              : Colors.white38,
+                                          width: !_editingStart ? 2 : 1,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: TextField(
+                                      controller: _endHexCtrl,
+                                      textCapitalization:
+                                          TextCapitalization.characters,
+                                      maxLength: 6,
+                                      decoration: const InputDecoration(
+                                        counterText: '',
+                                        prefixText: '#',
+                                        hintText: 'END HEX',
+                                        isDense: true,
+                                      ),
+                                      onSubmitted: (_) => _applyHex(false),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Angle ${_customGradientAngle.round()}°',
+                                    style: TextStyle(
+                                      color: AppColorsScheme.of(context).textSecondary,
+                                      fontSize: AppFontSize.xs,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Slider(
+                                      min: 0,
+                                      max: 360,
+                                      value: _customGradientAngle,
+                                      onChanged: (v) =>
+                                          setState(() => _customGradientAngle = v),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => setState(() => _isCustomMode = false),
+                                    child: const Text('Done'),
+                                  ),
+                                ],
+                              ),
+                              ColorPicker(
+                                color: _editingStart ? _customStart : _customEnd,
+                                onColorChanged: _onInlineColorChanged,
+                                pickersEnabled: const <ColorPickerType, bool>{
+                                  ColorPickerType.wheel: true,
+                                  ColorPickerType.accent: false,
+                                  ColorPickerType.primary: false,
+                                },
+                                enableOpacity: false,
+                                showColorCode: false,
+                                colorCodeHasColor: true,
+                                borderRadius: 10,
+                              ),
+                            ],
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

@@ -277,6 +277,21 @@ abstract final class UISize {
   static const double checkbox = 22.0;
 }
 
+/// Padding used when a focused [TextField] is scrolled into view ([scrollPadding]).
+/// Matches common product behavior: clearance above the IME and below any sticky
+/// actions (e.g. primary button on auth flows).
+abstract final class FormFocusPadding {
+  static EdgeInsets inputScrollPadding(BuildContext context) {
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    return EdgeInsets.fromLTRB(
+      AppSpacing.base,
+      AppSpacing.xl,
+      AppSpacing.base,
+      safeBottom + UISize.buttonHeightLg + AppSpacing.xl + AppSpacing.lg,
+    );
+  }
+}
+
 abstract final class UIShadow {
   static BoxShadow glow(Color color, {double alpha = UIOpacity.medium}) =>
       BoxShadow(

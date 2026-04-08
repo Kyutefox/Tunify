@@ -25,7 +25,9 @@ class _LoadingScreenState extends State<LoadingScreen>
     super.initState();
     _waveController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 6),
+      duration: Duration(
+        milliseconds: AppDuration.slow.inMilliseconds * 10,
+      ),
     )..repeat();
   }
 

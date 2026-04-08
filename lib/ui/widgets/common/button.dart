@@ -146,9 +146,6 @@ class AppButton extends StatelessWidget {
             decoration: BoxDecoration(
               gradient: AppColors.primaryGradient,
               borderRadius: BorderRadius.circular(AppRadius.input),
-              boxShadow: isDisabled
-                  ? null
-                  : [UIShadow.glow(AppColors.primary, alpha: 0.35)],
             ),
             child: Material(
               color: Colors.transparent,

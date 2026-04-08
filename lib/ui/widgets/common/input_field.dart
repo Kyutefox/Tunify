@@ -29,6 +29,7 @@ class AppInputField extends StatelessWidget {
     this.maxLines = 1,
     this.style = InputFieldStyle.outlined,
     this.fillColor,
+    this.scrollPadding,
   });
 
   final TextEditingController controller;
@@ -47,6 +48,10 @@ class AppInputField extends StatelessWidget {
   final int maxLines;
   final InputFieldStyle style;
   final Color? fillColor;
+
+  /// When null, uses [FormFocusPadding.inputScrollPadding] so the focused
+  /// field scrolls with comfortable room above the keyboard on form screens.
+  final EdgeInsets? scrollPadding;
 
   InputDecoration _buildDecoration(BuildContext context) {
     final useLabel = labelText != null && labelText!.isNotEmpty;
@@ -172,6 +177,8 @@ class AppInputField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final padding =
+        scrollPadding ?? FormFocusPadding.inputScrollPadding(context);
     final decoration = _buildDecoration(context);
     final textStyle = TextStyle(
       color: AppColorsScheme.of(context).textPrimary,
@@ -193,6 +200,7 @@ class AppInputField extends StatelessWidget {
         maxLines: obscureText ? 1 : maxLines,
         style: textStyle,
         cursorColor: AppColors.accent,
+        scrollPadding: padding,
         decoration: decoration,
       );
     }
@@ -209,6 +217,7 @@ class AppInputField extends StatelessWidget {
       maxLines: obscureText ? 1 : maxLines,
       style: textStyle,
       cursorColor: AppColors.accent,
+      scrollPadding: padding,
       decoration: decoration,
     );
   }

@@ -120,6 +120,7 @@ void _showMobileSheet(
               Navigator.of(context).pop();
               Navigator.of(context).push(
                 appPageRoute<void>(
+                  keyboardInsetsUnmasked: true,
                   builder: (_) =>
                       const GuestProfileSetupScreen(isInitial: false),
                 ),

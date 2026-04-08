@@ -32,6 +32,7 @@ import 'package:tunify/features/settings/theme_provider.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_theme.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
+import 'package:tunify/ui/system/keyboard_insets_unmask.dart';
 
 final supabaseInitProvider = FutureProvider<void>((ref) async {
   try {
@@ -157,7 +158,7 @@ class _TunifyAppContent extends ConsumerWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeMode,
-        builder: _noKeyboardShiftBuilder,
+        builder: (context, child) => _NoKeyboardShift(child: child),
         home: const LoadingScreen(),
       );
     }
@@ -169,7 +170,7 @@ class _TunifyAppContent extends ConsumerWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeMode,
-        builder: _noKeyboardShiftBuilder,
+        builder: (context, child) => _NoKeyboardShift(child: child),
         home: _InitErrorScreen(
           onRetry: () => ref.invalidate(supabaseInitProvider),
         ),
@@ -186,7 +187,7 @@ class _TunifyAppContent extends ConsumerWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: themeMode,
-        builder: _noKeyboardShiftBuilder,
+        builder: (context, child) => _NoKeyboardShift(child: child),
         home: const LoadingScreen(),
       );
     }
@@ -267,7 +268,7 @@ class _TunifyAppContent extends ConsumerWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: themeMode,
-      builder: _noKeyboardShiftBuilder,
+      builder: (context, child) => _NoKeyboardShift(child: child),
       home: isGuest
           ? shell()
           : (user == null
@@ -283,26 +284,32 @@ class _TunifyAppContent extends ConsumerWidget {
 /// Zeroing viewInsets prevents Scaffold resize; freezing padding prevents
 /// SafeArea from shifting when padding.bottom drops to 0 as keyboard covers
 /// the home indicator.
-Widget _noKeyboardShiftBuilder(BuildContext context, Widget? child) {
-  return _NoKeyboardShift(child: child);
-}
-
-class _NoKeyboardShift extends StatefulWidget {
+///
+/// Screens that opt in via [keyboardInsetsUnmaskCountProvider] (e.g. wrapped in
+/// [KeyboardInsetsUnmaskScope]) receive the real [MediaQuery] from the engine
+/// so [Scaffold.resizeToAvoidBottomInset] behaves like a typical form screen.
+class _NoKeyboardShift extends ConsumerStatefulWidget {
   const _NoKeyboardShift({this.child});
 
   final Widget? child;
 
   @override
-  State<_NoKeyboardShift> createState() => _NoKeyboardShiftState();
+  ConsumerState<_NoKeyboardShift> createState() => _NoKeyboardShiftState();
 }
 
-class _NoKeyboardShiftState extends State<_NoKeyboardShift> {
+class _NoKeyboardShiftState extends ConsumerState<_NoKeyboardShift> {
   Size? _cachedSize;
   EdgeInsets? _cachedViewPadding;
 
   @override
   Widget build(BuildContext context) {
+    final unmaskCount = ref.watch(keyboardInsetsUnmaskCountProvider);
     final mq = MediaQuery.of(context);
+
+    if (unmaskCount > 0) {
+      return widget.child ?? const SizedBox.shrink();
+    }
+
     final keyboardHeight = mq.viewInsets.bottom;
 
     if (keyboardHeight == 0) {

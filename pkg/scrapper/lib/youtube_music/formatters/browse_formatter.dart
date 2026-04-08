@@ -402,7 +402,6 @@ class BrowseFormatter {
 
   /// Extracts a continuation token from a sectionListRenderer node by checking:
   /// 1. `continuationItemRenderer` embedded inside musicPlaylistShelfRenderer.contents
-  ///    (YouTube Music's primary pattern — matches Metrolist's getContinuation()).
   /// 2. `continuations` on musicPlaylistShelfRenderer itself.
   /// 3. Top-level `continuations` on the sectionListRenderer.
   static String? _extractTokenFromSectionList(dynamic sectionList) {

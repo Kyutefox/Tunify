@@ -5,10 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:scrapper/models/youtube_stream.dart';
 
 /// Fetches YouTube audio stream URLs by posting directly to the InnerTube
-/// player API — the same approach Metrolist uses.
 class StreamsApi {
   /// Posts to `music.youtube.com/youtubei/v1/player` with the exact headers
-  /// and body Metrolist sends. ANDROID_VR clients return direct stream URLs
   /// with no cipher, n-transform, or PoToken needed.
   ///
   /// Tries ANDROID_VR 1.43.32 → ANDROID_VR 1.61.48 → IOS in order,
@@ -18,7 +16,6 @@ class StreamsApi {
     bool preferAac = false,
     String? visitorData,
   }) async {
-    // clientId is sent as X-YouTube-Client-Name header (Metrolist: client.clientId)
     const clients = [
       {
         'clientName': 'ANDROID_VR',
@@ -53,7 +50,6 @@ class StreamsApi {
       },
     ];
 
-    // Metrolist always posts to music.youtube.com (works for any YouTube video)
     const apiBase = 'https://music.youtube.com';
 
     for (final c in clients) {
@@ -63,7 +59,6 @@ class StreamsApi {
         final clientId = c['clientId']!;
         final userAgent = c['userAgent']!;
 
-        // Body: exactly what Metrolist's PlayerBody serializes to
         final clientContext = <String, dynamic>{
           'clientName': clientName,
           'clientVersion': clientVersion,
@@ -89,7 +84,6 @@ class StreamsApi {
           'racyCheckOk': true,
         });
 
-        // Headers: exactly what Metrolist's ytClient() sets
         final uri = Uri.parse('$apiBase/youtubei/v1/player?prettyPrint=false');
         final response = await http
             .post(

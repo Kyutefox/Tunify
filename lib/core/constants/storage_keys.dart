@@ -26,6 +26,6 @@ abstract final class StorageKeys {
   /// Hive box key: active shuffle mode int (0=none, 2=smart).
   static const String hiveKeyActiveShuffleMode = 'active_shuffle_mode';
 
-  /// Hive box key: list of smart-shuffle song IDs (✨ recs).
+  /// Hive box key: list of smart-shuffle song IDs.
   static const String hiveKeySmartShuffleIds = 'smart_shuffle_ids';
 }

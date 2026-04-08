@@ -1,6 +1,9 @@
 import 'package:tunify/data/models/song.dart';
 
-/// Podcast model for podcast shows
+/// A podcast show with episodes that can be subscribed to and played.
+///
+/// Podcasts differ from regular playlists in that episodes are released
+/// periodically and playback positions are tracked individually.
 class Podcast {
   const Podcast({
     required this.id,
@@ -68,7 +71,10 @@ class Podcast {
       );
 }
 
-/// Episode model for podcast episodes
+/// A single episode within a [Podcast].
+///
+/// Episodes support resumable listening via [PlaybackPosition] tracking
+/// and can be converted to [Song] for playback in the standard queue.
 class Episode {
   const Episode({
     required this.id,

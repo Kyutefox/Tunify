@@ -1,6 +1,9 @@
 import 'package:tunify/data/models/song.dart';
 
-/// Audiobook model for audiobooks
+/// A long-form audio book with chapters for segmented playback.
+///
+/// Audiobooks support resumable listening via [PlaybackPosition] and
+/// can be converted to [Song] for playback in the standard queue.
 class Audiobook {
   const Audiobook({
     required this.id,
@@ -82,7 +85,10 @@ class Audiobook {
       );
 }
 
-/// Audiobook chapter model
+/// A single chapter within an [Audiobook].
+///
+/// Chapters may have optional timing metadata for resumable playback
+/// and navigation within the book.
 class AudiobookChapter {
   const AudiobookChapter({
     required this.id,

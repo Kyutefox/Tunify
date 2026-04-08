@@ -248,7 +248,6 @@ class MusicStreamManager {
   }
 
   /// Top-level function for compute isolate - returns serializable data.
-  /// Uses Metrolist's approach: direct InnerTube /player API with ANDROID_VR clients.
   static Future<_StreamFetchResult?> _fetchStreamIsolateFunction(
       _StreamFetchParams params) async {
     final stream = await scrapper.StreamsApi.fetchBestAudioStreamDirect(

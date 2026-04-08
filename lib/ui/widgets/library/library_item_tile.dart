@@ -47,6 +47,7 @@ class LibraryItemTile extends StatelessWidget {
           HapticFeedback.selectionClick();
           onTap();
         },
+        mouseCursor: SystemMouseCursors.click,
         hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(

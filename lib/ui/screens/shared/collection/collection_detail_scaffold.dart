@@ -28,6 +28,7 @@ class CollectionDetailScaffold extends StatefulWidget {
     this.paletteColor,
     this.playButton,
     this.scrollController,
+    this.headerEyebrow,
   });
 
   final bool isEmpty;
@@ -44,6 +45,7 @@ class CollectionDetailScaffold extends StatefulWidget {
   final Color? paletteColor;
   final Widget? playButton;
   final ScrollController? scrollController;
+  final String? headerEyebrow;
 
   @override
   State<CollectionDetailScaffold> createState() =>
@@ -126,7 +128,7 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     final topPadding = isDesktop ? 0.0 : MediaQuery.of(context).padding.top;
     final appBarHeight = kToolbarHeight + topPadding;
     final hasPalette = widget.paletteColor != null;
-    final hasPlayButton = widget.playButton != null && _useNewLayout;
+    final hasPlayButton = widget.playButton != null && _useNewLayout && !isDesktop;
     final pageBackground = isDesktop
         ? AppColors.backgroundSecondary
         : AppColorsScheme.of(context).background;
@@ -141,8 +143,10 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
       children: [
         Scaffold(
           backgroundColor: pageBackground,
-          extendBodyBehindAppBar: hasPalette,
-          appBar: _useNewLayout
+          extendBodyBehindAppBar: hasPalette && !isDesktop,
+          appBar: isDesktop
+              ? null
+              : _useNewLayout
               ? PreferredSize(
                   preferredSize: const Size.fromHeight(kToolbarHeight),
                   child: ValueListenableBuilder<double>(
@@ -210,11 +214,10 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
               controller: _scrollController,
               physics: const BouncingScrollPhysics(),
               slivers: _useNewLayout
-                  ? _buildSlivers(appBarHeight, hasPalette)
+                  ? _buildSlivers(isDesktop ? 0.0 : appBarHeight, hasPalette)
                   : [
                       if (hasPalette)
-                        SliverToBoxAdapter(
-                            child: SizedBox(height: appBarHeight)),
+                        SliverToBoxAdapter(child: SizedBox(height: appBarHeight)),
                       if (widget.headerSliver != null) widget.headerSliver!,
                       ...widget.bodySlivers,
                     ],
@@ -237,7 +240,10 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
             stackKey: _stackKey,
             child: widget.playButton!,
           ),
-        if (widget.actionRow != null && _useNewLayout && !widget.isEmpty)
+        if (widget.actionRow != null &&
+            _useNewLayout &&
+            !widget.isEmpty &&
+            !isDesktop)
           _DockingActionRow(
             scrollController: _scrollController,
             appBarHeight: appBarHeight,
@@ -251,6 +257,8 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
   }
 
   List<Widget> _buildSlivers(double appBarHeight, bool hasPalette) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final horizontalInset = isDesktop ? AppSpacing.xl : AppSpacing.base;
     final headerSliver = SliverToBoxAdapter(
       child: hasPalette
           ? Stack(
@@ -280,12 +288,35 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     return [
       if (hasPalette) SliverToBoxAdapter(child: SizedBox(height: appBarHeight)),
       headerSliver,
-      SliverToBoxAdapter(
-        child: SizedBox(
-          key: _actionRowKey,
-          height: widget.actionRowHeight,
+      if (isDesktop)
+        SliverToBoxAdapter(
+          child: SizedBox(
+            key: _actionRowKey,
+            height: widget.actionRowHeight,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  left: horizontalInset,
+                  right: horizontalInset,
+                  child: widget.actionRow!,
+                ),
+                if (widget.playButton != null && !widget.isEmpty)
+                  Positioned(
+                    right: horizontalInset,
+                    top: (widget.actionRowHeight - 56) / 2,
+                    child: widget.playButton!,
+                  ),
+              ],
+            ),
+          ),
+        )
+      else
+        SliverToBoxAdapter(
+          child: SizedBox(
+            key: _actionRowKey,
+            height: widget.actionRowHeight,
+          ),
         ),
-      ),
       if (widget.pills != null)
         SliverToBoxAdapter(
           child: Padding(
@@ -302,6 +333,64 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
         SliverToBoxAdapter(child: widget.searchField!),
         const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.md)),
       ],
+      if (isDesktop && !widget.isEmpty)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              horizontalInset,
+              AppSpacing.xs,
+              horizontalInset,
+              AppSpacing.sm,
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 28,
+                  child: Text(
+                    '#',
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context)
+                          .textMuted
+                          .withValues(alpha: 0.9),
+                      fontSize: AppFontSize.sm,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    'Title',
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context)
+                          .textMuted
+                          .withValues(alpha: 0.9),
+                      fontSize: AppFontSize.sm,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Icon(
+                  Icons.access_time_outlined,
+                  size: 16,
+                  color:
+                      AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
+                ),
+                const SizedBox(width: 22),
+              ],
+            ),
+          ),
+        ),
+      if (isDesktop && !widget.isEmpty)
+        SliverToBoxAdapter(
+          child: Divider(
+            height: 1,
+            thickness: 0.5,
+            indent: horizontalInset,
+            endIndent: horizontalInset,
+            color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.2),
+          ),
+        ),
       ...widget.bodySlivers,
     ];
   }
@@ -526,6 +615,7 @@ class _TitleKeyInjector extends StatelessWidget {
         title: c.title,
         subtitle: c.subtitle,
         titleKey: titleKey,
+        eyebrow: c.eyebrow,
       );
     }
     return child;
@@ -539,16 +629,74 @@ class CollectionDetailExpandedContent extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.titleKey,
+    this.eyebrow,
   });
 
   final Widget cover;
   final String title;
   final Widget? subtitle;
   final Key? titleKey;
+  final String? eyebrow;
 
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
+    final isDesktop = ShellContext.isDesktopOf(context);
+    if (isDesktop) {
+      return Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.base,
+          t.spacing.xxl,
+          AppSpacing.base,
+          t.spacing.xl,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            cover,
+            SizedBox(width: t.spacing.lg),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  if (eyebrow != null && eyebrow!.trim().isNotEmpty)
+                    Text(
+                      eyebrow!.toUpperCase(),
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context)
+                            .textMuted
+                            .withValues(alpha: 0.95),
+                        fontSize: t.font.xs,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.9,
+                      ),
+                    ),
+                  if (eyebrow != null && eyebrow!.trim().isNotEmpty)
+                    SizedBox(height: t.spacing.sm),
+                  Text(
+                    key: titleKey,
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColorsScheme.of(context).textPrimary,
+                      fontSize: t.font.display2,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.6,
+                    ),
+                  ),
+                  if (subtitle != null) ...[
+                    SizedBox(height: t.spacing.sm),
+                    subtitle!,
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
     return Padding(
       padding: EdgeInsets.symmetric(
         horizontal: t.spacing.base,

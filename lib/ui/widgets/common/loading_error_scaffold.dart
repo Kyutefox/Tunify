@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:tunify/ui/theme/app_colors.dart';
+import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'back_title_app_bar.dart';
 import 'button.dart';
@@ -12,12 +13,15 @@ class LoadingScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
     return Scaffold(
       backgroundColor: AppColorsScheme.of(context).background,
-      appBar: BackTitleAppBar(
-        title: '',
-        backgroundColor: AppColorsScheme.of(context).background,
-      ),
+      appBar: isDesktop
+          ? null
+          : BackTitleAppBar(
+              title: '',
+              backgroundColor: AppColorsScheme.of(context).background,
+            ),
       body: const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       ),
@@ -38,12 +42,15 @@ class ErrorScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
     return Scaffold(
       backgroundColor: AppColorsScheme.of(context).background,
-      appBar: BackTitleAppBar(
-        title: '',
-        backgroundColor: AppColorsScheme.of(context).background,
-      ),
+      appBar: isDesktop
+          ? null
+          : BackTitleAppBar(
+              title: '',
+              backgroundColor: AppColorsScheme.of(context).background,
+            ),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,

@@ -6,6 +6,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/widgets/common/desktop_interaction.dart';
 import 'package:tunify/ui/widgets/player/now_playing_indicator.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
@@ -171,21 +172,23 @@ class _PressScaleState extends State<PressScale> {
   Widget build(BuildContext context) {
     final reduceMotion =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
-    return GestureDetector(
-      onTapDown: (_) {
-        setState(() => _pressed = true);
-        HapticFeedback.lightImpact();
-      },
-      onTapUp: (_) {
-        setState(() => _pressed = false);
-        widget.onTap();
-      },
-      onTapCancel: () => setState(() => _pressed = false),
-      child: AnimatedScale(
-        scale: reduceMotion ? 1.0 : (_pressed ? widget.scale : 1.0),
-        duration: reduceMotion ? AppDuration.instant : AppDuration.normal,
-        curve: AppCurves.decelerate,
-        child: widget.child,
+    return DesktopClickRegion(
+      child: GestureDetector(
+        onTapDown: (_) {
+          setState(() => _pressed = true);
+          HapticFeedback.lightImpact();
+        },
+        onTapUp: (_) {
+          setState(() => _pressed = false);
+          widget.onTap();
+        },
+        onTapCancel: () => setState(() => _pressed = false),
+        child: AnimatedScale(
+          scale: reduceMotion ? 1.0 : (_pressed ? widget.scale : 1.0),
+          duration: reduceMotion ? AppDuration.instant : AppDuration.normal,
+          curve: AppCurves.decelerate,
+          child: widget.child,
+        ),
       ),
     );
   }

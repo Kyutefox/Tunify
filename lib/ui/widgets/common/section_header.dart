@@ -4,6 +4,7 @@ import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/widgets/common/desktop_interaction.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class SectionHeader extends StatelessWidget {
@@ -95,14 +96,16 @@ class SectionHeader extends StatelessWidget {
   Widget _buildAction(BuildContext context, AppTokens t) {
     final label = seeAllLabel;
     final text = (label != null && label.isNotEmpty) ? label : 'See All';
-    return GestureDetector(
-      onTap: onSeeAll,
-      child: Text(
-        text,
-        style: TextStyle(
-          color: AppColorsScheme.of(context).textPrimary,
-          fontSize: t.font.sm,
-          fontWeight: FontWeight.w700,
+    return DesktopClickRegion(
+      child: GestureDetector(
+        onTap: onSeeAll,
+        child: Text(
+          text,
+          style: TextStyle(
+            color: AppColorsScheme.of(context).textPrimary,
+            fontSize: t.font.sm,
+            fontWeight: FontWeight.w700,
+          ),
         ),
       ),
     );

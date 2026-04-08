@@ -25,7 +25,6 @@ import 'package:tunify/features/player/audio/audio_player_service.dart';
 import 'package:tunify/features/carplay/carplay_provider.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 import 'package:tunify/data/databases/supabase/supabase_prefs.dart';
-import 'package:tunify/ui/shell/desktop_shell.dart';
 import 'package:tunify/ui/shell/mobile_shell.dart';
 import 'package:tunify/ui/screens/shared/auth/loading_screen.dart';
 import 'package:tunify/ui/screens/shared/auth/welcome_screen.dart';
@@ -259,10 +258,8 @@ class _TunifyAppContent extends ConsumerWidget {
       },
     );
 
-    // Use the Spotify-style desktop shell on macOS; the standard mobile
-    // shell (bottom nav + mini player) on iOS and Android.
-    Widget shell() =>
-        Platform.isMacOS ? const DesktopShell() : const MobileShell();
+    // Mobile-only shell across platforms.
+    Widget shell() => const MobileShell();
 
     return MaterialApp(
       title: AppStrings.appName,

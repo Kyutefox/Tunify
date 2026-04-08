@@ -10,6 +10,7 @@ import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 import 'package:tunify/ui/widgets/common/section_header.dart';
+import 'package:tunify/ui/widgets/common/desktop_interaction.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 
 class RecentlyPlayedSection extends ConsumerStatefulWidget {
@@ -96,18 +97,20 @@ class _RecentlyPlayedSectionState extends ConsumerState<RecentlyPlayedSection> {
         SectionHeader(
           title: 'Recently Played',
           useCompactStyle: true,
-          trailing: GestureDetector(
-            onTap: () => Navigator.of(context).push(
-              appPageRoute<void>(
-                builder: (_) => const RecentlyPlayedScreen(),
+          trailing: DesktopClickRegion(
+            child: GestureDetector(
+              onTap: () => Navigator.of(context).push(
+                appPageRoute<void>(
+                  builder: (_) => const RecentlyPlayedScreen(),
+                ),
               ),
-            ),
-            child: Text(
-              'See all',
-              style: TextStyle(
-                color: AppColorsScheme.of(context).textPrimary,
-                fontSize: AppFontSize.sm,
-                fontWeight: FontWeight.w700,
+              child: Text(
+                'See all',
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textPrimary,
+                  fontSize: AppFontSize.sm,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ),

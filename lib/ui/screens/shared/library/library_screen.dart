@@ -24,6 +24,7 @@ import 'package:tunify/ui/screens/shared/library/create_library_item_screen.dart
 import 'package:tunify/ui/screens/shared/library/library_playlist_screen.dart';
 import 'package:tunify/ui/screens/shared/library/library_playlists_section.dart';
 import 'package:tunify/ui/screens/shared/library/library_app_bar.dart';
+import 'package:tunify/ui/screens/shared/library/library_content_shared.dart';
 import 'package:tunify/ui/screens/shared/library/library_search_screen.dart';
 import 'package:tunify/ui/widgets/library/library_item_tile.dart';
 import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
@@ -587,7 +588,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
         );
       }
       final scrollView = CustomScrollView(
-        key: contentKey,
+        key: isDesktop ? null : contentKey,
         cacheExtent: 1000,
         physics: withRefresh
             ? const AlwaysScrollableScrollPhysics(
@@ -623,10 +624,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               if (!isDesktop) appBar,
               if (!isDesktop) const SizedBox(height: AppSpacing.sm),
               Expanded(
-                child: _ContentSwitcher(
-                  contentKey: contentKey,
-                  child: buildScrollView(isLoggedIn),
-                ),
+                child: isDesktop
+                    ? buildScrollView(isLoggedIn)
+                    : LibraryContentSwitcher(
+                        contentKey: contentKey,
+                        child: buildScrollView(isLoggedIn),
+                      ),
               ),
             ],
           ),
@@ -2134,86 +2137,3 @@ class LibraryFolderSheet extends StatelessWidget {
   }
 }
 
-// ─── Content switcher ─────────────────────────────────────────────────────────
-//
-// Replicates appPageRoute behaviour in-place:
-// - Outgoing child is removed from the tree immediately (frame 0) — no overlap.
-// - Incoming child animates in with fade + micro-slide, 240ms easeOutCubic.
-// - When the same key is passed again nothing happens.
-
-class _ContentSwitcher extends StatefulWidget {
-  const _ContentSwitcher({
-    required this.contentKey,
-    required this.child,
-  });
-
-  final ValueKey<String> contentKey;
-  final Widget child;
-
-  @override
-  State<_ContentSwitcher> createState() => _ContentSwitcherState();
-}
-
-class _ContentSwitcherState extends State<_ContentSwitcher>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  late Animation<double> _fade;
-  late Animation<Offset> _slide;
-
-  late Widget _current;
-  late ValueKey<String> _currentKey;
-
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 240),
-      value: 1.0, // start fully visible
-    );
-    _setupAnimations();
-    _current = widget.child;
-    _currentKey = widget.contentKey;
-  }
-
-  void _setupAnimations() {
-    final curved = CurvedAnimation(parent: _ctrl, curve: Curves.easeOutCubic);
-    _fade = curved;
-    _slide = Tween<Offset>(
-      begin: const Offset(0, 0.03),
-      end: Offset.zero,
-    ).animate(curved);
-  }
-
-  @override
-  void didUpdateWidget(_ContentSwitcher old) {
-    super.didUpdateWidget(old);
-    if (widget.contentKey != _currentKey) {
-      // Key changed — swap child immediately and restart entrance animation.
-      _current = widget.child;
-      _currentKey = widget.contentKey;
-      _ctrl.forward(from: 0.0);
-    } else {
-      // Same key but child widget may have changed (e.g. library data loaded).
-      // Update silently without re-animating.
-      _current = widget.child;
-    }
-  }
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: _fade,
-      child: SlideTransition(
-        position: _slide,
-        child: _current,
-      ),
-    );
-  }
-}

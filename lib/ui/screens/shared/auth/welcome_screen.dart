@@ -543,3 +543,52 @@ class _MobileGuestLink extends ConsumerWidget {
     );
   }
 }
+
+class WaveBackground extends StatelessWidget {
+  const WaveBackground({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary.withValues(alpha: 0.16),
+            AppColors.secondary.withValues(alpha: 0.10),
+            AppColorsScheme.of(context).background,
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class AuthBranding extends StatelessWidget {
+  const AuthBranding({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          AppStrings.appName,
+          style: TextStyle(
+            color: AppColorsScheme.of(context).textPrimary,
+            fontSize: AppFontSize.display2,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          'Your music, beautifully organized.',
+          style: TextStyle(
+            color: AppColorsScheme.of(context).textSecondary,
+            fontSize: AppFontSize.base,
+          ),
+        ),
+      ],
+    );
+  }
+}

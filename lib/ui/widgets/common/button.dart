@@ -51,6 +51,8 @@ class AppButton extends StatelessWidget {
                 ? Colors.white
                 : AppColors.primary);
     final isDisabled = onPressed == null || isLoading;
+    MouseCursor cursorForState() =>
+        isDisabled ? SystemMouseCursors.basic : SystemMouseCursors.click;
 
     Widget child = isLoading
         ? SizedBox(
@@ -96,13 +98,16 @@ class AppButton extends StatelessWidget {
       return SizedBox(
         width: fullWidth ? double.infinity : null,
         height: h,
-        child: TextButton(
-          onPressed: isDisabled ? null : onPressed,
-          style: TextButton.styleFrom(
-            foregroundColor: effectiveForeground,
-            shape: shape,
+        child: MouseRegion(
+          cursor: cursorForState(),
+          child: TextButton(
+            onPressed: isDisabled ? null : onPressed,
+            style: TextButton.styleFrom(
+              foregroundColor: effectiveForeground,
+              shape: shape,
+            ),
+            child: child,
           ),
-          child: child,
         ),
       );
     }
@@ -111,18 +116,21 @@ class AppButton extends StatelessWidget {
       return SizedBox(
         width: fullWidth ? double.infinity : null,
         height: h,
-        child: OutlinedButton(
-          onPressed: isDisabled ? null : onPressed,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: effectiveForeground,
-            side: BorderSide(
-              color: isDisabled
-                  ? AppColorsScheme.of(context).textMuted
-                  : AppColors.primary,
+        child: MouseRegion(
+          cursor: cursorForState(),
+          child: OutlinedButton(
+            onPressed: isDisabled ? null : onPressed,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: effectiveForeground,
+              side: BorderSide(
+                color: isDisabled
+                    ? AppColorsScheme.of(context).textMuted
+                    : AppColors.primary,
+              ),
+              shape: shape,
             ),
-            shape: shape,
+            child: child,
           ),
-          child: child,
         ),
       );
     }
@@ -147,6 +155,7 @@ class AppButton extends StatelessWidget {
               child: InkWell(
                 onTap: isDisabled ? null : onPressed,
                 borderRadius: BorderRadius.circular(AppRadius.input),
+                mouseCursor: cursorForState(),
                 child: Center(child: child),
               ),
             ),
@@ -158,14 +167,17 @@ class AppButton extends StatelessWidget {
     return SizedBox(
       width: fullWidth ? double.infinity : null,
       height: h,
-      child: FilledButton(
-        onPressed: isDisabled ? null : onPressed,
-        style: FilledButton.styleFrom(
-          backgroundColor: bgColor,
-          foregroundColor: effectiveForeground,
-          shape: shape,
+      child: MouseRegion(
+        cursor: cursorForState(),
+        child: FilledButton(
+          onPressed: isDisabled ? null : onPressed,
+          style: FilledButton.styleFrom(
+            backgroundColor: bgColor,
+            foregroundColor: effectiveForeground,
+            shape: shape,
+          ),
+          child: child,
         ),
-        child: child,
       ),
     );
   }
@@ -229,6 +241,9 @@ class AppIconButton extends StatelessWidget {
                   ? () => _handleTap(btnCtx)
                   : null,
               customBorder: const CircleBorder(),
+              mouseCursor: (onPressedWithContext != null || onPressed != null)
+                  ? SystemMouseCursors.click
+                  : SystemMouseCursors.basic,
               child: SizedBox(
                 width: size,
                 height: size,
@@ -266,6 +281,9 @@ class AppIconButton extends StatelessWidget {
                     ? () => _handleTap(btnCtx)
                     : null,
                 customBorder: const CircleBorder(),
+                mouseCursor: (onPressedWithContext != null || onPressed != null)
+                    ? SystemMouseCursors.click
+                    : SystemMouseCursors.basic,
                 child: Center(
                   child: AnimatedScale(
                     scale: 1.0,

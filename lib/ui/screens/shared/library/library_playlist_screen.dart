@@ -58,6 +58,10 @@ import 'package:tunify/ui/screens/shared/home/home_skeletons.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 
+const double _playlistDurationColumnWidth = 56;
+const double _playlistActionColumnWidth = 56;
+const double kDesktopCollectionContentInset = AppSpacing.xl;
+
 enum CollectionType { playlist, album, artist, podcast }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -1402,7 +1406,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       final filteredSongs = filterByExplicitSetting(sortedSongs, showExplicit);
       final hasSong = ref.watch(currentSongProvider) != null;
       const downloadsColor = AppColors.accentCyan;
-      return CollectionDetailScaffold(
+      return _buildAdaptiveDetailScaffold(
         isEmpty: songs.isEmpty,
         paletteColor: downloadsColor,
         title: 'Downloads',
@@ -1460,6 +1464,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 return _TrackTile(
                   song: song,
                   songs: sortedSongs,
+                  index: i + 1,
                   playlistId: 'downloads',
                   queueSource: 'downloads',
                   isImported: false,
@@ -1474,6 +1479,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         ],
         hasSong: hasSong,
         miniPlayerKey: const ValueKey('downloads-mini-player'),
+        headerEyebrow: 'Collection',
       );
     }
 
@@ -1492,7 +1498,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       final filteredSongs = filterByExplicitSetting(sortedSongs, showExplicit);
       final hasSong = ref.watch(currentSongProvider) != null;
       const localFilesColor = AppColors.localFilesAccent;
-      return CollectionDetailScaffold(
+      return _buildAdaptiveDetailScaffold(
         isEmpty: songs.isEmpty,
         paletteColor: localFilesColor,
         title: 'Local Files',
@@ -1631,6 +1637,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 return _TrackTile(
                   song: song,
                   songs: sortedSongs,
+                  index: i + 1,
                   playlistId: 'localFiles',
                   queueSource: 'localFiles',
                   isImported: false,
@@ -1645,6 +1652,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         ],
         hasSong: hasSong,
         miniPlayerKey: const ValueKey('localFiles-mini-player'),
+        headerEyebrow: 'Collection',
       );
     }
 
@@ -1768,7 +1776,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final isEpisodesForLater = playlist.id == 'episodesForLater' ||
         widget.remotePlaylist?.id == 'episodesForLater';
 
-    return CollectionDetailScaffold(
+    return _buildAdaptiveDetailScaffold(
       isEmpty: songs.isEmpty,
       paletteColor: isLiked
           ? AppColors.loveThemeColorFor('liked_songs')
@@ -1919,6 +1927,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               return _TrackTile(
                 song: song,
                 songs: songs,
+                index: i + 1,
                 playlistId: playlist.id,
                 queueSource: isLiked
                     ? 'liked'
@@ -1960,8 +1969,56 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       ],
       hasSong: hasSong,
       miniPlayerKey: ValueKey('${playlist.id}-mini-player'),
+      headerEyebrow: _collectionTypeLabel(
+        isLiked: isLiked,
+        isEpisodesForLater: isEpisodesForLater,
+      ),
       scrollController: widget._isPodcast ? _scrollController : null,
     );
+  }
+
+  Widget _buildAdaptiveDetailScaffold({
+    required bool isEmpty,
+    required List<Widget> bodySlivers,
+    required bool hasSong,
+    Key? miniPlayerKey,
+    String? title,
+    Widget? headerExpandedChild,
+    Widget? actionRow,
+    Widget? pills,
+    Widget? searchField,
+    Color? paletteColor,
+    Widget? playButton,
+    ScrollController? scrollController,
+    String? headerEyebrow,
+  }) {
+    return CollectionDetailScaffold(
+      isEmpty: isEmpty,
+      bodySlivers: bodySlivers,
+      hasSong: hasSong,
+      miniPlayerKey: miniPlayerKey,
+      title: title,
+      headerExpandedChild: headerExpandedChild,
+      actionRow: actionRow,
+      pills: pills,
+      searchField: searchField,
+      paletteColor: paletteColor,
+      playButton: playButton,
+      scrollController: scrollController,
+      headerEyebrow: headerEyebrow,
+    );
+  }
+
+  String _collectionTypeLabel({
+    required bool isLiked,
+    required bool isEpisodesForLater,
+  }) {
+    if (isLiked) return 'Playlist';
+    if (isEpisodesForLater) return 'Podcast';
+    if (widget._isAlbum) return 'Album';
+    if (widget._isArtist) return 'Artist';
+    if (widget._isPodcast) return 'Podcast';
+    return 'Playlist';
   }
 
   /// Playlists, albums, artists: compact browse meta under the title; stats in footer when needed.
@@ -2340,10 +2397,14 @@ class _PlaylistCover extends StatelessWidget {
   final bool isLocalFiles;
   final bool isEpisodesForLater;
 
-  static const double _size = 200.0;
+  static const double _size = 220.0;
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    Widget wrapCover(Widget child) => isDesktop ? child : Center(child: child);
+    final horizontalCoverMargin =
+        isDesktop ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: AppSpacing.base);
     final shadow = BoxShadow(
         color: Colors.black.withValues(alpha: 0.3),
         blurRadius: 16,
@@ -2351,8 +2412,8 @@ class _PlaylistCover extends StatelessWidget {
 
     // Downloads — always show gradient icon cover
     if (isDownloads) {
-      return Center(
-        child: Container(
+      return wrapCover(
+        Container(
           width: _size,
           height: _size,
           decoration: BoxDecoration(
@@ -2374,8 +2435,8 @@ class _PlaylistCover extends StatelessWidget {
 
     // Local Files — always show gradient icon cover
     if (isLocalFiles) {
-      return Center(
-        child: Container(
+      return wrapCover(
+        Container(
           width: _size,
           height: _size,
           decoration: BoxDecoration(
@@ -2396,9 +2457,9 @@ class _PlaylistCover extends StatelessWidget {
     }
 
     if (imageUrl != null && imageUrl!.isNotEmpty) {
-      return Center(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      return wrapCover(
+        Container(
+          margin: horizontalCoverMargin,
           width: isCircle ? _size : null,
           height: isCircle ? _size : null,
           decoration: BoxDecoration(
@@ -2439,8 +2500,8 @@ class _PlaylistCover extends StatelessWidget {
 
     if (songs.isEmpty) {
       if (isLiked) {
-        return Center(
-          child: Container(
+        return wrapCover(
+          Container(
             width: _size,
             height: _size,
             decoration: BoxDecoration(
@@ -2461,8 +2522,8 @@ class _PlaylistCover extends StatelessWidget {
         );
       }
       if (isEpisodesForLater) {
-        return Center(
-          child: Container(
+        return wrapCover(
+          Container(
             width: _size,
             height: _size,
             decoration: BoxDecoration(
@@ -2481,30 +2542,29 @@ class _PlaylistCover extends StatelessWidget {
           ),
         );
       }
-      return Center(
-          child: Container(
-              width: _size,
-              height: _size,
-              decoration: BoxDecoration(
-                color: AppColorsScheme.of(context).surfaceLight,
-                borderRadius: BorderRadius.circular(AppRadius.sm),
-                boxShadow: [
-                  BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.25),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6))
-                ],
-              ),
-              child: Center(
-                  child: AppIcon(
-                      icon: AppIcons.musicNote,
-                      color: AppColorsScheme.of(context).textMuted,
-                      size: 64))));
+      return wrapCover(Container(
+          width: _size,
+          height: _size,
+          decoration: BoxDecoration(
+            color: AppColorsScheme.of(context).surfaceLight,
+            borderRadius: BorderRadius.circular(AppRadius.sm),
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.25),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6))
+            ],
+          ),
+          child: Center(
+              child: AppIcon(
+                  icon: AppIcons.musicNote,
+                  color: AppColorsScheme.of(context).textMuted,
+                  size: 64))));
     }
 
-    return Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+    return wrapCover(
+      Container(
+        margin: horizontalCoverMargin,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.sm),
           color:
@@ -2646,6 +2706,7 @@ class _ActionRow extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDesktop = ShellContext.isDesktopOf(context);
     final ShuffleMode shuffleMode = externalShuffleMode ??
         (isDownloads || isLocalFiles
             ? ref.watch(libraryProvider.select((s) => s.downloadedShuffleMode))
@@ -2660,8 +2721,10 @@ class _ActionRow extends ConsumerWidget {
     return SizedBox(
       height: kCollectionActionRowHeight,
       child: Padding(
-        padding:
-            const EdgeInsets.only(left: AppSpacing.sm, right: AppSpacing.base),
+        padding: EdgeInsets.only(
+          left: isDesktop ? 0 : AppSpacing.sm,
+          right: AppSpacing.sm,
+        ),
         child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
           // Hide shuffle button for podcasts
           if (!isPodcast)
@@ -2745,7 +2808,7 @@ class _ActionRow extends ConsumerWidget {
             ),
           ],
           const Spacer(),
-          const SizedBox(width: 56),
+          SizedBox(width: isDesktop ? 72 : 56),
         ]),
       ),
     );
@@ -3734,8 +3797,12 @@ class _SearchInPlaylistTap extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      padding: EdgeInsets.symmetric(
+        horizontal:
+            isDesktop ? kDesktopCollectionContentInset : AppSpacing.base,
+      ),
       child: GestureDetector(
         onTap: () => Navigator.of(context).push(appPageRoute<void>(
             builder: (_) => _PlaylistSearchPage(
@@ -3855,6 +3922,7 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
                 itemBuilder: (_, i) => _TrackTile(
                     song: filtered[i],
                     songs: widget.songs,
+                    index: i + 1,
                     playlistId: widget.playlistId,
                     isDownloads: widget.isDownloads,
                     isLocalFiles: widget.isLocalFiles,
@@ -3891,6 +3959,7 @@ class _TrackTile extends ConsumerWidget {
   const _TrackTile({
     required this.song,
     required this.songs,
+    this.index,
     required this.playlistId,
     this.queueSource = 'playlist',
     this.isImported = false,
@@ -3900,6 +3969,7 @@ class _TrackTile extends ConsumerWidget {
   });
   final Song song;
   final List<Song> songs;
+  final int? index;
   final String playlistId, queueSource;
   final bool isImported;
   final bool isDownloads;
@@ -3913,77 +3983,114 @@ class _TrackTile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return SongListTile(
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final tile = SongListTile(
       song: song,
-      showIndexIndicator: false,
+      index: isDesktop ? index : null,
+      thumbnailSize: isDesktop ? 44 : 48,
+      contentPadding: EdgeInsets.symmetric(
+        horizontal:
+            isDesktop ? kDesktopCollectionContentInset : AppSpacing.base,
+        vertical: isDesktop ? 4 : AppSpacing.xs,
+      ),
+      showIndexIndicator: isDesktop,
       onTap: () => ref.read(playerProvider.notifier).playSong(song,
           queue: songs, playlistId: playlistId, queueSource: queueSource),
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(song.durationFormatted,
-            style: TextStyle(
+        SizedBox(
+          width: isDesktop ? _playlistDurationColumnWidth : null,
+          child: Center(
+            child: Text(
+              song.durationFormatted,
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.clip,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
+                  fontSize: AppFontSize.sm,
+                  fontWeight: isDesktop ? FontWeight.w500 : FontWeight.w400),
+            ),
+          ),
+        ),
+        SizedBox(
+          width: isDesktop ? _playlistActionColumnWidth : null,
+          child: AppIconButton(
+            icon: AppIcon(
+                icon: AppIcons.moreVert,
                 color: AppColorsScheme.of(context).textMuted,
-                fontSize: AppFontSize.sm)),
-        AppIconButton(
-          icon: AppIcon(
-              icon: AppIcons.moreVert,
-              color: AppColorsScheme.of(context).textMuted,
-              size: 18),
-          onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
-              song: song,
-              ref: ref,
-              buttonContext: btnCtx,
-              showAddToPlaylist:
-                  isPodcast || (!isImported && !isDownloads && !isLocalFiles),
-              showGoToArtist: !isPodcast,
-              showGoToAlbum: !isPodcast,
-              extraOptions: isPodcast
-                  ? [
-                      SongOptionExtra(
-                        icon: AppIcons.bookmark,
-                        label: _isEpisodeSavedForLater(ref, song.id)
-                            ? 'Remove from Episodes For Later'
-                            : 'Add to Episodes For Later',
-                        onTap: () {
-                          ref
-                              .read(podcastProvider.notifier)
-                              .toggleEpisodeForLater(song);
-                        },
-                      ),
-                    ]
-                  : [],
-              isDownloads: isDownloads,
-              isLocalFiles: isLocalFiles,
-              onRemoveFromPlaylist: isImported || isDownloads || isLocalFiles
-                  ? null
-                  : playlistId == 'episodesForLater'
-                      ? () {
-                          ref
-                              .read(podcastProvider.notifier)
-                              .toggleEpisodeForLater(song);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text('Removed from Episodes For Later'),
-                                    behavior: SnackBarBehavior.floating));
+                size: 18),
+            onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
+                song: song,
+                ref: ref,
+                buttonContext: btnCtx,
+                showAddToPlaylist:
+                    isPodcast || (!isImported && !isDownloads && !isLocalFiles),
+                showGoToArtist: !isPodcast,
+                showGoToAlbum: !isPodcast,
+                extraOptions: isPodcast
+                    ? [
+                        SongOptionExtra(
+                          icon: AppIcons.bookmark,
+                          label: _isEpisodeSavedForLater(ref, song.id)
+                              ? 'Remove from Episodes For Later'
+                              : 'Add to Episodes For Later',
+                          onTap: () {
+                            ref
+                                .read(podcastProvider.notifier)
+                                .toggleEpisodeForLater(song);
+                          },
+                        ),
+                      ]
+                    : [],
+                isDownloads: isDownloads,
+                isLocalFiles: isLocalFiles,
+                onRemoveFromPlaylist: isImported || isDownloads || isLocalFiles
+                    ? null
+                    : playlistId == 'episodesForLater'
+                        ? () {
+                            ref
+                                .read(podcastProvider.notifier)
+                                .toggleEpisodeForLater(song);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text(
+                                          'Removed from Episodes For Later'),
+                                      behavior: SnackBarBehavior.floating));
+                            }
                           }
-                        }
-                      : () {
-                          ref
-                              .read(libraryProvider.notifier)
-                              .removeSongFromPlaylist(playlistId, song.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                    content: Text('Removed from playlist'),
-                                    behavior: SnackBarBehavior.floating));
-                          }
-                        }),
-          size: 36,
-          iconSize: 18,
-          iconAlignment: Alignment.centerRight,
+                        : () {
+                            ref
+                                .read(libraryProvider.notifier)
+                                .removeSongFromPlaylist(playlistId, song.id);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Removed from playlist'),
+                                      behavior: SnackBarBehavior.floating));
+                            }
+                          }),
+            size: 36,
+            iconSize: 18,
+            iconAlignment: Alignment.center,
+          ),
         ),
       ]),
+    );
+    if (!isDesktop) return tile;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        tile,
+        Divider(
+          height: 1,
+          thickness: 0.5,
+          indent: AppSpacing.xl,
+          endIndent: AppSpacing.xl,
+          color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.12),
+        ),
+      ],
     );
   }
 }

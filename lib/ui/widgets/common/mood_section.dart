@@ -7,6 +7,7 @@ import 'package:tunify/data/models/mood.dart';
 import 'package:tunify/features/home/home_state_provider.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/widgets/player/mood_browse_sheet.dart';
+import 'package:tunify/ui/widgets/common/desktop_interaction.dart';
 import 'package:tunify/ui/widgets/common/section_header.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 
@@ -134,32 +135,34 @@ class _MoodTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () {
-        HapticFeedback.lightImpact();
-        showMoodBrowseSheet(context, initialMood: mood, moods: allMoods);
-      },
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(AppRadius.md),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: mood.gradient,
-          ),
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Align(
-            alignment: Alignment.bottomLeft,
-            child: Text(
-              mood.label,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: AppFontSize.md,
-                fontWeight: FontWeight.w700,
-                shadows: [
-                  Shadow(color: Colors.black38, blurRadius: 6),
-                ],
+    return DesktopClickRegion(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          showMoodBrowseSheet(context, initialMood: mood, moods: allMoods);
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: mood.gradient,
+            ),
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: Text(
+                mood.label,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: AppFontSize.md,
+                  fontWeight: FontWeight.w700,
+                  shadows: [
+                    Shadow(color: Colors.black38, blurRadius: 6),
+                  ],
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
             ),
           ),
         ),

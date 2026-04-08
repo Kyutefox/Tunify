@@ -10,12 +10,14 @@ class HoverTile extends StatefulWidget {
     this.borderRadius,
     this.duration = const Duration(milliseconds: 160),
     this.hoverColor,
+    this.showClickCursor = true,
   });
 
   final Widget child;
   final double? borderRadius;
   final Duration duration;
   final Color? hoverColor;
+  final bool showClickCursor;
 
   @override
   State<HoverTile> createState() => _HoverTileState();
@@ -46,6 +48,9 @@ class _HoverTileState extends State<HoverTile>
   Widget build(BuildContext context) {
     final radius = widget.borderRadius ?? AppRadius.sm;
     return MouseRegion(
+      cursor: widget.showClickCursor
+          ? SystemMouseCursors.click
+          : MouseCursor.defer,
       onEnter: (_) => _controller.forward(),
       onExit: (_) => _controller.reverse(),
       child: RepaintBoundary(

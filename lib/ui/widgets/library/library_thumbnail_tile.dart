@@ -32,6 +32,7 @@ class LibraryThumbnailTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        mouseCursor: SystemMouseCursors.click,
         borderRadius: BorderRadius.circular(AppRadius.md),
         child: Padding(
           padding: EdgeInsets.symmetric(

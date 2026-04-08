@@ -106,7 +106,10 @@ class DownloadService extends ChangeNotifier {
   Future<void> _loadDownloaded() async {
     try {
       final maps = await _store.getDownloadedSongs();
-      _downloadedSongs = maps.map((m) => Song.fromJson(m)).toList();
+      _downloadedSongs = maps
+          .map(_safeSongFromStoredJson)
+          .whereType<Song>()
+          .toList(growable: false);
       _downloadedIds = _downloadedSongs.map((s) => s.id).toSet();
       for (final s in _downloadedSongs) {
         final path = await _store.getPath(s.id);
@@ -118,6 +121,36 @@ class DownloadService extends ChangeNotifier {
       logError('failed to load downloaded: $e', tag: 'DownloadService');
       _loaded = true;
       notifyListeners();
+    }
+  }
+
+  Song? _safeSongFromStoredJson(Map<String, dynamic> json) {
+    final normalized = Map<String, dynamic>.from(json);
+    for (final key in const ['id', 'title', 'artist', 'thumbnailUrl']) {
+      final value = normalized[key];
+      if (value == null) {
+        normalized[key] = '';
+      } else if (value is! String) {
+        normalized[key] = value.toString();
+      }
+    }
+    final durationValue = normalized['durationMs'];
+    if (durationValue is! int) {
+      if (durationValue is num) {
+        normalized['durationMs'] = durationValue.toInt();
+      } else {
+        normalized['durationMs'] = 0;
+      }
+    }
+    try {
+      final song = Song.fromJson(normalized);
+      // Corrupt records without an ID cannot be tracked reliably.
+      if (song.id.trim().isEmpty) return null;
+      return song;
+    } catch (e) {
+      logWarning('DownloadService: skipping invalid stored song metadata: $e',
+          tag: 'DownloadService');
+      return null;
     }
   }
 

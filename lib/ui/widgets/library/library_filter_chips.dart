@@ -330,6 +330,7 @@ class _LibraryChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
+        mouseCursor: SystemMouseCursors.click,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Container(
           height: chipHeight,

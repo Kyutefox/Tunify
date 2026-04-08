@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hugeicons/hugeicons.dart';
 import 'package:palette_generator/palette_generator.dart';
 
 import 'package:tunify/features/library/collection_track_cache.dart';
@@ -35,6 +36,9 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/device/device_music_provider.dart';
 import 'package:tunify/features/podcast/podcast_provider.dart';
+import 'package:tunify/features/auth/auth_provider.dart';
+import 'package:tunify/features/settings/avatar_provider.dart';
+import 'package:tunify/features/settings/guest_profile_provider.dart';
 import 'package:tunify/data/models/podcast.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
@@ -67,6 +71,20 @@ String _formatDuration(List<Song> songs) {
   return h > 0 ? '${h}h ${m}min' : '${m}min';
 }
 
+/// Matches remote browse `secondSubtitle` shape: `N songs • duration`.
+String _libraryPlaylistStatsSubtitle(List<Song> songs) {
+  final n = songs.length;
+  final label = n == 1 ? 'song' : 'songs';
+  if (n == 0) {
+    return '0 $label';
+  }
+  final dur = _formatDuration(songs);
+  if (dur.isEmpty) {
+    return '$n $label';
+  }
+  return '$n $label • $dur';
+}
+
 List<Song> _sortBySortOrder(List<Song> songs, PlaylistTrackSortOrder order) {
   switch (order) {
     case PlaylistTrackSortOrder.title:
@@ -86,7 +104,9 @@ Widget _thumbPlaceholder(BuildContext context, {double size = 48}) => Container(
       color: AppColorsScheme.of(context).surfaceLight,
       child: Center(
           child: AppIcon(
-              icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted, size: 24)),
+              icon: AppIcons.musicNote,
+              color: AppColorsScheme.of(context).textMuted,
+              size: 24)),
     );
 
 enum _PersistKind { playlist, album, artist }
@@ -220,8 +240,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   bool _importedFetchTriggered = false;
   ShuffleMode _ephemeralShuffleMode = ShuffleMode.none;
   bool _exporting = false;
-  
-  // Pagination state (podcasts = manual load-more; others = background auto-load)
+
+  // Pagination state for remote collections (including podcast/audiobook feeds).
   String? _continuationToken;
   bool _loadingMore = false;
   bool _hasMore = true;
@@ -233,7 +253,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   bool _loadingRelated = false;
 
   bool get _isRemote =>
-      (widget._isRemotePlaylist && widget.remotePlaylist?.id != 'episodesForLater') ||
+      (widget._isRemotePlaylist &&
+          widget.remotePlaylist?.id != 'episodesForLater') ||
       widget._isAlbum ||
       widget._isArtist ||
       _isImportedLocal;
@@ -253,34 +274,16 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     // Synchronously pre-populate data from cache/DB so the first build
     // never shows a loading screen for already-available data.
     _initSync();
-    
-    // Setup scroll listener for pagination (podcasts only)
-    if (widget._isPodcast) {
-      _scrollController.addListener(_onScroll);
-    }
-    
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startAfterTransition();
     });
   }
-  
+
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
-  }
-  
-  void _onScroll() {
-    if (!widget._isPodcast || !_hasMore || _loadingMore) return;
-    
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    final currentScroll = _scrollController.position.pixels;
-    final delta = maxScroll - currentScroll;
-    
-    // Load more when within 500 pixels of the bottom
-    if (delta < 500) {
-      _loadMoreEpisodes();
-    }
   }
 
   /// Runs synchronously in initState (before first build).
@@ -304,7 +307,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     }
 
     // Episodes For Later — always local, never needs loading
-    if (widget.playlistId == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater') {
+    if (widget.playlistId == 'episodesForLater' ||
+        widget.remotePlaylist?.id == 'episodesForLater') {
       _paletteColor = const Color(0xFF9333EA); // Purple color for episodes
       return;
     }
@@ -371,7 +375,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     // Downloads — purely local, no fetching needed
     if (widget.playlistId == 'downloads') return;
     // Episodes For Later — purely local, no fetching needed
-    if (widget.playlistId == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater') return;
+    if (widget.playlistId == 'episodesForLater' ||
+        widget.remotePlaylist?.id == 'episodesForLater') return;
 
     // For imported local playlists: read from provider now that ref is available,
     // pre-populate palette and kick off the track fetch.
@@ -386,15 +391,39 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           }
           // Check cache — if hit, populate _remoteAsLocal right now (no loading)
           final browseId = local.browseId ?? local.id;
-          final cached = await CollectionTrackCache.instance.getSongs(browseId);
+          final cachedEntry =
+              await CollectionTrackCache.instance.getEntryFromCache(browseId);
+          final cached = cachedEntry?.songs;
           if (cached != null && _remoteAsLocal == null) {
+            final cachedDesc = cachedEntry?.description?.trim();
+            final cachedCurator = cachedEntry?.curatorName?.trim();
+            final cachedCuratorThumb = cachedEntry?.curatorThumbnailUrl?.trim();
+            final cachedSub = cachedEntry?.headerSubtitle?.trim();
+            final cachedSub2 = cachedEntry?.headerSecondSubtitle?.trim();
             setState(() {
               _remoteAsLocal = _makePlaylist(
                 id: local.id,
                 name: local.name,
-                description: local.description,
+                description: (cachedDesc != null && cachedDesc.isNotEmpty)
+                    ? cachedDesc
+                    : local.description,
+                curatorName:
+                    (cachedCurator != null && cachedCurator.isNotEmpty)
+                        ? cachedCurator
+                        : local.curatorName,
+                curatorThumbnailUrl: (cachedCuratorThumb != null &&
+                        cachedCuratorThumb.isNotEmpty)
+                    ? cachedCuratorThumb
+                    : local.curatorThumbnailUrl,
+                headerSubtitle: (cachedSub != null && cachedSub.isNotEmpty)
+                    ? cachedSub
+                    : local.headerSubtitle,
+                headerSecondSubtitle:
+                    (cachedSub2 != null && cachedSub2.isNotEmpty)
+                        ? cachedSub2
+                        : local.headerSecondSubtitle,
                 songs: cached,
-                imageUrl: local.customImageUrl,
+                imageUrl: local.customImageUrl ?? cachedEntry?.imageUrl,
                 browseId: browseId,
                 createdAt: local.createdAt,
               );
@@ -459,9 +488,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   }
 
   Future<void> _fetchRelatedContent() async {
-    final browseId = widget.albumBrowseId ??
-        widget.remotePlaylist?.id ??
-        _resolvedBrowseId;
+    final browseId =
+        widget.albumBrowseId ?? widget.remotePlaylist?.id ?? _resolvedBrowseId;
     if (browseId == null || browseId.isEmpty) return;
     if (_loadingRelated) return;
     if (mounted) setState(() => _loadingRelated = true);
@@ -498,6 +526,10 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     required String id,
     required String name,
     String description = '',
+    String? curatorName,
+    String? curatorThumbnailUrl,
+    String? headerSubtitle,
+    String? headerSecondSubtitle,
     required List<Song> songs,
     String? imageUrl,
     String? browseId,
@@ -507,6 +539,10 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         id: id,
         name: name,
         description: description,
+        curatorName: curatorName,
+        curatorThumbnailUrl: curatorThumbnailUrl,
+        headerSubtitle: headerSubtitle,
+        headerSecondSubtitle: headerSecondSubtitle,
         createdAt: createdAt ?? DateTime.now(),
         updatedAt: DateTime.now(),
         songs: songs,
@@ -527,7 +563,31 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             _remoteAsLocal = _makePlaylist(
               id: pl.id,
               name: pl.title,
-              description: pl.curatorName ?? pl.description,
+              description: widget._isPodcast
+                  ? ((entry.description?.trim().isNotEmpty ?? false)
+                      ? entry.description!.trim()
+                      : (pl.curatorName ?? pl.description))
+                  : ((entry.description?.trim().isNotEmpty ?? false)
+                      ? entry.description!.trim()
+                      : pl.description),
+              curatorName: widget._isPodcast
+                  ? null
+                  : ((entry.curatorName?.trim().isNotEmpty ?? false)
+                      ? entry.curatorName!.trim()
+                      : pl.curatorName),
+              curatorThumbnailUrl:
+                  widget._isPodcast
+                      ? null
+                      : ((entry.curatorThumbnailUrl?.trim().isNotEmpty ?? false)
+                          ? entry.curatorThumbnailUrl!.trim()
+                          : pl.curatorThumbnailUrl),
+              headerSubtitle: entry.headerSubtitle?.trim().isNotEmpty == true
+                  ? entry.headerSubtitle!.trim()
+                  : null,
+              headerSecondSubtitle:
+                  entry.headerSecondSubtitle?.trim().isNotEmpty == true
+                      ? entry.headerSecondSubtitle!.trim()
+                      : null,
               songs: entry.songs,
               imageUrl: imageUrl,
             );
@@ -539,50 +599,97 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             ? entry.songs.firstOrNull?.thumbnailUrl
             : pl.coverUrl);
       }
-      
-      // For podcasts, even if cached, we need to check if there's more content
-      if (widget._isPodcast && entry.songs.length >= 100) {
-        _hasMore = true;
-        _fetchContinuationToken(pl.id);
-      }
+
       // For regular playlists: cache may have been populated with fewer tracks
       // (e.g. from a previous version). Invalidate and do a silent full re-fetch.
-      if (!widget._isPodcast) {
-        CollectionTrackCache.instance.invalidate(pl.id);
-        // fall through to fresh fetch below (silent so no loading spinner)
-      } else {
-        return;
-      }
+      CollectionTrackCache.instance.invalidate(pl.id);
+      // fall through to fresh fetch below (silent so no loading spinner)
     }
     if (!silent) _setLoading();
     try {
-      // For podcasts, use pagination-aware fetching
+      // Podcasts/audiobooks use the same progressive loading behavior as playlists:
+      // first page renders immediately, then continuation pages stream in automatically.
       if (widget._isPodcast) {
-        final result = await ref.read(streamManagerProvider).fetchPlaylistTracksWithContinuation(pl.id, maxTracks: 200);
-        if (!mounted) return;
-        final songs = result.tracks.map(Song.fromTrack).toList();
         final imageUrl = pl.coverUrl.isEmpty ? null : pl.coverUrl;
-        
-        // Store continuation token for pagination
-        _continuationToken = result.continuationToken;
-        _hasMore = result.continuationToken != null;
-        
-        CollectionTrackCache.instance.put(pl.id, songs, imageUrl: imageUrl);
-        final color = await _extractPaletteColor(imageUrl ?? songs.firstOrNull?.thumbnailUrl);
-        if (!mounted) return;
-        setState(() {
-          if (color != null) _paletteColor = color;
-          _remoteAsLocal = _makePlaylist(
-            id: pl.id,
-            name: pl.title,
-            description: pl.curatorName ?? pl.description,
-            songs: songs,
-            imageUrl: imageUrl,
-          );
-        });
-        if (color != null) {
-          CollectionTrackCache.instance.updatePalette(pl.id, color);
-        }
+        _backgroundLoadCancelled = false;
+        await ref.read(streamManagerProvider).fetchCollectionTracksProgressive(
+          pl.id,
+          onFirstPage: (firstBatch, token, [browseMeta]) async {
+            if (!mounted || _backgroundLoadCancelled) return;
+            final songs = firstBatch.map(Song.fromTrack).toList();
+            final d = browseMeta?.description?.trim();
+            final sub = browseMeta?.subtitle?.trim();
+            final sub2 = browseMeta?.secondSubtitle?.trim();
+            CollectionTrackCache.instance.put(
+              pl.id,
+              songs,
+              imageUrl: imageUrl,
+              description: (d != null && d.isNotEmpty)
+                  ? d
+                  : (pl.curatorName ?? pl.description),
+              curatorName: null,
+              curatorThumbnailUrl: null,
+              headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+              headerSecondSubtitle:
+                  (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
+            );
+            final color = await _extractPaletteColor(
+                imageUrl ?? songs.firstOrNull?.thumbnailUrl);
+            if (!mounted || _backgroundLoadCancelled) return;
+            setState(() {
+              _continuationToken = token;
+              _hasMore = token != null;
+              _loadingMore = token != null;
+              if (color != null) _paletteColor = color;
+              _remoteAsLocal = _makePlaylist(
+                id: pl.id,
+                name: pl.title,
+                description: (d != null && d.isNotEmpty)
+                    ? d
+                    : (pl.curatorName ?? pl.description),
+                headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+                headerSecondSubtitle:
+                    (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
+                songs: songs,
+                imageUrl: imageUrl,
+              );
+            });
+            if (color != null) {
+              CollectionTrackCache.instance.updatePalette(pl.id, color);
+            }
+          },
+          onMoreLoaded: (batch, token) {
+            if (!mounted || _backgroundLoadCancelled) return;
+            final newSongs = batch.map(Song.fromTrack).toList();
+            setState(() {
+              _continuationToken = token;
+              _hasMore = token != null;
+              _loadingMore = token != null;
+              if (_remoteAsLocal != null) {
+                final updated = [..._remoteAsLocal!.songs, ...newSongs];
+                _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
+                CollectionTrackCache.instance
+                    .put(
+                  pl.id,
+                  updated,
+                  imageUrl: imageUrl,
+                  description: _remoteAsLocal?.description,
+                  curatorName: _remoteAsLocal?.curatorName,
+                  curatorThumbnailUrl: _remoteAsLocal?.curatorThumbnailUrl,
+                  headerSubtitle: _remoteAsLocal?.headerSubtitle,
+                  headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
+                );
+              }
+            });
+          },
+          onDone: () {
+            if (!mounted || _backgroundLoadCancelled) return;
+            setState(() {
+              _hasMore = false;
+              _loadingMore = false;
+            });
+          },
+        );
       } else {
         // Regular playlist — progressive loading: show first page immediately,
         // then append remaining pages in background.
@@ -590,18 +697,45 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         final imageUrl = pl.coverUrl.isEmpty ? null : pl.coverUrl;
         await ref.read(streamManagerProvider).fetchCollectionTracksProgressive(
           pl.id,
-          onFirstPage: (firstBatch, token) async {
+          onFirstPage: (firstBatch, token, [browseMeta]) async {
             if (!mounted || _backgroundLoadCancelled) return;
             final songs = firstBatch.map(Song.fromTrack).toList();
-            CollectionTrackCache.instance.put(pl.id, songs, imageUrl: imageUrl);
-            final color = await _extractPaletteColor(imageUrl ?? songs.firstOrNull?.thumbnailUrl);
+            final d = browseMeta?.description?.trim();
+            final cn = browseMeta?.curatorName?.trim();
+            final ct = browseMeta?.curatorThumbnailUrl?.trim();
+            final sub = browseMeta?.subtitle?.trim();
+            final sub2 = browseMeta?.secondSubtitle?.trim();
+            CollectionTrackCache.instance.put(
+              pl.id,
+              songs,
+              imageUrl: imageUrl,
+              description: (d != null && d.isNotEmpty) ? d : pl.description,
+              curatorName:
+                  (cn != null && cn.isNotEmpty) ? cn : pl.curatorName,
+              curatorThumbnailUrl: (ct != null && ct.isNotEmpty)
+                  ? ct
+                  : pl.curatorThumbnailUrl,
+              headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+              headerSecondSubtitle:
+                  (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
+            );
+            final color = await _extractPaletteColor(
+                imageUrl ?? songs.firstOrNull?.thumbnailUrl);
             if (!mounted || _backgroundLoadCancelled) return;
             setState(() {
               if (color != null) _paletteColor = color;
               _remoteAsLocal = _makePlaylist(
                 id: pl.id,
                 name: pl.title,
-                description: pl.curatorName ?? pl.description,
+                description: (d != null && d.isNotEmpty) ? d : pl.description,
+                curatorName:
+                    (cn != null && cn.isNotEmpty) ? cn : pl.curatorName,
+                curatorThumbnailUrl: (ct != null && ct.isNotEmpty)
+                    ? ct
+                    : pl.curatorThumbnailUrl,
+                headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+                headerSecondSubtitle:
+                    (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
                 songs: songs,
                 imageUrl: imageUrl,
               );
@@ -617,7 +751,17 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               if (_remoteAsLocal != null) {
                 final updated = [..._remoteAsLocal!.songs, ...newSongs];
                 _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
-                CollectionTrackCache.instance.put(pl.id, updated, imageUrl: imageUrl);
+                CollectionTrackCache.instance
+                    .put(
+                  pl.id,
+                  updated,
+                  imageUrl: imageUrl,
+                  description: _remoteAsLocal?.description,
+                  curatorName: _remoteAsLocal?.curatorName,
+                  curatorThumbnailUrl: _remoteAsLocal?.curatorThumbnailUrl,
+                  headerSubtitle: _remoteAsLocal?.headerSubtitle,
+                  headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
+                );
               }
             });
           },
@@ -626,55 +770,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
     } catch (e) {
       if (!silent) _setError(e);
-    }
-  }
-  
-  Future<void> _fetchContinuationToken(String browseId) async {
-    try {
-      // Fetch just to get the continuation token
-      final result = await ref.read(streamManagerProvider).fetchPlaylistTracksWithContinuation(browseId, maxTracks: 100);
-      if (mounted) {
-        setState(() {
-          _continuationToken = result.continuationToken;
-          _hasMore = result.continuationToken != null;
-        });
-      }
-    } catch (e) {
-      // Failed to fetch continuation token
-    }
-  }
-  
-  Future<void> _loadMoreEpisodes() async {
-    if (_loadingMore || !_hasMore || _continuationToken == null || !widget._isPodcast) return;
-    
-    setState(() => _loadingMore = true);
-    
-    try {
-      final pl = widget.remotePlaylist!;
-      final result = await ref.read(streamManagerProvider).fetchPlaylistTracksWithContinuation(
-        pl.id,
-        continuationToken: _continuationToken,
-        maxTracks: 100,
-      );
-      
-      if (!mounted) return;
-      
-      final newSongs = result.tracks.map(Song.fromTrack).toList();
-      _continuationToken = result.continuationToken;
-      _hasMore = result.continuationToken != null;
-      
-      setState(() {
-        if (_remoteAsLocal != null) {
-          _remoteAsLocal = _remoteAsLocal!.copyWith(
-            songs: [..._remoteAsLocal!.songs, ...newSongs],
-          );
-        }
-        _loadingMore = false;
-      });
-    } catch (e) {
-      if (mounted) {
-        setState(() => _loadingMore = false);
-      }
     }
   }
 
@@ -698,20 +793,44 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       if (_resolvedBrowseId == null) throw Exception('Could not find album');
 
       // BrowseId resolved — check Hive before deciding to show loading.
-      final entry = await CollectionTrackCache.instance.getEntryFromCache(_resolvedBrowseId!);
+      final entry = await CollectionTrackCache.instance
+          .getEntryFromCache(_resolvedBrowseId!);
       final hadAlbumCache = entry != null;
       if (entry != null && mounted) {
         if (!silent || _remoteAsLocal == null) {
           setState(() {
             if (entry.paletteColor != null) _paletteColor = entry.paletteColor;
-            _albumSubtitle = widget.albumArtistName;
+            final cachedDesc = entry.description?.trim();
+            final cachedCurator = entry.curatorName?.trim();
+            final cachedCuratorThumb = entry.curatorThumbnailUrl?.trim();
+            final cachedSub = entry.headerSubtitle?.trim();
+            final cachedSub2 = entry.headerSecondSubtitle?.trim();
             _remoteAsLocal = _makePlaylist(
               id: _resolvedBrowseId!,
               name: widget.albumName ?? widget.albumSongTitle ?? '',
-              description: widget.albumArtistName ?? '',
+              description: (cachedDesc != null && cachedDesc.isNotEmpty)
+                  ? cachedDesc
+                  : '',
+              curatorName:
+                  (cachedCurator != null && cachedCurator.isNotEmpty)
+                      ? cachedCurator
+                      : null,
+              curatorThumbnailUrl:
+                  (cachedCuratorThumb != null && cachedCuratorThumb.isNotEmpty)
+                      ? cachedCuratorThumb
+                      : null,
+              headerSubtitle: (cachedSub != null && cachedSub.isNotEmpty)
+                  ? cachedSub
+                  : null,
+              headerSecondSubtitle:
+                  (cachedSub2 != null && cachedSub2.isNotEmpty)
+                      ? cachedSub2
+                      : null,
               songs: entry.songs,
               imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
             );
+            _albumSubtitle =
+                _remoteAsLocal?.curatorName ?? widget.albumArtistName;
           });
         }
         if (_paletteColor == null) {
@@ -730,24 +849,48 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       // Progressive loading — show first page immediately, background-load rest.
       _backgroundLoadCancelled = false;
       final resolvedId = _resolvedBrowseId!;
-      final isInLib = ref.read(libraryProvider).followedAlbums.any(
-          (a) => a.id == resolvedId || a.browseId == resolvedId);
+      final isInLib = ref
+          .read(libraryProvider)
+          .followedAlbums
+          .any((a) => a.id == resolvedId || a.browseId == resolvedId);
       await sm.fetchCollectionTracksProgressive(
         resolvedId,
-        onFirstPage: (firstBatch, token) async {
+        onFirstPage: (firstBatch, token, [browseMeta]) async {
           if (!mounted || _backgroundLoadCancelled) return;
           final songs = firstBatch.map(Song.fromTrack).toList();
           final imageUrl = widget.albumThumbnailUrl;
-          CollectionTrackCache.instance.put(resolvedId, songs, imageUrl: imageUrl);
+          final d = browseMeta?.description?.trim();
+          final cn = browseMeta?.curatorName?.trim();
+          final ct = browseMeta?.curatorThumbnailUrl?.trim();
+          final sub = browseMeta?.subtitle?.trim();
+          final sub2 = browseMeta?.secondSubtitle?.trim();
+          CollectionTrackCache.instance.put(
+            resolvedId,
+            songs,
+            imageUrl: imageUrl,
+            description: (d != null && d.isNotEmpty) ? d : null,
+            curatorName: (cn != null && cn.isNotEmpty) ? cn : null,
+            curatorThumbnailUrl: (ct != null && ct.isNotEmpty) ? ct : null,
+            headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+            headerSecondSubtitle:
+                (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
+          );
           final color = _paletteColor ?? await _extractPaletteColor(imageUrl);
           if (!mounted || _backgroundLoadCancelled) return;
+          final artistLine =
+              (cn != null && cn.isNotEmpty) ? cn : widget.albumArtistName;
           setState(() {
             if (color != null) _paletteColor = color;
-            _albumSubtitle = widget.albumArtistName;
+            _albumSubtitle = artistLine;
             _remoteAsLocal = _makePlaylist(
               id: resolvedId,
               name: widget.albumName ?? widget.albumSongTitle ?? '',
-              description: widget.albumArtistName ?? '',
+              description: (d != null && d.isNotEmpty) ? d : '',
+              curatorName: (cn != null && cn.isNotEmpty) ? cn : null,
+              curatorThumbnailUrl: (ct != null && ct.isNotEmpty) ? ct : null,
+              headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+              headerSecondSubtitle:
+                  (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
               songs: songs,
               imageUrl: imageUrl,
             );
@@ -758,7 +901,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           if (isInLib) {
             ref.read(libraryProvider.notifier).refreshAlbumMeta(
                   resolvedId,
-                  artistName: widget.albumArtistName,
+                  artistName: artistLine,
                   thumbnailUrl: imageUrl,
                 );
           }
@@ -770,8 +913,16 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             if (_remoteAsLocal != null) {
               final updated = [..._remoteAsLocal!.songs, ...newSongs];
               _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
-              CollectionTrackCache.instance.put(resolvedId, updated,
-                  imageUrl: widget.albumThumbnailUrl);
+              CollectionTrackCache.instance.put(
+                resolvedId,
+                updated,
+                imageUrl: widget.albumThumbnailUrl,
+                description: _remoteAsLocal?.description,
+                curatorName: _remoteAsLocal?.curatorName,
+                curatorThumbnailUrl: _remoteAsLocal?.curatorThumbnailUrl,
+                headerSubtitle: _remoteAsLocal?.headerSubtitle,
+                headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
+              );
             }
           });
         },
@@ -795,18 +946,35 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
       if (_resolvedBrowseId == null) throw Exception('Could not find artist');
 
-      final entry =
-          await CollectionTrackCache.instance.getEntryFromCache(_resolvedBrowseId!);
+      final entry = await CollectionTrackCache.instance
+          .getEntryFromCache(_resolvedBrowseId!);
       final hadArtistCache = entry != null;
       if (entry != null && mounted) {
         // Cache hit — update if first load or non-silent refresh
         if (!silent || _remoteAsLocal == null) {
           if (_remoteAsLocal == null) {
+            final cachedDesc = entry.description?.trim();
+            final cachedSub = entry.headerSubtitle?.trim();
+            final cachedSub2 = entry.headerSecondSubtitle?.trim();
+            final cachedTitle = entry.collectionTitle?.trim();
             setState(() {
-              if (entry.paletteColor != null) _paletteColor = entry.paletteColor;
+              if (entry.paletteColor != null)
+                _paletteColor = entry.paletteColor;
               _remoteAsLocal = _makePlaylist(
                 id: _resolvedBrowseId!,
-                name: widget.albumName ?? '',
+                name: (cachedTitle != null && cachedTitle.isNotEmpty)
+                    ? cachedTitle
+                    : (widget.albumName ?? ''),
+                description: (cachedDesc != null && cachedDesc.isNotEmpty)
+                    ? cachedDesc
+                    : '',
+                headerSubtitle: (cachedSub != null && cachedSub.isNotEmpty)
+                    ? cachedSub
+                    : null,
+                headerSecondSubtitle:
+                    (cachedSub2 != null && cachedSub2.isNotEmpty)
+                        ? cachedSub2
+                        : null,
                 songs: entry.songs,
                 imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
               );
@@ -815,8 +983,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           if (_paletteColor == null) {
             final isInLib = ref.read(libraryProvider).followedArtists.any((a) =>
                 a.id == _resolvedBrowseId || a.browseId == _resolvedBrowseId);
-            _extractPalette(
-                entry.imageUrl ?? widget.albumThumbnailUrl,
+            _extractPalette(entry.imageUrl ?? widget.albumThumbnailUrl,
                 persistId: isInLib ? _resolvedBrowseId : null,
                 persistKind: isInLib ? _PersistKind.artist : null);
           }
@@ -830,24 +997,54 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       // Progressive loading — show first page immediately, background-load rest.
       _backgroundLoadCancelled = false;
       final resolvedId = _resolvedBrowseId!;
-      final isInLib = ref.read(libraryProvider).followedArtists.any(
-          (a) => a.id == resolvedId || a.browseId == resolvedId);
+      final isInLib = ref
+          .read(libraryProvider)
+          .followedArtists
+          .any((a) => a.id == resolvedId || a.browseId == resolvedId);
       await sm.fetchCollectionTracksProgressive(
         resolvedId,
-        onFirstPage: (firstBatch, token) async {
+        onFirstPage: (firstBatch, token, [browseMeta]) async {
           if (!mounted || _backgroundLoadCancelled) return;
           final songs = firstBatch.map(Song.fromTrack).toList();
-          final imageUrl = widget.albumThumbnailUrl;
-          CollectionTrackCache.instance.put(resolvedId, songs, imageUrl: imageUrl);
-          final color = _paletteColor ?? await _extractPaletteColor(imageUrl);
+          final d = browseMeta?.description?.trim();
+          final sub = browseMeta?.subtitle?.trim();
+          final sub2 = browseMeta?.secondSubtitle?.trim();
+          final channelTitle = browseMeta?.channelTitle?.trim();
+          final channelThumb = browseMeta?.channelThumbnailUrl?.trim();
+          final resolvedName = (channelTitle != null && channelTitle.isNotEmpty)
+              ? channelTitle
+              : (widget.albumName ?? '');
+          final resolvedImage =
+              (channelThumb != null && channelThumb.isNotEmpty)
+                  ? channelThumb
+                  : widget.albumThumbnailUrl;
+          CollectionTrackCache.instance.put(
+            resolvedId,
+            songs,
+            imageUrl: resolvedImage,
+            description: (d != null && d.isNotEmpty) ? d : null,
+            headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+            headerSecondSubtitle:
+                (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
+            collectionTitle:
+                (channelTitle != null && channelTitle.isNotEmpty)
+                    ? channelTitle
+                    : null,
+          );
+          final color =
+              _paletteColor ?? await _extractPaletteColor(resolvedImage);
           if (!mounted || _backgroundLoadCancelled) return;
           setState(() {
             if (color != null) _paletteColor = color;
             _remoteAsLocal = _makePlaylist(
               id: resolvedId,
-              name: widget.albumName ?? '',
+              name: resolvedName,
+              description: (d != null && d.isNotEmpty) ? d : '',
+              headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+              headerSecondSubtitle:
+                  (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
               songs: songs,
-              imageUrl: imageUrl,
+              imageUrl: resolvedImage,
             );
           });
           if (color != null) {
@@ -856,7 +1053,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           if (isInLib) {
             ref.read(libraryProvider.notifier).refreshArtistMeta(
                   resolvedId,
-                  thumbnailUrl: imageUrl,
+                  name: resolvedName,
+                  thumbnailUrl: resolvedImage,
                 );
           }
         },
@@ -867,8 +1065,15 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             if (_remoteAsLocal != null) {
               final updated = [..._remoteAsLocal!.songs, ...newSongs];
               _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
-              CollectionTrackCache.instance.put(resolvedId, updated,
-                  imageUrl: widget.albumThumbnailUrl);
+              CollectionTrackCache.instance.put(
+                resolvedId,
+                updated,
+                imageUrl: _remoteAsLocal?.customImageUrl,
+                description: _remoteAsLocal?.description,
+                headerSubtitle: _remoteAsLocal?.headerSubtitle,
+                headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
+                collectionTitle: _remoteAsLocal?.name,
+              );
             }
           });
         },
@@ -890,26 +1095,47 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final browseId = local.browseId ?? local.id;
 
     // Cache hit — populate UI immediately, then invalidate and re-fetch fully.
-    final cached = await CollectionTrackCache.instance.getSongs(browseId);
+    final cachedEntry =
+        await CollectionTrackCache.instance.getEntryFromCache(browseId);
+    final cached = cachedEntry?.songs;
     if (cached != null) {
       if (!mounted) return;
       if (_remoteAsLocal == null) {
+        final cachedDesc = cachedEntry?.description?.trim();
+        final cachedCurator = cachedEntry?.curatorName?.trim();
+        final cachedCuratorThumb = cachedEntry?.curatorThumbnailUrl?.trim();
+        final cachedSub = cachedEntry?.headerSubtitle?.trim();
+        final cachedSub2 = cachedEntry?.headerSecondSubtitle?.trim();
         setState(() {
           _remoteAsLocal = _makePlaylist(
             id: local.id,
             name: local.name,
-            description: local.description,
+            description: (cachedDesc != null && cachedDesc.isNotEmpty)
+                ? cachedDesc
+                : local.description,
+            curatorName: (cachedCurator != null && cachedCurator.isNotEmpty)
+                ? cachedCurator
+                : local.curatorName,
+            curatorThumbnailUrl:
+                (cachedCuratorThumb != null && cachedCuratorThumb.isNotEmpty)
+                    ? cachedCuratorThumb
+                    : local.curatorThumbnailUrl,
+            headerSubtitle: (cachedSub != null && cachedSub.isNotEmpty)
+                ? cachedSub
+                : local.headerSubtitle,
+            headerSecondSubtitle:
+                (cachedSub2 != null && cachedSub2.isNotEmpty)
+                    ? cachedSub2
+                    : local.headerSecondSubtitle,
             songs: cached,
-            imageUrl: local.customImageUrl,
+            imageUrl: local.customImageUrl ?? cachedEntry?.imageUrl,
             browseId: browseId,
             createdAt: local.createdAt,
           );
         });
       }
-      _extractPalette(
-          local.customImageUrl ?? cached.firstOrNull?.thumbnailUrl,
-          persistId: local.id,
-          persistKind: _PersistKind.playlist);
+      _extractPalette(local.customImageUrl ?? cached.firstOrNull?.thumbnailUrl,
+          persistId: local.id, persistKind: _PersistKind.playlist);
       // Invalidate so fresh full fetch replaces any stale partial data.
       CollectionTrackCache.instance.invalidate(browseId);
       // fall through to progressive fetch below (silent — UI already populated)
@@ -926,21 +1152,52 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       final imageUrl = local.customImageUrl;
       await ref.read(streamManagerProvider).fetchCollectionTracksProgressive(
         browseId,
-        onFirstPage: (firstBatch, token) async {
+        onFirstPage: (firstBatch, token, [browseMeta]) async {
           if (!mounted || _backgroundLoadCancelled) return;
           final songs = firstBatch.map(Song.fromTrack).toList();
-          logInfo('Fetched first page: ${songs.length} songs for imported playlist ${local.id}',
+          final d = browseMeta?.description?.trim();
+          final cn = browseMeta?.curatorName?.trim();
+          final ct = browseMeta?.curatorThumbnailUrl?.trim();
+          final sub = browseMeta?.subtitle?.trim();
+          final sub2 = browseMeta?.secondSubtitle?.trim();
+          logInfo(
+              'Fetched first page: ${songs.length} songs for imported playlist ${local.id}',
               tag: 'PlaylistScreen');
-          CollectionTrackCache.instance.put(browseId, songs, imageUrl: imageUrl);
+          CollectionTrackCache.instance.put(
+            browseId,
+            songs,
+            imageUrl: imageUrl,
+            description: (d != null && d.isNotEmpty) ? d : local.description,
+            curatorName:
+                (cn != null && cn.isNotEmpty) ? cn : local.curatorName,
+            curatorThumbnailUrl: (ct != null && ct.isNotEmpty)
+                ? ct
+                : local.curatorThumbnailUrl,
+            headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+            headerSecondSubtitle:
+                (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
+          );
           final color = _paletteColor ??
-              await _extractPaletteColor(imageUrl ?? songs.firstOrNull?.thumbnailUrl);
+              await _extractPaletteColor(
+                  imageUrl ?? songs.firstOrNull?.thumbnailUrl);
           if (!mounted || _backgroundLoadCancelled) return;
           setState(() {
             if (color != null) _paletteColor = color;
             _remoteAsLocal = _makePlaylist(
               id: local.id,
               name: local.name,
-              description: local.description,
+              description: (d != null && d.isNotEmpty) ? d : local.description,
+              curatorName:
+                  (cn != null && cn.isNotEmpty) ? cn : local.curatorName,
+              curatorThumbnailUrl: (ct != null && ct.isNotEmpty)
+                  ? ct
+                  : local.curatorThumbnailUrl,
+              headerSubtitle: (sub != null && sub.isNotEmpty)
+                  ? sub
+                  : local.headerSubtitle,
+              headerSecondSubtitle: (sub2 != null && sub2.isNotEmpty)
+                  ? sub2
+                  : local.headerSecondSubtitle,
               songs: songs,
               imageUrl: imageUrl,
               browseId: browseId,
@@ -958,7 +1215,17 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             if (_remoteAsLocal != null) {
               final updated = [..._remoteAsLocal!.songs, ...newSongs];
               _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
-              CollectionTrackCache.instance.put(browseId, updated, imageUrl: imageUrl);
+              CollectionTrackCache.instance
+                  .put(
+                browseId,
+                updated,
+                imageUrl: imageUrl,
+                description: _remoteAsLocal?.description,
+                curatorName: _remoteAsLocal?.curatorName,
+                curatorThumbnailUrl: _remoteAsLocal?.curatorThumbnailUrl,
+                headerSubtitle: _remoteAsLocal?.headerSubtitle,
+                headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
+              );
             }
           });
         },
@@ -1019,11 +1286,11 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final playlist = _remoteAsLocal;
     if (playlist == null) return;
     setState(() => _addingToLibrary = true);
-    
+
     // Extract and cache palette immediately so it's available on next open
-    final imageUrl = playlist.customImageUrl ?? 
-                     playlist.songs.firstOrNull?.thumbnailUrl;
-    
+    final imageUrl =
+        playlist.customImageUrl ?? playlist.songs.firstOrNull?.thumbnailUrl;
+
     if (widget._isPodcast) {
       // For podcasts/audiobooks, subscribe using podcast provider
       final podcast = Podcast(
@@ -1035,10 +1302,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       );
       await ref.read(podcastProvider.notifier).toggleSubscription(podcast);
     } else if (widget._isAlbum) {
-      final albumId = _resolvedBrowseId ??
-                      widget.albumBrowseId ??
-                      widget.albumName ??
-                      '';
+      final albumId =
+          _resolvedBrowseId ?? widget.albumBrowseId ?? widget.albumName ?? '';
       await ref.read(libraryProvider.notifier).toggleFollowAlbum(LibraryAlbum(
             id: albumId,
             title: playlist.name,
@@ -1058,10 +1323,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             persistId: albumId, persistKind: _PersistKind.album);
       }
     } else if (widget._isArtist) {
-      final artistId = _resolvedBrowseId ??
-                       widget.albumBrowseId ??
-                       widget.albumName ??
-                       '';
+      final artistId =
+          _resolvedBrowseId ?? widget.albumBrowseId ?? widget.albumName ?? '';
       await ref.read(libraryProvider.notifier).toggleFollowArtist(LibraryArtist(
             id: artistId,
             name: playlist.name,
@@ -1080,12 +1343,16 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             persistId: artistId, persistKind: _PersistKind.artist);
       }
     } else {
-      final playlistToAdd = playlist.copyWith(browseId: playlist.browseId ?? playlist.id);
-      await ref.read(libraryProvider.notifier).addPlaylistToLibrary(playlistToAdd);
+      final playlistToAdd =
+          playlist.copyWith(browseId: playlist.browseId ?? playlist.id);
+      await ref
+          .read(libraryProvider.notifier)
+          .addPlaylistToLibrary(playlistToAdd);
       // Persist current palette or extract and persist for smooth next open
       if (_paletteColor != null) {
         // Already have palette - just persist it
-        _persistPalette(_paletteColor!, playlistToAdd.id, _PersistKind.playlist);
+        _persistPalette(
+            _paletteColor!, playlistToAdd.id, _PersistKind.playlist);
       } else if (imageUrl != null) {
         // Don't have palette yet - extract and persist
         await _extractPalette(imageUrl,
@@ -1099,15 +1366,17 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final playlist = _remoteAsLocal;
     if (playlist == null || playlist.songs.isEmpty) return;
     setState(() => _exporting = true);
-    
+
     try {
-      final newId = await ref.read(libraryProvider.notifier).exportPlaylistToLibrary(playlist);
-      
+      final newId = await ref
+          .read(libraryProvider.notifier)
+          .exportPlaylistToLibrary(playlist);
+
       // Persist palette to the new playlist if we have one
       if (newId != null && _paletteColor != null) {
         _persistPalette(_paletteColor!, newId, _PersistKind.playlist);
       }
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1126,7 +1395,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         );
       }
     }
-    
+
     if (mounted) setState(() => _exporting = false);
   }
 
@@ -1192,7 +1461,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                     'Tap Download on a song to add it here.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
+                      color: AppColorsScheme.of(context)
+                          .textMuted
+                          .withValues(alpha: 0.7),
                       fontSize: AppFontSize.base,
                     ),
                   ),
@@ -1216,6 +1487,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               },
               childCount: filteredSongs.length,
             )),
+          _collectionFooterSliverMusicOnly(sortedSongs),
           const SliverToBoxAdapter(child: SizedBox(height: 160)),
         ],
         hasSong: hasSong,
@@ -1290,8 +1562,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                               'Permission required to access local files',
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color:
-                                    AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
+                                color: AppColorsScheme.of(context)
+                                    .textMuted
+                                    .withValues(alpha: 0.7),
                                 fontSize: AppFontSize.base,
                               ),
                             ),
@@ -1315,7 +1588,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 child: Row(
                   children: [
                     Icon(Icons.folder_outlined,
-                        size: 14, color: AppColorsScheme.of(context).textSecondary),
+                        size: 14,
+                        color: AppColorsScheme.of(context).textSecondary),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -1358,7 +1632,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                         : 'No local files found',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
+                      color: AppColorsScheme.of(context)
+                          .textMuted
+                          .withValues(alpha: 0.7),
                       fontSize: AppFontSize.base,
                     ),
                   ),
@@ -1382,6 +1658,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               },
               childCount: filteredSongs.length,
             )),
+          _collectionFooterSliverMusicOnly(sortedSongs),
           const SliverToBoxAdapter(child: SizedBox(height: 160)),
         ],
         hasSong: hasSong,
@@ -1413,11 +1690,15 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         ? _remoteAsLocal
         : widget.playlistId == 'liked'
             ? ref.watch(libraryProvider.select((s) => s.likedPlaylist))
-            : (widget.playlistId == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater')
+            : (widget.playlistId == 'episodesForLater' ||
+                    widget.remotePlaylist?.id == 'episodesForLater')
                 ? () {
-                    final episodes = ref.watch(podcastProvider.select((s) => s.episodesForLater));
-                    final sortOrder = ref.watch(podcastProvider.select((s) => s.episodesForLaterSortOrder));
-                    final sortedEpisodes = _sortBySortOrder(episodes, sortOrder);
+                    final episodes = ref.watch(
+                        podcastProvider.select((s) => s.episodesForLater));
+                    final sortOrder = ref.watch(podcastProvider
+                        .select((s) => s.episodesForLaterSortOrder));
+                    final sortedEpisodes =
+                        _sortBySortOrder(episodes, sortOrder);
                     return LibraryPlaylist(
                       id: 'episodesForLater',
                       name: 'Episodes For Later',
@@ -1444,13 +1725,13 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                     s.subscriptions.any((p) => p.id == playlist.id) ||
                     s.savedAudiobooks.any((a) => a.id == playlist.id)))
                 : widget._isAlbum
-                    ? ref.watch(libraryProvider.select(
-                        (s) => s.followedAlbums.any((a) => a.id == playlist.id)))
+                    ? ref.watch(libraryProvider.select((s) =>
+                        s.followedAlbums.any((a) => a.id == playlist.id)))
                     : widget._isArtist
                         ? ref.watch(libraryProvider.select((s) =>
                             s.followedArtists.any((a) => a.id == playlist.id)))
-                        : ref.watch(libraryProvider.select(
-                            (s) => s.playlists.any((p) => p.id == playlist.id))))
+                        : ref.watch(libraryProvider.select((s) =>
+                            s.playlists.any((p) => p.id == playlist.id))))
         : true;
 
     final isImported = _isRemote || playlist.isImported;
@@ -1471,7 +1752,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           if (!mounted) return;
           setState(() {
             _paletteColor = null;
-            _lastPaletteUrl = null; // clear dedup guard so extraction always runs
+            _lastPaletteUrl =
+                null; // clear dedup guard so extraction always runs
           });
           if (paletteSource != null) {
             _extractPalette(paletteSource,
@@ -1485,16 +1767,25 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final filteredSongs =
         filterByExplicitSetting(songs, ref.watch(showExplicitContentProvider));
 
+    // Prefer browse-loaded art (correct for "Go to artist" before follow / stale route args).
     final coverUrl = _isRemote
-        ? (_isImportedLocal
-            ? _remoteAsLocal?.customImageUrl
-            : isInLibrary
-                ? playlist.customImageUrl
-                : widget.remotePlaylist?.coverUrl ?? widget.albumThumbnailUrl)
+        ? () {
+            final fromBrowse =
+                _remoteAsLocal?.customImageUrl?.trim() ?? '';
+            if (fromBrowse.isNotEmpty) return fromBrowse;
+            if (_isImportedLocal) {
+              return _remoteAsLocal?.customImageUrl;
+            }
+            if (isInLibrary) {
+              return playlist.customImageUrl;
+            }
+            return widget.remotePlaylist?.coverUrl ?? widget.albumThumbnailUrl;
+          }()
         : playlist.customImageUrl;
 
     final isLiked = playlist.id == 'liked';
-    final isEpisodesForLater = playlist.id == 'episodesForLater' || widget.remotePlaylist?.id == 'episodesForLater';
+    final isEpisodesForLater = playlist.id == 'episodesForLater' ||
+        widget.remotePlaylist?.id == 'episodesForLater';
 
     return CollectionDetailScaffold(
       isEmpty: songs.isEmpty,
@@ -1503,16 +1794,26 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           : isEpisodesForLater
               ? const Color(0xFF9333EA)
               : (songs.isEmpty ? const Color(0xFF404040) : _paletteColor),
-      title: isLiked ? 'Liked Songs' : isEpisodesForLater ? 'Episodes For Later' : playlist.name.capitalized,
+      title: isLiked
+          ? 'Liked Songs'
+          : isEpisodesForLater
+              ? 'Episodes For Later'
+              : playlist.name.capitalized,
       headerExpandedChild: CollectionDetailExpandedContent(
         cover: isLiked
             ? _PlaylistCover(songs: songs, isLiked: true)
             : isEpisodesForLater
                 ? _PlaylistCover(songs: songs, isEpisodesForLater: true)
                 : _PlaylistCover(
-                    songs: songs, imageUrl: coverUrl, isCircle: widget._isArtist),
-        title: isLiked ? 'Liked Songs' : isEpisodesForLater ? 'Episodes For Later' : playlist.name.capitalized,
-        subtitle: _buildSubtitle(playlist),
+                    songs: songs,
+                    imageUrl: coverUrl,
+                    isCircle: widget._isArtist),
+        title: isLiked
+            ? 'Liked Songs'
+            : isEpisodesForLater
+                ? 'Episodes For Later'
+                : playlist.name.capitalized,
+        subtitle: _collectionExpandedSubtitle(playlist),
       ),
       actionRow: _ActionRow(
         playlistId: playlist.id,
@@ -1521,7 +1822,10 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         showLibraryStatus: !isLiked && !isEpisodesForLater && isImported,
         isInLibrary: isInLibrary,
         onAddToLibrary: _addToLibrary,
-        onExportToLibrary: (_isRemote && !widget._isAlbum && !widget._isArtist && !widget._isPodcast)
+        onExportToLibrary: (_isRemote &&
+                !widget._isAlbum &&
+                !widget._isArtist &&
+                !widget._isPodcast)
             ? _exportToLibrary
             : null,
         addingToLibrary: _addingToLibrary,
@@ -1543,8 +1847,11 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               playlistId: playlist.id,
               songs: songs,
               filteredSongs: filteredSongs,
-              queueSource:
-                  isLiked ? 'liked' : isEpisodesForLater ? 'episodesForLater' : (widget._isAlbum ? 'album' : 'playlist'),
+              queueSource: isLiked
+                  ? 'liked'
+                  : isEpisodesForLater
+                      ? 'episodesForLater'
+                      : (widget._isAlbum ? 'album' : 'playlist'),
               externalShuffleEnabled: (_isRemote && !isInLibrary)
                   ? (_ephemeralShuffleMode != ShuffleMode.none)
                   : null,
@@ -1565,7 +1872,10 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   showNameDetails: !isLiked,
                   isEmpty: songs.isEmpty,
                 ),
-      searchField: _SearchInPlaylistTap(songs: songs, playlistId: playlist.id, isPodcast: widget._isPodcast || isEpisodesForLater),
+      searchField: _SearchInPlaylistTap(
+          songs: songs,
+          playlistId: playlist.id,
+          isPodcast: widget._isPodcast || isEpisodesForLater),
       bodySlivers: [
         if (filteredSongs.isEmpty)
           SliverFillRemaining(
@@ -1573,21 +1883,49 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             child: Center(
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.xxl),
-                child: Text(
-                  songs.isEmpty
-                      ? (isLiked
-                          ? 'Your liked songs will appear here.'
-                          : isEpisodesForLater
-                              ? 'Your saved podcast episodes will appear here.\nTap "Add to Episodes For Later" from episode options.'
-                              : isImported || widget._isAlbum || widget._isArtist
-                                  ? 'Nothing here yet — check back soon'
-                                  : 'Your playlist is empty.\nAdd songs to get started.')
-                      : 'No songs match your filter',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
-                    fontSize: AppFontSize.base,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      songs.isEmpty
+                          ? (isLiked
+                              ? 'Your liked songs will appear here.'
+                              : isEpisodesForLater
+                                  ? 'Your saved podcast episodes will appear here.\nTap "Add to Episodes For Later" from episode options.'
+                                  : isImported ||
+                                          widget._isAlbum ||
+                                          widget._isArtist
+                                      ? 'Nothing here yet — check back soon'
+                                      : 'Your playlist is empty.\nAdd songs to get started.')
+                          : 'No songs match your filter',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context)
+                            .textMuted
+                            .withValues(alpha: 0.7),
+                        fontSize: AppFontSize.base,
+                      ),
+                    ),
+                    if (songs.isEmpty &&
+                        !isImported &&
+                        !widget._isAlbum &&
+                        !widget._isArtist &&
+                        !isEpisodesForLater) ...[
+                      const SizedBox(height: AppSpacing.lg),
+                      _Pill(
+                        icon: AppIcons.add,
+                        label: 'Add',
+                        onTap: () => _openAddSongsSheet(
+                          context,
+                          widget.playlistId.isNotEmpty
+                              ? widget.playlistId
+                              : playlist.id,
+                          playlistName: playlist.name,
+                          onAdded: () => setState(() {}),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ),
@@ -1610,6 +1948,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             },
             childCount: filteredSongs.length,
           )),
+        _collectionFooterSliver(playlist, songs),
         if (widget._isPodcast && _loadingMore)
           SliverToBoxAdapter(
             child: Padding(
@@ -1644,28 +1983,219 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     );
   }
 
+  /// Playlists, albums, artists: compact browse meta under the title; stats in footer when needed.
+  bool _usePlaylistDescriptionUnderHeader(LibraryPlaylist playlist) {
+    if (widget._isPodcast) return false;
+    if (playlist.id == 'liked' || playlist.id == 'episodesForLater') {
+      return false;
+    }
+    if (widget.playlistId == 'downloads' || widget.playlistId == 'localFiles') {
+      return false;
+    }
+    return true;
+  }
+
+  Widget _collectionExpandedSubtitle(LibraryPlaylist playlist) {
+    if (_usePlaylistDescriptionUnderHeader(playlist)) {
+      final detail = _playlistHeaderDetailSubtitle(playlist);
+      if (detail != null) return detail;
+    }
+    return _buildSubtitle(playlist);
+  }
+
+  static const _footerListPadding = EdgeInsets.fromLTRB(
+    AppSpacing.base,
+    AppSpacing.lg,
+    AppSpacing.base,
+    AppSpacing.sm,
+  );
+
+  /// Centered count + total duration below the track list (all collection types).
+  Widget _collectionFooterSliver(LibraryPlaylist playlist, List<Song> songs) {
+    final muted = TextStyle(
+      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.88),
+      fontSize: AppFontSize.xs,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.12,
+    );
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: _footerListPadding,
+        child: Center(
+          child: Text(
+            _footerStatsLineText(playlist, songs),
+            style: muted,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _collectionFooterSliverMusicOnly(List<Song> songs) {
+    final muted = TextStyle(
+      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.88),
+      fontSize: AppFontSize.xs,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.12,
+    );
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: _footerListPadding,
+        child: Center(
+          child: Text(
+            _libraryPlaylistStatsSubtitle(songs),
+            style: muted,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _footerStatsLineText(LibraryPlaylist playlist, List<Song> songs) {
+    if (widget._isPodcast || playlist.id == 'episodesForLater') {
+      final n = songs.length;
+      final label = n == 1 ? 'episode' : 'episodes';
+      if (n == 0) {
+        return '0 $label';
+      }
+      final dur = _formatDuration(songs);
+      if (dur.isEmpty) {
+        return '$n $label';
+      }
+      return '$n $label • $dur';
+    }
+    return _libraryPlaylistStatsSubtitle(songs);
+  }
+
+  /// Local playlist the user created (not imported / not remote album-artist-podcast).
+  bool _isUserCreatedMusicPlaylist(LibraryPlaylist playlist) {
+    return !playlist.isImported &&
+        !_isRemote &&
+        !widget._isAlbum &&
+        !widget._isArtist &&
+        !widget._isPodcast;
+  }
+
+  /// Tight metadata under the title: one summary line, description, then owner.
+  Widget? _playlistHeaderDetailSubtitle(LibraryPlaylist playlist) {
+    final desc = playlist.description.trim();
+    var line1 = playlist.headerSubtitle?.trim() ?? '';
+    var line2 = playlist.headerSecondSubtitle?.trim() ?? '';
+    final isCustomLibrary = !playlist.isImported && !_isRemote;
+
+    if (_isUserCreatedMusicPlaylist(playlist)) {
+      final tracks = playlist.sortedSongs;
+      if (line1.isEmpty) {
+        line1 = 'Playlist • ${playlist.createdAt.year}';
+      }
+      if (line2.isEmpty) {
+        line2 = _libraryPlaylistStatsSubtitle(tracks);
+      }
+    }
+
+    final user = ref.watch(currentUserProvider);
+    final isGuest = ref.watch(guestModeProvider);
+    final guestUsername =
+        isGuest ? ref.watch(guestUsernameProvider).value : null;
+    final cachedAvatarSeed =
+        isGuest ? ref.watch(avatarSeedProvider).value : null;
+    final customDisplayName = (user?.userMetadata?['username'] as String?) ??
+        (user?.email?.split('@').first) ??
+        (isGuest ? (guestUsername ?? 'Guest') : 'You');
+    final customAvatarUrl =
+        generateBotttsAvatarUrl(cachedAvatarSeed ?? customDisplayName, size: 128);
+
+    final String ownerName;
+    final String? ownerImageUrl;
+    if (isCustomLibrary) {
+      ownerName = customDisplayName;
+      ownerImageUrl = customAvatarUrl;
+    } else {
+      ownerName = playlist.curatorName?.trim() ?? '';
+      ownerImageUrl = playlist.curatorThumbnailUrl;
+    }
+
+    final hasDesc = desc.isNotEmpty;
+    final showOwner = isCustomLibrary ||
+        ownerName.isNotEmpty ||
+        (ownerImageUrl != null && ownerImageUrl.isNotEmpty);
+    final metaParts = <String>[
+      if (line1.isNotEmpty) line1,
+      if (line2.isNotEmpty) line2,
+    ];
+    final metaLine = metaParts.join(' • ');
+    final hasMetaLine = metaLine.isNotEmpty;
+    final needsCuratorRow = showOwner;
+    if (!hasDesc && !hasMetaLine && !needsCuratorRow) return null;
+
+    final scheme = AppColorsScheme.of(context);
+    final metaStyle = TextStyle(
+      color: scheme.textMuted.withValues(alpha: 0.92),
+      fontSize: AppFontSize.xs,
+      height: 1.4,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.15,
+    );
+    final descStyle = TextStyle(
+      color: scheme.textSecondary.withValues(alpha: 0.92),
+      fontSize: AppFontSize.sm,
+      height: 1.45,
+      fontWeight: FontWeight.w400,
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasMetaLine)
+          Text(
+            metaLine,
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+            style: metaStyle,
+          ),
+        if (hasMetaLine && hasDesc) const SizedBox(height: AppSpacing.sm),
+        if (hasDesc)
+          Text(
+            desc,
+            textAlign: TextAlign.start,
+            maxLines: 6,
+            overflow: TextOverflow.ellipsis,
+            style: descStyle,
+          ),
+        if ((hasMetaLine || hasDesc) && needsCuratorRow)
+          const SizedBox(height: AppSpacing.md),
+        if (needsCuratorRow)
+          _PlaylistCuratorHeaderTrailing(
+            name: ownerName,
+            imageUrl: ownerImageUrl,
+          ),
+      ],
+    );
+  }
+
   Widget _buildSubtitle(LibraryPlaylist playlist) {
     final muted = TextStyle(
-        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
-        fontSize: AppFontSize.base);
-    
-    // Determine the item type label
-    String itemLabel;
-    if (widget._isPodcast) {
-      itemLabel = playlist.songs.length == 1 ? 'episode' : 'episodes';
-    } else {
-      itemLabel = playlist.songs.length == 1 ? 'song' : 'songs';
-    }
-    
-    final countDuration = Row(children: [
-      Text(
-          '${playlist.songs.length} $itemLabel',
-          style: muted),
-      if (playlist.songs.isNotEmpty) ...[
-        Text(' • ', style: muted),
-        Text(_formatDuration(playlist.songs), style: muted),
-      ],
-    ]);
+      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.88),
+      fontSize: AppFontSize.xs,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.12,
+    );
+
+    final countDuration = Text(
+      widget._isPodcast
+          ? () {
+              final n = playlist.songs.length;
+              final label = n == 1 ? 'episode' : 'episodes';
+              if (n == 0) return '0 $label';
+              final dur = _formatDuration(playlist.songs);
+              if (dur.isEmpty) return '$n $label';
+              return '$n $label • $dur';
+            }()
+          : _libraryPlaylistStatsSubtitle(playlist.sortedSongs),
+      style: muted,
+    );
     if (!widget._isAlbum) return countDuration;
     final artistLine = _albumSubtitle ?? widget.albumArtistName;
     return Column(
@@ -1686,16 +2216,126 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
 
   Widget _buildCountDuration(List<Song> songs) {
     final muted = TextStyle(
-        color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
-        fontSize: AppFontSize.base);
-    return Row(children: [
-      Text('${songs.length} ${songs.length == 1 ? 'song' : 'songs'}',
-          style: muted),
-      if (songs.isNotEmpty) ...[
-        Text(' • ', style: muted),
-        Text(_formatDuration(songs), style: muted),
+      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.88),
+      fontSize: AppFontSize.xs,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.12,
+    );
+    return Text(_libraryPlaylistStatsSubtitle(songs), style: muted);
+  }
+}
+
+/// Curator / owner: small attribution under description.
+class _PlaylistCuratorHeaderTrailing extends StatelessWidget {
+  const _PlaylistCuratorHeaderTrailing({
+    required this.name,
+    this.imageUrl,
+  });
+
+  final String name;
+  final String? imageUrl;
+
+  static const double _avatarSize = 16;
+  static const double _maxNameWidth = 260;
+
+  @override
+  Widget build(BuildContext context) {
+    final trimmed = name.trim();
+    final letter =
+        trimmed.isEmpty ? '?' : trimmed[0].toUpperCase();
+    final hasImage = imageUrl != null && imageUrl!.isNotEmpty;
+    final isOfficialYtm = trimmed.toLowerCase() == 'youtube music';
+
+    final Widget avatar;
+    if (hasImage) {
+      avatar = ClipOval(
+        child: CachedNetworkImage(
+          imageUrl: imageUrl!,
+          width: _avatarSize,
+          height: _avatarSize,
+          fit: BoxFit.cover,
+          fadeInDuration: Duration.zero,
+          errorWidget: (_, __, ___) =>
+              _fallbackAvatar(context, letter, isOfficialYtm),
+        ),
+      );
+    } else {
+      avatar = _fallbackAvatar(context, letter, isOfficialYtm);
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        avatar,
+        if (trimmed.isNotEmpty) ...[
+          const SizedBox(width: AppSpacing.sm),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _maxNameWidth),
+            child: Text(
+              name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.start,
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textSecondary,
+                fontSize: AppFontSize.sm,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ],
-    ]);
+    );
+  }
+
+  /// YouTube Music fallback uses requested HugeIcons badge glyph.
+  Widget _youtubeMusicMark(BuildContext context) {
+    return Container(
+      width: _avatarSize,
+      height: _avatarSize,
+      decoration: BoxDecoration(
+        color: AppColorsScheme.of(context).surfaceHighlight,
+        shape: BoxShape.circle,
+      ),
+      alignment: Alignment.center,
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: HugeIcon(
+          icon: HugeIcons.strokeRoundedCheckmarkBadge02,
+          size: 16,
+          color: AppColorsScheme.of(context).textSecondary,
+        ),
+      ),
+    );
+  }
+
+  Widget _fallbackAvatar(
+    BuildContext context,
+    String letter,
+    bool isOfficialYtm,
+  ) {
+    if (isOfficialYtm) {
+      return _youtubeMusicMark(context);
+    }
+    return ClipOval(
+      child: Container(
+        width: _avatarSize,
+        height: _avatarSize,
+        decoration: BoxDecoration(
+          color: AppColorsScheme.of(context).surfaceHighlight,
+          shape: BoxShape.circle,
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          letter,
+          style: TextStyle(
+            color: AppColorsScheme.of(context).textSecondary,
+            fontSize: AppFontSize.xs,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -1787,7 +2427,8 @@ class _PlaylistCover extends StatelessWidget {
           decoration: BoxDecoration(
             shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
             borderRadius: isCircle ? null : BorderRadius.circular(AppRadius.sm),
-            color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.6),
+            color:
+                AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.6),
             boxShadow: [shadow],
           ),
           child: isCircle
@@ -1812,7 +2453,8 @@ class _PlaylistCover extends StatelessWidget {
                         width: _size - 8,
                         height: _size - 8,
                         fit: BoxFit.cover,
-                        errorWidget: (errCtx, __, ___) => _mosaic(errCtx, songs, _size - 8)),
+                        errorWidget: (errCtx, __, ___) =>
+                            _mosaic(errCtx, songs, _size - 8)),
                   )),
         ),
       );
@@ -1891,11 +2533,13 @@ class _PlaylistCover extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(AppRadius.sm),
-          color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.6),
+          color:
+              AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.6),
           boxShadow: [shadow],
         ),
         child: Padding(
-            padding: const EdgeInsets.all(4), child: _mosaic(context, songs, _size - 8)),
+            padding: const EdgeInsets.all(4),
+            child: _mosaic(context, songs, _size - 8)),
       ),
     );
   }
@@ -1944,16 +2588,21 @@ class _PlaylistCover extends StatelessWidget {
                     fit: BoxFit.cover,
                     memCacheWidth: px,
                     memCacheHeight: px,
-                    errorWidget: (errCtx, __, ___) => _placeholder(s: s, context: errCtx));
+                    errorWidget: (errCtx, __, ___) =>
+                        _placeholder(s: s, context: errCtx));
               })
             : _placeholder(s: s, context: context));
   }
 
-  static Widget _placeholder({required double s, required BuildContext context}) => Container(
-      width: s,
-      height: s,
-      color: AppColorsScheme.of(context).surfaceLight,
-      child: AppIcon(icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted));
+  static Widget _placeholder(
+          {required double s, required BuildContext context}) =>
+      Container(
+          width: s,
+          height: s,
+          color: AppColorsScheme.of(context).surfaceLight,
+          child: AppIcon(
+              icon: AppIcons.musicNote,
+              color: AppColorsScheme.of(context).textMuted));
 }
 
 // ─── Liked Songs helpers (edit / add sheets) ─────────────────────────────────
@@ -2088,7 +2737,8 @@ class _ActionRow extends ConsumerWidget {
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
-                            strokeWidth: 2, color: AppColorsScheme.of(context).textMuted))
+                            strokeWidth: 2,
+                            color: AppColorsScheme.of(context).textMuted))
                     : AppIcon(
                         icon: AppIcons.fileExport,
                         size: 24,
@@ -2104,7 +2754,8 @@ class _ActionRow extends ConsumerWidget {
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                          strokeWidth: 2, color: AppColorsScheme.of(context).textMuted))
+                          strokeWidth: 2,
+                          color: AppColorsScheme.of(context).textMuted))
                   : AppIcon(
                       icon: isInLibrary
                           ? AppIcons.checkCircle
@@ -2194,9 +2845,7 @@ class _PodcastSubscribeButton extends StatelessWidget {
       height: 56,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: isSubscribed
-            ? AppColors.primary
-            : AppColors.primary,
+        color: isSubscribed ? AppColors.primary : AppColors.primary,
       ),
       child: Material(
         color: Colors.transparent,
@@ -2237,7 +2886,9 @@ class _ShuffleModeSheet extends ConsumerWidget {
     } else if (isDownloads) {
       ref.read(libraryProvider.notifier).setDownloadedShuffleMode(mode);
     } else {
-      ref.read(libraryProvider.notifier).setPlaylistShuffleMode(playlistId, mode);
+      ref
+          .read(libraryProvider.notifier)
+          .setPlaylistShuffleMode(playlistId, mode);
     }
     Navigator.pop(context);
   }
@@ -2246,8 +2897,8 @@ class _ShuffleModeSheet extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Padding(
-        padding: const EdgeInsets.fromLTRB(
-            kSheetHorizontalPadding, AppSpacing.lg, kSheetHorizontalPadding, AppSpacing.md),
+        padding: const EdgeInsets.fromLTRB(kSheetHorizontalPadding,
+            AppSpacing.lg, kSheetHorizontalPadding, AppSpacing.md),
         child: Text('Shuffle',
             style: TextStyle(
                 color: AppColorsScheme.of(context).textPrimary,
@@ -2299,7 +2950,9 @@ class _ShuffleModeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColorsScheme.of(context).textSecondary;
+    final color = selected
+        ? AppColors.primary
+        : AppColorsScheme.of(context).textSecondary;
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
           horizontal: kSheetHorizontalPadding, vertical: 4),
@@ -2319,12 +2972,15 @@ class _ShuffleModeTile extends StatelessWidget {
           : AppIcon(icon: icon, size: 24, color: color),
       title: Text(label,
           style: TextStyle(
-              color: selected ? AppColors.primary : AppColorsScheme.of(context).textPrimary,
+              color: selected
+                  ? AppColors.primary
+                  : AppColorsScheme.of(context).textPrimary,
               fontWeight: selected ? FontWeight.w600 : FontWeight.normal)),
       subtitle: subtitle != null
           ? Text(subtitle!,
               style: TextStyle(
-                  color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm))
+                  color: AppColorsScheme.of(context).textMuted,
+                  fontSize: AppFontSize.sm))
           : null,
       trailing: selected
           ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)
@@ -2527,7 +3183,8 @@ class _EpisodesForLaterPillRow extends ConsumerWidget {
   }
 }
 
-void _openEditEpisodesForLaterSheet(BuildContext context, List<Song> songs, WidgetRef ref) {
+void _openEditEpisodesForLaterSheet(
+    BuildContext context, List<Song> songs, WidgetRef ref) {
   FocusManager.instance.primaryFocus?.unfocus();
   Navigator.of(context).push(appPageRoute<void>(
       builder: (_) => _EditEpisodesForLaterSheet(initialSongs: songs)));
@@ -2547,8 +3204,9 @@ class _EpisodesForLaterSortSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get current sort order from podcast provider (we'll add this state)
-    final sortOrder = ref.watch(podcastProvider.select((s) => s.episodesForLaterSortOrder));
-    
+    final sortOrder =
+        ref.watch(podcastProvider.select((s) => s.episodesForLaterSortOrder));
+
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -2583,9 +3241,8 @@ class _EpisodesForLaterSortSheet extends ConsumerWidget {
         label: 'Recently added',
         selected: sortOrder == PlaylistTrackSortOrder.recentlyAdded,
         onTap: () async {
-          await ref
-              .read(podcastProvider.notifier)
-              .setEpisodesForLaterSortOrder(PlaylistTrackSortOrder.recentlyAdded);
+          await ref.read(podcastProvider.notifier).setEpisodesForLaterSortOrder(
+              PlaylistTrackSortOrder.recentlyAdded);
           if (context.mounted) Navigator.pop(context);
         },
       ),
@@ -2599,10 +3256,12 @@ class _EditEpisodesForLaterSheet extends ConsumerStatefulWidget {
   final List<Song> initialSongs;
 
   @override
-  ConsumerState<_EditEpisodesForLaterSheet> createState() => _EditEpisodesForLaterSheetState();
+  ConsumerState<_EditEpisodesForLaterSheet> createState() =>
+      _EditEpisodesForLaterSheetState();
 }
 
-class _EditEpisodesForLaterSheetState extends ConsumerState<_EditEpisodesForLaterSheet> {
+class _EditEpisodesForLaterSheetState
+    extends ConsumerState<_EditEpisodesForLaterSheet> {
   late List<Song> _items;
   final Set<String> _pendingRemoveIds = {};
 
@@ -2634,21 +3293,26 @@ class _EditEpisodesForLaterSheetState extends ConsumerState<_EditEpisodesForLate
           confirmLabel: 'Remove');
       if (!confirmed) return;
     }
-    
+
     // Remove episodes
     for (final id in _pendingRemoveIds) {
       final song = _items.firstWhere((s) => s.id == id);
       await ref.read(podcastProvider.notifier).toggleEpisodeForLater(song);
     }
-    
+
     // Update order for remaining episodes
-    final remainingEpisodes = _items.where((s) => !_pendingRemoveIds.contains(s.id)).toList();
+    final remainingEpisodes =
+        _items.where((s) => !_pendingRemoveIds.contains(s.id)).toList();
     if (remainingEpisodes.isNotEmpty) {
-      await ref.read(podcastProvider.notifier).updateEpisodesForLaterOrder(remainingEpisodes);
+      await ref
+          .read(podcastProvider.notifier)
+          .updateEpisodesForLaterOrder(remainingEpisodes);
       // Set sort order to custom after reordering
-      await ref.read(podcastProvider.notifier).setEpisodesForLaterSortOrder(PlaylistTrackSortOrder.customOrder);
+      await ref
+          .read(podcastProvider.notifier)
+          .setEpisodesForLaterSortOrder(PlaylistTrackSortOrder.customOrder);
     }
-    
+
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Episodes For Later updated'),
@@ -2767,12 +3431,12 @@ class _PlaylistPillRow extends ConsumerWidget {
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(children: [
-          _Pill(
-              icon: AppIcons.add,
-              label: 'Add',
-              onTap: () => _openAddSongsSheet(context, playlistId,
-                  playlistName: playlist.name, onAdded: onPlaylistUpdated)),
           if (!isEmpty) ...[
+            _Pill(
+                icon: AppIcons.add,
+                label: 'Add',
+                onTap: () => _openAddSongsSheet(context, playlistId,
+                    playlistName: playlist.name, onAdded: onPlaylistUpdated)),
             const SizedBox(width: AppSpacing.sm),
             _Pill(
                 icon: AppIcons.edit,
@@ -2814,11 +3478,16 @@ class _Pill extends StatelessWidget {
         padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.md, vertical: AppSpacing.sm),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5)),
+          border: Border.all(
+              color:
+                  AppColorsScheme.of(context).textMuted.withValues(alpha: 0.5)),
           borderRadius: BorderRadius.circular(AppRadius.sm),
         ),
         child: Row(mainAxisSize: MainAxisSize.min, children: [
-          AppIcon(icon: icon, size: 18, color: AppColorsScheme.of(context).textSecondary),
+          AppIcon(
+              icon: icon,
+              size: 18,
+              color: AppColorsScheme.of(context).textSecondary),
           const SizedBox(width: AppSpacing.xs),
           Text(label,
               style: TextStyle(
@@ -2934,7 +3603,9 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
             hintText: 'Search YouTube Music',
             style: InputFieldStyle.filled,
             prefixIcon: AppIcon(
-                icon: AppIcons.search, color: AppColorsScheme.of(context).textMuted, size: 20),
+                icon: AppIcons.search,
+                color: AppColorsScheme.of(context).textMuted,
+                size: 20),
             suffixIcon: _searchCtrl.text.trim().isNotEmpty
                 ? AppIconButton(
                     icon: AppIcon(
@@ -2986,7 +3657,8 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                                 : _searchCtrl.text.trim().isEmpty
                                     ? 'Type above to search for songs'
                                     : 'No results for "${_searchCtrl.text.trim()}"',
-                            style: TextStyle(color: AppColorsScheme.of(context).textMuted),
+                            style: TextStyle(
+                                color: AppColorsScheme.of(context).textMuted),
                             textAlign: TextAlign.center)))
                 : ListView.builder(
                     cacheExtent: 1000,
@@ -3014,7 +3686,8 @@ class _AddSongsSheetState extends ConsumerState<_AddSongsSheet> {
                                 fit: BoxFit.cover,
                                 errorWidget: (_, __, ___) => AppIcon(
                                     icon: AppIcons.musicNote,
-                                    color: AppColorsScheme.of(context).textMuted,
+                                    color:
+                                        AppColorsScheme.of(context).textMuted,
                                     size: 28)),
                           ),
                         ),
@@ -3098,18 +3771,24 @@ class _SearchInPlaylistTap extends StatelessWidget {
         child: Container(
           height: 44,
           decoration: BoxDecoration(
-              color: AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.8),
+              color: AppColorsScheme.of(context)
+                  .surfaceLight
+                  .withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(AppRadius.input)),
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
           child: Row(children: [
             AppIcon(
                 icon: AppIcons.search,
-                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
+                color: AppColorsScheme.of(context)
+                    .textMuted
+                    .withValues(alpha: 0.9),
                 size: 20),
             const SizedBox(width: AppSpacing.sm),
             Text('Find in playlist',
                 style: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.9),
+                    color: AppColorsScheme.of(context)
+                        .textMuted
+                        .withValues(alpha: 0.9),
                     fontSize: AppFontSize.base)),
           ]),
         ),
@@ -3176,7 +3855,9 @@ class _PlaylistSearchPageState extends ConsumerState<_PlaylistSearchPage> {
     final body = q.isEmpty
         ? SearchPageEmptyState(
             icon: AppIcon(
-                icon: AppIcons.search, size: 64, color: AppColorsScheme.of(context).textMuted),
+                icon: AppIcons.search,
+                size: 64,
+                color: AppColorsScheme.of(context).textMuted),
             heading: 'Find in playlist',
             subheading: 'Search by song title or artist')
         : filtered.isEmpty
@@ -3263,15 +3944,19 @@ class _TrackTile extends ConsumerWidget {
       trailing: Row(mainAxisSize: MainAxisSize.min, children: [
         Text(song.durationFormatted,
             style: TextStyle(
-                color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.md)),
+                color: AppColorsScheme.of(context).textMuted,
+                fontSize: AppFontSize.sm)),
         AppIconButton(
           icon: AppIcon(
-              icon: AppIcons.moreVert, color: AppColorsScheme.of(context).textMuted, size: 20),
+              icon: AppIcons.moreVert,
+              color: AppColorsScheme.of(context).textMuted,
+              size: 18),
           onPressedWithContext: (btnCtx) => showSongOptionsSheet(context,
               song: song,
               ref: ref,
               buttonContext: btnCtx,
-              showAddToPlaylist: isPodcast || (!isImported && !isDownloads && !isLocalFiles),
+              showAddToPlaylist:
+                  isPodcast || (!isImported && !isDownloads && !isLocalFiles),
               showGoToArtist: !isPodcast,
               showGoToAlbum: !isPodcast,
               extraOptions: isPodcast
@@ -3301,7 +3986,8 @@ class _TrackTile extends ConsumerWidget {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                    content: Text('Removed from Episodes For Later'),
+                                    content:
+                                        Text('Removed from Episodes For Later'),
                                     behavior: SnackBarBehavior.floating));
                           }
                         }
@@ -3316,8 +4002,8 @@ class _TrackTile extends ConsumerWidget {
                                     behavior: SnackBarBehavior.floating));
                           }
                         }),
-          size: 40,
-          iconSize: 20,
+          size: 36,
+          iconSize: 18,
           iconAlignment: Alignment.centerRight,
         ),
       ]),
@@ -3537,7 +4223,8 @@ class _SortTile extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(
           horizontal: kSheetHorizontalPadding, vertical: 8),
-      title: Text(label, style: TextStyle(color: AppColorsScheme.of(context).textPrimary)),
+      title: Text(label,
+          style: TextStyle(color: AppColorsScheme.of(context).textPrimary)),
       trailing: selected
           ? AppIcon(icon: AppIcons.check, color: AppColors.primary, size: 24)
           : null,
@@ -3698,7 +4385,9 @@ class _NameDetailsCover extends StatelessWidget {
           decoration: BoxDecoration(
               color: AppColorsScheme.of(context).surfaceLight,
               borderRadius: BorderRadius.circular(AppRadius.sm)),
-          child: AppIcon(icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted));
+          child: AppIcon(
+              icon: AppIcons.musicNote,
+              color: AppColorsScheme.of(context).textMuted));
     }
     if (songs.length == 1) {
       return ClipRRect(
@@ -3709,7 +4398,8 @@ class _NameDetailsCover extends StatelessWidget {
               height: size,
               fit: BoxFit.cover,
               errorWidget: (_, __, ___) => AppIcon(
-                  icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted)));
+                  icon: AppIcons.musicNote,
+                  color: AppColorsScheme.of(context).textMuted)));
     }
     final urls = songs.take(4).map((s) => s.thumbnailUrl).toList();
     const gap = 2.0;
@@ -3746,7 +4436,9 @@ class _NameDetailsCover extends StatelessWidget {
       width: s,
       height: s,
       color: AppColorsScheme.of(context).surfaceLight,
-      child: AppIcon(icon: AppIcons.musicNote, color: AppColorsScheme.of(context).textMuted));
+      child: AppIcon(
+          icon: AppIcons.musicNote,
+          color: AppColorsScheme.of(context).textMuted));
 }
 
 // ─── Recommendations ──────────────────────────────────────────────────────────
@@ -3812,7 +4504,9 @@ class _NavButton extends StatelessWidget {
           child: AppIcon(
             icon: icon,
             size: t.icon.xs,
-            color: enabled ? AppColorsScheme.of(context).textPrimary : AppColorsScheme.of(context).textMuted,
+            color: enabled
+                ? AppColorsScheme.of(context).textPrimary
+                : AppColorsScheme.of(context).textMuted,
           ),
         ),
       ),
@@ -3839,6 +4533,7 @@ class _StablePager extends StatelessWidget {
     );
   }
 }
+
 /// Keeps the original ID (including VL prefix) for proper navigation.
 Playlist _mapToPlaylist(RelatedPlaylist r) => Playlist(
       id: r.id,
@@ -3869,7 +4564,8 @@ class _PlaylistShelfSection extends ConsumerStatefulWidget {
   final List<Playlist> playlists;
 
   @override
-  ConsumerState<_PlaylistShelfSection> createState() => _PlaylistShelfSectionState();
+  ConsumerState<_PlaylistShelfSection> createState() =>
+      _PlaylistShelfSectionState();
 }
 
 class _PlaylistShelfSectionState extends ConsumerState<_PlaylistShelfSection>
@@ -3914,7 +4610,8 @@ class _ArtistShelfSection extends ConsumerStatefulWidget {
   final List<Artist> artists;
 
   @override
-  ConsumerState<_ArtistShelfSection> createState() => _ArtistShelfSectionState();
+  ConsumerState<_ArtistShelfSection> createState() =>
+      _ArtistShelfSectionState();
 }
 
 class _ArtistShelfSectionState extends ConsumerState<_ArtistShelfSection>
@@ -4004,7 +4701,8 @@ class _ArtistShelfSectionState extends ConsumerState<_ArtistShelfSection>
     final content = Padding(
       padding: EdgeInsets.symmetric(horizontal: layout.hPad),
       child: hasOverflow
-          ? _StablePager(height: gridH, controller: pageCtrl, pages: buildPages())
+          ? _StablePager(
+              height: gridH, controller: pageCtrl, pages: buildPages())
           : buildGrid(widget.artists),
     );
 
@@ -4044,11 +4742,13 @@ class _RecommendationsSliver extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final f = feed;
-    final hasData = f != null && (isArtist
-        ? (f.playlistShelves.isNotEmpty || f.artistShelves.isNotEmpty)
-        : f.playlistShelves.any((s) => s.playlists.isNotEmpty));
+    final hasData = f != null &&
+        (isArtist
+            ? (f.playlistShelves.isNotEmpty || f.artistShelves.isNotEmpty)
+            : f.playlistShelves.any((s) => s.playlists.isNotEmpty));
 
-    if (!loading && !hasData) return const SliverToBoxAdapter(child: SizedBox.shrink());
+    if (!loading && !hasData)
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
 
     final isDesktop = ShellContext.isDesktopOf(context);
 
@@ -4099,16 +4799,19 @@ class _RecommendationsSliver extends StatelessWidget {
     if (isArtist) {
       skeletonContent = Column(
         children: [
-          const SectionSkeleton(titleWidth: 140, child: PlaylistsRowSkeleton()),
+          const SectionSkeleton(
+              title: 'Related Playlists', child: PlaylistsRowSkeleton()),
           SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
-          const SectionSkeleton(titleWidth: 120, child: ArtistsRowSkeleton()),
+          const SectionSkeleton(
+              title: 'Featured Artists', child: ArtistsRowSkeleton()),
           SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
         ],
       );
     } else {
       skeletonContent = Column(
         children: [
-          const SectionSkeleton(titleWidth: 140, child: PlaylistsRowSkeleton()),
+          const SectionSkeleton(
+              title: 'Related Playlists', child: PlaylistsRowSkeleton()),
           SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
         ],
       );
@@ -4124,7 +4827,8 @@ class _RecommendationsSliver extends StatelessWidget {
             thickness: 0.5,
             indent: AppSpacing.base,
             endIndent: AppSpacing.base,
-            color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.15),
+            color:
+                AppColorsScheme.of(context).textMuted.withValues(alpha: 0.15),
           ),
           const SizedBox(height: AppSpacing.md),
           SectionAsyncSwap(

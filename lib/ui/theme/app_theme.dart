@@ -26,32 +26,32 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: GoogleFonts.inter(
           textStyle: AppTextStyle.screenTitle,
         ),
         iconTheme: const IconThemeData(color: Color(0xFF0D0D0D)),
       ),
       textTheme: TextTheme(
-        displayLarge:  GoogleFonts.poppins(textStyle: AppTextStyle.display1),
-        displayMedium: GoogleFonts.poppins(textStyle: AppTextStyle.display2),
-        displaySmall:  GoogleFonts.poppins(textStyle: AppTextStyle.display3),
-        headlineLarge: GoogleFonts.poppins(textStyle: AppTextStyle.h1),
-        headlineMedium: GoogleFonts.poppins(textStyle: AppTextStyle.h3),
-        headlineSmall: GoogleFonts.poppins(textStyle: AppTextStyle.screenTitle),
-        titleLarge:  GoogleFonts.poppins(textStyle: AppTextStyle.titleBase),
-        titleMedium: GoogleFonts.poppins(textStyle: AppTextStyle.titleLg),
-        titleSmall:  GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
-        bodyLarge:   GoogleFonts.inter(textStyle: AppTextStyle.bodyLg),
-        bodyMedium:  GoogleFonts.inter(textStyle: AppTextStyle.bodyBase),
-        bodySmall:   GoogleFonts.inter(textStyle: AppTextStyle.caption),
-        labelLarge:  GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
+        displayLarge: GoogleFonts.inter(textStyle: AppTextStyle.display1),
+        displayMedium: GoogleFonts.inter(textStyle: AppTextStyle.display2),
+        displaySmall: GoogleFonts.inter(textStyle: AppTextStyle.display3),
+        headlineLarge: GoogleFonts.inter(textStyle: AppTextStyle.h1),
+        headlineMedium: GoogleFonts.inter(textStyle: AppTextStyle.h3),
+        headlineSmall: GoogleFonts.inter(textStyle: AppTextStyle.screenTitle),
+        titleLarge: GoogleFonts.inter(textStyle: AppTextStyle.titleBase),
+        titleMedium: GoogleFonts.inter(textStyle: AppTextStyle.titleLg),
+        titleSmall: GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
+        bodyLarge: GoogleFonts.inter(textStyle: AppTextStyle.bodyLg),
+        bodyMedium: GoogleFonts.inter(textStyle: AppTextStyle.bodyBase),
+        bodySmall: GoogleFonts.inter(textStyle: AppTextStyle.caption),
+        labelLarge: GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
         labelMedium: GoogleFonts.inter(textStyle: AppTextStyle.labelBase),
-        labelSmall:  GoogleFonts.inter(textStyle: AppTextStyle.labelSm),
+        labelSmall: GoogleFonts.inter(textStyle: AppTextStyle.labelSm),
       ),
       iconTheme: const IconThemeData(color: Color(0xFF555555)),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: const Color(0xFFFFFFFF),
-        indicatorColor: AppColors.primary.withValues(alpha: 0.15),
+        indicatorColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -176,33 +176,32 @@ class AppTheme {
         backgroundColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
-        titleTextStyle: GoogleFonts.poppins(
+        titleTextStyle: GoogleFonts.inter(
           textStyle: AppTextStyle.screenTitle,
         ),
         iconTheme: const IconThemeData(color: AppColors.textPrimary),
       ),
-      // Poppins for display/headline/title roles; Inter for body/label roles.
       textTheme: TextTheme(
-        displayLarge:  GoogleFonts.poppins(textStyle: AppTextStyle.display1),
-        displayMedium: GoogleFonts.poppins(textStyle: AppTextStyle.display2),
-        displaySmall:  GoogleFonts.poppins(textStyle: AppTextStyle.display3),
-        headlineLarge: GoogleFonts.poppins(textStyle: AppTextStyle.h1),
-        headlineMedium: GoogleFonts.poppins(textStyle: AppTextStyle.h3),
-        headlineSmall: GoogleFonts.poppins(textStyle: AppTextStyle.screenTitle),
-        titleLarge:  GoogleFonts.poppins(textStyle: AppTextStyle.titleBase),
-        titleMedium: GoogleFonts.poppins(textStyle: AppTextStyle.titleLg),
-        titleSmall:  GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
-        bodyLarge:   GoogleFonts.inter(textStyle: AppTextStyle.bodyLg),
-        bodyMedium:  GoogleFonts.inter(textStyle: AppTextStyle.bodyBase),
-        bodySmall:   GoogleFonts.inter(textStyle: AppTextStyle.caption),
-        labelLarge:  GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
+        displayLarge: GoogleFonts.inter(textStyle: AppTextStyle.display1),
+        displayMedium: GoogleFonts.inter(textStyle: AppTextStyle.display2),
+        displaySmall: GoogleFonts.inter(textStyle: AppTextStyle.display3),
+        headlineLarge: GoogleFonts.inter(textStyle: AppTextStyle.h1),
+        headlineMedium: GoogleFonts.inter(textStyle: AppTextStyle.h3),
+        headlineSmall: GoogleFonts.inter(textStyle: AppTextStyle.screenTitle),
+        titleLarge: GoogleFonts.inter(textStyle: AppTextStyle.titleBase),
+        titleMedium: GoogleFonts.inter(textStyle: AppTextStyle.titleLg),
+        titleSmall: GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
+        bodyLarge: GoogleFonts.inter(textStyle: AppTextStyle.bodyLg),
+        bodyMedium: GoogleFonts.inter(textStyle: AppTextStyle.bodyBase),
+        bodySmall: GoogleFonts.inter(textStyle: AppTextStyle.caption),
+        labelLarge: GoogleFonts.inter(textStyle: AppTextStyle.labelLg),
         labelMedium: GoogleFonts.inter(textStyle: AppTextStyle.labelBase),
-        labelSmall:  GoogleFonts.inter(textStyle: AppTextStyle.labelSm),
+        labelSmall: GoogleFonts.inter(textStyle: AppTextStyle.labelSm),
       ),
       iconTheme: const IconThemeData(color: AppColors.textSecondary),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: AppColors.background,
-        indicatorColor: AppColors.primary.withValues(alpha: 0.15),
+        indicatorColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         labelTextStyle: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
@@ -220,7 +219,7 @@ class AppTheme {
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
           if (states.contains(WidgetState.selected)) {
-            return const IconThemeData(color: AppColors.primary, size: 24);
+            return const IconThemeData(color: AppColors.textPrimary, size: 24);
           }
           return const IconThemeData(color: AppColors.textMuted, size: 24);
         }),

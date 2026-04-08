@@ -60,6 +60,14 @@ class LibraryPlaylist {
   final String id;
   final String name;
   final String description;
+  /// Creator / channel name for remote or imported playlists (in-memory; optional).
+  final String? curatorName;
+  /// Optional profile image URL for [curatorName].
+  final String? curatorThumbnailUrl;
+  /// YouTube Music header line (e.g. `Playlist • 2026`); from browse [subtitle].
+  final String? headerSubtitle;
+  /// YouTube Music stats line (songs, duration, views); from [secondSubtitle].
+  final String? headerSecondSubtitle;
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<Song> songs;
@@ -85,6 +93,10 @@ class LibraryPlaylist {
     required this.id,
     required this.name,
     this.description = '',
+    this.curatorName,
+    this.curatorThumbnailUrl,
+    this.headerSubtitle,
+    this.headerSecondSubtitle,
     required this.createdAt,
     required this.updatedAt,
     this.songs = const [],
@@ -114,6 +126,10 @@ class LibraryPlaylist {
     String? id,
     String? name,
     String? description,
+    String? curatorName,
+    String? curatorThumbnailUrl,
+    String? headerSubtitle,
+    String? headerSecondSubtitle,
     DateTime? createdAt,
     DateTime? updatedAt,
     List<Song>? songs,
@@ -130,6 +146,11 @@ class LibraryPlaylist {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
+      curatorName: curatorName ?? this.curatorName,
+      curatorThumbnailUrl: curatorThumbnailUrl ?? this.curatorThumbnailUrl,
+      headerSubtitle: headerSubtitle ?? this.headerSubtitle,
+      headerSecondSubtitle:
+          headerSecondSubtitle ?? this.headerSecondSubtitle,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       songs: songs ?? this.songs,
@@ -165,6 +186,11 @@ class LibraryPlaylist {
         'id': id,
         'name': name,
         'description': description,
+        if (curatorName != null) 'curatorName': curatorName,
+        if (curatorThumbnailUrl != null) 'curatorThumbnailUrl': curatorThumbnailUrl,
+        if (headerSubtitle != null) 'headerSubtitle': headerSubtitle,
+        if (headerSecondSubtitle != null)
+          'headerSecondSubtitle': headerSecondSubtitle,
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
         'songs': songs.map((s) => s.toJson()).toList(),
@@ -188,6 +214,10 @@ class LibraryPlaylist {
       id: json['id'] as String,
       name: json['name'] as String,
       description: json['description'] as String? ?? '',
+      curatorName: json['curatorName'] as String?,
+      curatorThumbnailUrl: json['curatorThumbnailUrl'] as String?,
+      headerSubtitle: json['headerSubtitle'] as String?,
+      headerSecondSubtitle: json['headerSecondSubtitle'] as String?,
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
       songs: songs,

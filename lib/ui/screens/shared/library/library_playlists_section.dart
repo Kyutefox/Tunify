@@ -2,19 +2,27 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-
-import 'package:tunify/ui/screens/shared/home/home_shared.dart' show SkeletonBox;
+import 'package:skeletonizer/skeletonizer.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
+import 'package:tunify/ui/widgets/library/library_item_tile.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/core/utils/string_utils.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
+
+String _typedSubtitle(String type, String currentSubtitle) {
+  final subtitle = currentSubtitle.trim();
+  if (subtitle.isEmpty || subtitle.toLowerCase() == type.toLowerCase()) {
+    return type;
+  }
+  return '$type • $subtitle';
+}
 
 /// Shared playlist cover thumbnail used in both list and grid views.
 /// Respects [customImageUrl] first, then falls back to song art mosaic.
@@ -32,9 +40,8 @@ class PlaylistCoverThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = borderRadius ?? BorderRadius.circular(AppRadius.sm);
+    final radius = borderRadius ?? BorderRadius.circular(AppRadius.xs);
 
-    // 1. Custom image (e.g. saved from a remote playlist)
     if (playlist.customImageUrl != null &&
         playlist.customImageUrl!.isNotEmpty) {
       return ClipRRect(
@@ -123,7 +130,8 @@ class PlaylistCoverThumbnail extends StatelessWidget {
         ),
       );
 
-  Widget _placeholder(BuildContext context, double s, BorderRadius r) => ClipRRect(
+  Widget _placeholder(BuildContext context, double s, BorderRadius r) =>
+      ClipRRect(
         borderRadius: r,
         child: Container(
           width: s,
@@ -160,6 +168,41 @@ class LocalFilesEntry extends LibrarySectionEntry {
   final VoidCallback onTap;
 }
 
+class EpisodesForLaterEntry extends LibrarySectionEntry {
+  EpisodesForLaterEntry({required this.episodeCount, required this.onTap});
+  final int episodeCount;
+  final VoidCallback onTap;
+}
+
+class MediaLibraryEntry extends LibrarySectionEntry {
+  MediaLibraryEntry({
+    required this.title,
+    required this.subtitle,
+    required this.thumbnailUrl,
+    required this.placeholderIcon,
+    required this.onTap,
+    this.onOptions,
+    this.showPinIndicator = false,
+    this.circularThumbnail = false,
+    this.folderSortDate,
+    this.gridDetailSubtitle,
+  });
+
+  final String title;
+  final String subtitle;
+  final String? thumbnailUrl;
+  final List<List<dynamic>> placeholderIcon;
+  final VoidCallback onTap;
+  final void Function(Rect?)? onOptions;
+  final bool showPinIndicator;
+  /// Circular cover in grid/list (e.g. artists).
+  final bool circularThumbnail;
+  /// When this entry is shown inside a folder, used for sort by recent / recent add.
+  final DateTime? folderSortDate;
+  /// Optional second line under the title row in grid layout (e.g. album artist).
+  final String? gridDetailSubtitle;
+}
+
 class FolderEntry extends LibrarySectionEntry {
   FolderEntry(this.folder);
   final LibraryFolder folder;
@@ -181,9 +224,7 @@ class LibraryPlaylistsSection extends StatelessWidget {
     required this.onFolderOptions,
     this.showCreateFirstPlaylistEmptyState = false,
     this.isFolderView = false,
-    this.isSelecting = false,
-    this.selectedIds = const {},
-    this.onLongPress,
+    this.contentPadding,
   });
 
   final List<LibrarySectionEntry> entries;
@@ -199,12 +240,9 @@ class LibraryPlaylistsSection extends StatelessWidget {
   /// When true, we're showing a folder's playlists; empty content shows folder empty message.
   final bool isFolderView;
 
-  /// Bulk-select state.
-  final bool isSelecting;
-  final Set<String> selectedIds;
-
-  /// Called on long-press with the item id to enter select mode.
-  final void Function(String id)? onLongPress;
+  /// When non-null (e.g. desktop sidebar), matches that chrome's insets.
+  /// Defaults to symmetric [AppSpacing.base] like [LibraryAppBar] controls.
+  final EdgeInsets? contentPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -212,9 +250,11 @@ class LibraryPlaylistsSection extends StatelessWidget {
     final showCreateFirstEmptyState =
         showCreateFirstPlaylistEmptyState && contentEntries.isEmpty;
     final showFolderEmptyState = isFolderView && contentEntries.isEmpty;
+    final resolvedPadding = contentPadding ??
+        const EdgeInsets.symmetric(horizontal: AppSpacing.base);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+      padding: resolvedPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -236,7 +276,9 @@ class LibraryPlaylistsSection extends StatelessWidget {
                   AppIcon(
                     icon: AppIcons.add,
                     size: 48,
-                    color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.6),
+                    color: AppColorsScheme.of(context)
+                        .textMuted
+                        .withValues(alpha: 0.6),
                   ),
                   const SizedBox(height: AppSpacing.md),
                   Text(
@@ -281,9 +323,6 @@ class LibraryPlaylistsSection extends StatelessWidget {
                         onPlaylistOptions: onPlaylistOptions,
                         onFolderTap: onFolderTap,
                         onFolderOptions: onFolderOptions,
-                        isSelecting: isSelecting,
-                        selectedIds: selectedIds,
-                        onLongPress: onLongPress,
                       )
                     : _LibrarySectionList(
                         entries: contentEntries,
@@ -291,9 +330,6 @@ class LibraryPlaylistsSection extends StatelessWidget {
                         onPlaylistOptions: onPlaylistOptions,
                         onFolderTap: onFolderTap,
                         onFolderOptions: onFolderOptions,
-                        isSelecting: isSelecting,
-                        selectedIds: selectedIds,
-                        onLongPress: onLongPress,
                       ),
               ),
             ),
@@ -332,9 +368,6 @@ class _LibrarySectionGrid extends StatelessWidget {
     required this.onPlaylistOptions,
     required this.onFolderTap,
     required this.onFolderOptions,
-    this.isSelecting = false,
-    this.selectedIds = const {},
-    this.onLongPress,
   });
 
   final List<LibrarySectionEntry> entries;
@@ -342,9 +375,6 @@ class _LibrarySectionGrid extends StatelessWidget {
   final void Function(LibraryPlaylist, Rect?) onPlaylistOptions;
   final void Function(LibraryFolder) onFolderTap;
   final void Function(LibraryFolder, Rect?) onFolderOptions;
-  final bool isSelecting;
-  final Set<String> selectedIds;
-  final void Function(String id)? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -398,21 +428,32 @@ class _LibrarySectionGrid extends StatelessWidget {
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
+          EpisodesForLaterEntry(:final episodeCount, :final onTap) =>
+            _StaticGridCard(
+              icon: AppIcons.bookmark,
+              iconColor: Colors.white,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
+              backgroundGradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+              ),
+              title: 'Episodes For Later',
+              subtitle: episodeCount == 0
+                  ? 'No episodes yet'
+                  : '$episodeCount episodes',
+              onTap: onTap,
+            ),
+          MediaLibraryEntry() => MediaLibraryGridCard(entry: entry),
           FolderEntry(:final folder) => _LibraryFolderGridCard(
               folder: folder,
               onTap: () => onFolderTap(folder),
               onOptions: (rect) => onFolderOptions(folder, rect),
-              isSelected: selectedIds.contains(folder.id),
-              isSelecting: isSelecting,
-              onLongPress: onLongPress != null ? () => onLongPress!(folder.id) : null,
             ),
           PlaylistEntry(:final playlist) => _LibraryPlaylistGridCard(
               playlist: playlist,
               onTap: () => onPlaylistTap(playlist),
               onOptions: (rect) => onPlaylistOptions(playlist, rect),
-              isSelected: selectedIds.contains(playlist.id),
-              isSelecting: isSelecting,
-              onLongPress: onLongPress != null ? () => onLongPress!(playlist.id) : null,
             ),
         };
         return _StaggeredItem(index: index, child: card);
@@ -518,17 +559,11 @@ class _LibraryPlaylistGridCard extends StatefulWidget {
     required this.playlist,
     required this.onTap,
     required this.onOptions,
-    this.isSelected = false,
-    this.isSelecting = false,
-    this.onLongPress,
   });
 
   final LibraryPlaylist playlist;
   final VoidCallback onTap;
   final void Function(Rect?) onOptions;
-  final bool isSelected;
-  final bool isSelecting;
-  final VoidCallback? onLongPress;
 
   @override
   State<_LibraryPlaylistGridCard> createState() =>
@@ -541,18 +576,10 @@ class _LibraryPlaylistGridCardState extends State<_LibraryPlaylistGridCard> {
   @override
   Widget build(BuildContext context) {
     final playlist = widget.playlist;
-    return GestureDetector(
+    final card = GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
         widget.onTap();
-      },
-      onLongPress: () {
-        if (widget.onLongPress != null) {
-          widget.onLongPress!();
-        } else {
-          HapticFeedback.mediumImpact();
-          widget.onOptions(null);
-        }
       },
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
@@ -561,102 +588,79 @@ class _LibraryPlaylistGridCardState extends State<_LibraryPlaylistGridCard> {
         scale: _pressed ? 0.95 : 1.0,
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) => PlaylistCoverThumbnail(
-                      playlist: playlist,
-                      size: constraints.maxHeight.isFinite
-                          ? constraints.maxHeight
-                          : constraints.maxWidth,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    if (!widget.isSelecting && playlist.isPinned)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: AppIcon(
-                          icon: AppIcons.pin,
-                          size: 12,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    Expanded(
-                      child: Text(
-                        playlist.name.capitalized,
-                        style: TextStyle(
-                          color: AppColorsScheme.of(context).textPrimary,
-                          fontSize: AppFontSize.md,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    if (!widget.isSelecting)
-                      Builder(
-                        builder: (btnCtx) => GestureDetector(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            final box =
-                                btnCtx.findRenderObject() as RenderBox?;
-                            widget.onOptions(box != null && box.hasSize
-                                ? box.localToGlobal(Offset.zero) & box.size
-                                : null);
-                          },
-                          child: AppIcon(
-                            icon: AppIcons.moreVert,
-                            color: AppColorsScheme.of(context).textMuted,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                Text(
-                  playlist.trackCountLabel,
-                  style: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted,
-                    fontSize: AppFontSize.xs,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-            if (widget.isSelecting)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: AnimatedSwitcher(
-                  duration: AppDuration.fast,
-                  child: Icon(
-                    widget.isSelected
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    key: ValueKey(widget.isSelected),
-                    size: 22,
-                    color: widget.isSelected
-                        ? AppColors.primary
-                        : Colors.white.withValues(alpha: 0.8),
-                    shadows: const [
-                      Shadow(color: Colors.black54, blurRadius: 4),
-                    ],
+        child: SizedBox.expand(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) => PlaylistCoverThumbnail(
+                    playlist: playlist,
+                    // Grid card covers should track tile width so custom
+                    // playlists don't appear narrower than other card types.
+                    size: constraints.maxWidth,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
                 ),
               ),
-          ],
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  if (playlist.isPinned)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: AppIcon(
+                        icon: AppIcons.pin,
+                        size: 12,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  Expanded(
+                    child: Text(
+                      playlist.name.capitalized,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.md,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Builder(
+                    builder: (btnCtx) => GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        final box = btnCtx.findRenderObject() as RenderBox?;
+                        widget.onOptions(box != null && box.hasSize
+                            ? box.localToGlobal(Offset.zero) & box.size
+                            : null);
+                      },
+                      child: AppIcon(
+                        icon: AppIcons.moreVert,
+                        color: AppColorsScheme.of(context).textMuted,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                _typedSubtitle('Playlist', playlist.trackCountLabel),
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
+                  fontSize: AppFontSize.xs,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );
+
+    return card;
   }
 }
 
@@ -665,17 +669,11 @@ class _LibraryFolderGridCard extends StatefulWidget {
     required this.folder,
     required this.onTap,
     required this.onOptions,
-    this.isSelected = false,
-    this.isSelecting = false,
-    this.onLongPress,
   });
 
   final LibraryFolder folder;
   final VoidCallback onTap;
   final void Function(Rect?) onOptions;
-  final bool isSelected;
-  final bool isSelecting;
-  final VoidCallback? onLongPress;
 
   @override
   State<_LibraryFolderGridCard> createState() => _LibraryFolderGridCardState();
@@ -687,18 +685,10 @@ class _LibraryFolderGridCardState extends State<_LibraryFolderGridCard> {
   @override
   Widget build(BuildContext context) {
     final folder = widget.folder;
-    return GestureDetector(
+    final card = GestureDetector(
       onTap: () {
         HapticFeedback.selectionClick();
         widget.onTap();
-      },
-      onLongPress: () {
-        if (widget.onLongPress != null) {
-          widget.onLongPress!();
-        } else {
-          HapticFeedback.mediumImpact();
-          widget.onOptions(null);
-        }
       },
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
@@ -707,107 +697,84 @@ class _LibraryFolderGridCardState extends State<_LibraryFolderGridCard> {
         scale: _pressed ? 0.95 : 1.0,
         duration: const Duration(milliseconds: 120),
         curve: Curves.easeOut,
-        child: Stack(
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: AppColorsScheme.of(context).surfaceLight,
-                      borderRadius: BorderRadius.circular(AppRadius.md),
-                    ),
-                    child: Center(
-                      child: AppIcon(
-                        icon: AppIcons.folder,
-                        color: AppColors.primary,
-                        size: 40,
-                      ),
-                    ),
+        child: SizedBox.expand(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: AppColorsScheme.of(context).surfaceLight,
+                    borderRadius: BorderRadius.circular(AppRadius.md),
                   ),
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Row(
-                  children: [
-                    if (!widget.isSelecting && folder.isPinned)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4),
-                        child: AppIcon(
-                          icon: AppIcons.pin,
-                          size: 12,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    Expanded(
-                      child: Text(
-                        folder.name.capitalized,
-                        style: TextStyle(
-                          color: AppColorsScheme.of(context).textPrimary,
-                          fontSize: AppFontSize.md,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                  child: Center(
+                    child: AppIcon(
+                      icon: AppIcons.folder,
+                      color: AppColors.primary,
+                      size: 40,
                     ),
-                    if (!widget.isSelecting)
-                      Builder(
-                        builder: (btnCtx) => GestureDetector(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            final box =
-                                btnCtx.findRenderObject() as RenderBox?;
-                            widget.onOptions(box != null && box.hasSize
-                                ? box.localToGlobal(Offset.zero) & box.size
-                                : null);
-                          },
-                          child: AppIcon(
-                            icon: AppIcons.moreVert,
-                            color: AppColorsScheme.of(context).textMuted,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                Text(
-                  folder.playlistCount == 0
-                      ? 'No playlists'
-                      : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
-                  style: TextStyle(
-                    color: AppColorsScheme.of(context).textMuted,
-                    fontSize: AppFontSize.xs,
-                  ),
-                ),
-              ],
-            ),
-            if (widget.isSelecting)
-              Positioned(
-                top: 6,
-                right: 6,
-                child: AnimatedSwitcher(
-                  duration: AppDuration.fast,
-                  child: Icon(
-                    widget.isSelected
-                        ? Icons.check_circle
-                        : Icons.radio_button_unchecked,
-                    key: ValueKey(widget.isSelected),
-                    size: 22,
-                    color: widget.isSelected
-                        ? AppColors.primary
-                        : Colors.white.withValues(alpha: 0.8),
-                    shadows: const [
-                      Shadow(color: Colors.black54, blurRadius: 4),
-                    ],
                   ),
                 ),
               ),
-          ],
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                children: [
+                  if (folder.isPinned)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: AppIcon(
+                        icon: AppIcons.pin,
+                        size: 12,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  Expanded(
+                    child: Text(
+                      folder.name.capitalized,
+                      style: TextStyle(
+                        color: AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.md,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Builder(
+                    builder: (btnCtx) => GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        final box = btnCtx.findRenderObject() as RenderBox?;
+                        widget.onOptions(box != null && box.hasSize
+                            ? box.localToGlobal(Offset.zero) & box.size
+                            : null);
+                      },
+                      child: AppIcon(
+                        icon: AppIcons.moreVert,
+                        color: AppColorsScheme.of(context).textMuted,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                folder.playlistCount == 0
+                    ? 'No playlists'
+                    : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
+                style: TextStyle(
+                  color: AppColorsScheme.of(context).textMuted,
+                  fontSize: AppFontSize.xs,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+
+    return card;
   }
 }
 
@@ -816,69 +783,36 @@ class _LibraryFolderListTile extends StatelessWidget {
     required this.folder,
     required this.onTap,
     required this.onOptions,
-    this.isSelected = false,
-    this.isSelecting = false,
-    this.onLongPress,
   });
 
   final LibraryFolder folder;
   final VoidCallback onTap;
   final void Function(Rect?) onOptions;
-  final bool isSelected;
-  final bool isSelecting;
-  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final thumbSize = t.isDesktop ? 44.0 : 52.0;
+    final thumbSize = t.isDesktop ? 48.0 : 56.0;
     final tile = Material(
-      color: isSelected
-          ? AppColors.primary.withValues(alpha: 0.12)
-          : Colors.transparent,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: InkWell(
         onTap: () {
           HapticFeedback.selectionClick();
           onTap();
         },
-        onLongPress: () {
-          if (onLongPress != null) {
-            onLongPress!();
-          } else {
-            HapticFeedback.mediumImpact();
-            onOptions(null);
-          }
-        },
         hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
           child: Row(
             children: [
-              if (isSelecting)
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: AnimatedSwitcher(
-                    duration: AppDuration.fast,
-                    child: Icon(
-                      isSelected
-                          ? Icons.check_circle
-                          : Icons.radio_button_unchecked,
-                      key: ValueKey(isSelected),
-                      size: 22,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColorsScheme.of(context).textMuted,
-                    ),
-                  ),
-                ),
               Container(
                 width: thumbSize,
                 height: thumbSize,
                 decoration: BoxDecoration(
                   color: AppColorsScheme.of(context).surfaceLight,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 child: Center(
                   child: AppIcon(
@@ -904,9 +838,12 @@ class _LibraryFolderListTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      folder.playlistCount == 0
-                          ? 'No playlists'
-                          : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
+                      _typedSubtitle(
+                        'Folder',
+                        folder.playlistCount == 0
+                            ? 'No playlists'
+                            : '${folder.playlistCount} playlist${folder.playlistCount == 1 ? '' : 's'}',
+                      ),
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.md,
@@ -915,38 +852,36 @@ class _LibraryFolderListTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (!isSelecting) ...[
-                if (folder.isPinned)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: AppIcon(
-                        icon: AppIcons.pin, size: 14, color: AppColors.primary),
-                  ),
-                Builder(
-                  builder: (btnCtx) => AppIconButton(
-                    icon: AppIcon(
-                        icon: AppIcons.moreVert,
-                        size: 22,
-                        color: AppColorsScheme.of(context).textMuted),
-                    onPressedWithContext: (btnCtx) {
-                      final box = btnCtx.findRenderObject() as RenderBox?;
-                      onOptions(box != null && box.hasSize
-                          ? box.localToGlobal(Offset.zero) & box.size
-                          : null);
-                    },
-                    size: 40,
-                    iconSize: 22,
-                    iconAlignment: Alignment.centerRight,
-                  ),
+              if (folder.isPinned)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: AppIcon(
+                      icon: AppIcons.pin, size: 14, color: AppColors.primary),
                 ),
-              ],
+              Builder(
+                builder: (btnCtx) => AppIconButton(
+                  icon: AppIcon(
+                    icon: AppIcons.moreVert,
+                    size: 20,
+                    color: AppColorsScheme.of(context).textMuted,
+                  ),
+                  onPressedWithContext: (btnCtx) {
+                    final box = btnCtx.findRenderObject() as RenderBox?;
+                    onOptions(box != null && box.hasSize
+                        ? box.localToGlobal(Offset.zero) & box.size
+                        : null);
+                  },
+                  size: t.isDesktop ? 36 : 40,
+                  iconSize: 20,
+                  iconAlignment: Alignment.centerRight,
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
 
-    if (t.isDesktop) return _LibraryHoverTile(child: tile);
     return tile;
   }
 }
@@ -965,8 +900,13 @@ class _StaggeredItem extends StatelessWidget {
     final delay = Duration(milliseconds: 30 * index.clamp(0, 20));
     return child
         .animate(delay: delay)
-        .fadeIn(duration: const Duration(milliseconds: 220), curve: Curves.easeOut)
-        .slideY(begin: 0.06, end: 0, duration: const Duration(milliseconds: 220), curve: Curves.easeOut);
+        .fadeIn(
+            duration: const Duration(milliseconds: 220), curve: Curves.easeOut)
+        .slideY(
+            begin: 0.06,
+            end: 0,
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOut);
   }
 }
 
@@ -977,9 +917,6 @@ class _LibrarySectionList extends StatelessWidget {
     required this.onPlaylistOptions,
     required this.onFolderTap,
     required this.onFolderOptions,
-    this.isSelecting = false,
-    this.selectedIds = const {},
-    this.onLongPress,
   });
 
   final List<LibrarySectionEntry> entries;
@@ -987,9 +924,6 @@ class _LibrarySectionList extends StatelessWidget {
   final void Function(LibraryPlaylist, Rect?) onPlaylistOptions;
   final void Function(LibraryFolder) onFolderTap;
   final void Function(LibraryFolder, Rect?) onFolderOptions;
-  final bool isSelecting;
-  final Set<String> selectedIds;
-  final void Function(String id)? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -997,10 +931,7 @@ class _LibrarySectionList extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       itemCount: entries.length,
-      separatorBuilder: (context, __) {
-        final t = AppTokens.of(context);
-        return SizedBox(height: t.isDesktop ? AppSpacing.sm : AppSpacing.xs);
-      },
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
       itemBuilder: (context, index) {
         final entry = entries[index];
         final tile = switch (entry) {
@@ -1038,21 +969,41 @@ class _LibrarySectionList extends StatelessWidget {
               subtitle: songCount == 0 ? 'No songs yet' : '$songCount songs',
               onTap: onTap,
             ),
+          EpisodesForLaterEntry(:final episodeCount, :final onTap) =>
+            _StaticListTile(
+              icon: AppIcons.bookmark,
+              iconColor: Colors.white,
+              backgroundColor: AppColorsScheme.of(context).surfaceLight,
+              backgroundGradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF9333EA), Color(0xFF7C3AED)],
+              ),
+              title: 'Episodes For Later',
+              subtitle: episodeCount == 0
+                  ? 'No episodes yet'
+                  : '$episodeCount episodes',
+              onTap: onTap,
+            ),
+          MediaLibraryEntry() => LibraryItemTile(
+              title: entry.title,
+              subtitle: entry.subtitle,
+              thumbnailUrl: entry.thumbnailUrl,
+              placeholderIcon: entry.placeholderIcon,
+              showPinIndicator: entry.showPinIndicator,
+              circularThumbnail: entry.circularThumbnail,
+              onTap: entry.onTap,
+              onOptions: entry.onOptions,
+            ),
           FolderEntry(:final folder) => _LibraryFolderListTile(
               folder: folder,
               onTap: () => onFolderTap(folder),
               onOptions: (rect) => onFolderOptions(folder, rect),
-              isSelected: selectedIds.contains(folder.id),
-              isSelecting: isSelecting,
-              onLongPress: onLongPress != null ? () => onLongPress!(folder.id) : null,
             ),
           PlaylistEntry(:final playlist) => _LibraryPlaylistListTile(
               playlist: playlist,
               onTap: () => onPlaylistTap(playlist),
               onOptions: (rect) => onPlaylistOptions(playlist, rect),
-              isSelected: selectedIds.contains(playlist.id),
-              isSelecting: isSelecting,
-              onLongPress: onLongPress != null ? () => onLongPress!(playlist.id) : null,
             ),
         };
         return _StaggeredItem(index: index, child: tile);
@@ -1085,7 +1036,7 @@ class _StaticListTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final thumbSize = t.isDesktop ? 44.0 : 52.0;
+    final thumbSize = t.isDesktop ? 48.0 : 56.0;
     final tile = Material(
       color: Colors.transparent,
       child: InkWell(
@@ -1096,7 +1047,7 @@ class _StaticListTile extends StatelessWidget {
         hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: t.spacing.sm),
+          padding: EdgeInsets.symmetric(vertical: t.spacing.xs),
           child: Row(
             children: [
               Container(
@@ -1105,7 +1056,7 @@ class _StaticListTile extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: backgroundGradient == null ? backgroundColor : null,
                   gradient: backgroundGradient,
-                  borderRadius: BorderRadius.circular(AppRadius.sm),
+                  borderRadius: BorderRadius.circular(AppRadius.xs),
                 ),
                 child: Center(
                   child: iconWidget ??
@@ -1146,8 +1097,165 @@ class _StaticListTile extends StatelessWidget {
       ),
     );
 
-    if (t.isDesktop) return _LibraryHoverTile(child: tile);
     return tile;
+  }
+}
+
+class MediaLibraryGridCard extends StatelessWidget {
+  const MediaLibraryGridCard({super.key, required this.entry});
+
+  final MediaLibraryEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final mediaChild = entry.thumbnailUrl != null &&
+            entry.thumbnailUrl!.isNotEmpty
+        ? CachedNetworkImage(
+            imageUrl: entry.thumbnailUrl!,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorWidget: (_, __, ___) => Container(
+              color: AppColorsScheme.of(context).surfaceLight,
+              child: Center(
+                child: AppIcon(
+                  icon: entry.placeholderIcon,
+                  color: AppColorsScheme.of(context).textMuted,
+                  size: 36,
+                ),
+              ),
+            ),
+          )
+        : Container(
+            color: AppColorsScheme.of(context).surfaceLight,
+            child: Center(
+              child: AppIcon(
+                icon: entry.placeholderIcon,
+                color: AppColorsScheme.of(context).textMuted,
+                size: 36,
+              ),
+            ),
+          );
+
+    final detailLine = entry.gridDetailSubtitle ?? entry.subtitle;
+
+    return GestureDetector(
+      onTap: entry.onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: entry.circularThumbnail
+                ? LayoutBuilder(
+                    builder: (context, constraints) {
+                      final side = constraints.maxWidth < constraints.maxHeight
+                          ? constraints.maxWidth
+                          : constraints.maxHeight;
+                      return Center(
+                        child: ClipOval(
+                          child: SizedBox(
+                            width: side,
+                            height: side,
+                            child: entry.thumbnailUrl != null &&
+                                    entry.thumbnailUrl!.isNotEmpty
+                                ? CachedNetworkImage(
+                                    imageUrl: entry.thumbnailUrl!,
+                                    width: side,
+                                    height: side,
+                                    fit: BoxFit.cover,
+                                    errorWidget: (_, __, ___) => Container(
+                                      color: AppColorsScheme.of(context)
+                                          .surfaceLight,
+                                      child: Center(
+                                        child: AppIcon(
+                                          icon: entry.placeholderIcon,
+                                          color: AppColorsScheme.of(context)
+                                              .textMuted,
+                                          size: 36,
+                                        ),
+                                      ),
+                                    ),
+                                  )
+                                : Container(
+                                    color: AppColorsScheme.of(context)
+                                        .surfaceLight,
+                                    child: Center(
+                                      child: AppIcon(
+                                        icon: entry.placeholderIcon,
+                                        color: AppColorsScheme.of(context)
+                                            .textMuted,
+                                        size: 36,
+                                      ),
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                : ClipRRect(
+                    borderRadius: BorderRadius.circular(AppRadius.md),
+                    child: mediaChild,
+                  ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  entry.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: AppColorsScheme.of(context).textPrimary,
+                    fontSize: AppFontSize.md,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              if (entry.showPinIndicator)
+                Padding(
+                  padding: const EdgeInsets.only(left: 4),
+                  child: AppIcon(
+                    icon: AppIcons.pin,
+                    size: 12,
+                    color: AppColors.primary,
+                  ),
+                ),
+              if (entry.onOptions != null)
+                Builder(
+                  builder: (btnCtx) => GestureDetector(
+                    onTap: () {
+                      final box = btnCtx.findRenderObject() as RenderBox?;
+                      entry.onOptions!(
+                        box != null && box.hasSize
+                            ? box.localToGlobal(Offset.zero) & box.size
+                            : null,
+                      );
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: AppIcon(
+                        icon: AppIcons.moreVert,
+                        size: 18,
+                        color: AppColorsScheme.of(context).textMuted,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          Text(
+            detailLine,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: AppColorsScheme.of(context).textMuted,
+              fontSize: AppFontSize.xs,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -1156,63 +1264,30 @@ class _LibraryPlaylistListTile extends StatelessWidget {
     required this.playlist,
     required this.onTap,
     required this.onOptions,
-    this.isSelected = false,
-    this.isSelecting = false,
-    this.onLongPress,
   });
 
   final LibraryPlaylist playlist;
   final VoidCallback onTap;
   final void Function(Rect?) onOptions;
-  final bool isSelected;
-  final bool isSelecting;
-  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
     final t = AppTokens.of(context);
-    final thumbSize = t.isDesktop ? 44.0 : 52.0;
+    final thumbSize = t.isDesktop ? 48.0 : 56.0;
     final tile = Material(
-      color: isSelected
-          ? AppColors.primary.withValues(alpha: 0.12)
-          : Colors.transparent,
+      color: Colors.transparent,
       borderRadius: BorderRadius.circular(AppRadius.sm),
       child: InkWell(
         onTap: () {
           HapticFeedback.selectionClick();
           onTap();
         },
-        onLongPress: () {
-          if (onLongPress != null) {
-            onLongPress!();
-          } else {
-            HapticFeedback.mediumImpact();
-            onOptions(null);
-          }
-        },
         hoverColor: t.isDesktop ? Colors.transparent : null,
         borderRadius: BorderRadius.circular(AppRadius.sm),
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: t.spacing.sm),
+          padding: EdgeInsets.symmetric(vertical: t.spacing.xs),
           child: Row(
             children: [
-              if (isSelecting)
-                Padding(
-                  padding: const EdgeInsets.only(right: AppSpacing.sm),
-                  child: AnimatedSwitcher(
-                    duration: AppDuration.fast,
-                    child: Icon(
-                      isSelected
-                          ? Icons.check_circle
-                          : Icons.radio_button_unchecked,
-                      key: ValueKey(isSelected),
-                      size: 22,
-                      color: isSelected
-                          ? AppColors.primary
-                          : AppColorsScheme.of(context).textMuted,
-                    ),
-                  ),
-                ),
               PlaylistCoverThumbnail(playlist: playlist, size: thumbSize),
               SizedBox(width: t.spacing.md),
               Expanded(
@@ -1231,7 +1306,7 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                     Text(
-                      playlist.trackCountLabel,
+                      _typedSubtitle('Playlist', playlist.trackCountLabel),
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textMuted,
                         fontSize: AppFontSize.md,
@@ -1242,69 +1317,37 @@ class _LibraryPlaylistListTile extends StatelessWidget {
                   ],
                 ),
               ),
-              if (!isSelecting) ...[
-                if (playlist.isPinned)
-                  Padding(
-                    padding: const EdgeInsets.only(right:  4),
-                    child: AppIcon(
-                        icon: AppIcons.pin, size: 14, color: AppColors.primary),
-                  ),
-                Builder(
-                  builder: (btnCtx) => AppIconButton(
-                    icon: AppIcon(
-                        icon: AppIcons.moreVert,
-                        size: 22,
-                        color: AppColorsScheme.of(context).textMuted),
-                    onPressedWithContext: (btnCtx) {
-                      final box = btnCtx.findRenderObject() as RenderBox?;
-                      onOptions(box != null && box.hasSize
-                          ? box.localToGlobal(Offset.zero) & box.size
-                          : null);
-                    },
-                    size: 40,
-                    iconSize: 22,
-                    iconAlignment: Alignment.centerRight,
-                  ),
+              if (playlist.isPinned)
+                Padding(
+                  padding: const EdgeInsets.only(right: 4),
+                  child: AppIcon(
+                      icon: AppIcons.pin, size: 14, color: AppColors.primary),
                 ),
-              ],
+              Builder(
+                builder: (btnCtx) => AppIconButton(
+                  icon: AppIcon(
+                    icon: AppIcons.moreVert,
+                    size: 20,
+                    color: AppColorsScheme.of(context).textMuted,
+                  ),
+                  onPressedWithContext: (btnCtx) {
+                    final box = btnCtx.findRenderObject() as RenderBox?;
+                    onOptions(box != null && box.hasSize
+                        ? box.localToGlobal(Offset.zero) & box.size
+                        : null);
+                  },
+                  size: t.isDesktop ? 36 : 40,
+                  iconSize: 20,
+                  iconAlignment: Alignment.centerRight,
+                ),
+              ),
             ],
           ),
         ),
       ),
     );
 
-    if (t.isDesktop) return _LibraryHoverTile(child: tile);
     return tile;
-  }
-}
-
-/// Hover highlight wrapper for desktop library list tiles.
-class _LibraryHoverTile extends StatefulWidget {
-  const _LibraryHoverTile({required this.child});
-  final Widget child;
-
-  @override
-  State<_LibraryHoverTile> createState() => _LibraryHoverTileState();
-}
-
-class _LibraryHoverTileState extends State<_LibraryHoverTile> {
-  bool _hovered = false;
-
-  @override
-  Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _hovered = true),
-      onExit: (_) => setState(() => _hovered = false),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        decoration: BoxDecoration(
-          color: _hovered ? AppColors.hoverOverlay : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppRadius.sm),
-        ),
-        child: widget.child,
-      ),
-    );
   }
 }
 
@@ -1312,59 +1355,63 @@ class _LibraryHoverTileState extends State<_LibraryHoverTile> {
 
 /// Shimmer placeholder list shown while the library is loading from SQLite.
 class LibrarySkeletonList extends StatelessWidget {
-  const LibrarySkeletonList({super.key, this.itemCount = 8});
+  const LibrarySkeletonList({
+    super.key,
+    this.itemCount = 8,
+    this.viewMode = LibraryViewMode.list,
+  });
   final int itemCount;
+  final LibraryViewMode viewMode;
 
   @override
   Widget build(BuildContext context) {
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: itemCount,
-      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.xs),
-      itemBuilder: (_, index) => _LibrarySkeletonTile(index: index),
+    final entries = _fakeSkeletonEntries(itemCount);
+    final child = viewMode == LibraryViewMode.grid
+        ? _LibrarySectionGrid(
+            entries: entries,
+            onPlaylistTap: (_) {},
+            onPlaylistOptions: (_, __) {},
+            onFolderTap: (_) {},
+            onFolderOptions: (_, __) {},
+          )
+        : _LibrarySectionList(
+            entries: entries,
+            onPlaylistTap: (_) {},
+            onPlaylistOptions: (_, __) {},
+            onFolderTap: (_) {},
+            onFolderOptions: (_, __) {},
+          );
+    return Skeletonizer(
+      enabled: true,
+      child: IgnorePointer(
+        child: child,
+      ),
     );
   }
 }
 
-class _LibrarySkeletonTile extends StatelessWidget {
-  const _LibrarySkeletonTile({required this.index});
-  final int index;
-
-  // Vary title widths so the skeleton looks natural.
-  static const _titleWidths = [130.0, 160.0, 110.0, 145.0, 125.0, 155.0, 120.0, 140.0];
-
-  @override
-  Widget build(BuildContext context) {
-    final titleWidth = _titleWidths[index % _titleWidths.length];
-    const thumbSize = 52.0;
-    final delay = Duration(milliseconds: 40 * index.clamp(0, 12));
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Row(
-        children: [
-          SkeletonBox(width: thumbSize, height: thumbSize, radius: AppRadius.sm),
-          const SizedBox(width: AppSpacing.md),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SkeletonBox(width: titleWidth, height: 13, radius: AppRadius.xs),
-              const SizedBox(height: AppSpacing.xs),
-              SkeletonBox(width: 70, height: 10, radius: AppRadius.xs),
-            ],
-          ),
-        ],
+List<LibrarySectionEntry> _fakeSkeletonEntries(int count) {
+  final now = DateTime.now();
+  return List.generate(count, (i) {
+    if (i % 4 == 0) {
+      return FolderEntry(
+        LibraryFolder(
+          id: 'skeleton-folder-$i',
+          name: 'Loading folder',
+          createdAt: now,
+          playlistIds: const ['a', 'b'],
+        ),
+      );
+    }
+    return PlaylistEntry(
+      LibraryPlaylist(
+        id: 'skeleton-playlist-$i',
+        name: 'Loading playlist',
+        createdAt: now,
+        updatedAt: now,
+        remoteTrackCount: 12,
+        isImported: true,
       ),
-    )
-        .animate(
-          delay: delay,
-          onPlay: (c) => c.repeat(),
-        )
-        .shimmer(
-          duration: const Duration(milliseconds: 1400),
-          color: AppColorsScheme.of(context).surfaceHighlight,
-          curve: Curves.easeInOut,
-        );
-  }
+    );
+  });
 }

@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:scrapper/models/playlist_browse_meta.dart';
 import 'package:scrapper/models/related_feed.dart';
 import 'package:scrapper/models/track.dart';
 import 'package:scrapper/youtube_music/client/yt_music_client.dart';
@@ -189,7 +190,12 @@ class BrowseApi {
   /// The [browseId] corresponds to a playlist or album page and [params]
   /// carries additional server‑side filters. The number of returned [Track]s
   /// per page is capped by [maxTracks].
-  Future<({List<Track> tracks, String? continuationToken})> fetchPlaylistOrAlbumWithContinuation(
+  Future<
+      ({
+        List<Track> tracks,
+        String? continuationToken,
+        PlaylistBrowseMeta? playlistBrowseMeta,
+      })> fetchPlaylistOrAlbumWithContinuation(
     String browseId, {
     String? params,
     String? continuationToken,
@@ -199,8 +205,10 @@ class BrowseApi {
       final payload = <String, dynamic>{
         'context': _client.context(),
       };
-      
-      if (continuationToken != null && continuationToken.isNotEmpty) {
+      final bool isContinuationRequest =
+          continuationToken != null && continuationToken.isNotEmpty;
+
+      if (isContinuationRequest) {
         payload['continuation'] = continuationToken;
       } else {
         payload['browseId'] = browseId;
@@ -208,13 +216,49 @@ class BrowseApi {
           payload['params'] = params;
         }
       }
-      
+
       final data = await _client.post('browse', payload);
-      final tracks = BrowseFormatter.extractTracksFromBrowseData(data, maxResults: maxTracks);
-      final nextToken = BrowseFormatter.extractBrowseContinuationToken(data);
-      return (tracks: tracks, continuationToken: nextToken);
+
+      final PlaylistBrowseMeta? meta = !isContinuationRequest
+          ? BrowseFormatter.extractCollectionBrowseMeta(data)
+          : null;
+
+      Map<String, dynamic> dataForTracks = data;
+      if (!isContinuationRequest && browseId.startsWith('UC')) {
+        final topSongs = BrowseFormatter.extractArtistTopSongsBrowse(data);
+        if (topSongs != null) {
+          final playlistPayload = <String, dynamic>{
+            'context': _client.context(),
+            'browseId': topSongs.browseId,
+          };
+          if (topSongs.params != null && topSongs.params!.isNotEmpty) {
+            playlistPayload['params'] = topSongs.params;
+          }
+          try {
+            dataForTracks = await _client.post('browse', playlistPayload);
+          } catch (_) {
+            // Keep artist-page walk (partial list) if playlist browse fails.
+          }
+        }
+      }
+
+      final tracks = BrowseFormatter.extractTracksFromBrowseData(
+        dataForTracks,
+        maxResults: maxTracks,
+      );
+      final nextToken =
+          BrowseFormatter.extractBrowseContinuationToken(dataForTracks);
+      return (
+        tracks: tracks,
+        continuationToken: nextToken,
+        playlistBrowseMeta: meta,
+      );
     } catch (e) {
-      return (tracks: <Track>[], continuationToken: null);
+      return (
+        tracks: <Track>[],
+        continuationToken: null,
+        playlistBrowseMeta: null,
+      );
     }
   }
 
@@ -243,14 +287,31 @@ class BrowseApi {
         firstPayload['params'] = params;
       }
       final firstData = await _client.post('browse', firstPayload);
+      Map<String, dynamic> dataForTracks = firstData;
+      if (browseId.startsWith('UC')) {
+        final topSongs = BrowseFormatter.extractArtistTopSongsBrowse(firstData);
+        if (topSongs != null) {
+          final playlistPayload = <String, dynamic>{
+            'context': _client.context(),
+            'browseId': topSongs.browseId,
+          };
+          if (topSongs.params != null && topSongs.params!.isNotEmpty) {
+            playlistPayload['params'] = topSongs.params;
+          }
+          try {
+            dataForTracks = await _client.post('browse', playlistPayload);
+          } catch (_) {}
+        }
+      }
       final firstTracks = BrowseFormatter.extractTracksFromBrowseData(
-        firstData,
+        dataForTracks,
         maxResults: maxTracks,
       );
       for (final t in firstTracks) {
         if (seenIds.add(t.id)) allTracks.add(t);
       }
-      String? nextToken = BrowseFormatter.extractBrowseContinuationToken(firstData);
+      String? nextToken =
+          BrowseFormatter.extractBrowseContinuationToken(dataForTracks);
 
       // Follow every continuation page until there are no more tokens or we hit
       // the safety cap.

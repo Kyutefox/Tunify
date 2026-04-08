@@ -147,17 +147,33 @@ class PodcastNotifier extends Notifier<PodcastState> {
   }
 
   Future<void> togglePodcastPin(String podcastId) async {
-    final podcast = state.subscriptions.firstWhere((p) => p.id == podcastId);
+    final idx = state.subscriptions.indexWhere((p) => p.id == podcastId);
+    if (idx < 0) return;
+    final podcast = state.subscriptions[idx];
     final updated = podcast.copyWith(isPinned: !podcast.isPinned);
-    final newList = state.subscriptions.map((p) => p.id == podcastId ? updated : p).toList();
+    final newList = List<Podcast>.from(state.subscriptions)..removeAt(idx);
+    if (updated.isPinned) {
+      final insertAt = newList.where((p) => p.isPinned).length;
+      newList.insert(insertAt, updated);
+    } else {
+      newList.insert(0, updated);
+    }
     state = state.copyWith(subscriptions: newList);
     await _repo.updatePodcast(updated);
   }
 
   Future<void> toggleAudiobookPin(String audiobookId) async {
-    final audiobook = state.savedAudiobooks.firstWhere((a) => a.id == audiobookId);
+    final idx = state.savedAudiobooks.indexWhere((a) => a.id == audiobookId);
+    if (idx < 0) return;
+    final audiobook = state.savedAudiobooks[idx];
     final updated = audiobook.copyWith(isPinned: !audiobook.isPinned);
-    final newList = state.savedAudiobooks.map((a) => a.id == audiobookId ? updated : a).toList();
+    final newList = List<Audiobook>.from(state.savedAudiobooks)..removeAt(idx);
+    if (updated.isPinned) {
+      final insertAt = newList.where((a) => a.isPinned).length;
+      newList.insert(insertAt, updated);
+    } else {
+      newList.insert(0, updated);
+    }
     state = state.copyWith(savedAudiobooks: newList);
     await _repo.updateAudiobook(updated);
   }

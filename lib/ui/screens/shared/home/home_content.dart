@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/widgets/common/mood_section.dart';
 import 'package:tunify/ui/widgets/common/recently_played_section.dart';
 import 'package:tunify/data/models/artist.dart';
@@ -16,7 +15,6 @@ import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'home_sections.dart';
 import 'home_shared.dart';
 import 'home_skeletons.dart';
-import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 class HomeContent extends ConsumerWidget {
   const HomeContent({super.key, required this.onPlay});
@@ -28,7 +26,14 @@ class HomeContent extends ConsumerWidget {
     final isLoaded = ref.watch(homeIsLoadedProvider);
 
     if (isLoading && !isLoaded) {
-      return const SliverToBoxAdapter(child: HomePageSkeleton());
+      return SliverList(
+        delegate: SliverChildListDelegate.fixed([
+          RepaintBoundary(
+            child: HomePageSkeleton(onPlay: onPlay),
+          ),
+          const RepaintBoundary(child: MoodSection()),
+        ]),
+      );
     }
 
     return SliverList(
@@ -51,7 +56,7 @@ class _AnimatedFeedBlock extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final feedVersion = ref.watch(homeFeedVersionProvider);
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 220),
+      duration: AppDuration.normal,
       switchInCurve: Curves.easeOut,
       switchOutCurve: Curves.easeIn,
       transitionBuilder: (child, animation) =>
@@ -68,79 +73,6 @@ class _AnimatedFeedBlock extends ConsumerWidget {
             const _MadeForYouSection(),
             const _ArtistsSection(),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Shared nav button pair ───────────────────────────────────────────────────
-
-/// Prev/next arrow buttons used in every section header.
-/// Extracted from the 3× duplicated inline Row in the original file.
-class _NavButtonPair extends StatelessWidget {
-  const _NavButtonPair({
-    required this.pageCtrl,
-    required this.currentPage,
-    this.totalPages = 2,
-  });
-  final PageController pageCtrl;
-  final int currentPage;
-  final int totalPages;
-
-  void _go(int page) => pageCtrl.animateToPage(
-        page,
-        duration: AppDuration.normal,
-        curve: Curves.easeInOut,
-      );
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _NavButton(
-            icon: AppIcons.back,
-            enabled: currentPage > 0,
-            onTap: () => _go(currentPage - 1)),
-        const SizedBox(width: AppSpacing.xs),
-        _NavButton(
-            icon: AppIcons.forward,
-            enabled: currentPage < totalPages - 1,
-            onTap: () => _go(currentPage + 1)),
-      ],
-    );
-  }
-}
-
-/// Small circular prev/next arrow button.
-class _NavButton extends StatelessWidget {
-  const _NavButton(
-      {required this.icon, required this.onTap, this.enabled = true});
-  final List<List<dynamic>> icon;
-  final VoidCallback onTap;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = AppTokens.of(context);
-    return GestureDetector(
-      onTap: enabled ? onTap : null,
-      child: Container(
-        width: t.spacing.xxl,
-        height: t.spacing.xxl,
-        decoration: BoxDecoration(
-          color: enabled
-              ? AppColorsScheme.of(context).surfaceLight
-              : AppColorsScheme.of(context).surfaceLight.withValues(alpha: 0.4),
-          shape: BoxShape.circle,
-        ),
-        child: Center(
-          child: AppIcon(
-            icon: icon,
-            size: t.icon.xs,
-            color: enabled ? AppColorsScheme.of(context).textPrimary : AppColorsScheme.of(context).textMuted,
-          ),
         ),
       ),
     );
@@ -180,12 +112,13 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection>
           SectionHeader(
             title: 'Quick Picks',
             subtitle: 'Based on your taste',
+            subtitleFirst: true,
             useCompactStyle: true,
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (hasOverflow) ...[
-                  _NavButtonPair(
+                  HomeSectionNavButtonPair(
                       pageCtrl: pageCtrl,
                       currentPage: currentPage,
                       totalPages: totalPages),
@@ -210,11 +143,27 @@ class _QuickPicksSectionState extends ConsumerState<_QuickPicksSection>
       loadingChild: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionSkeleton(
-            titleWidth: 120,
-            subtitleWidth: 156,
-            child: QuickPicksRowSkeleton(),
+          SectionHeader(
+            title: 'Quick Picks',
+            subtitle: 'Based on your taste',
+            subtitleFirst: true,
+            useCompactStyle: true,
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if ((12 / pageSize).ceil() > 1) ...[
+                  HomeSectionNavButtonPair(
+                    pageCtrl: pageCtrl,
+                    currentPage: currentPage,
+                    totalPages: (12 / pageSize).ceil(),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
+                PlayCircleButton(onTap: () {}),
+              ],
+            ),
           ),
+          const QuickPicksRowSkeleton(),
           SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
         ],
       ),
@@ -391,12 +340,13 @@ class _SectionWithNavState extends ConsumerState<_SectionWithNav>
         SectionHeader(
           title: widget.title,
           subtitle: widget.subtitle,
+          subtitleFirst: widget.subtitle != null,
           useCompactStyle: true,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               if (showNav) ...[
-                _NavButtonPair(
+                HomeSectionNavButtonPair(
                     pageCtrl: _ctrl,
                     currentPage: currentPage,
                     totalPages: totalPages),
@@ -464,7 +414,7 @@ class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection>
                   title: 'Made For You',
                   useCompactStyle: true,
                   trailing: hasOverflow
-                      ? _NavButtonPair(
+                      ? HomeSectionNavButtonPair(
                           pageCtrl: pageCtrl,
                           currentPage: currentPage,
                           totalPages: totalPages)
@@ -479,7 +429,18 @@ class _MadeForYouSectionState extends ConsumerState<_MadeForYouSection>
       loadingChild: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionSkeleton(titleWidth: 120, child: PlaylistsRowSkeleton()),
+          SectionHeader(
+            title: 'Made For You',
+            useCompactStyle: true,
+            trailing: (6 / layout.cols).ceil() > 1
+                ? HomeSectionNavButtonPair(
+                    pageCtrl: pageCtrl,
+                    currentPage: currentPage,
+                    totalPages: (6 / layout.cols).ceil(),
+                  )
+                : null,
+          ),
+          const PlaylistsRowSkeleton(),
           SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
         ],
       ),
@@ -521,7 +482,7 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection>
                   title: 'Popular Artists',
                   useCompactStyle: true,
                   trailing: hasOverflow
-                      ? _NavButtonPair(
+                      ? HomeSectionNavButtonPair(
                           pageCtrl: pageCtrl,
                           currentPage: currentPage,
                           totalPages: totalPages)
@@ -536,7 +497,18 @@ class _ArtistsSectionState extends ConsumerState<_ArtistsSection>
       loadingChild: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionSkeleton(titleWidth: 120, child: ArtistsRowSkeleton()),
+          SectionHeader(
+            title: 'Popular Artists',
+            useCompactStyle: true,
+            trailing: (6 / layout.cols).ceil() > 1
+                ? HomeSectionNavButtonPair(
+                    pageCtrl: pageCtrl,
+                    currentPage: currentPage,
+                    totalPages: (6 / layout.cols).ceil(),
+                  )
+                : null,
+          ),
+          const ArtistsRowSkeleton(),
           SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
         ],
       ),

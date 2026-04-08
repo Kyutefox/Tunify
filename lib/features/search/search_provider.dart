@@ -1,12 +1,23 @@
 import 'package:scrapper/scrapper.dart' as scrapper;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tunify/data/models/audiobook.dart';
+import 'package:tunify/data/models/podcast.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/search/recent_search_provider.dart';
 
-/// Mirrors the filter tabs shown in YouTube Music search, excluding podcasts
-/// and episodes per product requirements.
-enum SearchFilter { all, songs, videos, albums, artists, communityPlaylists, featuredPlaylists, profiles }
+enum SearchFilter {
+  all,
+  songs,
+  videos,
+  albums,
+  artists,
+  podcasts,
+  audiobooks,
+  communityPlaylists,
+  featuredPlaylists,
+  profiles
+}
 
 // ── Typed result models ───────────────────────────────────────────────────────
 
@@ -82,6 +93,55 @@ class PlaylistSearchResult {
       );
 }
 
+class PodcastSearchResult {
+  const PodcastSearchResult({
+    required this.id,
+    required this.title,
+    this.author,
+    this.thumbnailUrl,
+    this.browseId,
+  });
+
+  final String id;
+  final String title;
+  final String? author;
+  final String? thumbnailUrl;
+  final String? browseId;
+
+  factory PodcastSearchResult.fromPodcast(Podcast p) => PodcastSearchResult(
+        id: p.id,
+        title: p.title,
+        author: p.author,
+        thumbnailUrl: p.thumbnailUrl,
+        browseId: p.browseId,
+      );
+}
+
+class AudiobookSearchResult {
+  const AudiobookSearchResult({
+    required this.id,
+    required this.title,
+    this.author,
+    this.thumbnailUrl,
+    this.browseId,
+  });
+
+  final String id;
+  final String title;
+  final String? author;
+  final String? thumbnailUrl;
+  final String? browseId;
+
+  factory AudiobookSearchResult.fromAudiobook(Audiobook a) =>
+      AudiobookSearchResult(
+        id: a.id,
+        title: a.title,
+        author: a.author,
+        thumbnailUrl: a.thumbnailUrl,
+        browseId: a.browseId,
+      );
+}
+
 // ── SearchState ───────────────────────────────────────────────────────────────
 
 /// Holds all typed results for every filter. Each filter's data is fetched
@@ -106,6 +166,10 @@ class SearchState {
   final List<PlaylistSearchResult> playlistResults;
   /// Featured playlists filter results.
   final List<PlaylistSearchResult> featuredPlaylistResults;
+  /// Podcasts filter results.
+  final List<PodcastSearchResult> podcastResults;
+  /// Audiobooks filter results.
+  final List<AudiobookSearchResult> audiobookResults;
   /// Profiles filter results.
   final List<ArtistSearchResult> profileResults;
 
@@ -127,6 +191,8 @@ class SearchState {
     this.albumResults = const [],
     this.playlistResults = const [],
     this.featuredPlaylistResults = const [],
+    this.podcastResults = const [],
+    this.audiobookResults = const [],
     this.profileResults = const [],
     Map<SearchFilter, String?> continuations = const {},
     Set<SearchFilter> fetched = const {},
@@ -151,6 +217,8 @@ class SearchState {
     List<AlbumSearchResult>? albumResults,
     List<PlaylistSearchResult>? playlistResults,
     List<PlaylistSearchResult>? featuredPlaylistResults,
+    List<PodcastSearchResult>? podcastResults,
+    List<AudiobookSearchResult>? audiobookResults,
     List<ArtistSearchResult>? profileResults,
     Map<SearchFilter, String?>? continuations,
     Set<SearchFilter>? fetched,
@@ -167,6 +235,8 @@ class SearchState {
       albumResults: albumResults ?? this.albumResults,
       playlistResults: playlistResults ?? this.playlistResults,
       featuredPlaylistResults: featuredPlaylistResults ?? this.featuredPlaylistResults,
+      podcastResults: podcastResults ?? this.podcastResults,
+      audiobookResults: audiobookResults ?? this.audiobookResults,
       profileResults: profileResults ?? this.profileResults,
       continuations: continuations ?? _continuations,
       fetched: fetched ?? _fetched,
@@ -181,6 +251,8 @@ class SearchState {
       case SearchFilter.videos:             return videoResults.isNotEmpty;
       case SearchFilter.artists:            return artistResults.isNotEmpty;
       case SearchFilter.albums:             return albumResults.isNotEmpty;
+      case SearchFilter.podcasts:           return podcastResults.isNotEmpty;
+      case SearchFilter.audiobooks:         return audiobookResults.isNotEmpty;
       case SearchFilter.communityPlaylists: return playlistResults.isNotEmpty;
       case SearchFilter.featuredPlaylists:  return featuredPlaylistResults.isNotEmpty;
       case SearchFilter.profiles:           return profileResults.isNotEmpty;
@@ -206,7 +278,10 @@ class SearchNotifier extends Notifier<SearchState> {
 
     state = SearchState(query: trimmed, filter: state.filter, isLoading: true);
     await _fetchForFilter(trimmed, state.filter);
-    ref.read(recentSearchProvider.notifier).addQuery(trimmed);
+    // Only persist queries that produced at least one result.
+    if (state.error == null && state.hasResults) {
+      ref.read(recentSearchProvider.notifier).addQuery(trimmed);
+    }
   }
 
   Future<void> setFilter(SearchFilter filter) async {
@@ -294,6 +369,9 @@ class SearchNotifier extends Notifier<SearchState> {
             profileResults: [...state.profileResults, ...page.items.map(ArtistSearchResult.fromMap)],
             continuations: newConts,
           );
+        case SearchFilter.podcasts:
+        case SearchFilter.audiobooks:
+          state = state.copyWith(isLoadingMore: false);
       }
     } catch (e) {
       state = state.copyWith(isLoadingMore: false);
@@ -374,6 +452,43 @@ class SearchNotifier extends Notifier<SearchState> {
             isLoading: false,
             profileResults: page.items.map(ArtistSearchResult.fromMap).toList(),
             continuations: newConts,
+            fetched: {...state._fetched, filter},
+          );
+        case SearchFilter.podcasts:
+          final raw = await ref.read(streamManagerProvider).searchPodcasts(query);
+          state = state.copyWith(
+            isLoading: false,
+            continuations: Map<SearchFilter, String?>.from(state._continuations)
+              ..[filter] = null,
+            podcastResults: raw
+                .map((m) => Podcast(
+                      id: m['id'] as String,
+                      title: m['title'] as String,
+                      author: m['author'] as String?,
+                      thumbnailUrl: m['thumbnailUrl'] as String?,
+                      browseId: m['browseId'] as String?,
+                    ))
+                .map(PodcastSearchResult.fromPodcast)
+                .toList(),
+            fetched: {...state._fetched, filter},
+          );
+        case SearchFilter.audiobooks:
+          final raw =
+              await ref.read(streamManagerProvider).searchAudiobooks(query);
+          state = state.copyWith(
+            isLoading: false,
+            continuations: Map<SearchFilter, String?>.from(state._continuations)
+              ..[filter] = null,
+            audiobookResults: raw
+                .map((m) => Audiobook(
+                      id: m['id'] as String,
+                      title: m['title'] as String,
+                      author: m['author'] as String?,
+                      thumbnailUrl: m['thumbnailUrl'] as String?,
+                      browseId: m['browseId'] as String?,
+                    ))
+                .map(AudiobookSearchResult.fromAudiobook)
+                .toList(),
             fetched: {...state._fetched, filter},
           );
       }

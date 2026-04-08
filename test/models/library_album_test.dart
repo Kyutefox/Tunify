@@ -16,13 +16,22 @@ void main() {
   group('LibraryAlbum', () {
     group('JSON serialization', () {
       test('toJson / fromJson round-trip preserves all fields', () {
-        final original = _album(id: 'al42', title: 'OK Computer');
+        final original = LibraryAlbum(
+          id: 'al42',
+          title: 'OK Computer',
+          artistName: 'Test Artist',
+          thumbnailUrl: 'https://example.com/album.jpg',
+          browseId: 'browse_al42',
+          followedAt: DateTime.utc(2024, 1, 1),
+          isPinned: true,
+        );
         final decoded = LibraryAlbum.fromJson(original.toJson());
         expect(decoded.id, original.id);
         expect(decoded.title, original.title);
         expect(decoded.artistName, original.artistName);
         expect(decoded.thumbnailUrl, original.thumbnailUrl);
         expect(decoded.browseId, original.browseId);
+        expect(decoded.isPinned, original.isPinned);
       });
 
       test('missing optional fields use defaults', () {

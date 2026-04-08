@@ -35,19 +35,19 @@ class AppColorsScheme extends ThemeExtension<AppColorsScheme> {
     textPrimary: Color(0xFFFFFFFF),
     textSecondary: Color(0xFFB3B3B3),
     textMuted: Color(0xFF9E9E9E),
-    desktopSurface: Color(0xFF1E1E1E),
+    desktopSurface: Color(0xFF121212),
     desktopTextSecondary: Color(0xFF888888),
     desktopTextMuted: Color(0xFF666666),
   );
 
   static const AppColorsScheme light = AppColorsScheme(
-    background: Color(0xFFF0F0F0),   // Slightly deeper — cards pop off it
-    surface: Color(0xFFFFFFFF),       // Pure white cards
-    surfaceLight: Color(0xFFE8E8E8),  // Visible chip/tile fills
+    background: Color(0xFFF0F0F0), // Slightly deeper — cards pop off it
+    surface: Color(0xFFFFFFFF), // Pure white cards
+    surfaceLight: Color(0xFFE8E8E8), // Visible chip/tile fills
     surfaceHighlight: Color(0xFFD5D5D5), // Clear separator/border contrast
-    textPrimary: Color(0xFF0D0D0D),   // Near-black — sharper than 121212
+    textPrimary: Color(0xFF0D0D0D), // Near-black — sharper than 121212
     textSecondary: Color(0xFF444444), // Darker than before — readable subtitle
-    textMuted: Color(0xFF777777),     // Softer hints — not too light
+    textMuted: Color(0xFF777777), // Softer hints — not too light
     desktopSurface: Color(0xFFF7F7F7), // Sidebar/panel: slightly off-white
     desktopTextSecondary: Color(0xFF444444),
     desktopTextMuted: Color(0xFF777777),
@@ -68,18 +68,19 @@ class AppColorsScheme extends ThemeExtension<AppColorsScheme> {
     Color? desktopSurface,
     Color? desktopTextSecondary,
     Color? desktopTextMuted,
-  }) => AppColorsScheme(
-    background: background ?? this.background,
-    surface: surface ?? this.surface,
-    surfaceLight: surfaceLight ?? this.surfaceLight,
-    surfaceHighlight: surfaceHighlight ?? this.surfaceHighlight,
-    textPrimary: textPrimary ?? this.textPrimary,
-    textSecondary: textSecondary ?? this.textSecondary,
-    textMuted: textMuted ?? this.textMuted,
-    desktopSurface: desktopSurface ?? this.desktopSurface,
-    desktopTextSecondary: desktopTextSecondary ?? this.desktopTextSecondary,
-    desktopTextMuted: desktopTextMuted ?? this.desktopTextMuted,
-  );
+  }) =>
+      AppColorsScheme(
+        background: background ?? this.background,
+        surface: surface ?? this.surface,
+        surfaceLight: surfaceLight ?? this.surfaceLight,
+        surfaceHighlight: surfaceHighlight ?? this.surfaceHighlight,
+        textPrimary: textPrimary ?? this.textPrimary,
+        textSecondary: textSecondary ?? this.textSecondary,
+        textMuted: textMuted ?? this.textMuted,
+        desktopSurface: desktopSurface ?? this.desktopSurface,
+        desktopTextSecondary: desktopTextSecondary ?? this.desktopTextSecondary,
+        desktopTextMuted: desktopTextMuted ?? this.desktopTextMuted,
+      );
 
   @override
   AppColorsScheme lerp(AppColorsScheme? other, double t) {
@@ -88,13 +89,16 @@ class AppColorsScheme extends ThemeExtension<AppColorsScheme> {
       background: Color.lerp(background, other.background, t)!,
       surface: Color.lerp(surface, other.surface, t)!,
       surfaceLight: Color.lerp(surfaceLight, other.surfaceLight, t)!,
-      surfaceHighlight: Color.lerp(surfaceHighlight, other.surfaceHighlight, t)!,
+      surfaceHighlight:
+          Color.lerp(surfaceHighlight, other.surfaceHighlight, t)!,
       textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
       textMuted: Color.lerp(textMuted, other.textMuted, t)!,
       desktopSurface: Color.lerp(desktopSurface, other.desktopSurface, t)!,
-      desktopTextSecondary: Color.lerp(desktopTextSecondary, other.desktopTextSecondary, t)!,
-      desktopTextMuted: Color.lerp(desktopTextMuted, other.desktopTextMuted, t)!,
+      desktopTextSecondary:
+          Color.lerp(desktopTextSecondary, other.desktopTextSecondary, t)!,
+      desktopTextMuted:
+          Color.lerp(desktopTextMuted, other.desktopTextMuted, t)!,
     );
   }
 }

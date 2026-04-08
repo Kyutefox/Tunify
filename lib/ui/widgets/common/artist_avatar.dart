@@ -14,6 +14,7 @@ class ArtistAvatar extends StatefulWidget {
   final int index;
   final double size;
   final bool showInfo;
+
   /// When true, renders a compact version (no pulse animation, simpler info)
   /// suitable for home section rows. Replaces the old HomeArtistAvatar widget.
   final bool compact;
@@ -70,7 +71,9 @@ class _ArtistAvatarState extends State<ArtistAvatar>
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: widget.compact ? AppColorsScheme.of(context).textSecondary : AppColorsScheme.of(context).textPrimary,
+                  color: widget.compact
+                      ? AppColorsScheme.of(context).textSecondary
+                      : AppColorsScheme.of(context).textPrimary,
                   fontSize: widget.compact ? AppFontSize.xs : AppFontSize.md,
                   fontWeight: FontWeight.w500,
                 ),
@@ -82,7 +85,10 @@ class _ArtistAvatarState extends State<ArtistAvatar>
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     if (widget.artist.isVerified) ...[
-                      AppIcon(icon: AppIcons.verified, size: 12, color: AppColors.primary),
+                      AppIcon(
+                          icon: AppIcons.verified,
+                          size: 12,
+                          color: AppColors.primary),
                       const SizedBox(width: 4),
                     ],
                     Flexible(
@@ -115,7 +121,9 @@ class _ArtistAvatarState extends State<ArtistAvatar>
 
   Widget get _avatarFallback => Container(
         color: AppColorsScheme.of(context).surfaceHighlight,
-        child: AppIcon(icon: AppIcons.person, color: AppColorsScheme.of(context).textMuted),
+        child: AppIcon(
+            icon: AppIcons.person,
+            color: AppColorsScheme.of(context).textMuted),
       );
 
   Widget _buildAvatar() {
@@ -174,7 +182,9 @@ class _ArtistAvatarState extends State<ArtistAvatar>
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           gradient: widget.artist.isVerified ? AppColors.primaryGradient : null,
-          color: widget.artist.isVerified ? null : AppColorsScheme.of(context).surfaceHighlight,
+          color: widget.artist.isVerified
+              ? null
+              : AppColorsScheme.of(context).surfaceHighlight,
         ),
         padding: const EdgeInsets.all(2),
         child: Container(
@@ -220,7 +230,8 @@ class ArtistCard extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: AppColors.cardGradient,
           borderRadius: BorderRadius.circular(AppRadius.md),
-          border: Border.all(color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
+          border: Border.all(
+              color: AppColorsScheme.of(context).surfaceHighlight, width: 1),
         ),
         child: Row(
           children: [
@@ -231,12 +242,28 @@ class ArtistCard extends StatelessWidget {
                 height: 56,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: artist.isVerified ? AppColors.primaryGradient : null,
-                  color: artist.isVerified ? null : AppColorsScheme.of(context).surfaceHighlight,
+                  gradient:
+                      artist.isVerified ? AppColors.primaryGradient : null,
+                  color: artist.isVerified
+                      ? null
+                      : AppColorsScheme.of(context).surfaceHighlight,
                 ),
                 padding: const EdgeInsets.all(2),
                 child: ClipOval(
-                  child: CachedNetworkImage(imageUrl: artist.avatarUrl, fit: BoxFit.cover),
+                  child: CachedNetworkImage(
+                    imageUrl: artist.avatarUrl,
+                    fit: BoxFit.cover,
+                    errorWidget: (_, __, ___) => Container(
+                      color: AppColorsScheme.of(context).surfaceHighlight,
+                      child: Center(
+                        child: AppIcon(
+                          icon: AppIcons.person,
+                          color: AppColorsScheme.of(context).textMuted,
+                          size: 24,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -262,14 +289,19 @@ class ArtistCard extends StatelessWidget {
                       ),
                       if (artist.isVerified) ...[
                         const SizedBox(width: 6),
-                        AppIcon(icon: AppIcons.verified, size: 16, color: AppColors.primary),
+                        AppIcon(
+                            icon: AppIcons.verified,
+                            size: 16,
+                            color: AppColors.primary),
                       ],
                     ],
                   ),
                   const SizedBox(height: 4),
                   Text(
                     artist.listenersFormatted,
-                    style: TextStyle(color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.sm),
+                    style: TextStyle(
+                        color: AppColorsScheme.of(context).textMuted,
+                        fontSize: AppFontSize.sm),
                   ),
                   if (artist.latestRelease != null) ...[
                     const SizedBox(height: 4),

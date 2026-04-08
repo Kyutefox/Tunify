@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/features/library/library_provider.dart';
-import 'package:tunify/features/player/palette_provider.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/player/sleep_timer_provider.dart';
 import '../screens/shared/player/player_progress_bar.dart';
@@ -31,25 +30,12 @@ class DesktopPlayerBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hasSong = ref.watch(currentSongProvider) != null;
-    final dominantColor = ref.watch(dominantColorProvider);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeOutCubic,
       height: DesktopLayout.playerBarHeight,
-      decoration: BoxDecoration(
-        color: hasSong
-            ? Color.lerp(AppColorsScheme.of(context).background, dominantColor, 0.10)!
-            : AppColorsScheme.of(context).background,
-        border: Border(
-          top: BorderSide(
-            color: hasSong
-                ? dominantColor.withValues(alpha: 0.18)
-                : AppColors.glassBorder,
-            width: 0.5,
-          ),
-        ),
-      ),
+      decoration: const BoxDecoration(),
       padding: const EdgeInsets.symmetric(horizontal: DesktopSpacing.base),
       child: hasSong
           ? const Row(
@@ -83,30 +69,38 @@ class _SongInfo extends ConsumerWidget {
     final song = ref.watch(currentSongProvider);
     if (song == null) return const SizedBox.shrink();
 
-    final isLiked = ref.watch(
-        libraryProvider.select((s) => s.likedSongIds.contains(song.id)));
+    final isLiked = ref
+        .watch(libraryProvider.select((s) => s.likedSongIds.contains(song.id)));
 
     return Row(
       children: [
         // Album art
         ClipRRect(
           borderRadius: BorderRadius.circular(AppRadius.xs),
-          child: CachedNetworkImage(
-            imageUrl: song.thumbnailUrl,
+          child: SizedBox(
             width: DesktopLayout.playerArtSize,
             height: DesktopLayout.playerArtSize,
-            memCacheWidth: (DesktopLayout.playerArtSize * MediaQuery.devicePixelRatioOf(context)).round(),
-            memCacheHeight: (DesktopLayout.playerArtSize * MediaQuery.devicePixelRatioOf(context)).round(),
-            fit: BoxFit.cover,
-            errorWidget: (_, __, ___) => Container(
+            child: CachedNetworkImage(
+              imageUrl: song.thumbnailUrl,
               width: DesktopLayout.playerArtSize,
               height: DesktopLayout.playerArtSize,
-              color: AppColorsScheme.of(context).surfaceLight,
-              child: Center(
-                child: AppIcon(
-                  icon: AppIcons.musicNote,
-                  size: DesktopIconSize.md,
-                  color: AppColorsScheme.of(context).textMuted,
+              memCacheWidth: (DesktopLayout.playerArtSize *
+                      MediaQuery.devicePixelRatioOf(context))
+                  .round(),
+              memCacheHeight: (DesktopLayout.playerArtSize *
+                      MediaQuery.devicePixelRatioOf(context))
+                  .round(),
+              fit: BoxFit.cover,
+              errorWidget: (_, __, ___) => Container(
+                width: DesktopLayout.playerArtSize,
+                height: DesktopLayout.playerArtSize,
+                color: AppColorsScheme.of(context).surfaceLight,
+                child: Center(
+                  child: AppIcon(
+                    icon: AppIcons.musicNote,
+                    size: DesktopIconSize.md,
+                    color: AppColorsScheme.of(context).textMuted,
+                  ),
                 ),
               ),
             ),
@@ -153,8 +147,7 @@ class _SongInfo extends ConsumerWidget {
             size: DesktopIconSize.sm,
             emptyColor: AppColorsScheme.of(context).textSecondary,
           ),
-          onPressed: () =>
-              ref.read(libraryProvider.notifier).toggleLiked(song),
+          onPressed: () => ref.read(libraryProvider.notifier).toggleLiked(song),
           size: DesktopButtonSize.md,
           iconSize: DesktopIconSize.sm,
         ),
@@ -163,12 +156,15 @@ class _SongInfo extends ConsumerWidget {
         _BarIconBtn(
           isActive: false,
           activeIcon: AppIcon(
-              icon: AppIcons.moreHoriz, size: DesktopIconSize.sm, color: AppColors.primary),
+              icon: AppIcons.moreHoriz,
+              size: DesktopIconSize.sm,
+              color: AppColors.primary),
           inactiveIcon: AppIcon(
               icon: AppIcons.moreHoriz,
               size: DesktopIconSize.sm,
               color: AppColorsScheme.of(context).textSecondary),
-          onTap: (btnCtx) => showSongOptionsSheet(context, song: song, ref: ref, buttonContext: btnCtx),
+          onTap: (btnCtx) => showSongOptionsSheet(context,
+              song: song, ref: ref, buttonContext: btnCtx),
         ),
       ],
     );
@@ -285,10 +281,8 @@ class _RightControlsState extends ConsumerState<_RightControls> {
 
   @override
   Widget build(BuildContext context) {
-    final sleepActive =
-        ref.watch(sleepTimerProvider.select((s) => s.isActive));
+    final sleepActive = ref.watch(sleepTimerProvider.select((s) => s.isActive));
     final activeTab = ref.watch(rightSidebarTabProvider);
-    final dominantColor = ref.watch(dominantColorProvider);
 
     final volIcon = _volume == 0
         ? AppIcons.volumeOff
@@ -351,10 +345,14 @@ class _RightControlsState extends ConsumerState<_RightControls> {
           width: DesktopLayout.volumeSliderWidth,
           child: SliderTheme(
             data: SliderTheme.of(context).copyWith(
-              activeTrackColor: dominantColor,
-              inactiveTrackColor: dominantColor.withValues(alpha: 0.25),
-              thumbColor: dominantColor,
-              overlayColor: dominantColor.withValues(alpha: 0.15),
+              activeTrackColor: AppColorsScheme.of(context).textPrimary,
+              inactiveTrackColor: AppColorsScheme.of(context)
+                  .textPrimary
+                  .withValues(alpha: 0.25),
+              thumbColor: AppColorsScheme.of(context).textPrimary,
+              overlayColor: AppColorsScheme.of(context)
+                  .textPrimary
+                  .withValues(alpha: 0.15),
               trackHeight: 3,
               thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
               overlayShape: const RoundSliderOverlayShape(overlayRadius: 10),
@@ -428,7 +426,8 @@ class _PlayPauseBtn extends StatelessWidget {
                   height: 18,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(AppColorsScheme.of(context).background),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColorsScheme.of(context).background),
                   ),
                 )
               : SizedBox(
@@ -486,4 +485,3 @@ class _BarIconBtn extends StatelessWidget {
     );
   }
 }
-

@@ -1,135 +1,289 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
+import 'package:tunify/data/models/artist.dart';
+import 'package:tunify/data/models/playlist.dart';
+import 'package:tunify/data/models/song.dart';
+import 'package:tunify/features/home/home_state_provider.dart';
+import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
-import 'home_shared.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
+import 'package:tunify/ui/widgets/common/section_header.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
+import 'home_sections.dart';
+import 'home_shared.dart';
 
-class HomePageSkeleton extends StatelessWidget {
-  const HomePageSkeleton({super.key});
+/// Full-home loading scaffold matching [HomeContent] structure 1:1 (except mood,
+/// which is appended separately so [MoodSection] can own its loading state).
+class HomePageSkeleton extends ConsumerStatefulWidget {
+  const HomePageSkeleton({super.key, required this.onPlay});
+
+  final void Function(Song song) onPlay;
 
   @override
-  Widget build(BuildContext context) {
+  ConsumerState<HomePageSkeleton> createState() => _HomePageSkeletonState();
+}
+
+class _HomePageSkeletonState extends ConsumerState<HomePageSkeleton> {
+  late final PageController _quickPicksCtrl;
+  late final PageController _madeForYouCtrl;
+  late final PageController _artistsCtrl;
+  int _quickPicksPage = 0;
+  int _madeForYouPage = 0;
+  int _artistsPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _quickPicksCtrl = PageController();
+    _quickPicksCtrl.addListener(_onQuickPicksScroll);
+    _madeForYouCtrl = PageController();
+    _madeForYouCtrl.addListener(_onMadeForYouScroll);
+    _artistsCtrl = PageController();
+    _artistsCtrl.addListener(_onArtistsScroll);
+  }
+
+  void _onQuickPicksScroll() {
+    final p = _quickPicksCtrl.page?.round() ?? 0;
+    if (p != _quickPicksPage) setState(() => _quickPicksPage = p);
+  }
+
+  void _onMadeForYouScroll() {
+    final p = _madeForYouCtrl.page?.round() ?? 0;
+    if (p != _madeForYouPage) setState(() => _madeForYouPage = p);
+  }
+
+  void _onArtistsScroll() {
+    final p = _artistsCtrl.page?.round() ?? 0;
+    if (p != _artistsPage) setState(() => _artistsPage = p);
+  }
+
+  @override
+  void dispose() {
+    _quickPicksCtrl.removeListener(_onQuickPicksScroll);
+    _quickPicksCtrl.dispose();
+    _madeForYouCtrl.removeListener(_onMadeForYouScroll);
+    _madeForYouCtrl.dispose();
+    _artistsCtrl.removeListener(_onArtistsScroll);
+    _artistsCtrl.dispose();
+    super.dispose();
+  }
+
+  /// Same grid as [RecentlyPlayedSection] (not the horizontal [RecentlyPlayedRow]).
+  Widget _recentlyPlayedBlock() {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final layout = ContentLayout.of(
+      context,
+      ref,
+      itemWidth: isDesktop ? 240 : 320,
+      minCols: 1,
+      maxCols: isDesktop ? 3 : 1,
+    );
+    const gap = AppSpacing.sm;
+    const rows = 2;
+    final cols = isDesktop ? 3 : 1;
+    final itemCount = (rows * cols).clamp(0, _demoSongs.length);
+    final gridSongs = _demoSongs.take(itemCount).toList(growable: false);
+    final actualRows = (gridSongs.length / cols).ceil();
+    final tileH = isDesktop ? 72.0 : (cols > 2 ? 88.0 : 72.0);
+    final totalGap = gap * (cols - 1);
+    final tileW = ((layout.maxWidth - totalGap) / cols).floorToDouble();
+    final gridH = tileH * actualRows + gap * (actualRows - 1);
+
+    List<List<Song>> toRows(List<Song> items) {
+      final out = <List<Song>>[];
+      for (var i = 0; i < items.length; i += cols) {
+        out.add(items.sublist(i, (i + cols).clamp(0, items.length)));
+      }
+      return out;
+    }
+
+    Widget buildGrid(List<Song> items) {
+      final chunkedRows = toRows(items);
+      return SizedBox(
+        height: gridH,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var r = 0; r < actualRows; r++) ...[
+              if (r > 0) const SizedBox(height: gap),
+              Row(
+                children: [
+                  if (r < chunkedRows.length)
+                    for (var c = 0; c < chunkedRows[r].length; c++) ...[
+                      if (c > 0) const SizedBox(width: gap),
+                      SizedBox(
+                        width: tileW,
+                        height: tileH,
+                        child: QuickPickTile(
+                          song: chunkedRows[r][c],
+                          height: tileH,
+                          width: tileW,
+                          onTap: () => widget.onPlay(chunkedRows[r][c]),
+                        ),
+                      ),
+                    ],
+                ],
+              ),
+            ],
+          ],
+        ),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: AppSpacing.sm),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.base,
-            0,
-            AppSpacing.base,
-            AppSpacing.md,
-          ),
-          child: SkeletonBox(width: 140, height: 20, radius: AppRadius.sm),
-        ),
-        SizedBox(
-          height: 188,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-            itemCount: 5,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-            itemBuilder: (_, __) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SkeletonBox(
-                  width: 148,
-                  height: 148,
-                  radius: AppRadius.md,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                SkeletonBox(width: 100, height: 12, radius: AppRadius.xs),
-                const SizedBox(height: AppSpacing.xs),
-                SkeletonBox(width: 70, height: 10, radius: AppRadius.xs),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        const SectionSkeleton(
-          titleWidth: 120,
-          subtitleWidth: 156,
-          child: QuickPicksRowSkeleton(),
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.base,
-            0,
-            AppSpacing.base,
-            AppSpacing.md,
-          ),
-          child: SkeletonBox(width: 160, height: 20, radius: AppRadius.sm),
-        ),
-        SizedBox(
-          height: 188,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-            itemCount: 4,
-            separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-            itemBuilder: (_, __) => Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SkeletonBox(
-                  width: 148,
-                  height: 148,
-                  radius: AppRadius.md,
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                SkeletonBox(width: 110, height: 12, radius: AppRadius.xs),
-                const SizedBox(height: AppSpacing.xs),
-                SkeletonBox(width: 80, height: 10, radius: AppRadius.xs),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: AppSpacing.xxl),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.base,
-            0,
-            AppSpacing.base,
-            AppSpacing.md,
-          ),
-          child: SkeletonBox(width: 130, height: 20, radius: AppRadius.sm),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-          child: Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: List.generate(
-              6,
-              (_) => SkeletonBox(
-                width: 100,
-                height: 100,
-                radius: AppRadius.md,
+        SectionHeader(
+          title: 'Recently Played',
+          useCompactStyle: true,
+          trailing: GestureDetector(
+            onTap: () {},
+            child: Text(
+              'See all',
+              style: TextStyle(
+                color: AppColorsScheme.of(context).textPrimary,
+                fontSize: AppFontSize.sm,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ),
         ),
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: layout.hPad),
+          child: buildGrid(gridSongs),
+        ),
+        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
       ],
-    ).animate(onPlay: (c) => c.repeat()).shimmer(
-          duration: const Duration(milliseconds: 1400),
-          color: AppColorsScheme.of(context).surfaceHighlight,
-        );
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
+    final isLoading = ref.watch(homeIsLoadingProvider);
+    final dynamicSections = ref.watch(homeDynamicSectionsProvider);
+    final showDynamicPlaceholder = isLoading && dynamicSections.isEmpty;
+
+    final qpLayout =
+        ContentLayout.of(context, ref, itemWidth: 240, minCols: 1, maxCols: 3);
+    const maxRows = 4;
+    final qpPageSize = qpLayout.cols * maxRows;
+    const qpCount = 12;
+    final qpTotalPages = (qpCount / qpPageSize).ceil();
+    final qpHasOverflow = qpTotalPages > 1;
+
+    final libLayout = ContentLayout.of(context, ref);
+    final mfTotalPages = (_demoPlaylists.length / libLayout.cols).ceil();
+    final mfHasOverflow = mfTotalPages > 1;
+    final arTotalPages = (_demoArtists.length / libLayout.cols).ceil();
+    final arHasOverflow = arTotalPages > 1;
+
+    return Skeletonizer(
+      enabled: true,
+      child: IgnorePointer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _recentlyPlayedBlock(),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SectionHeader(
+                  title: 'Quick Picks',
+                  subtitle: 'Based on your taste',
+                  subtitleFirst: true,
+                  useCompactStyle: true,
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (qpHasOverflow) ...[
+                        HomeSectionNavButtonPair(
+                          pageCtrl: _quickPicksCtrl,
+                          currentPage: _quickPicksPage,
+                          totalPages: qpTotalPages,
+                        ),
+                        const SizedBox(width: AppSpacing.sm),
+                      ],
+                      PlayCircleButton(onTap: () {}),
+                    ],
+                  ),
+                ),
+                QuickPicksRow(
+                  songs: _demoSongs.take(qpCount).toList(growable: false),
+                  onPlay: widget.onPlay,
+                  pageController: _quickPicksCtrl,
+                ),
+                SizedBox(
+                    height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+              ],
+            ),
+            if (showDynamicPlaceholder) ...[
+              const DynamicSectionsSkeleton(),
+              SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+            ],
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SectionHeader(
+                  title: 'Made For You',
+                  useCompactStyle: true,
+                  trailing: mfHasOverflow
+                      ? HomeSectionNavButtonPair(
+                          pageCtrl: _madeForYouCtrl,
+                          currentPage: _madeForYouPage,
+                          totalPages: mfTotalPages,
+                        )
+                      : null,
+                ),
+                PlaylistsRow(
+                  playlists: _demoPlaylists,
+                  pageController: _madeForYouCtrl,
+                ),
+                SizedBox(
+                    height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SectionHeader(
+                  title: 'Popular Artists',
+                  useCompactStyle: true,
+                  trailing: arHasOverflow
+                      ? HomeSectionNavButtonPair(
+                          pageCtrl: _artistsCtrl,
+                          currentPage: _artistsPage,
+                          totalPages: arTotalPages,
+                        )
+                      : null,
+                ),
+                ArtistsRow(
+                  artists: _demoArtists,
+                  pageController: _artistsCtrl,
+                ),
+                SizedBox(
+                    height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
 class SectionSkeleton extends StatelessWidget {
   const SectionSkeleton({
     super.key,
-    required this.titleWidth,
+    required this.title,
     required this.child,
-    this.subtitleWidth,
+    this.subtitle,
   });
 
-  final double titleWidth;
-  final double? subtitleWidth;
+  final String title;
+  final String? subtitle;
   final Widget child;
 
   @override
@@ -151,17 +305,18 @@ class SectionSkeleton extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SkeletonBox(
-                      width: titleWidth,
-                      height: 20,
-                      radius: AppRadius.sm,
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: AppFontSize.xl,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                    if (subtitleWidth != null) ...[
+                    if (subtitle != null) ...[
                       const SizedBox(height: 4),
-                      SkeletonBox(
-                        width: subtitleWidth!,
-                        height: 11,
-                        radius: AppRadius.xs,
+                      Text(
+                        subtitle!,
+                        style: const TextStyle(fontSize: AppFontSize.sm),
                       ),
                     ],
                   ],
@@ -194,10 +349,10 @@ class SectionAsyncSwap extends StatelessWidget {
   Widget build(BuildContext context) {
     if (hasData) return loadedChild;
     if (isLoading) {
-      return loadingChild.animate(onPlay: (c) => c.repeat()).shimmer(
-            duration: const Duration(milliseconds: 1400),
-            color: AppColorsScheme.of(context).surfaceHighlight,
-          );
+      return Skeletonizer(
+        enabled: true,
+        child: IgnorePointer(child: loadingChild),
+      );
     }
     return const SizedBox.shrink();
   }
@@ -206,36 +361,9 @@ class SectionAsyncSwap extends StatelessWidget {
 class QuickPicksRowSkeleton extends StatelessWidget {
   const QuickPicksRowSkeleton({super.key});
 
-  static const int _columns = 3;
-  static const int _perColumn = 4;
-  static const double _tileH = 64;
-  static const double _gap = AppSpacing.sm;
-  static const double _listH = _tileH * _perColumn + _gap * (_perColumn - 1);
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: _listH,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-        itemCount: _columns,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (_, __) => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: List.generate(
-            _perColumn,
-            (rowIdx) => Padding(
-              padding: EdgeInsets.only(
-                bottom: rowIdx < _perColumn - 1 ? _gap : 0,
-              ),
-              child: QuickPickTileSkeleton(height: _tileH),
-            ),
-          ),
-        ),
-      ),
-    );
+    return QuickPicksRow(songs: _demoSongs.take(12).toList(), onPlay: (_) {});
   }
 }
 
@@ -245,68 +373,16 @@ class QuickPickTileSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 220,
-      height: height,
-      decoration: BoxDecoration(
-        color: AppColorsScheme.of(context).surfaceLight,
-        borderRadius: BorderRadius.circular(AppRadius.md),
-      ),
-      child: Row(
-        children: [
-          SkeletonBox(width: height, height: height, radius: AppRadius.md),
-          const SizedBox(width: AppSpacing.md),
-          const Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SkeletonBox(width: 120, height: 12, radius: AppRadius.xs),
-                SizedBox(height: 4),
-                SkeletonBox(width: 82, height: 10, radius: AppRadius.xs),
-              ],
-            ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
-        ],
-      ),
-    );
+    return const SizedBox.shrink();
   }
 }
 
 class PlaylistsRowSkeleton extends StatelessWidget {
   const PlaylistsRowSkeleton({super.key});
 
-  static const double _cardW = 148;
-  static const double _cardH = 148;
-  static const double _rowH = 196;
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: _rowH,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-        itemCount: 4,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
-        itemBuilder: (_, __) => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SkeletonBox(
-              width: _cardW,
-              height: _cardH,
-              radius: AppRadius.md,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            SkeletonBox(width: 100, height: 12, radius: AppRadius.xs),
-            const SizedBox(height: AppSpacing.xs),
-            SkeletonBox(width: 70, height: 10, radius: AppRadius.xs),
-          ],
-        ),
-      ),
-    );
+    return PlaylistsRow(playlists: _demoPlaylists);
   }
 }
 
@@ -315,62 +391,16 @@ class MoodGridSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        crossAxisSpacing: AppSpacing.md,
-        mainAxisSpacing: AppSpacing.md,
-        childAspectRatio: 3.0,
-        children: List.generate(
-          6,
-          (_) => LayoutBuilder(
-            builder: (_, c) => SkeletonBox(
-              width: c.maxWidth,
-              height: c.maxHeight,
-              radius: AppRadius.md,
-            ),
-          ),
-        ),
-      ),
-    );
+    return const SizedBox.shrink();
   }
 }
 
 class ArtistsRowSkeleton extends StatelessWidget {
   const ArtistsRowSkeleton({super.key});
 
-  static const double _avatarSize = 72;
-  static const double _rowH = 108;
-
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: _rowH,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        physics: const NeverScrollableScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
-        itemCount: 5,
-        separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.xl),
-        itemBuilder: (_, __) => SizedBox(
-          width: _avatarSize,
-          child: Column(
-            children: [
-              SkeletonBox(
-                width: _avatarSize,
-                height: _avatarSize,
-                radius: _avatarSize / 2,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              SkeletonBox(width: 50, height: 10, radius: AppRadius.xs),
-            ],
-          ),
-        ),
-      ),
-    );
+    return ArtistsRow(artists: _demoArtists);
   }
 }
 
@@ -379,23 +409,51 @@ class DynamicSectionsSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = ShellContext.isDesktopOf(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionSkeleton(
-          titleWidth: 140,
-          subtitleWidth: 100,
-          child: QuickPicksRowSkeleton(),
+        SectionHeader(
+          title: 'Related songs',
+          subtitle: 'Recommended',
+          subtitleFirst: true,
+          useCompactStyle: true,
         ),
-        const SizedBox(height: AppSpacing.xxl),
-        const SectionSkeleton(
-          titleWidth: 120,
-          child: PlaylistsRowSkeleton(),
+        const QuickPicksRowSkeleton(),
+        SizedBox(height: isDesktop ? DesktopSpacing.xxl : AppSpacing.xxl),
+        const SectionHeader(
+          title: 'You may like',
+          useCompactStyle: true,
         ),
+        const PlaylistsRowSkeleton(),
       ],
-    ).animate(onPlay: (c) => c.repeat()).shimmer(
-          duration: const Duration(milliseconds: 1400),
-          color: AppColorsScheme.of(context).surfaceHighlight,
-        );
+    );
   }
 }
+
+final _demoSongs = List.generate(
+  16,
+  (i) => Song(
+    id: 'skeleton-song-$i',
+    title: 'Loading song title $i',
+    artist: 'Loading artist',
+    thumbnailUrl: '',
+    duration: const Duration(minutes: 3, seconds: 24),
+  ),
+);
+
+final _demoPlaylists = List.generate(
+  6,
+  (i) => Playlist(
+    id: 'skeleton-playlist-$i',
+    title: 'Loading playlist $i',
+    description: 'Loading',
+    coverUrl: '',
+    trackCount: 24,
+  ),
+);
+
+final _demoArtists = List.generate(
+  6,
+  (i) => Artist(id: 'skeleton-artist-$i', name: 'Artist $i', avatarUrl: ''),
+);

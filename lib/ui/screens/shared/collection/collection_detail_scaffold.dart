@@ -52,11 +52,13 @@ class CollectionDetailScaffold extends StatefulWidget {
 
 class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
   ScrollController? _internalScrollController;
-  ScrollController get _scrollController => widget.scrollController ?? _internalScrollController!;
+  ScrollController get _scrollController =>
+      widget.scrollController ?? _internalScrollController!;
   final ValueNotifier<double> _appBarOpacity = ValueNotifier(0.0);
   final GlobalKey _actionRowKey = GlobalKey();
   final GlobalKey _titleKey = GlobalKey();
-  final GlobalKey _stackKey = GlobalKey();  // anchor for local coordinate conversion
+  final GlobalKey _stackKey =
+      GlobalKey(); // anchor for local coordinate conversion
 
   // Scroll offset at which the page title is exactly at the AppBar bottom.
   // Computed once after first layout; falls back to a safe default until then.
@@ -78,7 +80,8 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     }
     if (_useNewLayout) {
       _scrollController.addListener(_onScroll);
-      WidgetsBinding.instance.addPostFrameCallback((_) => _measureTitleOffset());
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _measureTitleOffset());
     }
   }
 
@@ -95,7 +98,8 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     final isDesktop = ShellContext.isDesktopOf(context);
     final topPadding = isDesktop ? 0.0 : MediaQuery.of(context).padding.top;
     final appBarBottom = kToolbarHeight + topPadding;
-    _titleHideOffset = stackBox != null ? origin - appBarBottom : origin - appBarBottom;
+    _titleHideOffset =
+        stackBox != null ? origin - appBarBottom : origin - appBarBottom;
     _titleOffsetMeasured = true;
     _onScroll();
   }
@@ -123,16 +127,20 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
     final appBarHeight = kToolbarHeight + topPadding;
     final hasPalette = widget.paletteColor != null;
     final hasPlayButton = widget.playButton != null && _useNewLayout;
+    final pageBackground = isDesktop
+        ? AppColors.backgroundSecondary
+        : AppColorsScheme.of(context).background;
 
     final pinnedBg = hasPalette
-        ? PaletteTheme.appBarBackground(widget.paletteColor!, background: AppColorsScheme.of(context).background)
-        : AppColorsScheme.of(context).background;
+        ? PaletteTheme.appBarBackground(widget.paletteColor!,
+            background: pageBackground)
+        : pageBackground;
 
     return Stack(
       key: _stackKey,
       children: [
         Scaffold(
-          backgroundColor: AppColorsScheme.of(context).background,
+          backgroundColor: pageBackground,
           extendBodyBehindAppBar: hasPalette,
           appBar: _useNewLayout
               ? PreferredSize(
@@ -165,7 +173,8 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                             ? Text(
                                 widget.title!,
                                 style: TextStyle(
-                                  color: AppColorsScheme.of(context).textPrimary,
+                                  color:
+                                      AppColorsScheme.of(context).textPrimary,
                                   fontSize: AppFontSize.xxl,
                                   fontWeight: FontWeight.w700,
                                 ),
@@ -204,7 +213,8 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                   ? _buildSlivers(appBarHeight, hasPalette)
                   : [
                       if (hasPalette)
-                        SliverToBoxAdapter(child: SizedBox(height: appBarHeight)),
+                        SliverToBoxAdapter(
+                            child: SizedBox(height: appBarHeight)),
                       if (widget.headerSliver != null) widget.headerSliver!,
                       ...widget.bodySlivers,
                     ],
@@ -250,22 +260,25 @@ class _CollectionDetailScaffoldState extends State<CollectionDetailScaffold> {
                   top: -appBarHeight,
                   left: 0,
                   right: 0,
-                  height: appBarHeight + PaletteTheme.headerGradientContentHeight,
+                  height:
+                      appBarHeight + PaletteTheme.headerGradientContentHeight,
                   child: DecoratedBox(
                     decoration: BoxDecoration(
-                      gradient: PaletteTheme.headerGradient(widget.paletteColor!),
+                      gradient:
+                          PaletteTheme.headerGradient(widget.paletteColor!),
                     ),
                   ),
                 ),
-                _TitleKeyInjector(titleKey: _titleKey, child: widget.headerExpandedChild!),
+                _TitleKeyInjector(
+                    titleKey: _titleKey, child: widget.headerExpandedChild!),
               ],
             )
-          : _TitleKeyInjector(titleKey: _titleKey, child: widget.headerExpandedChild!),
+          : _TitleKeyInjector(
+              titleKey: _titleKey, child: widget.headerExpandedChild!),
     );
 
     return [
-      if (hasPalette)
-        SliverToBoxAdapter(child: SizedBox(height: appBarHeight)),
+      if (hasPalette) SliverToBoxAdapter(child: SizedBox(height: appBarHeight)),
       headerSliver,
       SliverToBoxAdapter(
         child: SizedBox(
@@ -335,11 +348,14 @@ class _DockingPlayButtonState extends State<_DockingPlayButton> {
     if (ctx == null) return;
     final box = ctx.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
-    final stackBox = widget.stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final stackBox =
+        widget.stackKey.currentContext?.findRenderObject() as RenderBox?;
     final screenTop = stackBox != null
         ? box.localToGlobal(Offset.zero, ancestor: stackBox).dy
         : box.localToGlobal(Offset.zero).dy;
-    final scroll = widget.scrollController.hasClients ? widget.scrollController.offset : 0.0;
+    final scroll = widget.scrollController.hasClients
+        ? widget.scrollController.offset
+        : 0.0;
     _contentCenterY = screenTop + scroll + box.size.height / 2;
     _updatePosition(scroll);
   }
@@ -419,11 +435,14 @@ class _DockingActionRowState extends State<_DockingActionRow> {
     if (ctx == null) return;
     final box = ctx.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return;
-    final stackBox = widget.stackKey.currentContext?.findRenderObject() as RenderBox?;
+    final stackBox =
+        widget.stackKey.currentContext?.findRenderObject() as RenderBox?;
     final screenTop = stackBox != null
         ? box.localToGlobal(Offset.zero, ancestor: stackBox).dy
         : box.localToGlobal(Offset.zero).dy;
-    final scroll = widget.scrollController.hasClients ? widget.scrollController.offset : 0.0;
+    final scroll = widget.scrollController.hasClients
+        ? widget.scrollController.offset
+        : 0.0;
     _contentTopY = screenTop + scroll;
     _updatePosition(scroll);
   }
@@ -456,7 +475,8 @@ class _DockingActionRowState extends State<_DockingActionRow> {
         // Not yet measured — render at estimated position
         if (top == -1.0) return const SizedBox.shrink();
         // Fully scrolled behind appbar — hide
-        if (top + widget.height <= widget.appBarHeight) return const SizedBox.shrink();
+        if (top + widget.height <= widget.appBarHeight)
+          return const SizedBox.shrink();
         return Positioned(
           top: top,
           left: 0,
@@ -482,7 +502,8 @@ class _TopClipper extends CustomClipper<Rect> {
   final double clipTop;
 
   @override
-  Rect getClip(Size size) => Rect.fromLTWH(0, clipTop, size.width, size.height - clipTop);
+  Rect getClip(Size size) =>
+      Rect.fromLTWH(0, clipTop, size.width, size.height - clipTop);
 
   @override
   bool shouldReclip(_TopClipper old) => old.clipTop != clipTop;
@@ -509,7 +530,6 @@ class _TitleKeyInjector extends StatelessWidget {
     return child;
   }
 }
-
 
 class CollectionDetailExpandedContent extends StatelessWidget {
   const CollectionDetailExpandedContent({
@@ -543,8 +563,9 @@ class CollectionDetailExpandedContent extends StatelessWidget {
             title,
             style: TextStyle(
               color: AppColorsScheme.of(context).textPrimary,
-              fontSize: t.font.h2,
-              fontWeight: FontWeight.w800,
+              fontSize: t.isDesktop ? t.font.display3 : t.font.h1,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.4,
             ),
           ),
           if (subtitle != null) ...[
@@ -579,23 +600,23 @@ class CollectionTrackListHeader extends StatelessWidget {
           const SizedBox(width: 40),
           Expanded(
             child: Text(
-              'Title',
+              'TITLE',
               style: TextStyle(
                 color: AppColorsScheme.of(context).textMuted,
-                fontSize: t.font.sm,
+                fontSize: t.font.xs,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+                letterSpacing: 0.9,
               ),
             ),
           ),
           if (showDurationColumn)
             Text(
-              'Duration',
+              'DURATION',
               style: TextStyle(
                 color: AppColorsScheme.of(context).textMuted,
-                fontSize: t.font.sm,
+                fontSize: t.font.xs,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
+                letterSpacing: 0.9,
               ),
             ),
           const SizedBox(width: 40),

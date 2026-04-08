@@ -7,6 +7,7 @@ import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/data/repositories/database_repository.dart';
+import 'package:tunify/features/podcast/podcast_provider.dart';
 import 'package:tunify_logger/tunify_logger.dart';
 import 'package:tunify/core/utils/result.dart';
 
@@ -115,25 +116,17 @@ class LibraryState {
       return true;
     }).toList();
 
+    // Keep pinned order as-is (pin append order), sort only unpinned.
+    final pinned = list.where((p) => p.isPinned).toList();
+    final unpinned = list.where((p) => !p.isPinned).toList();
     switch (sortOrder) {
       case LibrarySortOrder.recent:
-        list.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        unpinned.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
       case LibrarySortOrder.recentlyAdded:
-        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        unpinned.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       case LibrarySortOrder.alphabetical:
-        list.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
-    }
-
-    // PERF: Single-pass partition (replaces two .where() traversals for
-    // pinned/unpinned split that each iterated the sorted list again).
-    final pinned = <LibraryPlaylist>[];
-    final unpinned = <LibraryPlaylist>[];
-    for (final p in list) {
-      if (p.isPinned) {
-        pinned.add(p);
-      } else {
-        unpinned.add(p);
-      }
+        unpinned
+            .sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     }
     return [...pinned, ...unpinned];
   }
@@ -280,13 +273,61 @@ class LibraryNotifier extends Notifier<LibraryState> {
   // ── Playlists ────────────────────────────────────────────────────────────────
 
   Future<void> togglePlaylistPin(String playlistId) async {
-    final newVal = !state.playlists
-        .firstWhere((p) => p.id == playlistId)
-        .isPinned;
-    state = state.copyWith(playlists: state.playlists.map((p) =>
-        p.id == playlistId ? p.copyWith(isPinned: newVal) : p).toList());
-    await _repo.updatePlaylistMeta(playlistId,
-        isPinned: newVal, touchUpdatedAt: false);
+    final playlistIdx = state.playlists.indexWhere((p) => p.id == playlistId);
+    if (playlistIdx >= 0) {
+      final current = state.playlists[playlistIdx];
+      final newVal = !current.isPinned;
+      final updated = current.copyWith(isPinned: newVal);
+      final list = List<LibraryPlaylist>.from(state.playlists)
+        ..removeAt(playlistIdx);
+      if (newVal) {
+        final insertAt = list.where((p) => p.isPinned).length;
+        list.insert(insertAt, updated);
+      } else {
+        list.insert(0, updated);
+      }
+      state = state.copyWith(playlists: list);
+      await _repo.updatePlaylistMeta(playlistId,
+          isPinned: newVal, touchUpdatedAt: false);
+      return;
+    }
+
+    final albumIdx = state.followedAlbums
+        .indexWhere((a) => a.id == playlistId || a.browseId == playlistId);
+    if (albumIdx >= 0) {
+      await toggleAlbumPin(state.followedAlbums[albumIdx]);
+      return;
+    }
+
+    final artistIdx = state.followedArtists
+        .indexWhere((a) => a.id == playlistId || a.browseId == playlistId);
+    if (artistIdx >= 0) {
+      await toggleArtistPin(state.followedArtists[artistIdx]);
+      return;
+    }
+
+    final podcasts = ref.read(podcastProvider).subscriptions;
+    final podcastIdx = podcasts
+        .indexWhere((p) => p.id == playlistId || p.browseId == playlistId);
+    if (podcastIdx >= 0) {
+      await ref
+          .read(podcastProvider.notifier)
+          .togglePodcastPin(podcasts[podcastIdx].id);
+      return;
+    }
+
+    final audiobooks = ref.read(podcastProvider).savedAudiobooks;
+    final audiobookIdx = audiobooks
+        .indexWhere((a) => a.id == playlistId || a.browseId == playlistId);
+    if (audiobookIdx >= 0) {
+      await ref
+          .read(podcastProvider.notifier)
+          .toggleAudiobookPin(audiobooks[audiobookIdx].id);
+      return;
+    }
+
+    logWarning('Library: togglePlaylistPin ignored unknown id=$playlistId',
+        tag: 'Library');
   }
 
   Future<void> createPlaylist(String name) async {
@@ -304,10 +345,19 @@ class LibraryNotifier extends Notifier<LibraryState> {
   Future<void> addPlaylistToLibrary(LibraryPlaylist playlist) async {
     if (state.playlists.any((p) => p.id == playlist.id)) return;
     final minimal = LibraryPlaylist(
-      id: playlist.id, name: playlist.name, description: playlist.description,
-      createdAt: DateTime.now(), updatedAt: DateTime.now(), songs: const [],
+      id: playlist.id,
+      name: playlist.name,
+      description: playlist.description,
+      curatorName: playlist.curatorName,
+      curatorThumbnailUrl: playlist.curatorThumbnailUrl,
+      headerSubtitle: playlist.headerSubtitle,
+      headerSecondSubtitle: playlist.headerSecondSubtitle,
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+      songs: const [],
       customImageUrl: playlist.customImageUrl,
-      isImported: true, browseId: playlist.browseId ?? playlist.id,
+      isImported: true,
+      browseId: playlist.browseId ?? playlist.id,
       remoteTrackCount: playlist.songs.isNotEmpty
           ? playlist.songs.length
           : playlist.remoteTrackCount,
@@ -327,6 +377,10 @@ class LibraryNotifier extends Notifier<LibraryState> {
       id: newId,
       name: playlist.name,
       description: playlist.description,
+      curatorName: playlist.curatorName,
+      curatorThumbnailUrl: playlist.curatorThumbnailUrl,
+      headerSubtitle: playlist.headerSubtitle,
+      headerSecondSubtitle: playlist.headerSecondSubtitle,
       createdAt: now,
       updatedAt: now,
       songs: List<Song>.from(playlist.songs),
@@ -503,7 +557,15 @@ class LibraryNotifier extends Notifier<LibraryState> {
     final idx = list.indexWhere((a) => a.id == artist.id);
     if (idx >= 0) {
       list.removeAt(idx);
-      state = state.copyWith(followedArtists: list);
+      state = state.copyWith(
+        followedArtists: list,
+        folders: state.folders
+            .map((f) => f.copyWith(
+                playlistIds: f.playlistIds
+                    .where((pid) => pid != artist.id)
+                    .toList()))
+            .toList(),
+      );
       await _repo.unfollowArtist(artist.id);
     } else {
       list.add(artist);
@@ -517,13 +579,59 @@ class LibraryNotifier extends Notifier<LibraryState> {
     final idx = list.indexWhere((a) => a.id == album.id);
     if (idx >= 0) {
       list.removeAt(idx);
-      state = state.copyWith(followedAlbums: list);
+      state = state.copyWith(
+        followedAlbums: list,
+        folders: state.folders
+            .map((f) => f.copyWith(
+                playlistIds:
+                    f.playlistIds.where((pid) => pid != album.id).toList()))
+            .toList(),
+      );
       await _repo.unfollowAlbum(album.id);
     } else {
       list.add(album);
       state = state.copyWith(followedAlbums: list);
       await _repo.followAlbum(album);
     }
+  }
+
+  Future<void> toggleAlbumPin(LibraryAlbum album) async {
+    final next = !album.isPinned;
+    final idx = state.followedAlbums.indexWhere((a) => a.id == album.id);
+    if (idx < 0) return;
+    final current = state.followedAlbums[idx];
+    final updated = current.copyWith(isPinned: next);
+    final list = List<LibraryAlbum>.from(state.followedAlbums)..removeAt(idx);
+    if (next) {
+      final insertAt = list.where((a) => a.isPinned).length;
+      list.insert(insertAt, updated);
+    } else {
+      list.insert(0, updated);
+    }
+    state = state.copyWith(
+      followedAlbums: list,
+    );
+    await _repo.updatePlaylistMeta(album.id, isPinned: next);
+  }
+
+  Future<void> toggleArtistPin(LibraryArtist artist) async {
+    final next = !artist.isPinned;
+    final idx = state.followedArtists.indexWhere((a) => a.id == artist.id);
+    if (idx < 0) return;
+    final current = state.followedArtists[idx];
+    final updated = current.copyWith(isPinned: next);
+    final list = List<LibraryArtist>.from(state.followedArtists)
+      ..removeAt(idx);
+    if (next) {
+      final insertAt = list.where((a) => a.isPinned).length;
+      list.insert(insertAt, updated);
+    } else {
+      list.insert(0, updated);
+    }
+    state = state.copyWith(
+      followedArtists: list,
+    );
+    await _repo.updatePlaylistMeta(artist.id, isPinned: next);
   }
 
   Future<void> saveAlbumPaletteColor(String albumId, int colorValue) async {

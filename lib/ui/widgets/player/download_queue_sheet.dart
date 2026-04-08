@@ -2,7 +2,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/ui/widgets/common/sheet.dart' show showAppDraggableSheet, kSheetHorizontalPadding;
+import 'package:tunify/ui/widgets/common/sheet.dart'
+    show showAppDraggableSheet, kSheetHorizontalPadding;
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/downloads/download_service.dart';
@@ -98,9 +99,8 @@ class DownloadQueueSheet extends ConsumerWidget {
                         onCancel: () => ref
                             .read(downloadServiceProvider)
                             .cancelDownload(e.song.id),
-                        onRetry: () => ref
-                            .read(downloadServiceProvider)
-                            .enqueue(e.song),
+                        onRetry: () =>
+                            ref.read(downloadServiceProvider).enqueue(e.song),
                       ))
                   .toList(),
             ),
@@ -118,7 +118,8 @@ String formatDownloadBytes(int bytes) {
 
 String formatSpeed(double bytesPerSecond) {
   if (bytesPerSecond < 1024) return '${bytesPerSecond.round()} B/s';
-  if (bytesPerSecond < 1024 * 1024) return '${(bytesPerSecond / 1024).toStringAsFixed(1)} KB/s';
+  if (bytesPerSecond < 1024 * 1024)
+    return '${(bytesPerSecond / 1024).toStringAsFixed(1)} KB/s';
   return '${(bytesPerSecond / (1024 * 1024)).toStringAsFixed(1)} MB/s';
 }
 
@@ -158,7 +159,8 @@ class DownloadQueueTile extends StatelessWidget {
 
     final expected = entry.expectedBytes ?? 0;
     final downloaded = entry.downloadedBytes ?? 0;
-    final hasProgress = entry.status == DownloadStatus.downloading && (expected > 0 || downloaded > 0);
+    final hasProgress = entry.status == DownloadStatus.downloading &&
+        (expected > 0 || downloaded > 0);
     final total = expected > 0 ? expected : 1;
     final progress = (downloaded / total).clamp(0.0, 1.0);
     final percent = (progress * 100).round();
@@ -179,7 +181,16 @@ class DownloadQueueTile extends StatelessWidget {
               imageUrl: entry.song.thumbnailUrl,
               fit: BoxFit.cover,
               placeholder: (_, __) => const SizedBox.shrink(),
-              errorWidget: (_, __, ___) => const SizedBox.shrink(),
+              errorWidget: (_, __, ___) => Container(
+                color: AppColorsScheme.of(context).surfaceLight,
+                child: Center(
+                  child: AppIcon(
+                    icon: AppIcons.musicNote,
+                    color: AppColorsScheme.of(context).textMuted,
+                    size: 16,
+                  ),
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 12),

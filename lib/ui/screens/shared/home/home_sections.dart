@@ -15,6 +15,7 @@ import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/shell/shell_context.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
+import 'package:tunify/ui/theme/desktop_tokens.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/screens/shared/player/song_options_sheet.dart';
 import 'home_shared.dart';
@@ -51,12 +52,15 @@ class RecentlyPlayedRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hList = ShellContext.isDesktopOf(context)
+        ? DesktopSpacing.lg
+        : AppSpacing.base;
     return SizedBox(
       height: 188,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.base),
+        padding: EdgeInsets.symmetric(horizontal: hList),
         itemCount: songs.take(8).length,
         separatorBuilder: (_, __) => const SizedBox(width: AppSpacing.md),
         itemBuilder: (ctx, i) =>
@@ -77,51 +81,52 @@ class SquareSongCard extends ConsumerWidget {
 
     return RepaintBoundary(
       child: PressScale(
-      onTap: onTap,
-      scale: 0.93,
-      child: SizedBox(
-        width: 148,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            DpiAwareThumbnail(
-              url: song.thumbnailUrl,
-              size: 148,
-              radius: AppRadius.md,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                if (status.isNowPlaying)
-                  InlineNowPlayingDot(animate: status.isPlaying),
-                Expanded(
-                  child: Text(
-                    song.title,
-                    style: TextStyle(
-                      color: status.isNowPlaying
-                          ? AppColors.accent
-                          : AppColorsScheme.of(context).textPrimary,
-                      fontSize: AppFontSize.md,
-                      fontWeight: FontWeight.w600,
+        onTap: onTap,
+        scale: 0.93,
+        child: SizedBox(
+          width: 148,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              DpiAwareThumbnail(
+                url: song.thumbnailUrl,
+                size: 148,
+                radius: AppRadius.md,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (status.isNowPlaying)
+                    InlineNowPlayingDot(animate: status.isPlaying),
+                  Expanded(
+                    child: Text(
+                      song.title,
+                      style: TextStyle(
+                        color: status.isNowPlaying
+                            ? AppColors.accent
+                            : AppColorsScheme.of(context).textPrimary,
+                        fontSize: AppFontSize.md,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
-            ),
-            Text(
-              song.artist,
-              style: TextStyle(
-                  color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.xs),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+                ],
+              ),
+              Text(
+                song.artist,
+                style: TextStyle(
+                    color: AppColorsScheme.of(context).textMuted,
+                    fontSize: AppFontSize.xs),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 }
@@ -282,16 +287,22 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
     final thumb = ClipRRect(
       borderRadius: BorderRadius.circular(AppRadius.sm),
       clipBehavior: Clip.hardEdge,
-      child: CachedNetworkImage(
-        imageUrl: widget.song.thumbnailUrl,
+      child: SizedBox(
         width: thumbSize,
         height: thumbSize,
-        fit: BoxFit.cover,
-        fadeInDuration: Duration.zero,
-        fadeOutDuration: Duration.zero,
-        memCacheWidth: cachePx(context, thumbSize),
-        memCacheHeight: cachePx(context, thumbSize),
-        errorWidget: (_, __, ___) => PlaceholderArt(size: thumbSize),
+        child: widget.song.thumbnailUrl.isNotEmpty
+            ? CachedNetworkImage(
+                imageUrl: widget.song.thumbnailUrl,
+                width: thumbSize,
+                height: thumbSize,
+                fit: BoxFit.cover,
+                fadeInDuration: Duration.zero,
+                fadeOutDuration: Duration.zero,
+                memCacheWidth: cachePx(context, thumbSize),
+                memCacheHeight: cachePx(context, thumbSize),
+                errorWidget: (_, __, ___) => PlaceholderArt(size: thumbSize),
+              )
+            : PlaceholderArt(size: thumbSize),
       ),
     );
 
@@ -325,7 +336,8 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
           Text(
             widget.song.artist,
             style: TextStyle(
-                color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.xs),
+                color: AppColorsScheme.of(context).textMuted,
+                fontSize: AppFontSize.xs),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -338,12 +350,13 @@ class _QuickPickTileState extends ConsumerState<QuickPickTile> {
       width: widget.width,
       height: widget.height,
       decoration: BoxDecoration(
-        color: _hovered ? AppColorsScheme.of(context).surfaceLight : Colors.transparent,
+        color: _hovered
+            ? AppColorsScheme.of(context).surfaceLight
+            : Colors.transparent,
         borderRadius: BorderRadius.circular(AppRadius.md),
       ),
-      padding: isDesktop
-          ? const EdgeInsets.symmetric(horizontal: AppSpacing.sm)
-          : EdgeInsets.zero,
+      // No extra horizontal padding on desktop: [SectionHeader] and playlist
+      // cards align to the same content inset; padding here made song tiles look shifted.
       child: Row(
         children: [
           thumb,
@@ -542,7 +555,8 @@ class _BrowsePlaylistCardState extends ConsumerState<BrowsePlaylistCard> {
               widget.playlist.curatorName ??
                   '${widget.playlist.trackCount} songs',
               style: TextStyle(
-                  color: AppColorsScheme.of(context).textMuted, fontSize: AppFontSize.xs),
+                  color: AppColorsScheme.of(context).textMuted,
+                  fontSize: AppFontSize.xs),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),

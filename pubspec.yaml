@@ -19,7 +19,7 @@ dependencies:
   http: ^1.2.0
   flutter_animate: ^4.5.2
   palette_generator: ^0.3.3+4
-  shimmer: ^3.0.0
+  skeletonizer: ^2.1.0+1
   supabase_flutter: ^2.8.4
   hive_flutter: ^1.1.0
   shared_preferences: ^2.5.3

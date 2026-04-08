@@ -52,7 +52,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   double _dragY = 0;
   double _dragX = 0;
   bool _isOpening = false;
-  bool _isClosing = false;
 
   late List<BoxShadow> _boxShadows = _kMiniPlayerStaticShadow(context);
 
@@ -60,10 +59,9 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
   // immediate tactile feedback before the full player opens.
   double _dragScale = 0.0;
   double _dragOpacity = 1.0;
-  
+
   // Ensures the selection haptic fires only once per drag gesture.
   bool _didTriggerOpenHaptic = false;
-  bool _didTriggerCloseHaptic = false;
   bool _didTriggerNextHaptic = false;
   bool _didTriggerPrevHaptic = false;
 
@@ -79,27 +77,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
     });
   }
 
-  void _closeMiniPlayer() {
-    if (_isClosing) return;
-    _isClosing = true;
-    _didTriggerCloseHaptic = false;
-    HapticFeedback.heavyImpact();
-    
-    // Clean fade out without any indicators
-    setState(() => _dragOpacity = 0.0);
-    
-    // Smooth fade out and hide
-    Future<void>.delayed(const Duration(milliseconds: 250), () {
-      if (mounted) {
-        // Clear current song to hide the mini player
-        ref.read(playerProvider.notifier).clearCurrentSong();
-        _isClosing = false;
-        // Reset opacity after the player is hidden (no visual effect since player is gone)
-        _dragOpacity = 1.0;
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     // Desktop has its own DesktopPlayerBar — never show the mobile mini player.
@@ -110,8 +87,6 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
 
     final isPlaying = ref.watch(playerProvider.select((s) => s.isPlaying));
     final isLoading = ref.watch(playerProvider.select((s) => s.isLoading));
-    final dominantColor = ref.watch(dominantColorProvider);
-
     // No shadows - cleaner look for both light and dark modes
     _boxShadows = [];
 
@@ -123,53 +98,65 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
     return GestureDetector(
       onTap: _openFullPlayer,
       onVerticalDragUpdate: (d) {
-        _dragY += d.delta.dy;
-        
-        if (_dragY < 0) {
-          // Upward drag: fire a one-shot selection haptic at 8px to signal
-          // the gesture is being recognized, before the route commits at 24px.
-          if (!_didTriggerOpenHaptic && _dragY < -8) {
-            _didTriggerOpenHaptic = true;
-            HapticFeedback.selectionClick();
-          }
-          // Scale preview: linearly map 0–50px of upward drag to 0–3% scale.
-          final upPx = (-_dragY).clamp(0.0, 50.0);
-          final newScale = upPx / 50.0;
-          if ((newScale - _dragScale).abs() > 0.01) {
-            setState(() => _dragScale = newScale);
-          }
-          if (_dragY < -24) {
-            _openFullPlayer();
+        final nextY = (_dragY + d.delta.dy).clamp(-80.0, 120.0);
+        final shouldOpen = nextY < -24;
+
+        if (!shouldOpen &&
+            !_didTriggerOpenHaptic &&
+            nextY < -8) {
+          _didTriggerOpenHaptic = true;
+          HapticFeedback.selectionClick();
+        }
+
+        setState(() {
+          if (shouldOpen) {
             _dragY = 0;
+            _dragScale = 0;
+            _dragOpacity = 1.0;
+          } else {
+            _dragY = nextY;
+            if (_dragY < 0) {
+              final upPx = (-_dragY).clamp(0.0, 50.0);
+              _dragScale = upPx / 50.0;
+              _dragOpacity = 1.0;
+            } else if (_dragY > 0) {
+              _dragScale = 0;
+              _dragOpacity =
+                  (1.0 - (_dragY / 120.0) * 0.35).clamp(0.65, 1.0);
+            } else {
+              _dragScale = 0;
+              _dragOpacity = 1.0;
+            }
           }
-        } else if (_dragY > 0) {
-          // Downward drag: prepare to close mini player
-          if (!_didTriggerCloseHaptic && _dragY > 8) {
-            _didTriggerCloseHaptic = true;
-            HapticFeedback.selectionClick();
-          }
-          // Fade out as we drag down
-          final downPx = _dragY.clamp(0.0, 50.0);
-          final newOpacity = 1.0 - (downPx / 50.0);
-          if ((newOpacity - _dragOpacity).abs() > 0.01) {
-            setState(() => _dragOpacity = newOpacity);
-          }
-          if (_dragY > 30) {
-            _closeMiniPlayer();
-            _dragY = 0;
-          }
+        });
+
+        if (shouldOpen) {
+          _didTriggerOpenHaptic = false;
+          _openFullPlayer();
         }
       },
-      onVerticalDragEnd: (_) {
-        _dragY = 0;
+      onVerticalDragEnd: (d) {
+        final vy = d.primaryVelocity ?? 0;
+        const dismissDistance = 48.0;
+        const flingDismissVy = 400.0;
+        final dismiss = _dragY > dismissDistance || vy > flingDismissVy;
+
+        if (dismiss) {
+          HapticFeedback.mediumImpact();
+          ref.read(playerProvider.notifier).clearCurrentSong();
+        }
+
+        if (!mounted) return;
+        setState(() {
+          _dragY = 0;
+          _dragScale = 0;
+          _dragOpacity = 1.0;
+        });
         _didTriggerOpenHaptic = false;
-        _didTriggerCloseHaptic = false;
-        if (_dragScale > 0) setState(() => _dragScale = 0.0);
-        if (_dragOpacity < 1.0) setState(() => _dragOpacity = 1.0);
       },
       onHorizontalDragUpdate: (d) {
         _dragX += d.delta.dx;
-        
+
         // Provide visual feedback during horizontal drag
         if (_dragX.abs() > 5) {
           if (_dragX > 0 && !_didTriggerPrevHaptic) {
@@ -196,7 +183,7 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
           HapticFeedback.mediumImpact();
           ref.read(playerProvider.notifier).playPrevious();
         }
-        
+
         // Reset horizontal drag state
         _dragX = 0;
         _didTriggerNextHaptic = false;
@@ -210,176 +197,112 @@ class _MiniPlayerState extends ConsumerState<MiniPlayer> {
           AppSpacing.sm,
         ),
         child: AnimatedOpacity(
-        opacity: _dragOpacity,
-        duration: const Duration(milliseconds: 250),
-        curve: Curves.easeOutCubic,
-        child: Transform.scale(
-          scale: 1.0 + _dragScale * 0.03, // Only scale on intentional drag up, not swipe gestures
-          // Add horizontal translation feedback for swipe gestures
-          child: Transform.translate(
-            offset: Offset(_dragX * 0.2, 0), // Only horizontal movement, no vertical
-            child: AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            height: 68,
-            decoration: BoxDecoration(
-              color: Color.lerp(AppColorsScheme.of(context).surfaceLight, dominantColor, 0.18)!
-                  .withValues(alpha: 0.97),
-              borderRadius: BorderRadius.circular(AppRadius.xl),
-              border: Border.all(
-                color: dominantColor.withValues(alpha: 0.20),
-                width: 0.5,
-              ),
-              boxShadow: _boxShadows,
-            ),
-            child: Stack(
-              clipBehavior: Clip.hardEdge,
-              children: [
-                // Main content
-                Positioned.fill(
-                  bottom: 3,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                    ),
-                    child: Row(
-                      children: [
-                        AlbumArtHero(
-                          url: song.thumbnailUrl,
-                          size: 44,
-                          borderRadius: AppRadius.md,
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                song.title,
-                                style: TextStyle(
-                                  color: AppColorsScheme.of(context).textPrimary,
-                                  fontSize: AppFontSize.md,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                song.artist,
-                                style: TextStyle(
-                                  color: AppColorsScheme.of(context).textMuted,
-                                  fontSize: AppFontSize.xs,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              const _MiniPlayerUpNext(),
-                            ],
-                          ),
-                        ),
-                        MiniPlayerPlayButton(
-                          isPlaying: isPlaying,
-                          isLoading: isLoading,
-                          onTap: () =>
-                              ref.read(playerProvider.notifier).togglePlayPause(),
-                        ),
-                      ],
-                    ),
+          opacity: _dragOpacity,
+          duration: const Duration(milliseconds: 250),
+          curve: Curves.easeOutCubic,
+          child: Transform.scale(
+            scale: 1.0 +
+                _dragScale *
+                    0.03, // Only scale on intentional drag up, not swipe gestures
+            // Add horizontal translation feedback for swipe gestures
+            child: Transform.translate(
+              offset: Offset(_dragX * 0.2, _dragY > 0 ? _dragY : 0),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeOutCubic,
+                height: 68,
+                decoration: BoxDecoration(
+                  color: AppColorsScheme.of(context).background,
+                  borderRadius: BorderRadius.circular(AppRadius.xl),
+                  border: Border.all(
+                    color: AppColorsScheme.of(context)
+                        .textPrimary
+                        .withValues(alpha: 0.10),
+                    width: 0.5,
                   ),
+                  boxShadow: _boxShadows,
                 ),
-                
-                // Elegant swipe indicators - subtle and animated
-                if (_dragX.abs() > 10)
-                  Positioned.fill(
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Previous indicator (right swipe)
-                          if (_dragX > 0)
+                child: Stack(
+                  clipBehavior: Clip.hardEdge,
+                  children: [
+                    // Main content
+                    Positioned.fill(
+                      bottom: 3,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                        ),
+                        child: Row(
+                          children: [
+                            AlbumArtHero(
+                              url: song.thumbnailUrl,
+                              size: 44,
+                              borderRadius: AppRadius.md,
+                            ),
+                            const SizedBox(width: AppSpacing.md),
                             Expanded(
-                              child: AnimatedOpacity(
-                                opacity: (_dragX / 50).clamp(0.0, 1.0),
-                                duration: const Duration(milliseconds: 100),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.skip_previous,
-                                      color: AppColorsScheme.of(context).textMuted,
-                                      size: 24,
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    song.title,
+                                    style: TextStyle(
+                                      color: AppColorsScheme.of(context)
+                                          .textPrimary,
+                                      fontSize: AppFontSize.md,
+                                      fontWeight: FontWeight.w600,
                                     ),
-                                    SizedBox(width: 8),
-                                    Text(
-                                      'Previous',
-                                      style: TextStyle(
-                                        color: AppColorsScheme.of(context).textMuted,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    song.artist,
+                                    style: TextStyle(
+                                      color:
+                                          AppColorsScheme.of(context).textMuted,
+                                      fontSize: AppFontSize.xs,
                                     ),
-                                  ],
-                                ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  const _MiniPlayerUpNext(),
+                                ],
                               ),
                             ),
-                          
-                          // Next indicator (left swipe)
-                          if (_dragX < 0)
-                            Expanded(
-                              child: AnimatedOpacity(
-                                opacity: (-_dragX / 50).clamp(0.0, 1.0),
-                                duration: const Duration(milliseconds: 100),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Next',
-                                      style: TextStyle(
-                                        color: AppColorsScheme.of(context).textMuted,
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8),
-                                    Icon(
-                                      Icons.skip_next,
-                                      color: AppColorsScheme.of(context).textMuted,
-                                      size: 24,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                            MiniPlayerPlayButton(
+                              isPlaying: isPlaying,
+                              isLoading: isLoading,
+                              onTap: () => ref
+                                  .read(playerProvider.notifier)
+                                  .togglePlayPause(),
                             ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                
-                // PERF: const — allocated once globally as a compile-time constant.
-                // The seek bar reads its own providers inside the RepaintBoundary,
-                // so only this layer repaints on position ticks.
-                const Positioned(
-                  left: AppSpacing.md,
-                  right: AppSpacing.md,
-                  bottom: 0,
-                  child: RepaintBoundary(
-                    child: _MiniPlayerSeekBar(),
-                  ),
+                    // PERF: const — allocated once globally as a compile-time constant.
+                    // The seek bar reads its own providers inside the RepaintBoundary,
+                    // so only this layer repaints on position ticks.
+                    const Positioned(
+                      left: AppSpacing.md,
+                      right: AppSpacing.md,
+                      bottom: 0,
+                      child: RepaintBoundary(
+                        child: _MiniPlayerSeekBar(),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
             ),
           ),
-        ),
         ),
       ),
     );
   }
 }
-
 
 /// Self-contained seek bar that subscribes to position, duration, and color
 /// internally. Wrapped in a [RepaintBoundary] by its parent so position ticks
@@ -409,8 +332,7 @@ class _MiniPlayerSeekBar extends ConsumerWidget {
         final dur = ref.read(playerProvider).duration;
         if (dur != null && dur.inMilliseconds > 0) {
           ref.read(playerProvider.notifier).seekTo(
-                Duration(
-                    milliseconds: (fraction * dur.inMilliseconds).round()),
+                Duration(milliseconds: (fraction * dur.inMilliseconds).round()),
               );
         }
       },
@@ -459,7 +381,9 @@ class _MiniPlayerUpNext extends ConsumerWidget {
             child: Text(
               nextSong.title,
               style: TextStyle(
-                color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
+                color: AppColorsScheme.of(context)
+                    .textMuted
+                    .withValues(alpha: 0.7),
                 fontSize: AppFontSize.micro,
                 fontWeight: FontWeight.w500,
               ),

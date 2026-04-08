@@ -3,15 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:tunify/core/constants/app_icons.dart';
 import 'package:tunify/data/models/library_album.dart';
+import 'package:tunify/data/models/audiobook.dart';
 import 'package:tunify/data/models/library_artist.dart';
 import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
+import 'package:tunify/data/models/playlist.dart';
+import 'package:tunify/data/models/podcast.dart';
 import 'package:tunify/features/downloads/download_provider.dart';
 import 'package:tunify/features/device/device_music_provider.dart';
 import 'package:tunify/features/library/library_provider.dart';
+import 'package:tunify/features/podcast/podcast_provider.dart';
 import 'package:tunify/ui/widgets/common/adaptive_menu.dart';
 import 'package:tunify/ui/widgets/library/library_filter_chips.dart';
-import 'package:tunify/ui/widgets/library/library_thumbnail_tile.dart';
+import 'package:tunify/ui/widgets/library/library_item_tile.dart';
 import 'package:tunify/ui/widgets/common/button.dart';
 import 'package:tunify/ui/widgets/common/input_field.dart';
 import 'package:tunify/ui/screens/shared/library/library_app_bar.dart';
@@ -26,6 +30,14 @@ import 'package:tunify/ui/widgets/player/download_queue_sheet.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 
 const double kDesktopSidebarWidth = 340.0;
+
+String _typedSubtitle(String type, String currentSubtitle) {
+  final subtitle = currentSubtitle.trim();
+  if (subtitle.isEmpty || subtitle.toLowerCase() == type.toLowerCase()) {
+    return type;
+  }
+  return '$type • $subtitle';
+}
 
 /// Library-only left sidebar for the macOS desktop layout.
 ///
@@ -121,6 +133,9 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
     // ── Filter + sort playlists/folders ────────────────────────────────
     final showAll = _filter == null;
     final showPlaylists = showAll || _filter == LibraryFilter.playlists;
+    final showFolders = showAll || _filter == LibraryFilter.folders;
+    final showPodcasts = showAll || _filter == LibraryFilter.podcasts;
+    final showAudiobooks = showAll || _filter == LibraryFilter.audiobooks;
     final showAlbums = showAll || _filter == LibraryFilter.albums;
     final showArtists = showAll || _filter == LibraryFilter.artists;
     final q = _searchQuery.toLowerCase().trim();
@@ -132,8 +147,7 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
 
     final isPlaylistsFilter = _filter == LibraryFilter.playlists;
 
-    // Folders are hidden when the Playlists filter is active (matches mobile).
-    final folders = showAll
+    final folders = showFolders
         ? library.sortedFolders
             .where((f) => q.isEmpty || f.name.toLowerCase().contains(q))
             .toList()
@@ -179,42 +193,390 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
           onTap: () =>
               widget.onNavigateTo(const LibraryPlaylistScreen.localFiles()),
         ),
-      ...folders.map(FolderEntry.new),
-      ...rootPlaylists.map(PlaylistEntry.new),
+      if (_filter == LibraryFilter.folders) ...folders.map(FolderEntry.new),
+      if (_filter == LibraryFilter.playlists)
+        ...rootPlaylists.map(PlaylistEntry.new),
     ];
 
-    final albums = showAlbums
+    final rawAlbums = showAlbums
         ? library.followedAlbums
+            .where((a) {
+              if (q.isNotEmpty &&
+                  !a.title.toLowerCase().contains(q) &&
+                  !a.artistName.toLowerCase().contains(q)) {
+                return false;
+              }
+              if (_filter == null && inFolderIds.contains(a.id)) {
+                return false;
+              }
+              return true;
+            })
+            .toList()
+        : <LibraryAlbum>[];
+    final albums = List<LibraryAlbum>.from(rawAlbums)
+      ..sort((a, b) {
+        switch (sortOrder) {
+          case LibrarySortOrder.alphabetical:
+            return a.title.toLowerCase().compareTo(b.title.toLowerCase());
+          case LibrarySortOrder.recent:
+          case LibrarySortOrder.recentlyAdded:
+            return b.followedAt.compareTo(a.followedAt);
+        }
+      });
+    final sortedPinnedAlbums = rawAlbums.where((a) => a.isPinned).toList();
+    final sortedUnpinnedAlbums = albums.where((a) => !a.isPinned).toList();
+    final visibleAlbums = [...sortedPinnedAlbums, ...sortedUnpinnedAlbums];
+
+    final rawArtists = showArtists
+        ? library.followedArtists
+            .where((a) {
+              if (q.isNotEmpty && !a.name.toLowerCase().contains(q)) {
+                return false;
+              }
+              if (_filter == null && inFolderIds.contains(a.id)) {
+                return false;
+              }
+              return true;
+            })
+            .toList()
+        : <LibraryArtist>[];
+    final artists = List<LibraryArtist>.from(rawArtists)
+      ..sort((a, b) {
+        switch (sortOrder) {
+          case LibrarySortOrder.alphabetical:
+            return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+          case LibrarySortOrder.recent:
+          case LibrarySortOrder.recentlyAdded:
+            return b.followedAt.compareTo(a.followedAt);
+        }
+      });
+    final sortedPinnedArtists = rawArtists.where((a) => a.isPinned).toList();
+    final sortedUnpinnedArtists = artists.where((a) => !a.isPinned).toList();
+    final visibleArtists = [...sortedPinnedArtists, ...sortedUnpinnedArtists];
+    final List<Podcast> podcasts = showPodcasts
+        ? ref
+            .watch(podcastSubscriptionsProvider)
+            .where((p) =>
+                q.isEmpty ||
+                p.title.toLowerCase().contains(q) ||
+                (p.author?.toLowerCase().contains(q) ?? false))
+            .toList()
+        : <Podcast>[];
+    final List<Audiobook> audiobooks = showAudiobooks
+        ? ref
+            .watch(savedAudiobooksProvider)
             .where((a) =>
                 q.isEmpty ||
                 a.title.toLowerCase().contains(q) ||
-                a.artistName.toLowerCase().contains(q))
+                (a.author?.toLowerCase().contains(q) ?? false))
             .toList()
-        : <LibraryAlbum>[];
-    final artists = showArtists
-        ? library.followedArtists
-            .where((a) => q.isEmpty || a.name.toLowerCase().contains(q))
-            .toList()
-        : <LibraryArtist>[];
+        : <Audiobook>[];
 
-    // ── When a folder is open, override the list to show only its playlists ─
+    // ── When a folder is open, show its playlists + any saved albums/artists ─
     final List<LibrarySectionEntry>? folderEntries = _openFolder == null
         ? null
-        : library.sortedPlaylists
-            .where((p) => _openFolder!.playlistIds.contains(p.id))
-            .map(PlaylistEntry.new)
-            .toList();
+        : buildSortedFolderSectionEntries(
+            context: context,
+            ref: ref,
+            folder: _openFolder!,
+            library: library,
+            sortOrder: sortOrder,
+          );
+
+    final allPinnedEntries = <LibrarySectionEntry>[
+      ...rootPlaylists.where((p) => p.isPinned).map(PlaylistEntry.new),
+      ...podcasts.where((p) => p.isPinned).map(
+            (p) => MediaLibraryEntry(
+              title: p.title,
+              subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
+              thumbnailUrl: p.thumbnailUrl,
+              placeholderIcon: AppIcons.podcast,
+              showPinIndicator: p.isPinned,
+              onTap: () => widget.onNavigateTo(
+                LibraryPlaylistScreen.podcast(
+                  playlist: Playlist(
+                    id: p.browseId ?? p.id,
+                    title: p.title,
+                    description: p.author ?? '',
+                    coverUrl: p.thumbnailUrl ?? '',
+                  ),
+                ),
+              ),
+              onOptions: (rect) => showLibraryPlaylistOptionsSheet(
+                context,
+                ref,
+                LibraryPlaylist(
+                  id: p.browseId ?? p.id,
+                  name: p.title,
+                  description: p.author ?? '',
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  isImported: true,
+                  browseId: p.browseId ?? p.id,
+                  customImageUrl: p.thumbnailUrl,
+                  isPinned: p.isPinned,
+                ),
+                anchorRect: rect,
+              ),
+            ),
+          ),
+      ...audiobooks.where((a) => a.isPinned).map(
+            (a) => MediaLibraryEntry(
+              title: a.title,
+              subtitle: 'Audiobook',
+              thumbnailUrl: a.thumbnailUrl,
+              placeholderIcon: AppIcons.bookOpen,
+              showPinIndicator: a.isPinned,
+              onTap: () => widget.onNavigateTo(
+                LibraryPlaylistScreen.podcast(
+                  playlist: Playlist(
+                    id: a.browseId ?? a.id,
+                    title: a.title,
+                    description: a.author ?? '',
+                    coverUrl: a.thumbnailUrl ?? '',
+                  ),
+                ),
+              ),
+              onOptions: (rect) => showLibraryPlaylistOptionsSheet(
+                context,
+                ref,
+                LibraryPlaylist(
+                  id: a.browseId ?? a.id,
+                  name: a.title,
+                  description: a.author ?? '',
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  isImported: true,
+                  browseId: a.browseId ?? a.id,
+                  customImageUrl: a.thumbnailUrl,
+                  isPinned: a.isPinned,
+                ),
+                anchorRect: rect,
+              ),
+            ),
+          ),
+      ...visibleAlbums.where((a) => a.isPinned).map(
+            (a) => MediaLibraryEntry(
+              title: a.title,
+              subtitle: _typedSubtitle('Album', a.artistName),
+              thumbnailUrl: a.thumbnailUrl.isNotEmpty ? a.thumbnailUrl : null,
+              placeholderIcon: AppIcons.album,
+              showPinIndicator: a.isPinned,
+              folderSortDate: a.followedAt,
+              gridDetailSubtitle: a.artistName,
+              onTap: () => _openAlbum(a),
+              onOptions: (rect) => showFollowedAlbumOptionsSheet(
+                context,
+                ref,
+                a,
+                anchorRect: rect,
+              ),
+            ),
+          ),
+      ...visibleArtists.where((a) => a.isPinned).map(
+            (a) => MediaLibraryEntry(
+              title: a.name,
+              subtitle: 'Artist',
+              thumbnailUrl: a.thumbnailUrl.isNotEmpty ? a.thumbnailUrl : null,
+              placeholderIcon: AppIcons.person,
+              showPinIndicator: a.isPinned,
+              circularThumbnail: true,
+              folderSortDate: a.followedAt,
+              gridDetailSubtitle: 'Artist',
+              onTap: () => _openArtist(a),
+              onOptions: (rect) => showFollowedArtistOptionsSheet(
+                context,
+                ref,
+                a,
+                anchorRect: rect,
+              ),
+            ),
+          ),
+    ];
+
+    final allRegularEntries = <LibrarySectionEntry>[
+      ...rootPlaylists.where((p) => !p.isPinned).map(PlaylistEntry.new),
+      ...podcasts.where((p) => !p.isPinned).map(
+            (p) => MediaLibraryEntry(
+              title: p.title,
+              subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
+              thumbnailUrl: p.thumbnailUrl,
+              placeholderIcon: AppIcons.podcast,
+              showPinIndicator: p.isPinned,
+              onTap: () => widget.onNavigateTo(
+                LibraryPlaylistScreen.podcast(
+                  playlist: Playlist(
+                    id: p.browseId ?? p.id,
+                    title: p.title,
+                    description: p.author ?? '',
+                    coverUrl: p.thumbnailUrl ?? '',
+                  ),
+                ),
+              ),
+              onOptions: (rect) => showLibraryPlaylistOptionsSheet(
+                context,
+                ref,
+                LibraryPlaylist(
+                  id: p.browseId ?? p.id,
+                  name: p.title,
+                  description: p.author ?? '',
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  isImported: true,
+                  browseId: p.browseId ?? p.id,
+                  customImageUrl: p.thumbnailUrl,
+                  isPinned: p.isPinned,
+                ),
+                anchorRect: rect,
+              ),
+            ),
+          ),
+      ...audiobooks.where((a) => !a.isPinned).map(
+            (a) => MediaLibraryEntry(
+              title: a.title,
+              subtitle: 'Audiobook',
+              thumbnailUrl: a.thumbnailUrl,
+              placeholderIcon: AppIcons.bookOpen,
+              showPinIndicator: a.isPinned,
+              onTap: () => widget.onNavigateTo(
+                LibraryPlaylistScreen.podcast(
+                  playlist: Playlist(
+                    id: a.browseId ?? a.id,
+                    title: a.title,
+                    description: a.author ?? '',
+                    coverUrl: a.thumbnailUrl ?? '',
+                  ),
+                ),
+              ),
+              onOptions: (rect) => showLibraryPlaylistOptionsSheet(
+                context,
+                ref,
+                LibraryPlaylist(
+                  id: a.browseId ?? a.id,
+                  name: a.title,
+                  description: a.author ?? '',
+                  createdAt: DateTime.now(),
+                  updatedAt: DateTime.now(),
+                  isImported: true,
+                  browseId: a.browseId ?? a.id,
+                  customImageUrl: a.thumbnailUrl,
+                  isPinned: a.isPinned,
+                ),
+                anchorRect: rect,
+              ),
+            ),
+          ),
+      ...visibleAlbums.where((a) => !a.isPinned).map(
+            (a) => MediaLibraryEntry(
+              title: a.title,
+              subtitle: _typedSubtitle('Album', a.artistName),
+              thumbnailUrl: a.thumbnailUrl.isNotEmpty ? a.thumbnailUrl : null,
+              placeholderIcon: AppIcons.album,
+              showPinIndicator: a.isPinned,
+              folderSortDate: a.followedAt,
+              gridDetailSubtitle: a.artistName,
+              onTap: () => _openAlbum(a),
+              onOptions: (rect) => showFollowedAlbumOptionsSheet(
+                context,
+                ref,
+                a,
+                anchorRect: rect,
+              ),
+            ),
+          ),
+      ...visibleArtists.where((a) => !a.isPinned).map(
+            (a) => MediaLibraryEntry(
+              title: a.name,
+              subtitle: 'Artist',
+              thumbnailUrl: a.thumbnailUrl.isNotEmpty ? a.thumbnailUrl : null,
+              placeholderIcon: AppIcons.person,
+              showPinIndicator: a.isPinned,
+              circularThumbnail: true,
+              folderSortDate: a.followedAt,
+              gridDetailSubtitle: 'Artist',
+              onTap: () => _openArtist(a),
+              onOptions: (rect) => showFollowedArtistOptionsSheet(
+                context,
+                ref,
+                a,
+                anchorRect: rect,
+              ),
+            ),
+          ),
+    ];
+    int compareAllRegularEntries(
+      LibrarySectionEntry a,
+      LibrarySectionEntry b,
+    ) {
+      String titleOf(LibrarySectionEntry e) {
+        return switch (e) {
+          PlaylistEntry(:final playlist) => playlist.name,
+          MediaLibraryEntry(:final title) => title,
+          FolderEntry(:final folder) => folder.name,
+          _ => '',
+        };
+      }
+
+      DateTime dateOf(LibrarySectionEntry e) {
+        return switch (e) {
+          PlaylistEntry(:final playlist) =>
+            sortOrder == LibrarySortOrder.recentlyAdded
+                ? playlist.createdAt
+                : playlist.updatedAt,
+          MediaLibraryEntry(:final folderSortDate) =>
+            folderSortDate ?? DateTime.fromMillisecondsSinceEpoch(0),
+          FolderEntry(:final folder) => folder.createdAt,
+          _ => DateTime.fromMillisecondsSinceEpoch(0),
+        };
+      }
+
+      switch (sortOrder) {
+        case LibrarySortOrder.alphabetical:
+          return titleOf(a).toLowerCase().compareTo(titleOf(b).toLowerCase());
+        case LibrarySortOrder.recent:
+        case LibrarySortOrder.recentlyAdded:
+          final byDate = dateOf(b).compareTo(dateOf(a));
+          if (byDate != 0) return byDate;
+          return titleOf(a).toLowerCase().compareTo(titleOf(b).toLowerCase());
+      }
+    }
+    allRegularEntries.sort(compareAllRegularEntries);
+
+    final allModeEntries = <LibrarySectionEntry>[
+      if (showLiked)
+        LikedSongsEntry(
+          songCount: library.likedSongs.length,
+          onTap: () => widget.onNavigateTo(const LibraryPlaylistScreen.liked()),
+        ),
+      if (showAll && _openFolder == null)
+        DownloadsEntry(
+          songCount: downloadCount,
+          onTap: () =>
+              widget.onNavigateTo(const LibraryPlaylistScreen.downloads()),
+        ),
+      if (showAll && _openFolder == null)
+        LocalFilesEntry(
+          songCount: localFilesCount,
+          onTap: () =>
+              widget.onNavigateTo(const LibraryPlaylistScreen.localFiles()),
+        ),
+      ...allPinnedEntries,
+      ...folders.map(FolderEntry.new),
+      ...allRegularEntries,
+    ];
 
     final hasContent = (folderEntries?.isNotEmpty ?? false) ||
         playlistEntries.isNotEmpty ||
-        albums.isNotEmpty ||
-        artists.isNotEmpty;
+        podcasts.isNotEmpty ||
+        audiobooks.isNotEmpty ||
+        visibleAlbums.isNotEmpty ||
+        visibleArtists.isNotEmpty;
 
     return SizedBox(
       width: kDesktopSidebarWidth,
       child: Container(
         decoration: BoxDecoration(
-          color: AppColorsScheme.of(context).background,
+          color: AppColorsScheme.of(context).desktopSurface,
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -230,9 +592,9 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                       'Library',
                       style: TextStyle(
                         color: AppColorsScheme.of(context).textPrimary,
-                        fontSize: DesktopFontSize.h2,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.5,
+                        fontSize: DesktopFontSize.h3,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ),
@@ -264,6 +626,9 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                 onFilterChanged: _onFilterChanged,
                 filters: const [
                   LibraryFilter.playlists,
+                  LibraryFilter.folders,
+                  LibraryFilter.podcasts,
+                  LibraryFilter.audiobooks,
                   LibraryFilter.albums,
                   LibraryFilter.artists,
                 ],
@@ -293,7 +658,8 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                               icon: AppIcon(
                                 icon: AppIcons.back,
                                 size: 18,
-                                color: AppColorsScheme.of(context).textSecondary,
+                                color:
+                                    AppColorsScheme.of(context).textSecondary,
                               ),
                               onPressed: _toggleSearch,
                               size: 36,
@@ -382,16 +748,18 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                   children: [
                                     AppIcon(
                                       icon: AppIcons.sort,
-                                      color: AppColorsScheme.of(context).textSecondary,
+                                      color: AppColorsScheme.of(context)
+                                          .textSecondary,
                                       size: DesktopIconSize.xs,
                                     ),
                                     const SizedBox(width: DesktopSpacing.xs),
                                     Text(
                                       sortOrder.label,
                                       style: TextStyle(
-                                        color: AppColorsScheme.of(context).desktopTextSecondary,
+                                        color: AppColorsScheme.of(context)
+                                            .textPrimary,
                                         fontSize: DesktopFontSize.sm,
-                                        fontWeight: FontWeight.w500,
+                                        fontWeight: FontWeight.w600,
                                       ),
                                     ),
                                   ],
@@ -479,11 +847,23 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                           ? LibraryFilterPlaceholder(
                               icon: _filter == LibraryFilter.albums
                                   ? AppIcons.album
+                                  : _filter == LibraryFilter.podcasts
+                                      ? AppIcons.podcast
+                                      : _filter == LibraryFilter.folders
+                                          ? AppIcons.folder
+                                      : _filter == LibraryFilter.audiobooks
+                                          ? AppIcons.bookOpen
                                   : _filter == LibraryFilter.artists
                                       ? AppIcons.artist
                                       : AppIcons.playlist,
                               message: _filter == LibraryFilter.playlists
                                   ? 'Playlists you create will appear here'
+                                  : _filter == LibraryFilter.folders
+                                      ? 'Folders you create will appear here'
+                                  : _filter == LibraryFilter.podcasts
+                                      ? 'Podcasts you save will appear here'
+                                      : _filter == LibraryFilter.audiobooks
+                                          ? 'Audiobooks you save will appear here'
                                   : _filter == LibraryFilter.albums
                                       ? 'Albums you save will appear here'
                                       : _filter == LibraryFilter.artists
@@ -495,15 +875,16 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                   top: AppSpacing.xs, bottom: 8),
                               children: [
                                 // Folder open: show only that folder's playlists
-                                if (folderEntries != null) ...[
+                                  if (folderEntries != null) ...[
                                   if (folderEntries.isEmpty)
                                     Padding(
                                       padding: EdgeInsets.all(AppSpacing.xl),
                                       child: Text(
-                                        'No playlists in this folder.',
+                                        'Nothing in this folder yet.',
                                         textAlign: TextAlign.center,
                                         style: TextStyle(
-                                            color: AppColorsScheme.of(context).textMuted,
+                                            color: AppColorsScheme.of(context)
+                                                .textMuted,
                                             fontSize: AppFontSize.md),
                                       ),
                                     )
@@ -511,6 +892,13 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                     LibraryPlaylistsSection(
                                       entries: folderEntries,
                                       viewMode: viewMode,
+                                      contentPadding:
+                                          const EdgeInsets.fromLTRB(
+                                        DesktopSpacing.base,
+                                        0,
+                                        DesktopSpacing.sm,
+                                        0,
+                                      ),
                                       onPlaylistTap: _openPlaylist,
                                       onPlaylistOptions: (p, rect) =>
                                           showLibraryPlaylistOptionsSheet(
@@ -524,10 +912,40 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                     ),
                                 ] else ...[
                                   // Normal library list
-                                  if (playlistEntries.isNotEmpty)
+                                  if (showAll)
+                                    LibraryPlaylistsSection(
+                                      entries: allModeEntries,
+                                      viewMode: viewMode,
+                                      contentPadding:
+                                          const EdgeInsets.fromLTRB(
+                                        DesktopSpacing.base,
+                                        0,
+                                        DesktopSpacing.sm,
+                                        0,
+                                      ),
+                                      onPlaylistTap: _openPlaylist,
+                                      onPlaylistOptions: (p, rect) =>
+                                          showLibraryPlaylistOptionsSheet(
+                                              context, ref, p,
+                                              anchorRect: rect),
+                                      onFolderTap: _openFolderInline,
+                                      onFolderOptions: (f, rect) =>
+                                          showLibraryFolderOptionsSheet(
+                                              context, ref, f,
+                                              anchorRect: rect),
+                                    ),
+                                  if (!showAll &&
+                                      playlistEntries.isNotEmpty)
                                     LibraryPlaylistsSection(
                                       entries: playlistEntries,
                                       viewMode: viewMode,
+                                      contentPadding:
+                                          const EdgeInsets.fromLTRB(
+                                        DesktopSpacing.base,
+                                        0,
+                                        DesktopSpacing.sm,
+                                        0,
+                                      ),
                                       onPlaylistTap: _openPlaylist,
                                       onPlaylistOptions: (p, rect) =>
                                           showLibraryPlaylistOptionsSheet(
@@ -540,41 +958,155 @@ class _DesktopSidebarState extends ConsumerState<DesktopSidebar> {
                                               anchorRect: rect),
                                     ),
 
-                                  if (albums.isNotEmpty) ...[
+                                  if (!showAll && podcasts.isNotEmpty) ...[
                                     if (showAll)
-                                      const _SectionLabel(label: 'ALBUMS'),
-                                    for (final a in albums)
+                                      const _SectionLabel(label: 'PODCASTS'),
+                                    for (final p in podcasts)
                                       Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: DesktopSpacing.base),
-                                        child: LibraryThumbnailTile(
-                                          thumbnailUrl:
-                                              a.thumbnailUrl.isNotEmpty
-                                                  ? a.thumbnailUrl
-                                                  : null,
-                                          title: a.title,
-                                          subtitle: a.artistName,
-                                          onTap: () => _openAlbum(a),
+                                        padding: const EdgeInsets.fromLTRB(
+                                            DesktopSpacing.base,
+                                            0,
+                                            DesktopSpacing.sm,
+                                            0),
+                                        child: LibraryItemTile(
+                                          title: p.title,
+                                          subtitle: _typedSubtitle('Podcast', p.author ?? 'Podcast'),
+                                          thumbnailUrl: p.thumbnailUrl,
+                                          placeholderIcon: AppIcons.podcast,
+                                          onTap: () => widget.onNavigateTo(
+                                            LibraryPlaylistScreen.podcast(
+                                              playlist: Playlist(
+                                                id: p.browseId ?? p.id,
+                                                title: p.title,
+                                                description: p.author ?? '',
+                                                coverUrl: p.thumbnailUrl ?? '',
+                                              ),
+                                            ),
+                                          ),
+                                          onOptions: (rect) =>
+                                              showLibraryPlaylistOptionsSheet(
+                                            context,
+                                            ref,
+                                            LibraryPlaylist(
+                                              id: p.browseId ?? p.id,
+                                              name: p.title,
+                                              description: p.author ?? '',
+                                              createdAt: DateTime.now(),
+                                              updatedAt: DateTime.now(),
+                                              isImported: true,
+                                              browseId: p.browseId ?? p.id,
+                                              customImageUrl: p.thumbnailUrl,
+                                              isPinned: p.isPinned,
+                                            ),
+                                            anchorRect: rect,
+                                          ),
                                         ),
                                       ),
                                   ],
 
-                                  if (artists.isNotEmpty) ...[
+                                  if (!showAll && audiobooks.isNotEmpty) ...[
+                                    if (showAll)
+                                      const _SectionLabel(label: 'AUDIOBOOKS'),
+                                    for (final a in audiobooks)
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            DesktopSpacing.base,
+                                            0,
+                                            DesktopSpacing.sm,
+                                            0),
+                                        child: LibraryItemTile(
+                                          title: a.title,
+                                          subtitle: 'Audiobook',
+                                          thumbnailUrl: a.thumbnailUrl,
+                                          placeholderIcon: AppIcons.bookOpen,
+                                          onTap: () => widget.onNavigateTo(
+                                            LibraryPlaylistScreen.podcast(
+                                              playlist: Playlist(
+                                                id: a.browseId ?? a.id,
+                                                title: a.title,
+                                                description: a.author ?? '',
+                                                coverUrl: a.thumbnailUrl ?? '',
+                                              ),
+                                            ),
+                                          ),
+                                          onOptions: (rect) =>
+                                              showLibraryPlaylistOptionsSheet(
+                                            context,
+                                            ref,
+                                            LibraryPlaylist(
+                                              id: a.browseId ?? a.id,
+                                              name: a.title,
+                                              description: a.author ?? '',
+                                              createdAt: DateTime.now(),
+                                              updatedAt: DateTime.now(),
+                                              isImported: true,
+                                              browseId: a.browseId ?? a.id,
+                                              customImageUrl: a.thumbnailUrl,
+                                              isPinned: a.isPinned,
+                                            ),
+                                            anchorRect: rect,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+
+                                  if (!showAll && visibleAlbums.isNotEmpty) ...[
+                                    if (showAll)
+                                      const _SectionLabel(label: 'ALBUMS'),
+                                    for (final a in visibleAlbums)
+                                      Padding(
+                                        padding: const EdgeInsets.fromLTRB(
+                                            DesktopSpacing.base,
+                                            0,
+                                            DesktopSpacing.sm,
+                                            0),
+                                        child: LibraryItemTile(
+                                          title: a.title,
+                                          subtitle: _typedSubtitle('Album', a.artistName),
+                                          thumbnailUrl: a.thumbnailUrl.isNotEmpty
+                                              ? a.thumbnailUrl
+                                              : null,
+                                          placeholderIcon: AppIcons.album,
+                                          showPinIndicator: a.isPinned,
+                                          onTap: () => _openAlbum(a),
+                                          onOptions: (rect) =>
+                                              showFollowedAlbumOptionsSheet(
+                                            context,
+                                            ref,
+                                            a,
+                                            anchorRect: rect,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+
+                                  if (!showAll && visibleArtists.isNotEmpty) ...[
                                     if (showAll)
                                       const _SectionLabel(label: 'ARTISTS'),
-                                    for (final a in artists)
+                                    for (final a in visibleArtists)
                                       Padding(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: DesktopSpacing.base),
-                                        child: LibraryThumbnailTile(
-                                          thumbnailUrl:
-                                              a.thumbnailUrl.isNotEmpty
-                                                  ? a.thumbnailUrl
-                                                  : null,
+                                        padding: const EdgeInsets.fromLTRB(
+                                            DesktopSpacing.base,
+                                            0,
+                                            DesktopSpacing.sm,
+                                            0),
+                                        child: LibraryItemTile(
                                           title: a.name,
                                           subtitle: 'Artist',
-                                          isCircle: true,
+                                          thumbnailUrl: a.thumbnailUrl.isNotEmpty
+                                              ? a.thumbnailUrl
+                                              : null,
+                                          placeholderIcon: AppIcons.person,
+                                          showPinIndicator: a.isPinned,
+                                          circularThumbnail: true,
                                           onTap: () => _openArtist(a),
+                                          onOptions: (rect) =>
+                                              showFollowedArtistOptionsSheet(
+                                            context,
+                                            ref,
+                                            a,
+                                            anchorRect: rect,
+                                          ),
                                         ),
                                       ),
                                   ],
@@ -621,8 +1153,10 @@ class _CreateMenuButton extends StatelessWidget {
         ),
       ],
       child: AppIconButton(
-        icon:
-            AppIcon(icon: AppIcons.add, size: 20, color: AppColorsScheme.of(context).textPrimary),
+        icon: AppIcon(
+            icon: AppIcons.add,
+            size: 20,
+            color: AppColorsScheme.of(context).textPrimary),
         onPressed: null, // tap handled by AdaptiveMenuAnchor
         size: 36,
         iconSize: 20,

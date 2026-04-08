@@ -12,8 +12,14 @@ class BrowseFormatter {
     final nav = item['navigationEndpoint'] as Map<String, dynamic>?;
     final watch = nav?['watchEndpoint'] as Map<String, dynamic>?;
     final playlistData = item['playlistItemData'] as Map<String, dynamic>?;
-    final videoId =
+    var videoId =
         (watch?['videoId'] as String?) ?? (playlistData?['videoId'] as String?);
+    if (videoId == null || videoId.isEmpty) {
+      final overlayWatch = item['overlay']?['musicItemThumbnailOverlayRenderer']
+              ?['content']?['musicPlayButtonRenderer']?['playNavigationEndpoint']
+          ?['watchEndpoint'] as Map<String, dynamic>?;
+      videoId = overlayWatch?['videoId'] as String?;
+    }
     if (videoId == null || videoId.isEmpty) return null;
 
     final columns = item['flexColumns'] as List<dynamic>?;
@@ -1026,6 +1032,152 @@ class BrowseFormatter {
       subtitle: subtitle,
       secondSubtitle: secondSubtitle,
     );
+  }
+
+  /// Prefer [extractPlaylistBrowseMeta], then artist [musicImmersiveHeaderRenderer].
+  static PlaylistBrowseMeta? extractCollectionBrowseMeta(
+    Map<String, dynamic> browseData,
+  ) {
+    return extractPlaylistBrowseMeta(browseData) ??
+        extractImmersiveHeaderBrowseMeta(browseData);
+  }
+
+  /// Artist home: full song list lives on a separate playlist browse ("See all"
+  /// on **Top songs**). Returns [browseId] + [params] from the shelf title run.
+  static ({String browseId, String? params})? extractArtistTopSongsBrowse(
+    Map<String, dynamic> browseData,
+  ) {
+    ({String browseId, String? params})? found;
+
+    void walk(dynamic node) {
+      if (found != null) return;
+      if (node is Map<String, dynamic>) {
+        final shelf = node['musicShelfRenderer'];
+        if (shelf is Map<String, dynamic>) {
+          final shelfTitle = p.extractRunsText(shelf['title']) ?? '';
+          if (RegExp(r'top\s+songs', caseSensitive: false)
+              .hasMatch(shelfTitle.trim())) {
+            final runs = shelf['title']?['runs'] as List<dynamic>?;
+            if (runs != null) {
+              for (final run in runs) {
+                if (run is! Map<String, dynamic>) continue;
+                final be = run['navigationEndpoint']?['browseEndpoint']
+                    as Map<String, dynamic>?;
+                final bid = be?['browseId'] as String?;
+                if (bid != null && bid.isNotEmpty) {
+                  found = (
+                    browseId: bid,
+                    params: be?['params'] as String?,
+                  );
+                  return;
+                }
+              }
+            }
+          }
+        }
+        for (final v in node.values) {
+          walk(v);
+        }
+      } else if (node is List) {
+        for (final v in node) {
+          walk(v);
+          if (found != null) return;
+        }
+      }
+    }
+
+    walk(browseData);
+    return found;
+  }
+
+  /// Artist channel: root `header.musicImmersiveHeaderRenderer` — bio in
+  /// [description], [monthlyListenerCount] as [PlaylistBrowseMeta.subtitle].
+  static PlaylistBrowseMeta? extractImmersiveHeaderBrowseMeta(
+    Map<String, dynamic> browseData,
+  ) {
+    final rootHeader = browseData['header'] as Map<String, dynamic>?;
+    final immersive =
+        rootHeader?['musicImmersiveHeaderRenderer'] as Map<String, dynamic>?;
+    if (immersive == null) return null;
+
+    String? desc = p.extractRunsText(immersive['description'])?.trim();
+    if (desc == null || desc.isEmpty) {
+      final micro = browseData['microformat']?['microformatDataRenderer']
+          ?['description'] as String?;
+      if (micro != null && micro.trim().isNotEmpty) {
+        desc = micro.trim();
+      }
+    }
+    if (desc == null || desc.isEmpty) {
+      desc = _extractFirstMusicDescriptionShelfDescription(browseData);
+    }
+
+    final monthly =
+        p.extractRunsText(immersive['monthlyListenerCount'])?.trim();
+
+    final channelTitle = p.extractRunsText(immersive['title'])?.trim();
+
+    // Hero cover: immersive header thumb (largest run, e.g. w1000-h416). Do not run
+    // [upgradeThumbResolution] — it forces =w544-h544 and replaces the official crop.
+    String? channelThumb =
+        p.extractThumbnailUrl(immersive['thumbnail']);
+    if (channelThumb == null || channelThumb.isEmpty) {
+      final microThumbNode = browseData['microformat']
+          ?['microformatDataRenderer']?['thumbnail'];
+      channelThumb = p.extractThumbnailUrl(microThumbNode);
+      if (channelThumb != null && channelThumb.isNotEmpty) {
+        channelThumb = p.upgradeThumbResolution(channelThumb, '');
+      }
+    }
+
+    final hasAny = (desc != null && desc.isNotEmpty) ||
+        (monthly != null && monthly.isNotEmpty) ||
+        (channelTitle != null && channelTitle.isNotEmpty) ||
+        (channelThumb != null && channelThumb.isNotEmpty);
+    if (!hasAny) return null;
+
+    return PlaylistBrowseMeta(
+      description: desc,
+      curatorName: null,
+      curatorThumbnailUrl: null,
+      subtitle: (monthly != null && monthly.isNotEmpty) ? monthly : null,
+      secondSubtitle: null,
+      channelTitle: (channelTitle != null && channelTitle.isNotEmpty)
+          ? channelTitle
+          : null,
+      channelThumbnailUrl:
+          (channelThumb != null && channelThumb.isNotEmpty) ? channelThumb : null,
+    );
+  }
+
+  static String? _extractFirstMusicDescriptionShelfDescription(
+    Map<String, dynamic> root,
+  ) {
+    String? found;
+    void walk(dynamic node) {
+      if (found != null) return;
+      if (node is Map<String, dynamic>) {
+        final shelf = node['musicDescriptionShelfRenderer'];
+        if (shelf is Map<String, dynamic>) {
+          final inner = shelf['description'];
+          final t = p.extractRunsText(inner);
+          if (t != null && t.trim().isNotEmpty) {
+            found = t.trim();
+            return;
+          }
+        }
+        for (final v in node.values) {
+          walk(v);
+        }
+      } else if (node is List) {
+        for (final v in node) {
+          walk(v);
+        }
+      }
+    }
+
+    walk(root);
+    return found;
   }
 
   static Map<String, dynamic>? _findPlaylistStyleHeader(

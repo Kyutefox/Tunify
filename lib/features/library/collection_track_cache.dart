@@ -54,6 +54,7 @@ class CollectionTrackCache {
       curatorThumbnailUrl: map['curatorThumbnailUrl'] as String?,
       headerSubtitle: map['headerSubtitle'] as String?,
       headerSecondSubtitle: map['headerSecondSubtitle'] as String?,
+      collectionTitle: map['collectionTitle'] as String?,
     );
   }
 
@@ -73,6 +74,7 @@ class CollectionTrackCache {
     String? curatorThumbnailUrl,
     String? headerSubtitle,
     String? headerSecondSubtitle,
+    String? collectionTitle,
   }) {
     final now = DateTime.now();
     _getBox().then((box) {
@@ -92,6 +94,9 @@ class CollectionTrackCache {
       if (headerSubtitle != null) map['headerSubtitle'] = headerSubtitle;
       if (headerSecondSubtitle != null) {
         map['headerSecondSubtitle'] = headerSecondSubtitle;
+      }
+      if (collectionTitle != null) {
+        map['collectionTitle'] = collectionTitle;
       }
       box.put(id, map);
     }).ignore();
@@ -131,6 +136,7 @@ class CacheEntry {
     this.curatorThumbnailUrl,
     this.headerSubtitle,
     this.headerSecondSubtitle,
+    this.collectionTitle,
   });
   final List<Song> songs;
   final DateTime cachedAt;
@@ -141,4 +147,6 @@ class CacheEntry {
   final String? curatorThumbnailUrl;
   final String? headerSubtitle;
   final String? headerSecondSubtitle;
+  /// Browse canonical name (e.g. artist channel title from immersive header).
+  final String? collectionTitle;
 }

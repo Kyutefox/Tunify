@@ -953,12 +953,28 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         // Cache hit — update if first load or non-silent refresh
         if (!silent || _remoteAsLocal == null) {
           if (_remoteAsLocal == null) {
+            final cachedDesc = entry.description?.trim();
+            final cachedSub = entry.headerSubtitle?.trim();
+            final cachedSub2 = entry.headerSecondSubtitle?.trim();
+            final cachedTitle = entry.collectionTitle?.trim();
             setState(() {
               if (entry.paletteColor != null)
                 _paletteColor = entry.paletteColor;
               _remoteAsLocal = _makePlaylist(
                 id: _resolvedBrowseId!,
-                name: widget.albumName ?? '',
+                name: (cachedTitle != null && cachedTitle.isNotEmpty)
+                    ? cachedTitle
+                    : (widget.albumName ?? ''),
+                description: (cachedDesc != null && cachedDesc.isNotEmpty)
+                    ? cachedDesc
+                    : '',
+                headerSubtitle: (cachedSub != null && cachedSub.isNotEmpty)
+                    ? cachedSub
+                    : null,
+                headerSecondSubtitle:
+                    (cachedSub2 != null && cachedSub2.isNotEmpty)
+                        ? cachedSub2
+                        : null,
                 songs: entry.songs,
                 imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
               );
@@ -987,21 +1003,48 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           .any((a) => a.id == resolvedId || a.browseId == resolvedId);
       await sm.fetchCollectionTracksProgressive(
         resolvedId,
-        onFirstPage: (firstBatch, token, [_]) async {
+        onFirstPage: (firstBatch, token, [browseMeta]) async {
           if (!mounted || _backgroundLoadCancelled) return;
           final songs = firstBatch.map(Song.fromTrack).toList();
-          final imageUrl = widget.albumThumbnailUrl;
-          CollectionTrackCache.instance
-              .put(resolvedId, songs, imageUrl: imageUrl);
-          final color = _paletteColor ?? await _extractPaletteColor(imageUrl);
+          final d = browseMeta?.description?.trim();
+          final sub = browseMeta?.subtitle?.trim();
+          final sub2 = browseMeta?.secondSubtitle?.trim();
+          final channelTitle = browseMeta?.channelTitle?.trim();
+          final channelThumb = browseMeta?.channelThumbnailUrl?.trim();
+          final resolvedName = (channelTitle != null && channelTitle.isNotEmpty)
+              ? channelTitle
+              : (widget.albumName ?? '');
+          final resolvedImage =
+              (channelThumb != null && channelThumb.isNotEmpty)
+                  ? channelThumb
+                  : widget.albumThumbnailUrl;
+          CollectionTrackCache.instance.put(
+            resolvedId,
+            songs,
+            imageUrl: resolvedImage,
+            description: (d != null && d.isNotEmpty) ? d : null,
+            headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+            headerSecondSubtitle:
+                (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
+            collectionTitle:
+                (channelTitle != null && channelTitle.isNotEmpty)
+                    ? channelTitle
+                    : null,
+          );
+          final color =
+              _paletteColor ?? await _extractPaletteColor(resolvedImage);
           if (!mounted || _backgroundLoadCancelled) return;
           setState(() {
             if (color != null) _paletteColor = color;
             _remoteAsLocal = _makePlaylist(
               id: resolvedId,
-              name: widget.albumName ?? '',
+              name: resolvedName,
+              description: (d != null && d.isNotEmpty) ? d : '',
+              headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
+              headerSecondSubtitle:
+                  (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
               songs: songs,
-              imageUrl: imageUrl,
+              imageUrl: resolvedImage,
             );
           });
           if (color != null) {
@@ -1010,7 +1053,8 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           if (isInLib) {
             ref.read(libraryProvider.notifier).refreshArtistMeta(
                   resolvedId,
-                  thumbnailUrl: imageUrl,
+                  name: resolvedName,
+                  thumbnailUrl: resolvedImage,
                 );
           }
         },
@@ -1021,8 +1065,15 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             if (_remoteAsLocal != null) {
               final updated = [..._remoteAsLocal!.songs, ...newSongs];
               _remoteAsLocal = _remoteAsLocal!.copyWith(songs: updated);
-              CollectionTrackCache.instance
-                  .put(resolvedId, updated, imageUrl: widget.albumThumbnailUrl);
+              CollectionTrackCache.instance.put(
+                resolvedId,
+                updated,
+                imageUrl: _remoteAsLocal?.customImageUrl,
+                description: _remoteAsLocal?.description,
+                headerSubtitle: _remoteAsLocal?.headerSubtitle,
+                headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
+                collectionTitle: _remoteAsLocal?.name,
+              );
             }
           });
         },
@@ -1436,6 +1487,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               },
               childCount: filteredSongs.length,
             )),
+          _collectionFooterSliverMusicOnly(sortedSongs),
           const SliverToBoxAdapter(child: SizedBox(height: 160)),
         ],
         hasSong: hasSong,
@@ -1606,6 +1658,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               },
               childCount: filteredSongs.length,
             )),
+          _collectionFooterSliverMusicOnly(sortedSongs),
           const SliverToBoxAdapter(child: SizedBox(height: 160)),
         ],
         hasSong: hasSong,
@@ -1714,12 +1767,20 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     final filteredSongs =
         filterByExplicitSetting(songs, ref.watch(showExplicitContentProvider));
 
+    // Prefer browse-loaded art (correct for "Go to artist" before follow / stale route args).
     final coverUrl = _isRemote
-        ? (_isImportedLocal
-            ? _remoteAsLocal?.customImageUrl
-            : isInLibrary
-                ? playlist.customImageUrl
-                : widget.remotePlaylist?.coverUrl ?? widget.albumThumbnailUrl)
+        ? () {
+            final fromBrowse =
+                _remoteAsLocal?.customImageUrl?.trim() ?? '';
+            if (fromBrowse.isNotEmpty) return fromBrowse;
+            if (_isImportedLocal) {
+              return _remoteAsLocal?.customImageUrl;
+            }
+            if (isInLibrary) {
+              return playlist.customImageUrl;
+            }
+            return widget.remotePlaylist?.coverUrl ?? widget.albumThumbnailUrl;
+          }()
         : playlist.customImageUrl;
 
     final isLiked = playlist.id == 'liked';
@@ -1887,22 +1948,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             },
             childCount: filteredSongs.length,
           )),
-        if (_usePlaylistDescriptionUnderHeader(playlist) &&
-            _shouldShowPlaylistFooterMeta(playlist))
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.base,
-                AppSpacing.lg,
-                AppSpacing.base,
-                AppSpacing.sm,
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: _playlistFooterCountAndDuration(songs),
-              ),
-            ),
-          ),
+        _collectionFooterSliver(playlist, songs),
         if (widget._isPodcast && _loadingMore)
           SliverToBoxAdapter(
             child: Padding(
@@ -1937,9 +1983,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     );
   }
 
-  /// Playlists and albums: compact browse meta under the title; stats in footer when needed.
+  /// Playlists, albums, artists: compact browse meta under the title; stats in footer when needed.
   bool _usePlaylistDescriptionUnderHeader(LibraryPlaylist playlist) {
-    if (widget._isArtist || widget._isPodcast) return false;
+    if (widget._isPodcast) return false;
     if (playlist.id == 'liked' || playlist.id == 'episodesForLater') {
       return false;
     }
@@ -1957,16 +2003,70 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     return _buildSubtitle(playlist);
   }
 
-  /// Hide list footer counts when the same summary is already shown under the title.
-  bool _shouldShowPlaylistFooterMeta(LibraryPlaylist playlist) {
-    final second = playlist.headerSecondSubtitle?.trim() ?? '';
-    if (second.isNotEmpty) {
-      return false;
+  static const _footerListPadding = EdgeInsets.fromLTRB(
+    AppSpacing.base,
+    AppSpacing.lg,
+    AppSpacing.base,
+    AppSpacing.sm,
+  );
+
+  /// Centered count + total duration below the track list (all collection types).
+  Widget _collectionFooterSliver(LibraryPlaylist playlist, List<Song> songs) {
+    final muted = TextStyle(
+      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.88),
+      fontSize: AppFontSize.xs,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.12,
+    );
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: _footerListPadding,
+        child: Center(
+          child: Text(
+            _footerStatsLineText(playlist, songs),
+            style: muted,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _collectionFooterSliverMusicOnly(List<Song> songs) {
+    final muted = TextStyle(
+      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.88),
+      fontSize: AppFontSize.xs,
+      fontWeight: FontWeight.w500,
+      letterSpacing: 0.12,
+    );
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: _footerListPadding,
+        child: Center(
+          child: Text(
+            _libraryPlaylistStatsSubtitle(songs),
+            style: muted,
+            textAlign: TextAlign.center,
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _footerStatsLineText(LibraryPlaylist playlist, List<Song> songs) {
+    if (widget._isPodcast || playlist.id == 'episodesForLater') {
+      final n = songs.length;
+      final label = n == 1 ? 'episode' : 'episodes';
+      if (n == 0) {
+        return '0 $label';
+      }
+      final dur = _formatDuration(songs);
+      if (dur.isEmpty) {
+        return '$n $label';
+      }
+      return '$n $label • $dur';
     }
-    if (_isUserCreatedMusicPlaylist(playlist)) {
-      return false;
-    }
-    return true;
+    return _libraryPlaylistStatsSubtitle(songs);
   }
 
   /// Local playlist the user created (not imported / not remote album-artist-podcast).
@@ -2073,16 +2173,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           ),
       ],
     );
-  }
-
-  Widget _playlistFooterCountAndDuration(List<Song> trackList) {
-    final muted = TextStyle(
-      color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.88),
-      fontSize: AppFontSize.xs,
-      fontWeight: FontWeight.w500,
-      letterSpacing: 0.12,
-    );
-    return Text(_libraryPlaylistStatsSubtitle(trackList), style: muted);
   }
 
   Widget _buildSubtitle(LibraryPlaylist playlist) {

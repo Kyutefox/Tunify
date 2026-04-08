@@ -1,5 +1,6 @@
-/// Playlist header fields from the first YouTube Music `browse` response
-/// ([musicResponsiveHeaderRenderer]): editorial description, owner name, avatar
+/// Browse header fields from the first YouTube Music `browse` response:
+/// [musicResponsiveHeaderRenderer] for playlists/albums, or root
+/// [musicImmersiveHeaderRenderer] for artist channels.
 class PlaylistBrowseMeta {
   const PlaylistBrowseMeta({
     this.description,
@@ -7,13 +8,20 @@ class PlaylistBrowseMeta {
     this.curatorThumbnailUrl,
     this.subtitle,
     this.secondSubtitle,
+    this.channelTitle,
+    this.channelThumbnailUrl,
   });
 
   final String? description;
   final String? curatorName;
   final String? curatorThumbnailUrl;
-  /// Header line (e.g. `Playlist • 2023`).
+  /// Playlist/album subtitle (e.g. `Playlist • 2023`) or artist monthly
+  /// listeners (e.g. `101M monthly audience`).
   final String? subtitle;
   /// Stats line (e.g. `82 songs • 5 hours, 3 minutes` or views • tracks • duration).
   final String? secondSubtitle;
+  /// Artist: [musicImmersiveHeaderRenderer.title] (canonical channel name).
+  final String? channelTitle;
+  /// Artist: square avatar from microformat, else immersive header thumbnail.
+  final String? channelThumbnailUrl;
 }

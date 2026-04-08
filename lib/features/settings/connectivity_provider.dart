@@ -17,8 +17,8 @@ final connectivityProvider = StreamProvider<bool>((ref) async* {
   }
 });
 
-bool _isConnected(ConnectivityResult result) {
-  return result != ConnectivityResult.none;
+bool _isConnected(List<ConnectivityResult> results) {
+  return !results.contains(ConnectivityResult.none);
 }
 
 /// One-shot connectivity check. Use [connectivityProvider] to watch live changes.
@@ -27,7 +27,7 @@ final isOnlineProvider = FutureProvider<bool>((ref) async {
   try {
     final connectivity = Connectivity();
     final result = await connectivity.checkConnectivity();
-    return result != ConnectivityResult.none;
+    return _isConnected(result);
   } catch (e) {
     logWarning('Connectivity check failed: $e', tag: 'Connectivity');
     return true; // Assume online on error to avoid blocking user

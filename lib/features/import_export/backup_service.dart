@@ -82,7 +82,7 @@ class BackupService {
           .substring(0, 19);
       final fileName = 'tunify_backup_$timestamp.json';
 
-      final savedPath = await FilePicker.platform.saveFile(
+      final savedPath = await FilePicker.saveFile(
         dialogTitle: 'Save Tunify Backup',
         fileName: fileName,
         type: FileType.custom,
@@ -106,7 +106,7 @@ class BackupService {
   /// deserialises it and writes it back to the database.
   Future<BackupResult> restoreBackup() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
+      final result = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['json'],
         allowMultiple: false,

@@ -242,9 +242,7 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   bool _exporting = false;
 
   // Pagination state for remote collections (including podcast/audiobook feeds).
-  String? _continuationToken;
   bool _loadingMore = false;
-  bool _hasMore = true;
   bool _backgroundLoadCancelled = false;
   final ScrollController _scrollController = ScrollController();
 
@@ -376,7 +374,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
     if (widget.playlistId == 'downloads') return;
     // Episodes For Later — purely local, no fetching needed
     if (widget.playlistId == 'episodesForLater' ||
-        widget.remotePlaylist?.id == 'episodesForLater') return;
+        widget.remotePlaylist?.id == 'episodesForLater') {
+      return;
+    }
 
     // For imported local playlists: read from provider now that ref is available,
     // pre-populate palette and kick off the track fetch.
@@ -637,8 +637,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 imageUrl ?? songs.firstOrNull?.thumbnailUrl);
             if (!mounted || _backgroundLoadCancelled) return;
             setState(() {
-              _continuationToken = token;
-              _hasMore = token != null;
               _loadingMore = token != null;
               if (color != null) _paletteColor = color;
               _remoteAsLocal = _makePlaylist(
@@ -662,8 +660,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             if (!mounted || _backgroundLoadCancelled) return;
             final newSongs = batch.map(Song.fromTrack).toList();
             setState(() {
-              _continuationToken = token;
-              _hasMore = token != null;
               _loadingMore = token != null;
               if (_remoteAsLocal != null) {
                 final updated = [..._remoteAsLocal!.songs, ...newSongs];
@@ -685,7 +681,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           onDone: () {
             if (!mounted || _backgroundLoadCancelled) return;
             setState(() {
-              _hasMore = false;
               _loadingMore = false;
             });
           },
@@ -958,8 +953,9 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             final cachedSub2 = entry.headerSecondSubtitle?.trim();
             final cachedTitle = entry.collectionTitle?.trim();
             setState(() {
-              if (entry.paletteColor != null)
+              if (entry.paletteColor != null) {
                 _paletteColor = entry.paletteColor;
+              }
               _remoteAsLocal = _makePlaylist(
                 id: _resolvedBrowseId!,
                 name: (cachedTitle != null && cachedTitle.isNotEmpty)
@@ -4747,8 +4743,9 @@ class _RecommendationsSliver extends StatelessWidget {
             ? (f.playlistShelves.isNotEmpty || f.artistShelves.isNotEmpty)
             : f.playlistShelves.any((s) => s.playlists.isNotEmpty));
 
-    if (!loading && !hasData)
+    if (!loading && !hasData) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
 
     final isDesktop = ShellContext.isDesktopOf(context);
 

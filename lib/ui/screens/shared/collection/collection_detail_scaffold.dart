@@ -475,8 +475,9 @@ class _DockingActionRowState extends State<_DockingActionRow> {
         // Not yet measured — render at estimated position
         if (top == -1.0) return const SizedBox.shrink();
         // Fully scrolled behind appbar — hide
-        if (top + widget.height <= widget.appBarHeight)
+        if (top + widget.height <= widget.appBarHeight) {
           return const SizedBox.shrink();
+        }
         return Positioned(
           top: top,
           left: 0,

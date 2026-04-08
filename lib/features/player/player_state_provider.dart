@@ -401,8 +401,13 @@ class PlayerNotifier extends Notifier<PlayerState> {
           _smartShufflePlaylistSongs[_smartSeedIndex % _smartShufflePlaylistSongs.length];
       _smartSeedIndex++;
 
+      final smartPlaylistId = _playlistContextIdForRecommendations(
+        isPlaylistQueue: true,
+        isSmart: true,
+      );
       final tracks = await _streamManager.getRecommendedQueue(
         seed.id,
+        playlistId: smartPlaylistId,
         maxResults: 8,
       );
       if (tracks.isEmpty) return;
@@ -1651,14 +1656,18 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
   Future<void> _loadQueueInBackground(Song song, {String? playlistId}) async {
     try {
-      // Always pass null for smart shuffle: local playlist IDs (lib_xxx) are
-      // not recognised by the YouTube Music API and produce empty results.
-      final isSmartShuffleAppend = state.queue.length > 1;
+      // Use playlist-aware recommendations only for full-playlist smart shuffle.
+      // Single-song playback always stays song-seeded (playlistId null).
       final isSmart = state.activeShuffleMode == ShuffleMode.smart;
+      final recPlaylistId = _playlistContextIdForRecommendations(
+        isPlaylistQueue: state.queue.length > 1,
+        isSmart: isSmart,
+        explicitPlaylistId: playlistId,
+      );
       var tracks = await _streamManager.getRecommendedQueue(
         song.id,
-        playlistId: (isSmartShuffleAppend || isSmart) ? null : playlistId,
-        maxResults: 10,
+        playlistId: recPlaylistId,
+        maxResults: 50,
       );
 
       if (tracks.isEmpty) return;
@@ -1799,6 +1808,19 @@ class PlayerNotifier extends Notifier<PlayerState> {
     } catch (e) {
       logWarning('Player: _loadQueueInBackground failed: $e', tag: 'Player');
     }
+  }
+
+  String? _playlistContextIdForRecommendations({
+    required bool isPlaylistQueue,
+    required bool isSmart,
+    String? explicitPlaylistId,
+  }) {
+    if (!isPlaylistQueue || !isSmart) return null;
+    final raw = explicitPlaylistId ?? _lastPlaylistId;
+    if (raw == null || raw.isEmpty) return null;
+    // Local/library ids are not valid YT playlist ids for next.fetchNext.
+    if (raw.startsWith('lib_')) return null;
+    return raw;
   }
 
   void reorderQueue(int oldIndex, int newIndex) {

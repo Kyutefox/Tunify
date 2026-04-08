@@ -9,8 +9,6 @@ import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/data/models/audiobook.dart';
 import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
-import 'package:tunify/data/models/library_album.dart';
-import 'package:tunify/data/models/library_artist.dart';
 import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/podcast.dart';
 import 'package:tunify/features/library/library_provider.dart';

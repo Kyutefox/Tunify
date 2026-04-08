@@ -120,7 +120,7 @@ class PlaylistIOService {
         ? 'tunify_${_sanitize(playlists.first.name)}_$timestamp.json'
         : 'tunify_playlists_$timestamp.json';
 
-    final savedPath = await FilePicker.platform.saveFile(
+    final savedPath = await FilePicker.saveFile(
       dialogTitle: 'Save Playlist Export',
       fileName: fileName,
       type: FileType.custom,
@@ -154,7 +154,7 @@ class PlaylistIOService {
       final bytes = utf8.encode(buf.toString());
       final fileName = 'tunify_${_sanitize(pl.name)}_$timestamp.m3u';
 
-      final savedPath = await FilePicker.platform.saveFile(
+      final savedPath = await FilePicker.saveFile(
         dialogTitle: 'Save "${pl.name}" as M3U',
         fileName: fileName,
         type: FileType.custom,
@@ -180,7 +180,7 @@ class PlaylistIOService {
   Future<({PlaylistIOResult result, List<ParsedPlaylist> playlists})>
       pickAndParse() async {
     try {
-      final picked = await FilePicker.platform.pickFiles(
+      final picked = await FilePicker.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['m3u', 'm3u8', 'json'],
         allowMultiple: false,

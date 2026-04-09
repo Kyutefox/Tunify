@@ -10,7 +10,7 @@ import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/player/audio/audio_handler.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
 import 'package:tunify/features/player/playback_position_provider.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 /// Provider that handles CarPlay method channel communication.
 /// Listens for requests from the iOS CarPlay interface and provides

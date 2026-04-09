@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Migration: Add user_followed_artists and user_followed_albums tables
--- Run this in the Supabase SQL Editor for existing databases.
+-- Optional migration for environments that keep a server-side copy of library data.
 -- =============================================================================
 
 -- -----------------------------------------------------------------------------

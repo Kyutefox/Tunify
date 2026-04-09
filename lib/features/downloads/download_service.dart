@@ -7,7 +7,7 @@ import 'package:path/path.dart';
 import 'package:tunify_database/tunify_database.dart';
 
 import 'package:tunify/data/models/song.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 import 'package:tunify/features/settings/music_stream_manager.dart';
 import 'package:tunify/features/settings/stream_cache_service.dart';
 

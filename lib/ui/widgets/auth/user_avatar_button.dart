@@ -20,8 +20,8 @@ import 'package:tunify/ui/theme/app_routes.dart';
 import 'package:tunify/ui/widgets/common/sheet.dart';
 
 void _refreshProvidersForSignOut(WidgetRef ref) {
-  ref.read(homeProvider.notifier).onAuthChanged(null);
-  ref.read(libraryProvider.notifier).onAuthChanged(null);
+  ref.read(homeProvider.notifier).onAuthChanged();
+  ref.read(libraryProvider.notifier).onAuthChanged();
   ref.read(recentSearchProvider.notifier).onAuthChanged();
 }
 
@@ -37,21 +37,18 @@ class UserAvatarButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
     final isGuest = ref.watch(guestModeProvider);
     final guestUsername =
         isGuest ? ref.watch(guestUsernameProvider).value : null;
     final cachedAvatarSeed =
         isGuest ? ref.watch(avatarSeedProvider).value : null;
-    final username = (user?.userMetadata?['username'] as String?) ??
-        (user?.email?.split('@').first) ??
-        (isGuest ? (guestUsername ?? 'Guest') : 'V');
+    final username = (isGuest ? (guestUsername ?? 'Guest') : 'Guest');
     final avatarSeed = cachedAvatarSeed ?? username;
     final avatarUrl = generateBotttsAvatarUrl(avatarSeed, size: 72);
 
     return GestureDetector(
       onTap: () {
-        _showMobileSheet(context, ref, username, user?.email);
+        _showMobileSheet(context, ref, username, null);
       },
       child: ClipOval(
         clipBehavior: Clip.hardEdge,
@@ -93,7 +90,6 @@ void _showMobileSheet(
   String username,
   String? email,
 ) {
-  final isGuest = ref.read(guestModeProvider);
   showRawSheet(
     context,
     child: HomeUserMenuSheet(
@@ -101,43 +97,32 @@ void _showMobileSheet(
       email: email,
       onSignOut: () async {
         Navigator.of(context).pop();
-        if (isGuest) {
-          await ref.read(databaseRepositoryProvider).clearAllLocalData();
-          await ref.read(guestUsernameProvider.notifier).clearGuestData();
-          await ref.read(avatarSeedProvider.notifier).clearAvatarSeed();
-          ref.read(guestModeProvider.notifier).exitGuestMode();
-          _refreshProvidersForSignOut(ref);
-        } else {
-          await ref.read(authNotifierProvider.notifier).signOut();
-        }
+        await ref.read(databaseRepositoryProvider).clearAllLocalData();
+        await ref.read(guestUsernameProvider.notifier).clearGuestData();
+        await ref.read(avatarSeedProvider.notifier).clearAvatarSeed();
+        _refreshProvidersForSignOut(ref);
       },
       onSettings: () {
         Navigator.of(context).pop();
         showRawSheet(context, child: const HomeSettingsSheet());
       },
-      onEditProfile: isGuest
-          ? () {
-              Navigator.of(context).pop();
-              Navigator.of(context).push(
-                appPageRoute<void>(
-                  keyboardInsetsUnmasked: true,
-                  builder: (_) =>
-                      const GuestProfileSetupScreen(isInitial: false),
-                ),
-              );
-            }
-          : null,
+      onEditProfile: () {
+        Navigator.of(context).pop();
+        Navigator.of(context).push(
+          appPageRoute<void>(
+            keyboardInsetsUnmasked: true,
+            builder: (_) => const GuestProfileSetupScreen(isInitial: false),
+          ),
+        );
+      },
     ),
   );
 }
 
 /// Convenience function — call from non-widget code that already has a ref.
 void showUserMenu(BuildContext context, WidgetRef ref) {
-  final user = ref.read(currentUserProvider);
   final isGuest = ref.read(guestModeProvider);
   final guestUsername = isGuest ? ref.read(guestUsernameProvider).value : null;
-  final username = (user?.userMetadata?['username'] as String?) ??
-      (user?.email?.split('@').first) ??
-      (isGuest ? (guestUsername ?? 'Guest') : 'V');
-  _showMobileSheet(context, ref, username, user?.email);
+  final username = isGuest ? (guestUsername ?? 'Guest') : 'Guest';
+  _showMobileSheet(context, ref, username, null);
 }

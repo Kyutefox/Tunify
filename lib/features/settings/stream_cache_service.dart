@@ -9,7 +9,7 @@ import 'package:http/http.dart' as http;
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 class CacheStats {
   final int totalBytes;

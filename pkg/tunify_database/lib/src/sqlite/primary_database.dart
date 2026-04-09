@@ -8,8 +8,7 @@ import 'get.controller.dart';
 import 'update.controller.dart';
 
 /// Primary app database (SQLite). All reads and writes go through this class.
-/// Supabase sync runs in the background for logged-in users. Operations are
-/// delegated to get/create/update/delete controllers.
+/// Operations are delegated to get/create/update/delete controllers.
 class PrimaryDatabase {
   static const String _dbName = 'tunify_primary.db';
   static const int _version = 1;

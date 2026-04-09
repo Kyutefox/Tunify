@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 import 'package:tunify/data/models/library_album.dart';
 import 'package:tunify/data/models/library_artist.dart';

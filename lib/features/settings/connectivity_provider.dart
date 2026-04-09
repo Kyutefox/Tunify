@@ -1,6 +1,6 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 /// Provides real-time network connectivity status.
 /// Emits true when device is connected, false when offline.

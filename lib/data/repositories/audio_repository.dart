@@ -5,7 +5,8 @@ import 'package:tunify/data/models/song.dart';
 import 'package:tunify/features/settings/music_stream_manager.dart';
 import 'package:tunify/features/settings/stream_cache_service.dart';
 import 'package:tunify/features/player/audio/crossfade_engine.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
+import 'package:tunify_music_ports/tunify_music_ports.dart';
 
 enum AudioSourceKind {
   local,
@@ -45,12 +46,16 @@ class ResolvedAudioSourceStream extends ResolvedAudioSource {
     required this.url,
     this.headers,
     this.qualityInfo,
+    this.transport = StreamTransport.http,
+    this.localPath,
   }) : super();
 
   final String url;
   final Map<String, String>? headers;
   @override
   final ({int bitrate, String quality})? qualityInfo;
+  final StreamTransport transport;
+  final String? localPath;
 
   @override
   AudioSourceKind get kind => AudioSourceKind.stream;
@@ -69,6 +74,8 @@ class AudioRepository {
   final StreamCacheService _streamCache;
   final String? Function(String songId) _getLocalPath;
 
+  String _cacheKeyForSong(Song song) => '${MusicSource.youtubeMusic.name}:${song.id}';
+
   Future<ResolvedAudioSource> resolveSource(Song song) async {
     final stepSw = Stopwatch()..start();
 
@@ -80,12 +87,11 @@ class AudioRepository {
           sourceKind: AudioSourceKind.downloaded);
     }
 
-    final cacheInfo = await _streamCache.getCacheInfo(song.id);
+    final cacheInfo = await _streamCache.getCacheInfo(_cacheKeyForSong(song));
     if (cacheInfo.exists && cacheInfo.filePath != null) {
-      // Use partial cache immediately if we have enough data buffered
       final hasEnoughData =
-          cacheInfo.cachedBytes >= (2 * 1024 * 1024) || // 2MB minimum
-              cacheInfo.progress >= 0.30; // or 30% of expected size
+          cacheInfo.cachedBytes >= (2 * 1024 * 1024) ||
+              cacheInfo.progress >= 0.30;
 
       if (hasEnoughData || cacheInfo.isComplete) {
         log(
@@ -101,7 +107,23 @@ class AudioRepository {
 
     log('PlayFlow: resolveSource cache MISS, fetching stream URL (${stepSw.elapsedMilliseconds}ms)',
         tag: 'PlayFlow');
-    final streamData = await _streamManager.getStreamUrl(song.id);
+    final streamData = await _streamManager.getBestStreamForSong(song);
+    final localPath = streamData['stream_local_path'] as String?;
+    final transport = ((streamData['transport'] as String?) ?? 'http') == 'localFile'
+        ? StreamTransport.localFile
+        : StreamTransport.http;
+    if (transport == StreamTransport.localFile &&
+        localPath != null &&
+        localPath.isNotEmpty) {
+      return ResolvedAudioSourceFile(
+        localPath,
+        sourceKind: AudioSourceKind.streamCached,
+        qualityInfo: (
+          bitrate: streamData['bitrate'] as int? ?? 0,
+          quality: streamData['quality'] as String? ?? 'lossless',
+        ),
+      );
+    }
     final url = streamData['stream_url'] as String;
     final headers = streamData['headers'] as Map<String, String>?;
     final bitrate = streamData['bitrate'] as int? ?? 0;
@@ -113,12 +135,13 @@ class AudioRepository {
       url: url,
       headers: headers,
       qualityInfo: (bitrate: bitrate, quality: quality),
+      transport: transport,
+      localPath: localPath,
     );
   }
 
   Future<ResolvedAudioSource> resolveForPlayback(Song song) async {
     final stepSw = Stopwatch()..start();
-
     final path = _getLocalPath(song.id);
     if (path != null && path.isNotEmpty) {
       log('PlayFlow: resolveForPlayback getLocalPath -> file (${stepSw.elapsedMilliseconds}ms)',
@@ -127,7 +150,7 @@ class AudioRepository {
           sourceKind: AudioSourceKind.downloaded);
     }
 
-    final cacheInfo = await _streamCache.getCacheInfo(song.id);
+    final cacheInfo = await _streamCache.getCacheInfo(_cacheKeyForSong(song));
 
     log(
         'PlayFlow: resolveForPlayback cache check: exists=${cacheInfo.exists} '
@@ -137,11 +160,9 @@ class AudioRepository {
         tag: 'PlayFlow');
 
     if (cacheInfo.exists && cacheInfo.filePath != null) {
-      // Use partial cache immediately if we have enough data buffered
-      // This eliminates the 1-2 second network fetch delay on next/prev
       final hasEnoughData =
-          cacheInfo.cachedBytes >= (2 * 1024 * 1024) || // 2MB minimum
-              cacheInfo.progress >= 0.30; // or 30% of expected size
+          cacheInfo.cachedBytes >= (2 * 1024 * 1024) ||
+              cacheInfo.progress >= 0.30;
 
       log(
           'PlayFlow: resolveForPlayback cache decision: hasEnoughData=$hasEnoughData '
@@ -164,7 +185,23 @@ class AudioRepository {
 
     log('PlayFlow: resolveForPlayback cache MISS/insufficient, fetching stream URL (${stepSw.elapsedMilliseconds}ms)',
         tag: 'PlayFlow');
-    final streamData = await _streamManager.getStreamUrl(song.id);
+    final streamData = await _streamManager.getBestStreamForSong(song);
+    final localPath = streamData['stream_local_path'] as String?;
+    final transport = ((streamData['transport'] as String?) ?? 'http') == 'localFile'
+        ? StreamTransport.localFile
+        : StreamTransport.http;
+    if (transport == StreamTransport.localFile &&
+        localPath != null &&
+        localPath.isNotEmpty) {
+      return ResolvedAudioSourceFile(
+        localPath,
+        sourceKind: AudioSourceKind.streamCached,
+        qualityInfo: (
+          bitrate: streamData['bitrate'] as int? ?? 0,
+          quality: streamData['quality'] as String? ?? 'lossless',
+        ),
+      );
+    }
     final url = streamData['stream_url'] as String;
     final headers = streamData['headers'] as Map<String, String>?;
     final bitrate = streamData['bitrate'] as int? ?? 0;
@@ -176,12 +213,18 @@ class AudioRepository {
       url: url,
       headers: headers,
       qualityInfo: (bitrate: bitrate, quality: quality),
+      transport: transport,
+      localPath: localPath,
     );
   }
 
   void startBackgroundCacheDownload(
       String songId, String url, Map<String, String>? headers) {
-    _streamCache.downloadToCacheInBackground(songId, url, headers);
+    _streamCache.downloadToCacheInBackground(
+      '${MusicSource.youtubeMusic.name}:$songId',
+      url,
+      headers,
+    );
   }
 
   Future<void> startIncrementalDownload(
@@ -190,17 +233,22 @@ class AudioRepository {
     Map<String, String>? headers, {
     int? fromByte,
   }) async {
-    _streamCache.startIncrementalDownload(songId, url, headers,
+    _streamCache.startIncrementalDownload(
+        '${MusicSource.youtubeMusic.name}:$songId', url, headers,
         fromByte: fromByte);
   }
 
   Future<CacheInfo> getCacheInfo(String songId) async {
-    return _streamCache.getCacheInfo(songId);
+    return _streamCache.getCacheInfo('${MusicSource.youtubeMusic.name}:$songId');
   }
 
   Future<bool> isPositionCached(
       String songId, Duration position, Duration? totalDuration) async {
-    return _streamCache.isPositionCached(songId, position, totalDuration);
+    return _streamCache.isPositionCached(
+      '${MusicSource.youtubeMusic.name}:$songId',
+      position,
+      totalDuration,
+    );
   }
 
   Future<void> applySource(
@@ -222,11 +270,13 @@ class AudioRepository {
   }
 
   Future<bool> hasStreamCacheFile(String songId) =>
-      _streamCache.getCacheFilePath(songId).then((p) => p != null);
+      _streamCache
+          .getCacheFilePath('${MusicSource.youtubeMusic.name}:$songId')
+          .then((p) => p != null);
 
   Future<void> clearStreamCacheFor(String songId) async {
     _streamManager.clearCacheFor(songId);
-    await _streamCache.removeFromCache(songId);
+    await _streamCache.removeFromCache('${MusicSource.youtubeMusic.name}:$songId');
   }
 
   Future<AudioSource> resolveToAudioSource(Song song) async {
@@ -242,7 +292,9 @@ class AudioRepository {
     }
 
     final s = resolved as ResolvedAudioSourceStream;
-    startBackgroundCacheDownload(song.id, s.url, s.headers);
+    if (s.transport == StreamTransport.http) {
+      startBackgroundCacheDownload(song.id, s.url, s.headers);
+    }
     return AudioSource.uri(Uri.parse(s.url));
   }
 
@@ -260,10 +312,10 @@ class AudioRepository {
 
   Future<void> prefetchSongs(List<Song> songs) async {
     for (final song in songs) {
-      final cacheInfo = await _streamCache.getCacheInfo(song.id);
+      final cacheInfo = await _streamCache.getCacheInfo(_cacheKeyForSong(song));
       if (!cacheInfo.exists || !cacheInfo.isComplete) {
         try {
-          final streamData = await _streamManager.getStreamUrl(song.id);
+          final streamData = await _streamManager.getBestStreamForSong(song);
           final url = streamData['stream_url'] as String;
           final headers = streamData['headers'] as Map<String, String>?;
           startBackgroundCacheDownload(song.id, url, headers);

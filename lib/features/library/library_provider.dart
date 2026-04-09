@@ -1,6 +1,4 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:tunify/data/models/library_album.dart';
 import 'package:tunify/data/models/library_artist.dart';
 import 'package:tunify/data/models/library_folder.dart';
@@ -8,7 +6,7 @@ import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/data/repositories/database_repository.dart';
 import 'package:tunify/features/podcast/podcast_provider.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 import 'package:tunify/core/utils/result.dart';
 
 // ── Sort / view enums ─────────────────────────────────────────────────────────
@@ -185,7 +183,7 @@ class LibraryState {
 
 /// Manages all library mutations. All writes optimistically update in-memory
 /// state then persist to SQLite via targeted operations. A background
-/// [SyncManager] handles Supabase sync.
+/// [SyncManager] is a no-op placeholder unless remote sync is added later.
 class LibraryNotifier extends Notifier<LibraryState> {
   DatabaseRepository get _repo => ref.read(databaseRepositoryProvider);
 
@@ -195,7 +193,7 @@ class LibraryNotifier extends Notifier<LibraryState> {
     return LibraryState();
   }
 
-  Future<void> onAuthChanged(User? user) => load();
+  Future<void> onAuthChanged() => load();
 
   Future<void> load() async {
     final result = await Result.guard(() => _repo.loadAll());

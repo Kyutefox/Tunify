@@ -1,0 +1,16 @@
+name: tunify_source_youtube_music
+description: YouTube Music and YouTube Direct extractors (v2) - separate package for separation of concerns.
+publish_to: "none"
+version: 1.0.0
+
+environment:
+  sdk: ^3.6.0
+
+dependencies:
+  http: ^1.2.0
+  crypto: ^3.0.0
+  tunify_music_ports:
+    path: ../tunify_music_ports
+
+dev_dependencies:
+  lints: ^6.0.0

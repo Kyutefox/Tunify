@@ -27,13 +27,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final greeting = ref.watch(greetingProvider);
-    final user = ref.watch(currentUserProvider);
     final isGuest = ref.watch(guestModeProvider);
     final guestUsername =
         isGuest ? ref.watch(guestUsernameProvider).value : null;
-    final username = (user?.userMetadata?['username'] as String?) ??
-        (user?.email?.split('@').first) ??
-        (isGuest ? (guestUsername ?? 'Guest') : 'V');
+    final username = isGuest ? (guestUsername ?? 'Guest') : 'Guest';
 
     return CustomScrollView(
       physics: const BouncingScrollPhysics(),

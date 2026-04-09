@@ -1,4 +1,4 @@
-import 'package:scrapper/scrapper.dart' as scrapper;
+import 'package:tunify_source_youtube_music/tunify_source_youtube_music.dart' as scrapper;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/data/models/audiobook.dart';
 import 'package:tunify/data/models/podcast.dart';

@@ -17,6 +17,7 @@ abstract final class StorageKeys {
   static const String prefsBassBoostLevel = 'bass_boost_level';
   static const String prefsThemeMode = 'theme_mode';
 
+
   /// Hive box key: persisted queue as JSON list (max 50 items).
   static const String hiveKeyQueue = 'queue';
 

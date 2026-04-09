@@ -47,7 +47,7 @@ import 'package:tunify/core/utils/string_utils.dart';
 import '../player/song_options_sheet.dart';
 import 'library_downloaded_content.dart';
 import 'package:tunify/ui/widgets/player/mini_player.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 import 'package:tunify/ui/theme/app_colors_scheme.dart';
 import 'package:tunify/data/models/artist.dart';
 import 'package:tunify/data/models/related_feed.dart';
@@ -2128,15 +2128,12 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
       }
     }
 
-    final user = ref.watch(currentUserProvider);
     final isGuest = ref.watch(guestModeProvider);
     final guestUsername =
         isGuest ? ref.watch(guestUsernameProvider).value : null;
     final cachedAvatarSeed =
         isGuest ? ref.watch(avatarSeedProvider).value : null;
-    final customDisplayName = (user?.userMetadata?['username'] as String?) ??
-        (user?.email?.split('@').first) ??
-        (isGuest ? (guestUsername ?? 'Guest') : 'You');
+    final customDisplayName = isGuest ? (guestUsername ?? 'Guest') : 'Guest';
     final customAvatarUrl = generateBotttsAvatarUrl(
         cachedAvatarSeed ?? customDisplayName,
         size: 128);

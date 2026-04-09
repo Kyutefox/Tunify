@@ -1,17 +1,11 @@
 import '../constants/storage_keys.dart';
 import '../sqlite/primary_database.dart';
-import '../supabase/supabase_remote.dart';
 
-/// Single entry point for app data: all reads and writes go to SQLite. Call
-/// [pullFromSupabase] once on login to seed SQLite; background sync calls
-/// [pushToSupabase] for logged-in users. Guests use SQLite only.
+/// Single entry point for app data: all reads and writes go to SQLite.
 class DatabaseBridge {
-  DatabaseBridge()
-      : _db = PrimaryDatabase(),
-        _remote = SupabaseRemote();
+  DatabaseBridge() : _db = PrimaryDatabase();
 
   final PrimaryDatabase _db;
-  final SupabaseRemote _remote;
 
   /// Loads full library from SQLite.
   Future<Map<String, dynamic>> loadLibraryData() async => _db.loadLibraryData();
@@ -85,86 +79,6 @@ class DatabaseBridge {
   /// Saves YT personalization to SQLite.
   Future<void> saveYtPersonalization(Map<String, dynamic> data) async =>
       _db.saveYtPersonalization(data);
-
-  /// Pulls all data from Supabase into SQLite. Call once after login (or clear data + re-login).
-  /// After this, SQLite is the source of truth until next login.
-  Future<void> pullFromSupabase(String userId) async {
-    try {
-      final library = await _remote.fetchLibraryData(userId);
-      if (library != null) {
-        // Ensure all Supabase-sourced playlists are marked as library entries
-        final playlists =
-            (library['playlists'] as List<dynamic>? ?? []).map((p) {
-          final map = Map<String, dynamic>.from(p as Map);
-          map['is_saved'] = 1;
-          return map;
-        }).toList();
-        library['playlists'] = playlists;
-        await _db.saveLibraryData(library);
-      }
-
-      final recent = await _remote.fetchRecentlyPlayed(userId);
-      if (recent != null && recent.isNotEmpty) {
-        await _db.saveRecentlyPlayed(recent);
-      }
-
-      final playback = await _remote.fetchPlaybackSettings(userId);
-      if (playback != null) {
-        for (final e in playback.entries) {
-          await _db.setSetting(e.key, e.value.toString());
-        }
-      }
-
-      final searches = await _remote.fetchRecentSearches(userId);
-      if (searches != null && searches.isNotEmpty) {
-        await _db.saveRecentSearches(searches);
-      }
-
-      final downloaded = await _remote.fetchDownloadedSongIds(userId);
-      if (downloaded != null && downloaded.isNotEmpty) {
-        await _db.saveDownloadedSongIds(downloaded);
-      }
-
-      final yt = await _remote.fetchYtPersonalization(userId);
-      if (yt != null &&
-          (yt['visitor_data']?.toString().isNotEmpty == true ||
-              yt['api_key'] != null)) {
-        await _db.saveYtPersonalization(yt);
-      }
-    } catch (_) {}
-  }
-
-  /// Pushes current SQLite state to Supabase. Used by background sync for logged-in users.
-  Future<void> pushToSupabase(String userId) async {
-    try {
-      final library = await _db.loadLibraryData();
-      // loadLibraryData already returns only is_saved=1 rows, but add explicit guard for safety
-      final filteredLibrary = Map<String, dynamic>.from(library);
-      final playlists = (filteredLibrary['playlists'] as List<dynamic>? ?? [])
-          .where((p) => (p as Map)['is_saved'] != false)
-          .toList();
-      filteredLibrary['playlists'] = playlists;
-      await _remote.pushLibraryData(userId, filteredLibrary);
-
-      final recent = await _db.loadRecentlyPlayed();
-      await _remote.pushRecentlyPlayed(userId, recent);
-
-      final playback = await loadPlaybackSettings();
-      await _remote.pushPlaybackSettings(userId, playback);
-
-      final searches = await _db.loadRecentSearches();
-      await _remote.pushRecentSearches(userId, searches);
-
-      final downloaded = await _db.loadDownloadedSongIds();
-      await _remote.pushDownloadedSongIds(userId, downloaded);
-
-      final yt = await _db.loadYtPersonalization();
-      if ((yt['visitor_data']?.toString().isNotEmpty ?? false) ||
-          yt['api_key'] != null) {
-        await _remote.pushYtPersonalization(userId, yt);
-      }
-    } catch (_) {}
-  }
 
   /// Closes the primary database.
   Future<void> close() async => _db.close();

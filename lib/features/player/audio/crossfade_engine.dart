@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:just_audio/just_audio.dart' as ja;
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 import 'audio_player_service.dart';
 

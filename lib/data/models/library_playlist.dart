@@ -57,7 +57,7 @@ extension PlaylistTrackSortOrderX on PlaylistTrackSortOrder {
 /// A user-created playlist stored in the local library.
 ///
 /// Differs from the API [Playlist] type: carries ownership metadata
-/// (createdAt, updatedAt, shuffle, pin) and is persisted to SQLite + Supabase.
+/// (createdAt, updatedAt, shuffle, pin) and is persisted to SQLite.
 class LibraryPlaylist {
   final String id;
   final String name;

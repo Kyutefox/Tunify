@@ -9,8 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  scrapper:
-    path: pkg/scrapper
+  tunify_source_youtube_music:
+    path: pkg/tunify_source_youtube_music
+  tunify_music_ports:
+    path: pkg/tunify_music_ports
   just_audio: ^0.10.5
   audio_session: ^0.2.2
   flutter_riverpod: ^3.3.1
@@ -20,7 +22,6 @@ dependencies:
   flutter_animate: ^4.5.2
   palette_generator: ^0.3.3+4
   skeletonizer: ^2.1.0+1
-  supabase_flutter: ^2.8.4
   hive_flutter: ^1.1.0
   shared_preferences: ^2.5.3
   sqflite: ^2.3.2
@@ -33,8 +34,6 @@ dependencies:
   audio_service: ^0.18.18
   rxdart: ^0.28.0
   freezed_annotation: ^3.1.0
-  tunify_logger:
-    path: pkg/logger
   tunify_database:
     path: pkg/tunify_database
   connectivity_plus: ^7.1.0

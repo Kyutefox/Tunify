@@ -568,7 +568,6 @@ class _TechStackCard extends StatelessWidget {
     ('Dart', Color(0xFF00BCD4)),
     ('Riverpod', Color(0xFF1DB954)),
     ('just_audio', Color(0xFFFF6B35)),
-    ('Supabase', Color(0xFF3ECF8E)),
     ('SQLite', Color(0xFF00D2FF)),
   ];
 

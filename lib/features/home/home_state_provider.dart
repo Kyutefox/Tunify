@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-
 import 'package:tunify/core/constants/storage_keys.dart';
 import 'package:tunify/data/models/artist.dart';
 import 'package:tunify/data/models/related_feed.dart';
@@ -15,7 +13,7 @@ import 'package:tunify/data/models/playlist.dart';
 import 'package:tunify/data/models/recently_played_song.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/data/repositories/database_repository.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 import 'package:tunify/features/settings/music_stream_manager.dart';
 import 'package:tunify/core/utils/list_utils.dart';
 import 'package:tunify/features/player/player_state_provider.dart';
@@ -157,7 +155,7 @@ List<dynamic> _deepCastList(List l) => l
 ///
 /// On first launch the feed is fetched live; on subsequent launches the persisted
 /// [SharedPreferences] cache is shown immediately while a background refresh runs.
-/// YT visitor data is restored from cache or Supabase before each feed fetch to ensure
+/// YT visitor data is restored from cache or SQLite before each feed fetch to ensure
 /// personalized results.
 class HomeNotifier extends Notifier<HomeState> {
   MusicStreamManager get _streamManager => ref.read(streamManagerProvider);
@@ -170,7 +168,6 @@ class HomeNotifier extends Notifier<HomeState> {
   static const List<LinearGradient> _cacheMoodGradients =
       AppColors.moodGradients;
   bool _backgroundFetchInProgress = false;
-  bool _preparedForLogin = false;
 
   /// In-memory copy of the last successful feed state.
   /// Shown immediately on [loadContent] while a background refresh runs, avoiding a skeleton flash.
@@ -182,22 +179,7 @@ class HomeNotifier extends Notifier<HomeState> {
     return const HomeState();
   }
 
-  /// Called during login hydration (before showing AppShell). Applies YT config
-  /// from SQLite, loads recently played, then fetches the home feed so the
-  /// first paint shows Supabase-backed data with no pop-in or jitter.
-  Future<void> prepareHomeForLogin() async {
-    state = const HomeState();
-    await _loadRecentlyPlayed();
-    await _restoreVisitorData();
-    await _loadFeedAndUpdateState();
-    _preparedForLogin = true;
-  }
-
-  Future<void> onAuthChanged(User? user) async {
-    if (_preparedForLogin) {
-      _preparedForLogin = false;
-      return;
-    }
+  Future<void> onAuthChanged() async {
     _cache = null;
     state = const HomeState();
     await _loadRecentlyPlayed();
@@ -514,7 +496,7 @@ class HomeNotifier extends Notifier<HomeState> {
   }
 
   /// Builds state from [homeFeed], sets [state] and [_cache], and kicks off
-  /// background persist + Supabase sync. Called from both
+  /// background persist. Called from both
   /// [_loadFeedAndUpdateState] and [_fetchSwJsDataAndRefresh] to avoid duplication.
   ///
   /// [isForeground] indicates if this is a user-initiated fetch (pull-to-refresh)
@@ -552,7 +534,7 @@ class HomeNotifier extends Notifier<HomeState> {
       );
       _cache = state;
       unawaited(_persistCache());
-      unawaited(_syncVisitorDataToSupabaseIfNeeded());
+      unawaited(_persistYtPersonalizationFromStreamManager());
     } else {
       // Silent background fetch: store as pending, don't update UI
       state = state.copyWith(
@@ -598,7 +580,7 @@ class HomeNotifier extends Notifier<HomeState> {
           tag: 'Home');
     }
 
-    // No valid local token — use SQLite (filled on login via pullFromSupabase).
+    // No valid local token — fall back to SQLite (device backup).
     try {
       final yt =
           await ref.read(databaseRepositoryProvider).loadYtPersonalization();
@@ -853,7 +835,7 @@ class HomeNotifier extends Notifier<HomeState> {
     return sections;
   }
 
-  Future<void> _syncVisitorDataToSupabaseIfNeeded() async {
+  Future<void> _persistYtPersonalizationFromStreamManager() async {
     final visitorData = _streamManager.visitorData;
     if (visitorData == null || visitorData.isEmpty) return;
     try {
@@ -867,7 +849,7 @@ class HomeNotifier extends Notifier<HomeState> {
           'client_version': clientVersion,
       });
     } catch (e) {
-      logWarning('Home: _syncVisitorDataToSupabaseIfNeeded failed: $e',
+      logWarning('Home: _persistYtPersonalizationFromStreamManager failed: $e',
           tag: 'Home');
     }
   }

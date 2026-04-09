@@ -1,5 +1,5 @@
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 /// Centralized Hive box management to prevent repeated box opening.
 /// All boxes are opened once at app startup and cached for the app lifetime.

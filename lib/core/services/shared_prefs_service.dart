@@ -1,5 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 /// Centralized SharedPreferences management to prevent repeated getInstance() calls.
 /// The instance is cached and reused throughout the app lifetime.

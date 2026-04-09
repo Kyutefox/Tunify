@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:on_audio_query_pluse/on_audio_query.dart';
 
 import 'package:tunify/data/models/song.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 const _permChannel = MethodChannel('com.kyutefox.tunify/permissions');
 const _localFilesChannel = MethodChannel('com.kyutefox.tunify/local_files');

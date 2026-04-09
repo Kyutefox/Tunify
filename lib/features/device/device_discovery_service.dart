@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:chromecast_dlna_finder/chromecast_dlna_finder.dart';
 import 'package:flutter/services.dart';
 
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 /// Categories of audio output devices.
 enum AudioDeviceType { thisDevice, bluetooth, wired, chromecast, dlna, airplay }

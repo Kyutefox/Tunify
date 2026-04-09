@@ -1,4 +1,4 @@
-/// A history entry for a track that was played, persisted to SQLite and Supabase.
+/// A history entry for a track that was played, persisted to SQLite.
 class RecentlyPlayedSong {
   final String id;
   final String title;

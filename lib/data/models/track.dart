@@ -1,6 +1,6 @@
 import 'package:tunify/core/utils/duration_format.dart';
 
-/// API/scrapper track type. Use [Song] in app code (queue, library, persistence).
+/// API / YouTube source track type. Use [Song] in app code (queue, library, persistence).
 /// Convert via [Song.fromTrack].
 class Track {
   final String id;

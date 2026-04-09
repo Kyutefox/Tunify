@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -181,7 +183,8 @@ class _QuickPicksRowState extends ConsumerState<QuickPicksRow>
     final hasOverflow = totalPages > 1;
 
     final totalGap = gap * (layout.cols - 1);
-    final tileW = ((layout.maxWidth - totalGap) / layout.cols).floorToDouble();
+    final availableW = math.max(0.0, layout.maxWidth - totalGap);
+    final tileW = math.max(0.0, (availableW / layout.cols).floorToDouble());
     final gridH = tileH * maxRows + gap * (maxRows - 1);
 
     List<List<Song>> toRows(List<Song> items) {
@@ -432,8 +435,8 @@ class _PlaylistsRowState extends ConsumerState<PlaylistsRow>
     final totalPages = (widget.playlists.length / pageSize).ceil();
     final hasOverflow = totalPages > 1;
 
-    final tileW = ((layout.maxWidth - gap * (layout.cols - 1)) / layout.cols)
-        .floorToDouble();
+    final availableW = math.max(0.0, layout.maxWidth - gap * (layout.cols - 1));
+    final tileW = math.max(0.0, (availableW / layout.cols).floorToDouble());
     final tileH = tileW + 48.0;
     final gridH = tileH * rows + gap * (rows - 1);
 
@@ -667,8 +670,8 @@ class _ArtistsRowState extends ConsumerState<ArtistsRow>
     final totalPages = (widget.artists.length / pageSize).ceil();
     final hasOverflow = totalPages > 1;
 
-    final itemW = ((layout.maxWidth - gap * (layout.cols - 1)) / layout.cols)
-        .floorToDouble();
+    final availableW = math.max(0.0, layout.maxWidth - gap * (layout.cols - 1));
+    final itemW = math.max(0.0, (availableW / layout.cols).floorToDouble());
 
     List<List<Artist>> toRows(List<Artist> items) {
       final rows = <List<Artist>>[];

@@ -1,29 +1,24 @@
 import 'package:flutter/foundation.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:tunify/core/utils/platform_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:scrapper/scrapper.dart' as scrapper;
+import 'package:tunify_source_youtube_music/tunify_source_youtube_music.dart' as scrapper;
 
-import 'package:tunify_database/tunify_database.dart' hide StorageKeys;
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify_database/tunify_database.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 import 'package:tunify/core/constants/storage_keys.dart';
 
 import 'package:tunify/data/models/audio_quality.dart';
+import 'package:tunify/data/models/stream_quality.dart';
 import 'package:tunify/data/models/collection_result.dart';
 import 'package:tunify/data/models/lyrics_result.dart';
 import 'package:tunify/data/models/related_feed.dart';
 import 'package:tunify/data/models/search_browse_ids_result.dart';
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify/data/models/track.dart';
-
-enum StreamQuality {
-  low,
-  medium,
-  high,
-  auto,
-}
+import 'package:tunify/features/music_backend/caching_youtube_music_stream_backend.dart';
+import 'package:tunify_music_ports/tunify_music_ports.dart';
 
 const String kYtVisitorDataKey = 'yt_visitor_data';
 
@@ -32,7 +27,7 @@ const double kLufsTargetDb = -14.0;
 
 typedef OnVisitorDataReceived = void Function(String? visitorData);
 
-/// Converts scrapper Track to app Track.
+/// Converts the YouTube source package track model to app [Track].
 Track _scrapperTrackToApp(scrapper.Track t) {
   return Track(
     id: t.id,
@@ -47,7 +42,7 @@ Track _scrapperTrackToApp(scrapper.Track t) {
   );
 }
 
-/// Converts scrapper RelatedHomeFeed to app RelatedHomeFeed.
+/// Converts the YouTube source package related feed to app [RelatedHomeFeed].
 RelatedHomeFeed _scrapperFeedToApp(scrapper.RelatedHomeFeed f) {
   return RelatedHomeFeed(
     trackShelves: f.trackShelves
@@ -105,56 +100,10 @@ RelatedHomeFeed _scrapperFeedToApp(scrapper.RelatedHomeFeed f) {
   );
 }
 
-StreamQuality _audioToStreamQuality(AudioQuality q) {
-  switch (q) {
-    case AudioQuality.low:
-      return StreamQuality.low;
-    case AudioQuality.medium:
-      return StreamQuality.medium;
-    case AudioQuality.high:
-    case AudioQuality.auto:
-      return StreamQuality.high;
-  }
-}
-
-/// Parameters for stream fetch isolate
-class _StreamFetchParams {
-  final String videoId;
-  final bool preferAac;
-  final String? visitorData;
-
-  _StreamFetchParams(this.videoId, this.preferAac, this.visitorData);
-}
-
-/// Result from stream fetch isolate (serializable)
-class _StreamFetchResult {
-  final String url;
-  final int bitrate;
-  final String mimeType;
-  final int durationMs;
-
-  _StreamFetchResult(this.url, this.bitrate, this.mimeType, this.durationMs);
-}
-
-/// YouTube stream URLs expire after ~6 hours. Cache entries are considered
-/// stale at 5h30m to leave a safe buffer before the URL actually expires.
-const Duration _kStreamUrlTtl = Duration(hours: 5, minutes: 30);
-const int _kMaxCacheEntries = 50;
 const int _kMaxPrefetchItems = 5;
 const int _kMaxPrefetchConcurrency = 2;
 
-/// Wraps a [StreamResult] with its expiry timestamp for TTL-based eviction.
-class _CachedStream {
-  final StreamResult result;
-  final DateTime expiresAt;
-
-  _CachedStream(this.result) : expiresAt = DateTime.now().add(_kStreamUrlTtl);
-  _CachedStream.withExpiry(this.result, this.expiresAt);
-
-  bool get isExpired => DateTime.now().isAfter(expiresAt);
-}
-
-/// Central API facade over the `scrapper` package.
+/// Central API facade over `tunify_source_youtube_music`.
 ///
 /// Responsibilities:
 /// - Resolving YouTube stream URLs with LRU in-memory caching ([_streamCache]).
@@ -196,13 +145,10 @@ class MusicStreamManager {
   final ValueNotifier<StreamQuality> _qualityNotifier =
       ValueNotifier(StreamQuality.auto);
 
-  /// LRU stream URL cache. Dart's default [Map] preserves insertion order (LinkedHashMap),
-  /// so the first key is always the least-recently-used entry.
-  final Map<String, _CachedStream> _streamCache = {};
-  int _hits = 0;
-  int _misses = 0;
+  late final CachingYoutubeMusicStreamBackend _youtubeStreamBackend;
+  late final MusicSourceMediator _musicSourceMediator;
+
   final DatabaseBridge? _db;
-  Box<dynamic>? _hiveBox;
 
   MusicStreamManager({
     String? visitorData,
@@ -216,6 +162,13 @@ class MusicStreamManager {
         _apiKey = apiKey,
         _clientVersion = clientVersion,
         _auth = auth {
+    _youtubeStreamBackend = CachingYoutubeMusicStreamBackend(
+      db: _db,
+      qualityNotifier: _qualityNotifier,
+    );
+    _musicSourceMediator = MusicSourceMediator({
+      MusicSource.youtubeMusic: _youtubeStreamBackend,
+    });
     final gen = ++_ytMusicGen;
     _ytMusic = scrapper.YoutubeMusic(
       visitorData: _visitorData,
@@ -234,31 +187,8 @@ class MusicStreamManager {
     }
   }
 
-  /// Fetches stream URL in background using compute to prevent UI blocking
-  Future<_StreamFetchResult?> _fetchStreamInIsolate(
-      String videoId, bool preferAac) async {
-    try {
-      // Use compute to run the network-heavy operation off the main thread
-      return await compute(_fetchStreamIsolateFunction,
-          _StreamFetchParams(videoId, preferAac, _visitorData));
-    } catch (e) {
-      log('PlayFlow: _fetchStreamInIsolate failed: $e', tag: 'PlayFlow');
-      return null;
-    }
-  }
-
-  /// Top-level function for compute isolate - returns serializable data.
-  static Future<_StreamFetchResult?> _fetchStreamIsolateFunction(
-      _StreamFetchParams params) async {
-    final stream = await scrapper.StreamsApi.fetchBestAudioStreamDirect(
-      params.videoId,
-      preferAac: params.preferAac,
-      visitorData: params.visitorData,
-    );
-    if (stream == null) return null;
-    return _StreamFetchResult(stream.url, stream.bitrate!, stream.mimeType,
-        stream.duration?.inMilliseconds ?? 0);
-  }
+  /// YouTube Music stream resolution: [MusicSourceMediator] with [CachingYoutubeMusicStreamBackend].
+  MusicSourceMediator get musicSourceMediator => _musicSourceMediator;
 
   /// Visitor-data tokens longer than this are service-worker init blobs, not
   /// personalization tokens, and must be discarded to avoid poisoning the cache.
@@ -339,68 +269,12 @@ class MusicStreamManager {
 
   String? get visitorData => _visitorData;
 
-  /// Opens the Hive stream-URL box, restores non-expired entries into the
-  /// in-memory LRU cache, and clears expired SQLite entries. Call once after construction.
+  /// Restores stream URL LRU/Hive cache and clears expired SQLite entries.
   Future<void> init() async {
     await Future.wait([
-      _restoreStreamUrlsFromHive(),
+      _youtubeStreamBackend.init(),
       _db?.clearExpiredStreamUrlCache() ?? Future.value(),
     ]);
-  }
-
-  Future<void> _restoreStreamUrlsFromHive() async {
-    try {
-      _hiveBox = await Hive.openBox<dynamic>('stream_urls');
-      final box = _hiveBox!;
-      final now = DateTime.now();
-      final toDelete = <dynamic>[];
-      for (final key in box.keys) {
-        final entry = box.get(key);
-        if (entry is! Map) continue;
-        final expiresAtMs = entry['expiresAt'] as int?;
-        if (expiresAtMs == null) {
-          toDelete.add(key);
-          continue;
-        }
-        final expiresAt = DateTime.fromMillisecondsSinceEpoch(expiresAtMs);
-        if (now.isAfter(expiresAt)) {
-          toDelete.add(key);
-          continue;
-        }
-        final url = entry['url'] as String?;
-        final bitrate = entry['bitrate'] as int? ?? 128;
-        if (url == null || url.isEmpty) {
-          toDelete.add(key);
-          continue;
-        }
-        final audioQuality = bitrate >= 160
-            ? AudioQuality.high
-            : bitrate >= 80
-                ? AudioQuality.medium
-                : AudioQuality.low;
-        final stream = AudioStream(
-          url: url,
-          bitrate: bitrate,
-          quality: audioQuality,
-          codec: 'opus',
-          headers:
-              Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
-        );
-        final result = StreamResult(
-          trackId: key as String,
-          highQuality: audioQuality == AudioQuality.high ? stream : null,
-          mediumQuality: audioQuality == AudioQuality.medium ? stream : null,
-          lowQuality: audioQuality == AudioQuality.low ? stream : null,
-        );
-        if (_streamCache.length < _kMaxCacheEntries) {
-          _streamCache[key] = _CachedStream.withExpiry(result, expiresAt);
-        }
-      }
-      if (toDelete.isNotEmpty) await box.deleteAll(toDelete);
-    } catch (e) {
-      logWarning('StreamManager: _restoreStreamUrlsFromHive failed: $e',
-          tag: 'PlayFlow');
-    }
   }
 
   /// True once a live apiKey + clientVersion have been loaded from cache or
@@ -426,159 +300,35 @@ class MusicStreamManager {
   /// All metadata (title, thumbnail, artist, duration, etc.) must be fetched
   /// from YouTube Music /player API via [getSongFromPlayer].
   Future<Map<String, dynamic>> getStreamUrl(String videoId) async {
-    final apiSw = Stopwatch()..start();
     try {
-      final cached = _streamCache[videoId];
-      if (cached != null && !cached.isExpired) {
-        _hits++;
-        final stream = cached.result.best;
-        if (stream != null) {
-          // Re-insert to mark as most-recently-used for LRU ordering.
-          _streamCache.remove(videoId);
-          _streamCache[videoId] = cached;
-          log('PlayFlow: getStreamUrl CACHE HIT videoId=$videoId (${apiSw.elapsedMilliseconds}ms)',
-              tag: 'PlayFlow');
-          return {
-            'stream_url': stream.url,
-            'bitrate': stream.bitrate,
-            'quality': stream.quality.label,
-            'headers': stream.headers,
-          };
-        }
-      } else if (cached != null) {
-        // Expired entry — remove proactively before fetching fresh.
-        _streamCache.remove(videoId);
-      }
-      _misses++;
-      log('PlayFlow: getStreamUrl CACHE MISS videoId=$videoId calling InnerTube player API',
-          tag: 'PlayFlow');
-      // L2: SQLite cache check
-      final sqliteCached = await _db?.getStreamUrlCache(videoId);
-      if (sqliteCached != null) {
-        log('PlayFlow: getStreamUrl SQLITE HIT videoId=$videoId',
-            tag: 'PlayFlow');
-        final url = sqliteCached['url'] as String;
-        final headers = sqliteCached['headers'] as Map<String, String>? ?? {};
-        final bitrate = sqliteCached['bitrate'] as int? ?? 0;
-        final quality = sqliteCached['quality'] as String? ?? '';
-        // Populate L1 from L2
-        final audioQuality = bitrate >= 160
-            ? AudioQuality.high
-            : bitrate >= 80
-                ? AudioQuality.medium
-                : AudioQuality.low;
-        final stream = AudioStream(
-          url: url,
-          bitrate: bitrate,
-          quality: audioQuality,
-          codec: 'opus',
-          headers:
-              Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
-        );
-        final result = StreamResult(
-          trackId: videoId,
-          highQuality: audioQuality == AudioQuality.high ? stream : null,
-          mediumQuality: audioQuality == AudioQuality.medium ? stream : null,
-          lowQuality: audioQuality == AudioQuality.low ? stream : null,
-        );
-        if (_streamCache.length >= _kMaxCacheEntries) {
-          _streamCache.remove(_streamCache.keys.first);
-        }
-        _streamCache[videoId] = _CachedStream(result);
-        return {
-          'stream_url': url,
-          'bitrate': bitrate,
-          'quality': quality,
-          'headers': headers,
-        };
-      }
-      final fetchT0 = apiSw.elapsedMilliseconds;
-
-      // Run network-heavy operation in isolate to prevent UI blocking
-      final ytStream = await _fetchStreamInIsolate(videoId, isApplePlatform);
-
-      log('PlayFlow: getStreamUrl InnerTube player API done in ${apiSw.elapsedMilliseconds - fetchT0}ms',
-          tag: 'PlayFlow');
-      if (ytStream == null) {
-        throw Exception('No audio stream available for $videoId');
-      }
-      final bitrate = ytStream.bitrate;
-      final quality = bitrate >= 160
-          ? AudioQuality.high
-          : bitrate >= 80
-              ? AudioQuality.medium
-              : AudioQuality.low;
-      _qualityNotifier.value = _audioToStreamQuality(quality);
-      final stream = AudioStream(
-        url: ytStream.url,
-        bitrate: bitrate,
-        quality: quality,
-        codec: 'opus',
-        headers: Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
+      final resolved = await _musicSourceMediator.resolveStream(
+        TrackRef.youtubeMusic(videoId),
+        MusicStreamResolveContext(
+          visitorData: _visitorData,
+          preferAac: isApplePlatform,
+        ),
       );
-      final result = StreamResult(
-        trackId: videoId,
-        highQuality: quality == AudioQuality.high ? stream : null,
-        mediumQuality: quality == AudioQuality.medium ? stream : null,
-        lowQuality: quality == AudioQuality.low ? stream : null,
-      );
-      // Evict the least-recently-used entry when at the cap.
-      if (_streamCache.length >= _kMaxCacheEntries) {
-        _streamCache.remove(_streamCache.keys.first);
-      }
-      _streamCache[videoId] = _CachedStream(result);
-      // Persist to L2: Hive (fast, survives restarts) + SQLite (shared with other layers).
-      final expiresAt = DateTime.now().toUtc().add(_kStreamUrlTtl);
-      _hiveBox?.put(videoId, {
-        'url': ytStream.url,
-        'bitrate': bitrate,
-        'quality': quality.label,
-        'expiresAt': expiresAt.millisecondsSinceEpoch,
-      }).ignore();
-      final db = _db;
-      if (db != null) {
-        db
-            .trimStreamUrlCacheIfNeeded()
-            .then((_) => db.upsertStreamUrlCache(
-                  videoId,
-                  ytStream.url,
-                  Map<String, String>.from(
-                      scrapper.SharedHeaders.streamHeaders),
-                  bitrate,
-                  quality.label,
-                  expiresAt,
-                ))
-            .ignore();
-      }
-      log('PlayFlow: getStreamUrl total (fetch+cache) ${apiSw.elapsedMilliseconds}ms',
-          tag: 'PlayFlow');
-      log('PlayFlow: getStreamUrl mimeType=${ytStream.mimeType} bitrate=${bitrate}kbps',
-          tag: 'PlayFlow');
       return {
-        'stream_url': ytStream.url,
-        'bitrate': bitrate,
-        'quality': quality.label,
-        'headers':
-            Map<String, String>.from(scrapper.SharedHeaders.streamHeaders),
-        'durationMs': ytStream.durationMs,
+        'stream_url': resolved.url,
+        'bitrate': resolved.bitrate,
+        'quality': resolved.qualityLabel,
+        'headers': resolved.headers,
+        'durationMs': resolved.durationMs,
       };
-    } catch (e) {
-      log('PlayFlow: getStreamUrl FAILED after ${apiSw.elapsedMilliseconds}ms',
-          tag: 'PlayFlow');
-      rethrow;
+    } on MusicStreamResolveException catch (e) {
+      throw Exception(e.message);
     }
   }
 
-  StreamResult? getCached(String videoId) {
-    final entry = _streamCache[videoId];
-    if (entry == null || entry.isExpired) return null;
-    return entry.result;
+  /// Resolve playback through YouTube Music only.
+  Future<Map<String, dynamic>> getBestStreamForSong(Song song) async {
+    return getStreamUrl(song.id);
   }
 
-  bool isCached(String videoId) {
-    final entry = _streamCache[videoId];
-    return entry != null && !entry.isExpired;
-  }
+  StreamResult? getCached(String videoId) =>
+      _youtubeStreamBackend.getCached(videoId);
+
+  bool isCached(String videoId) => _youtubeStreamBackend.isCached(videoId);
 
   /// Full player response (track, metadata, playbackTracking) for e.g. playback tracking.
   /// Pass [cpn] so YouTube links this player call to subsequent watchtime reports.
@@ -587,7 +337,7 @@ class MusicStreamManager {
     return _ytMusic.player.fetchPlayer(videoId, cpn: cpn);
   }
 
-  /// Reports playback watchtime to YouTube; delegates to scrapper.
+  /// Reports playback watchtime to YouTube; delegates to the source client.
   Future<void> reportPlaybackWatchtime(
     String atrUrl,
     String cpn,
@@ -632,18 +382,11 @@ class MusicStreamManager {
     }
   }
 
-  void putCached(String videoId, StreamResult result) {
-    if (_streamCache.length >= _kMaxCacheEntries) {
-      _streamCache.remove(_streamCache.keys.first);
-    }
-    _streamCache[videoId] = _CachedStream(result);
-  }
+  void putCached(String videoId, StreamResult result) =>
+      _youtubeStreamBackend.putCached(videoId, result);
 
-  void clearCacheFor(String videoId) {
-    _streamCache.remove(videoId);
-    _db?.deleteStreamUrlCache(videoId).ignore();
-    _hiveBox?.delete(videoId).ignore();
-  }
+  void clearCacheFor(String videoId) =>
+      _youtubeStreamBackend.clearCacheFor(videoId);
 
   Future<void> prefetch(List<String> videoIds) async {
     // Cap items and run in batches of [_kMaxPrefetchConcurrency] to avoid
@@ -1083,7 +826,7 @@ class MusicStreamManager {
     try {
       // fetchPlaylistOrAlbum now follows all continuation pages internally.
       // maxResults > 0 allows callers to impose an explicit cap; otherwise the
-      // scrapper's own safety limit (5000) applies.
+      // Source client's own safety limit (5000) applies.
       final maxTracks = maxResults > 0 ? maxResults : 5000;
       final tracks = await _ytMusic.browse.fetchPlaylistOrAlbum(
         browseId,
@@ -1256,16 +999,9 @@ class MusicStreamManager {
     );
   }
 
-  void clearCache() {
-    _streamCache.clear();
-    _db?.clearAllStreamUrlCache().ignore();
-    _hiveBox?.clear().ignore();
-  }
+  void clearCache() => _youtubeStreamBackend.clearAll();
 
-  Map<String, int> getStats() => {
-        'hits': _hits,
-        'misses': _misses,
-      };
+  Map<String, int> getStats() => _youtubeStreamBackend.cacheStats;
 
   void dispose() {
     _qualityNotifier.dispose();

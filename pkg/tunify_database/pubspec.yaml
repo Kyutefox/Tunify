@@ -1,5 +1,5 @@
 name: tunify_database
-description: SQLite-first database bridge with optional Supabase sync for Tunify.
+description: SQLite-first database bridge for Tunify.
 publish_to: "none"
 version: 1.0.0
 
@@ -10,7 +10,6 @@ dependencies:
   path: ^1.9.0
   path_provider: ^2.1.2
   sqflite: ^2.3.2
-  supabase_flutter: ^2.8.4
 
 dev_dependencies:
   lints: ^6.0.0

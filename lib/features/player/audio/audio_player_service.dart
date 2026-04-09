@@ -6,9 +6,9 @@ import 'dart:math' as math;
 
 import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
-import 'package:scrapper/scrapper.dart';
+import 'package:tunify_source_youtube_music/tunify_source_youtube_music.dart';
 
 /// Thin wrapper over [AudioPlayer] (just_audio) that:
 /// - Configures the audio session for music playback.

@@ -11,10 +11,8 @@ import 'package:tunify/data/models/library_artist.dart';
 import 'package:tunify/data/models/library_folder.dart';
 import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/data/models/playlist.dart';
-import 'package:tunify/features/auth/auth_provider.dart';
 import 'package:tunify/features/library/library_provider.dart';
 import 'package:tunify/features/podcast/podcast_provider.dart';
-import 'package:tunify/data/repositories/database_repository.dart';
 import 'package:tunify/ui/theme/app_colors.dart';
 import 'package:tunify/ui/theme/design_tokens.dart';
 import 'package:tunify/ui/theme/app_routes.dart';
@@ -78,13 +76,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     });
   }
 
-  /// Pulls latest data from Supabase into SQLite, then reloads library state.
-  /// Only used when a user is logged in; pull-to-refresh is disabled for guests.
+  /// Reloads library state from on-device SQLite.
   Future<void> _onPullToRefresh() async {
-    final bridge = ref.read(databaseBridgeProvider);
-    final user = ref.read(currentUserProvider);
-    if (user == null) return;
-    await bridge.pullFromSupabase(user.id);
     if (mounted) {
       await ref.read(libraryProvider.notifier).load();
     }
@@ -606,8 +599,6 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
       return scrollView;
     }
 
-    final isLoggedIn = ref.watch(currentUserProvider) != null;
-
     return Scaffold(
       backgroundColor: AppColorsScheme.of(context).background,
       body: SafeArea(
@@ -622,7 +613,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               Expanded(
                 child: LibraryContentSwitcher(
                   contentKey: contentKey,
-                  child: buildScrollView(isLoggedIn),
+                  child: buildScrollView(true),
                 ),
               ),
             ],

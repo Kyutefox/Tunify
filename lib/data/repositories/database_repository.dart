@@ -20,9 +20,9 @@ typedef LibraryData = ({
   List<LibraryAlbum> followedAlbums,
 });
 
-/// Single source of truth: uses [DatabaseBridge] (SQLite). On login, call
-/// [pullFromSupabase] once; background sync pushes to Supabase. All reads/writes
-/// go through the bridge; write methods call [requestSync] after persisting.
+/// Single source of truth: uses [DatabaseBridge] (SQLite). All reads/writes
+/// go through the bridge; write methods call [requestSync] (no-op unless remote
+/// sync is added later).
 class DatabaseRepository {
   DatabaseRepository(this._bridge, this._syncManager);
   final DatabaseBridge _bridge;
@@ -363,17 +363,6 @@ class DatabaseRepository {
 final databaseBridgeProvider =
     Provider<DatabaseBridge>((ref) => DatabaseBridge());
 
-class _HydrationProgressNotifier extends Notifier<bool> {
-  @override
-  bool build() => false;
-  void set(bool value) => state = value;
-}
-
-/// True while a Supabase → SQLite hydration pull is in progress after login.
-final databaseHydrationInProgressProvider =
-    NotifierProvider<_HydrationProgressNotifier, bool>(
-        _HydrationProgressNotifier.new);
-
 final databaseRepositoryProvider = Provider<DatabaseRepository>((ref) {
   return DatabaseRepository(
     ref.watch(databaseBridgeProvider),
@@ -382,5 +371,5 @@ final databaseRepositoryProvider = Provider<DatabaseRepository>((ref) {
 });
 
 final syncManagerProvider = Provider<SyncManager>((ref) {
-  return SyncManager(bridge: ref.read(databaseBridgeProvider));
+  return SyncManager();
 });

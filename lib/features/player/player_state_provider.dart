@@ -12,12 +12,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tunify/core/constants/storage_keys.dart';
 import 'package:tunify/data/models/song.dart';
+import 'package:tunify/data/models/stream_quality.dart';
 import 'package:tunify/data/repositories/audio_repository.dart';
 import 'package:tunify/features/settings/music_stream_manager.dart';
 import 'package:tunify/features/player/audio/audio_player_service.dart';
 import 'package:tunify/features/player/audio/crossfade_engine.dart';
 import 'package:tunify/features/player/audio/audio_handler.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 import 'package:tunify/data/models/library_playlist.dart';
 import 'package:tunify/features/device/device_music_provider.dart';
@@ -30,6 +31,7 @@ import 'package:tunify/data/repositories/database_repository.dart';
 import 'package:tunify/features/settings/playback_tracker.dart';
 import 'package:tunify/features/settings/stream_cache_service.dart';
 import 'package:tunify/features/player/playback_position_provider.dart';
+import 'package:tunify_music_ports/tunify_music_ports.dart';
 
 /// Maximum queue size to prevent unbounded growth and O(n) equality checks
 const int _kMaxQueueSize = 50;
@@ -3165,8 +3167,13 @@ final audioHandlerProvider =
 final playerProvider =
     NotifierProvider<PlayerNotifier, PlayerState>(PlayerNotifier.new);
 
+/// Exposes [MusicStreamManager.musicSourceMediator] (YouTube Music stream URLs).
+final musicSourceMediatorProvider = Provider<MusicSourceMediator>((ref) {
+  return ref.watch(streamManagerProvider).musicSourceMediator;
+});
+
 final streamManagerProvider = Provider<MusicStreamManager>((ref) {
-  return MusicStreamManager(
+  final manager = MusicStreamManager(
     onVisitorDataReceived: (String? visitorData) async {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(kYtVisitorDataKey, visitorData ?? '');
@@ -3188,6 +3195,8 @@ final streamManagerProvider = Provider<MusicStreamManager>((ref) {
       }
     },
   );
+  unawaited(manager.init());
+  return manager;
 });
 
 final streamCacheServiceProvider = Provider<StreamCacheService>((ref) {

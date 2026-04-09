@@ -1,0 +1,10 @@
+name: tunify_music_ports
+description: Source-agnostic music streaming contracts for Tunify (catalog backends, mediators).
+publish_to: "none"
+version: 0.1.0
+
+environment:
+  sdk: ^3.6.0
+
+dev_dependencies:
+  lints: ^6.0.0

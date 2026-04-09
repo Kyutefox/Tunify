@@ -1,0 +1,1244 @@
+import 'package:tunify_source_youtube_music/constants/parser_constants.dart';
+import 'package:tunify_source_youtube_music/models/playlist_browse_meta.dart';
+import 'package:tunify_source_youtube_music/models/related_feed.dart';
+import 'package:tunify_source_youtube_music/models/track.dart';
+import 'package:tunify_source_youtube_music/youtube_music/parsers/inner_tube_parsers.dart' as p;
+
+/// Helpers for turning raw YouTube Music `browse` responses into strongly
+/// typed feed models such as [RelatedHomeFeed] and [MoodDetailResult].
+class BrowseFormatter {
+  /// Extracts a [Track] from a `musicResponsiveListItemRenderer` node.
+  static Track? parseTrackFromResponsiveItem(Map<String, dynamic> item) {
+    final nav = item['navigationEndpoint'] as Map<String, dynamic>?;
+    final watch = nav?['watchEndpoint'] as Map<String, dynamic>?;
+    final playlistData = item['playlistItemData'] as Map<String, dynamic>?;
+    var videoId =
+        (watch?['videoId'] as String?) ?? (playlistData?['videoId'] as String?);
+    if (videoId == null || videoId.isEmpty) {
+      final overlayWatch = item['overlay']?['musicItemThumbnailOverlayRenderer']
+                  ?['content']?['musicPlayButtonRenderer']
+              ?['playNavigationEndpoint']?['watchEndpoint']
+          as Map<String, dynamic>?;
+      videoId = overlayWatch?['videoId'] as String?;
+    }
+    if (videoId == null || videoId.isEmpty) return null;
+
+    final columns = item['flexColumns'] as List<dynamic>?;
+    String? title;
+    Map<String, dynamic> metadata = {};
+
+    if (columns != null && columns.isNotEmpty) {
+      title = p.extractColumnRunsText(columns, 0);
+
+      // Collect all text from columns 1 and onwards (Artist, Album, etc.)
+      final metadataRuns = <dynamic>[];
+      for (var i = 1; i < columns.length; i++) {
+        final col = (columns[i] as Map<String, dynamic>?)?[
+            'musicResponsiveListItemFlexColumnRenderer'];
+        final text = col?['text'];
+        if (text != null && text['runs'] != null) {
+          metadataRuns.addAll(text['runs'] as List);
+        }
+      }
+      metadata = p.extractTrackMetadata({'runs': metadataRuns});
+    }
+
+    final thumb = item['thumbnail'] as Map<String, dynamic>?;
+    final thumbUrl = p.extractOrFallbackThumbnail(thumb, videoId);
+
+    final fixedColumns = item['fixedColumns'] as List<dynamic>?;
+    final durationText = p.extractFixedColumnText(fixedColumns, 0);
+    final duration =
+        p.parseDuration(durationText) ?? ParserConstants.defaultTrackDuration;
+
+    final badges = item['badges'] as List<dynamic>?;
+    bool isExplicit = p.extractIsExplicitFromBadges(badges);
+    if (!isExplicit && columns != null && columns.length > 1) {
+      final subtitle = p.extractColumnRunsText(columns, 1) ?? '';
+      final norm = subtitle.trim();
+      isExplicit = norm.endsWith(' E') ||
+          norm.endsWith('• E') ||
+          norm.endsWith(' • E') ||
+          norm == 'E';
+    }
+
+    return Track(
+      id: videoId,
+      title: (title == null || title.isEmpty) ? 'Unknown title' : title,
+      artist: metadata['artist'] ?? 'Unknown artist',
+      artistBrowseId:
+          metadata['artistBrowseId'] ?? p.extractMenuArtistId(item['menu']),
+      albumName: metadata['albumName'],
+      albumBrowseId: metadata['albumBrowseId'],
+      thumbnailUrl: thumbUrl,
+      duration: duration,
+      isExplicit: isExplicit,
+    );
+  }
+
+  /// Extract a Track from a `musicTwoRowItemRenderer` node.
+  static Track? parseTrackFromTwoRowItem(Map<String, dynamic> item) {
+    final nav = item['navigationEndpoint'] as Map<String, dynamic>?;
+    final watch = nav?['watchEndpoint'] as Map<String, dynamic>?;
+    final videoId = watch?['videoId'] as String?;
+    if (videoId == null || videoId.isEmpty) return null;
+
+    final title = p.extractRunsText(item['title']) ?? 'Unknown title';
+    final subtitle = p.extractRunsText(item['subtitle']) ?? '';
+    final metadata = p.extractTrackMetadata(item['subtitle']);
+    final rawThumb = p.extractThumbnailFromTwoRow(item) ??
+        'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
+    final thumbnail = p.upgradeThumbResolution(rawThumb, videoId);
+
+    final badges = item['badges'] as List<dynamic>?;
+    bool isExplicit = p.extractIsExplicitFromBadges(badges);
+    if (!isExplicit && subtitle.isNotEmpty) {
+      final norm = subtitle.trim();
+      isExplicit = norm.endsWith(' E') ||
+          norm.endsWith('• E') ||
+          norm.endsWith(' • E') ||
+          norm == 'E';
+    }
+
+    return Track(
+      id: videoId,
+      title: title,
+      artist: metadata['artist'] ?? 'Unknown artist',
+      artistBrowseId:
+          metadata['artistBrowseId'] ?? p.extractMenuArtistId(item['menu']),
+      albumName: metadata['albumName'],
+      albumBrowseId: metadata['albumBrowseId'],
+      thumbnailUrl: thumbnail,
+      duration: ParserConstants
+          .defaultTrackDuration, // TwoRow items generally don't show durations.
+      isExplicit: isExplicit,
+    );
+  }
+
+  /// Extract a Track from a `musicMultiRowListItemRenderer` node (used in podcast show pages).
+  static Track? parseTrackFromMultiRowItem(Map<String, dynamic> item) {
+    // Try navigationEndpoint first
+    final nav = item['navigationEndpoint'] as Map<String, dynamic>?;
+    final navWatch = nav?['watchEndpoint'] as Map<String, dynamic>?;
+    String? videoId = navWatch?['videoId'] as String?;
+
+    // If no videoId in nav, try overlay play button
+    if (videoId == null || videoId.isEmpty) {
+      final overlay = item['overlay']?['musicItemThumbnailOverlayRenderer']
+                  ?['content']?['musicPlayButtonRenderer']
+              ?['playNavigationEndpoint']?['watchEndpoint']
+          as Map<String, dynamic>?;
+      videoId = overlay?['videoId'] as String?;
+    }
+
+    if (videoId == null || videoId.isEmpty) return null;
+
+    // Title is directly in the 'title' field (runs format)
+    final title = p.extractRunsText(item['title']) ?? 'Unknown title';
+
+    // Subtitle contains date info (e.g., "1d ago", "Mar 21")
+    final subtitle = p.extractRunsText(item['subtitle']) ?? '';
+
+    // Description
+    final description = p.extractRunsText(item['description']);
+
+    // Thumbnail
+    final thumb = item['thumbnail'] as Map<String, dynamic>?;
+    final thumbnail = p.extractThumbnailUrl(thumb) ??
+        'https://i.ytimg.com/vi/$videoId/hqdefault.jpg';
+
+    // Get duration from playbackProgress
+    final playbackProgress =
+        item['playbackProgress']?['musicPlaybackProgressRenderer'];
+    final durationText = p.extractRunsText(playbackProgress?['durationText']);
+    final duration = _parseDurationText(durationText);
+
+    return Track(
+      id: videoId,
+      title: title,
+      artist: subtitle.isNotEmpty ? subtitle : 'Unknown',
+      artistBrowseId: null,
+      albumName: description,
+      albumBrowseId: null,
+      thumbnailUrl: thumbnail,
+      duration: duration,
+      isExplicit: false,
+    );
+  }
+
+  /// Parse duration from text like "1 hr 44 min" or "45 min" or "30 sec"
+  static Duration _parseDurationText(String? text) {
+    if (text == null || text.isEmpty) {
+      return ParserConstants.defaultTrackDuration;
+    }
+
+    int hours = 0;
+    int minutes = 0;
+    int seconds = 0;
+
+    // Match patterns like "1 hr 44 min", "45 min", "30 sec"
+    final hrMatch = RegExp(r'(\d+)\s*hr').firstMatch(text);
+    final minMatch = RegExp(r'(\d+)\s*min').firstMatch(text);
+    final secMatch = RegExp(r'(\d+)\s*sec').firstMatch(text);
+
+    if (hrMatch != null) {
+      hours = int.parse(hrMatch.group(1)!);
+    }
+    if (minMatch != null) {
+      minutes = int.parse(minMatch.group(1)!);
+    }
+    if (secMatch != null) {
+      seconds = int.parse(secMatch.group(1)!);
+    }
+
+    if (hours > 0 || minutes > 0 || seconds > 0) {
+      return Duration(hours: hours, minutes: minutes, seconds: seconds);
+    }
+
+    return ParserConstants.defaultTrackDuration;
+  }
+
+  /// Walk through browse data and extract tracks until maxResults is reached.
+  static List<Track> extractTracksFromBrowseData(
+    Map<String, dynamic> browseData, {
+    String sourceVideoId = '',
+    int maxResults = 5000,
+  }) {
+    final tracks = <Track>[];
+    final seen = <String>{};
+
+    void collect(Track? track) {
+      if (track == null) return;
+      if (track.id == sourceVideoId) return;
+      if (!seen.add(track.id)) return;
+      tracks.add(track);
+    }
+
+    void walk(dynamic node) {
+      if (tracks.length >= maxResults) return;
+
+      if (node is Map<String, dynamic>) {
+        final responsive = node['musicResponsiveListItemRenderer'];
+        if (responsive is Map<String, dynamic>) {
+          collect(parseTrackFromResponsiveItem(responsive));
+          return; // don't recurse further into this node
+        }
+
+        final twoRow = node['musicTwoRowItemRenderer'];
+        if (twoRow is Map<String, dynamic>) {
+          collect(parseTrackFromTwoRowItem(twoRow));
+          return;
+        }
+
+        final multiRow = node['musicMultiRowListItemRenderer'];
+        if (multiRow is Map<String, dynamic>) {
+          collect(parseTrackFromMultiRowItem(multiRow));
+          return;
+        }
+
+        // Carousel shelves appear in continuation responses — walk their contents.
+        final carousel = node['musicCarouselShelfRenderer'];
+        if (carousel is Map<String, dynamic>) {
+          walk(carousel['contents']);
+          return;
+        }
+
+        for (final value in node.values) {
+          walk(value);
+          if (tracks.length >= maxResults) return;
+        }
+      } else if (node is List) {
+        for (final item in node) {
+          walk(item);
+          if (tracks.length >= maxResults) return;
+        }
+      }
+    }
+
+    // Handle both singleColumn and twoColumn browse results
+    final contents = browseData['contents'];
+    if (contents is Map<String, dynamic>) {
+      // Try singleColumnBrowseResultsRenderer first
+      final singleColumn = contents['singleColumnBrowseResultsRenderer'];
+      if (singleColumn != null) {
+        walk(singleColumn);
+      }
+
+      // Try twoColumnBrowseResultsRenderer for podcast/show pages
+      final twoColumn = contents['twoColumnBrowseResultsRenderer'];
+      if (twoColumn != null) {
+        walk(twoColumn);
+      }
+    }
+
+    // Handle continuation contents (e.g. musicPlaylistShelfContinuation)
+    final continuationContents = browseData['continuationContents'];
+    if (continuationContents is Map<String, dynamic>) {
+      walk(continuationContents);
+    }
+
+    // Handle onResponseReceivedActions (used by playlist/track-list continuations)
+    final onResponseReceivedActions = browseData['onResponseReceivedActions'];
+    if (onResponseReceivedActions is List &&
+        onResponseReceivedActions.isNotEmpty) {
+      final action = onResponseReceivedActions[0];
+      if (action is Map<String, dynamic>) {
+        final items =
+            action['appendContinuationItemsAction']?['continuationItems'];
+        if (items is List) {
+          for (final item in items) {
+            walk(item);
+            if (tracks.length >= maxResults) break;
+          }
+        }
+      }
+    }
+
+    // Fallback: walk entire response if nothing found yet
+    if (tracks.isEmpty) {
+      walk(browseData);
+    }
+
+    return tracks;
+  }
+
+  /// Extracts the continuation token from a browse response for playlists/albums.
+  /// Returns null if no continuation is available.
+  static String? extractBrowseContinuationToken(
+      Map<String, dynamic> browseData) {
+    try {
+      final contents = browseData['contents'];
+      if (contents is Map<String, dynamic>) {
+        final singleColumn = contents['singleColumnBrowseResultsRenderer'];
+        final twoColumn = contents['twoColumnBrowseResultsRenderer'];
+
+        if (singleColumn != null) {
+          final tabs = singleColumn['tabs'] as List?;
+          if (tabs != null && tabs.isNotEmpty) {
+            final tabRenderer = tabs[0]['tabRenderer'];
+            final content = tabRenderer?['content'];
+            final sectionList = content?['sectionListRenderer'];
+            final token = _extractTokenFromSectionList(sectionList);
+            if (token != null) return token;
+          }
+        }
+
+        if (twoColumn != null) {
+          // Secondary contents holds the track list for playlists/artists
+          final secondaryContents = twoColumn['secondaryContents'];
+          final secondarySectionList =
+              secondaryContents?['sectionListRenderer'];
+          final secondaryToken =
+              _extractTokenFromSectionList(secondarySectionList);
+          if (secondaryToken != null) return secondaryToken;
+
+          // Primary contents fallback
+          final primaryContents = twoColumn['primaryContents'];
+          final primarySectionList = primaryContents?['sectionListRenderer'];
+          final primaryToken = _extractTokenFromSectionList(primarySectionList);
+          if (primaryToken != null) return primaryToken;
+        }
+      }
+
+      // Continuation responses — token is in onResponseReceivedActions
+      final onResponseReceivedActions = browseData['onResponseReceivedActions'];
+      if (onResponseReceivedActions is List &&
+          onResponseReceivedActions.isNotEmpty) {
+        final action = onResponseReceivedActions[0];
+        if (action is Map<String, dynamic>) {
+          final items =
+              action['appendContinuationItemsAction']?['continuationItems'];
+          if (items is List) {
+            final token = _extractTokenFromContinuationItems(items);
+            if (token != null) return token;
+          }
+        }
+      }
+
+      // Continuation responses — sectionListContinuation / musicPlaylistShelfContinuation
+      final continuationContents = browseData['continuationContents'];
+      if (continuationContents is Map<String, dynamic>) {
+        for (final key in [
+          'sectionListContinuation',
+          'musicPlaylistShelfContinuation',
+          'musicShelfContinuation'
+        ]) {
+          final shelf = continuationContents[key];
+          if (shelf is Map<String, dynamic>) {
+            // Check shelf-level continuations list
+            final continuations = shelf['continuations'] as List?;
+            if (continuations != null && continuations.isNotEmpty) {
+              final token = continuations[0]?['nextContinuationData']
+                  ?['continuation'] as String?;
+              if (token != null) return token;
+            }
+            // Check continuationItemRenderer inside contents
+            final shelfContents = shelf['contents'] as List?;
+            if (shelfContents != null) {
+              final token = _extractTokenFromContinuationItems(shelfContents);
+              if (token != null) return token;
+            }
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Finds a continuation token embedded as a [continuationItemRenderer] in a list.
+  static String? _extractTokenFromContinuationItems(List items) {
+    for (final item in items) {
+      if (item is Map<String, dynamic>) {
+        final renderer = item['continuationItemRenderer'];
+        if (renderer is Map<String, dynamic>) {
+          final token = renderer['continuationEndpoint']?['continuationCommand']
+              ?['token'] as String?;
+          if (token != null) return token;
+        }
+      }
+    }
+    return null;
+  }
+
+  /// Extracts a continuation token from a sectionListRenderer node by checking:
+  /// 1. `continuationItemRenderer` embedded inside musicPlaylistShelfRenderer.contents
+  /// 2. `continuations` on musicPlaylistShelfRenderer itself.
+  /// 3. Top-level `continuations` on the sectionListRenderer.
+  static String? _extractTokenFromSectionList(dynamic sectionList) {
+    if (sectionList is! Map<String, dynamic>) return null;
+
+    final contentsList = sectionList['contents'] as List?;
+    if (contentsList != null) {
+      for (final item in contentsList) {
+        if (item is! Map<String, dynamic>) continue;
+        final shelf = (item['musicPlaylistShelfRenderer'] ??
+            item['musicShelfRenderer'] ??
+            item['musicCardShelfRenderer']) as Map<String, dynamic>?;
+        if (shelf != null) {
+          // 1. continuationItemRenderer inside shelf contents (primary pattern)
+          final shelfContents = shelf['contents'] as List?;
+          if (shelfContents != null) {
+            final token = _extractTokenFromContinuationItems(shelfContents);
+            if (token != null) return token;
+          }
+          // 2. shelf-level continuations field
+          final continuations = shelf['continuations'] as List?;
+          if (continuations != null && continuations.isNotEmpty) {
+            final token = continuations[0]?['nextContinuationData']
+                ?['continuation'] as String?;
+            if (token != null) return token;
+          }
+        }
+      }
+    }
+
+    // 3. Top-level continuations on sectionListRenderer itself
+    final topContinuations = sectionList['continuations'] as List?;
+    if (topContinuations != null && topContinuations.isNotEmpty) {
+      final token = topContinuations[0]?['nextContinuationData']
+          ?['continuation'] as String?;
+      if (token != null) return token;
+    }
+
+    return null;
+  }
+
+  /// Parses the entire browse data into a unified `RelatedHomeFeed` payload.
+  static RelatedHomeFeed parseRelatedFeed(
+    Map<String, dynamic> browseData, {
+    int maxTracks = 30,
+    int maxPlaylists = 12,
+    int maxArtists = 12,
+    int maxMoodItems = 100,
+  }) {
+    final trackShelves = <RelatedTrackShelf>[];
+    final playlistShelves = <RelatedPlaylistShelf>[];
+    final artistShelves = <RelatedArtistShelf>[];
+    final homeShelves = <RelatedHomeShelf>[];
+
+    final shelves = extractShelves(browseData);
+
+    for (final shelf in shelves) {
+      final (shelfTitle, shelfSubtitle) = _extractShelfTitleAndSubtitle(shelf);
+      // Always record the shelf metadata so callers can preserve the original
+      // browse order even if a particular shelf ends up empty for a given
+      // content type (tracks/playlists/artists).
+      homeShelves.add(
+        RelatedHomeShelf(
+          title: shelfTitle,
+          subtitle: shelfSubtitle,
+        ),
+      );
+      final shelfTitleLower = shelfTitle.toLowerCase();
+
+      final contents = shelf['contents'] as List<dynamic>?;
+      if (contents == null || contents.isEmpty) continue;
+
+      final currentShelfTracks = <Track>[];
+      final currentShelfPlaylists = <RelatedPlaylist>[];
+      final currentShelfArtists = <RelatedArtist>[];
+
+      for (final item in contents.whereType<Map<String, dynamic>>()) {
+        _processShelfItem(
+          item,
+          shelfTitleLower: shelfTitleLower,
+          maxTracks: maxTracks,
+          maxPlaylists: maxPlaylists,
+          maxArtists: maxArtists,
+          currentShelfTracks: currentShelfTracks,
+          currentShelfPlaylists: currentShelfPlaylists,
+          currentShelfArtists: currentShelfArtists,
+        );
+      }
+
+      if (currentShelfTracks.isNotEmpty) {
+        trackShelves.add(RelatedTrackShelf(
+          title: shelfTitle,
+          subtitle: shelfSubtitle,
+          tracks: currentShelfTracks,
+        ));
+      }
+      if (currentShelfPlaylists.isNotEmpty) {
+        playlistShelves.add(RelatedPlaylistShelf(
+          title: shelfTitle,
+          subtitle: shelfSubtitle,
+          playlists: currentShelfPlaylists,
+        ));
+      }
+      if (currentShelfArtists.isNotEmpty) {
+        artistShelves.add(RelatedArtistShelf(
+          title: shelfTitle,
+          subtitle: shelfSubtitle,
+          artists: currentShelfArtists,
+        ));
+      }
+    }
+
+    final moodItems = extractMoodItems(browseData, maxItems: maxMoodItems);
+
+    return RelatedHomeFeed(
+      trackShelves: trackShelves,
+      playlistShelves: playlistShelves,
+      artistShelves: artistShelves,
+      shelves: homeShelves,
+      moodItems: moodItems,
+    );
+  }
+
+  /// Extracts mood and genre items from browse response.
+  /// Supports: chipCloudChipRenderer (home feed mood chips) and musicNavigationButtonRenderer.
+  static List<RelatedMoodItem> extractMoodItems(
+    Map<String, dynamic> browseData, {
+    int maxItems = 32,
+  }) {
+    final items = <RelatedMoodItem>[];
+    final seenKeys = <String>{};
+    const sectionTitle = 'Moods & genres';
+
+    void walk(dynamic node) {
+      if (items.length >= maxItems) return;
+      if (node is Map<String, dynamic>) {
+        if (node.containsKey('chipCloudChipRenderer')) {
+          final mood = _parseMoodFromChip(
+              node['chipCloudChipRenderer']!, sectionTitle, seenKeys);
+          if (mood != null) items.add(mood);
+        }
+        if (node.containsKey('musicNavigationButtonRenderer')) {
+          final mood = _parseMoodFromNavButton(node, sectionTitle, seenKeys);
+          if (mood != null) items.add(mood);
+        }
+        for (final value in node.values) {
+          walk(value);
+          if (items.length >= maxItems) return;
+        }
+      } else if (node is List) {
+        for (final item in node) {
+          walk(item);
+          if (items.length >= maxItems) return;
+        }
+      }
+    }
+
+    walk(browseData);
+    return items;
+  }
+
+  /// Mood chips in home feed use chipCloudChipRenderer with browseId FEmusic_home and params.
+  static RelatedMoodItem? _parseMoodFromChip(
+    Map<String, dynamic> chip,
+    String sectionTitle,
+    Set<String> seenKeys,
+  ) {
+    final nav = chip['navigationEndpoint'] as Map<String, dynamic>?;
+    final browse = nav?['browseEndpoint'] as Map<String, dynamic>?;
+    final browseId = browse?['browseId'] as String?;
+    final params = browse?['params'] as String?;
+    if (browseId == null || browseId.isEmpty) return null;
+
+    final title = p.extractRunsText(chip['text']) ?? '';
+    if (title.isEmpty) return null;
+
+    // Chips with FEmusic_home + params are mood filters (Energize, Relax, Workout, etc.)
+    final key =
+        params != null && params.isNotEmpty ? '$browseId|$params' : title;
+    if (!seenKeys.add(key)) return null;
+
+    return RelatedMoodItem(
+      title: title,
+      browseId: browseId,
+      params: params,
+      sectionTitle: sectionTitle,
+    );
+  }
+
+  static RelatedMoodItem? _parseMoodFromNavButton(
+    Map<String, dynamic> item,
+    String sectionTitle,
+    Set<String> seenIds,
+  ) {
+    final navButton =
+        item['musicNavigationButtonRenderer'] as Map<String, dynamic>?;
+    if (navButton == null) return null;
+
+    final nav = (navButton['navigationEndpoint'] ?? navButton['clickCommand'])
+        as Map<String, dynamic>?;
+    final browse = nav?['browseEndpoint'] as Map<String, dynamic>?;
+    final browseId = browse?['browseId'] as String?;
+    if (browseId == null || browseId.isEmpty) return null;
+
+    final params = browse?['params'] as String?;
+    final dedupKey =
+        params != null && params.isNotEmpty ? '$browseId|$params' : browseId;
+    if (!seenIds.add(dedupKey)) return null;
+
+    // Skip main nav when no params (home/explore/library tabs)
+    if (params == null || params.isEmpty) {
+      if (browseId == 'FEmusic_home' ||
+          browseId == 'FEmusic_explore' ||
+          browseId == 'FEmusic_library' ||
+          browseId.startsWith('SP')) {
+        return null;
+      }
+    }
+
+    final title =
+        p.extractRunsText(navButton['title'] ?? navButton['buttonText']) ?? '';
+    if (title.isEmpty) return null;
+
+    // Never treat artist/playlist browse as mood/genre
+    final pageType = p.extractBrowsePageType(browse);
+    final isArtist = pageType == 'MUSIC_PAGE_TYPE_ARTIST';
+    final isPlaylist = pageType == 'MUSIC_PAGE_TYPE_PLAYLIST' ||
+        pageType == 'MUSIC_PAGE_TYPE_ALBUM' ||
+        browseId.startsWith('VL');
+    if (isArtist || isPlaylist) return null;
+
+    return RelatedMoodItem(
+      title: title,
+      browseId: browseId,
+      params: params,
+      sectionTitle: sectionTitle,
+    );
+  }
+
+  /// Parses a mood detail browse response into sub-categories (mood chips) and playlists.
+  static MoodDetailResult parseMoodDetailResponse(
+      Map<String, dynamic> browseData) {
+    final subCategories = extractMoodItems(browseData, maxItems: 64);
+    final playlists = extractPlaylistsFromBrowseData(browseData, maxItems: 50);
+    return MoodDetailResult(subCategories: subCategories, playlists: playlists);
+  }
+
+  /// Extracts playlist entries (MoodPlaylist) from browse data (musicTwoRowItemRenderer with MPREb_/VL).
+  static List<MoodPlaylist> extractPlaylistsFromBrowseData(
+    Map<String, dynamic> browseData, {
+    int maxItems = 50,
+  }) {
+    final list = <MoodPlaylist>[];
+    final seen = <String>{};
+
+    void walk(dynamic node) {
+      if (list.length >= maxItems) return;
+      if (node is Map<String, dynamic>) {
+        final twoRow = node['musicTwoRowItemRenderer'] as Map<String, dynamic>?;
+        if (twoRow != null) {
+          final nav = twoRow['navigationEndpoint'] as Map<String, dynamic>?;
+          final browse = nav?['browseEndpoint'] as Map<String, dynamic>?;
+          final browseId = browse?['browseId'] as String?;
+          if (browseId != null &&
+              browseId.isNotEmpty &&
+              (browseId.startsWith('MPREb_') || browseId.startsWith('VL')) &&
+              seen.add(browseId)) {
+            final title = p.extractRunsText(twoRow['title']) ?? '';
+            if (title.isEmpty) return;
+            final subtitle = p.extractRunsText(twoRow['subtitle']);
+            final thumb = p.extractThumbnailFromTwoRow(twoRow) ??
+                'https://i.ytimg.com/vi/$browseId/hqdefault.jpg';
+            final thumbUrl = p.upgradeThumbResolution(thumb, browseId);
+            list.add(MoodPlaylist(
+              id: browseId,
+              title: title,
+              thumbnailUrl: thumbUrl,
+              subtitle: subtitle,
+            ));
+          }
+        }
+        for (final value in node.values) {
+          walk(value);
+          if (list.length >= maxItems) return;
+        }
+      } else if (node is List) {
+        for (final item in node) {
+          walk(item);
+          if (list.length >= maxItems) return;
+        }
+      }
+    }
+
+    walk(browseData);
+    return list;
+  }
+
+  /// Extracts all shelf renderers from any response node.
+  static List<Map<String, dynamic>> extractShelves(Map<String, dynamic> data) {
+    final shelves = <Map<String, dynamic>>[];
+    final seen = <String>{};
+
+    void addShelf(dynamic shelf) {
+      if (shelf is Map<String, dynamic>) {
+        final title = p.extractRunsText(shelf['title']) ??
+            p.extractRunsText(shelf['header']
+                ?['musicCarouselShelfBasicHeaderRenderer']?['title']) ??
+            p.extractRunsText(
+                shelf['header']?['musicShelfHeaderRenderer']?['title']) ??
+            '';
+        final key = '$title|${(shelf['contents'] as List?)?.length ?? 0}';
+        if (title.isNotEmpty && seen.add(key)) {
+          shelves.add(shelf);
+        }
+      }
+    }
+
+    void walk(dynamic node) {
+      if (node is Map<String, dynamic>) {
+        if (node.containsKey('musicCarouselShelfRenderer')) {
+          addShelf(node['musicCarouselShelfRenderer']);
+        }
+        if (node.containsKey('musicShelfRenderer')) {
+          addShelf(node['musicShelfRenderer']);
+        }
+        if (node.containsKey('musicImmersiveCarouselShelfRenderer')) {
+          addShelf(node['musicImmersiveCarouselShelfRenderer']);
+        }
+        if (node.containsKey('musicTastebuilderShelfRenderer')) {
+          addShelf(node['musicTastebuilderShelfRenderer']);
+        }
+
+        node.forEach((key, value) {
+          if (value is Map || value is List) walk(value);
+        });
+      } else if (node is List) {
+        for (final item in node) {
+          walk(item);
+        }
+      }
+    }
+
+    walk(data);
+    return shelves;
+  }
+
+  /// Processes a single item from a shelf and adds it to the appropriate lists.
+  static void _processShelfItem(
+    Map<String, dynamic> item, {
+    required String shelfTitleLower,
+    required int maxTracks,
+    required int maxPlaylists,
+    required int maxArtists,
+    required List<Track> currentShelfTracks,
+    required List<RelatedPlaylist> currentShelfPlaylists,
+    required List<RelatedArtist> currentShelfArtists,
+  }) {
+    // 1. Check for Track (Responsive Item)
+    final responsive =
+        item['musicResponsiveListItemRenderer'] as Map<String, dynamic>?;
+    if (responsive != null) {
+      final track = parseTrackFromResponsiveItem(responsive);
+      if (track != null) {
+        if (currentShelfTracks.length < maxTracks &&
+            !currentShelfTracks.any((t) => t.id == track.id)) {
+          currentShelfTracks.add(track);
+        }
+        return;
+      }
+
+      // Check for Artist/Playlist in Responsive Item
+      final collection = _parseCollectionItem(responsive, shelfTitleLower);
+      if (collection != null) {
+        _dispatchCollection(
+          collection,
+          maxArtists: maxArtists,
+          maxPlaylists: maxPlaylists,
+          currentShelfArtists: currentShelfArtists,
+          currentShelfPlaylists: currentShelfPlaylists,
+        );
+      }
+      return;
+    }
+
+    // 2. Check for Track/Artist/Playlist (Two Row Item)
+    final twoRow = item['musicTwoRowItemRenderer'] as Map<String, dynamic>?;
+    if (twoRow != null) {
+      final track = parseTrackFromTwoRowItem(twoRow);
+      if (track != null) {
+        if (currentShelfTracks.length < maxTracks &&
+            !currentShelfTracks.any((t) => t.id == track.id)) {
+          currentShelfTracks.add(track);
+        }
+        return;
+      }
+
+      final collection = _parseCollectionItem(twoRow, shelfTitleLower);
+      if (collection != null) {
+        _dispatchCollection(
+          collection,
+          maxArtists: maxArtists,
+          maxPlaylists: maxPlaylists,
+          currentShelfArtists: currentShelfArtists,
+          currentShelfPlaylists: currentShelfPlaylists,
+        );
+      }
+      return;
+    }
+
+    // 3. Check for Navigation Button (e.g., Moods)
+    final navButton =
+        item['musicNavigationButtonRenderer'] as Map<String, dynamic>?;
+    if (navButton != null) {
+      final collection = _parseCollectionItem(navButton, shelfTitleLower);
+      if (collection != null) {
+        _dispatchCollection(
+          collection,
+          maxArtists: maxArtists,
+          maxPlaylists: maxPlaylists,
+          currentShelfArtists: currentShelfArtists,
+          currentShelfPlaylists: currentShelfPlaylists,
+        );
+      }
+    }
+  }
+
+  /// Unified parser for collection items (Artists/Playlists) from various renderers.
+  static (String, String, String?, String, bool)? _parseCollectionItem(
+    Map<String, dynamic> item,
+    String shelfTitleLower,
+  ) {
+    final nav = (item['navigationEndpoint'] ?? item['clickCommand'])
+        as Map<String, dynamic>?;
+    final browse = nav?['browseEndpoint'] as Map<String, dynamic>?;
+    final browseId = browse?['browseId'] as String?;
+    if (browseId == null || browseId.isEmpty) return null;
+
+    final title = p.extractRunsText(item['title'] ?? item['buttonText']) ??
+        p.extractColumnRunsText(item['flexColumns'] as List?, 0) ??
+        'Unknown';
+    final subtitle =
+        p.extractRunsText(item['subtitle'] ?? item['secondaryText']) ??
+            p.extractColumnRunsText(item['flexColumns'] as List?, 1);
+
+    final thumb = item['thumbnail'] as Map<String, dynamic>?;
+    final rawThumb = p.extractThumbnailUrl(thumb) ??
+        p.extractThumbnailFromTwoRow(item) ??
+        'https://i.ytimg.com/vi/$browseId/hqdefault.jpg';
+    final thumbnail = p.upgradeThumbResolution(rawThumb, browseId);
+
+    final pageType = p.extractBrowsePageType(browse);
+    final subtitleLower = (subtitle ?? '').toLowerCase();
+
+    // "Albums for you" shelf: every item is an album (top-level nav = MPREb_). Artist links (UC)
+    // only appear in subtitle.runs for the album's artists — we must not treat those as artist items.
+    // So when the shelf title is album-only, treat every item as playlist/album.
+    final shelfIsAlbumOnly = shelfTitleLower.contains('album') &&
+        !shelfTitleLower.contains('artist');
+
+    final bool isArtist;
+    final bool isPlaylist;
+    if (shelfIsAlbumOnly) {
+      isArtist = false;
+      isPlaylist = browseId.startsWith('VL') ||
+          browseId.startsWith('MPREb_') ||
+          pageType == 'MUSIC_PAGE_TYPE_PLAYLIST' ||
+          pageType == 'MUSIC_PAGE_TYPE_ALBUM' ||
+          pageType == 'MUSIC_PAGE_TYPE_AUDIOBOOK';
+    } else {
+      // UC... = artist; MPREb_ / VL = playlist/album.
+      isArtist = pageType == 'MUSIC_PAGE_TYPE_ARTIST' ||
+          browseId.startsWith('UC') ||
+          shelfTitleLower.contains('artist') ||
+          subtitleLower.contains('artist');
+      isPlaylist = pageType == 'MUSIC_PAGE_TYPE_PLAYLIST' ||
+          pageType == 'MUSIC_PAGE_TYPE_ALBUM' ||
+          pageType == 'MUSIC_PAGE_TYPE_AUDIOBOOK' ||
+          browseId.startsWith('VL') ||
+          browseId.startsWith('MPREb_') ||
+          shelfTitleLower.contains('playlist') ||
+          shelfTitleLower.contains('album');
+    }
+
+    if (!isArtist && !isPlaylist) return null;
+    return (browseId, title, subtitle, thumbnail, isArtist);
+  }
+
+  static void _dispatchCollection(
+    (String, String, String?, String, bool) item, {
+    required int maxArtists,
+    required int maxPlaylists,
+    required List<RelatedArtist> currentShelfArtists,
+    required List<RelatedPlaylist> currentShelfPlaylists,
+  }) {
+    final (id, name, sub, thumb, isArtist) = item;
+
+    if (isArtist) {
+      if (currentShelfArtists.length < maxArtists &&
+          !currentShelfArtists.any((a) => a.id == id)) {
+        final artist = RelatedArtist(
+          id: id,
+          name: name,
+          thumbnailUrl: thumb,
+          subtitle: sub,
+        );
+        currentShelfArtists.add(artist);
+      }
+    } else {
+      if (currentShelfPlaylists.length < maxPlaylists &&
+          !currentShelfPlaylists.any((pItem) => pItem.id == id)) {
+        final playlist = RelatedPlaylist(
+          id: id,
+          title: name,
+          thumbnailUrl: thumb,
+          curatorName: sub,
+          trackCount: p.extractTrackCount(sub),
+        );
+        currentShelfPlaylists.add(playlist);
+      }
+    }
+  }
+
+  static (String, String?) _extractShelfTitleAndSubtitle(
+      Map<String, dynamic> shelf) {
+    final header = shelf['header'] as Map<String, dynamic>?;
+
+    final basic = header?['musicCarouselShelfBasicHeaderRenderer']
+        as Map<String, dynamic>?;
+    final basicTitle = p.extractRunsText(basic?['title']);
+    final basicSubtitle = p.extractRunsText(basic?['strapline']);
+    if (basicTitle != null && basicTitle.isNotEmpty) {
+      return (basicTitle, basicSubtitle);
+    }
+
+    final shelfHeader =
+        header?['musicShelfHeaderRenderer'] as Map<String, dynamic>?;
+    final shelfHeaderTitle = p.extractRunsText(shelfHeader?['title']) ??
+        p.extractRunsText(shelf['title']);
+    final shelfHeaderSubtitle = p.extractRunsText(shelfHeader?['subtitle']) ??
+        p.extractRunsText(shelf['subtitle']);
+
+    return (
+      (shelfHeaderTitle == null || shelfHeaderTitle.isEmpty)
+          ? 'Related'
+          : shelfHeaderTitle,
+      shelfHeaderSubtitle
+    );
+  }
+
+  /// Parses playlist header metadata from a full playlist `browse` JSON page.
+  ///
+  /// Uses [musicDescriptionShelfRenderer] for the blurb, [facepile] for curator
+  /// name and optional avatar, and [microformatDataRenderer.description] as a
+  /// fallback when the shelf is missing (skipping generic "Listen to … on YT Music" lines).
+  static PlaylistBrowseMeta? extractPlaylistBrowseMeta(
+    Map<String, dynamic> browseData,
+  ) {
+    final hdr = _findPlaylistStyleHeader(browseData);
+    if (hdr == null) return null;
+
+    String? desc;
+    final descriptionNode = hdr['description'];
+    if (descriptionNode is Map<String, dynamic>) {
+      final shelf = descriptionNode['musicDescriptionShelfRenderer'];
+      if (shelf is Map<String, dynamic>) {
+        final inner = shelf['description'];
+        final t = p.extractRunsText(inner);
+        if (t != null && t.trim().isNotEmpty) desc = t.trim();
+      }
+    }
+    if (desc == null || desc.isEmpty) {
+      final micro = browseData['microformat']?['microformatDataRenderer']
+          ?['description'] as String?;
+      if (micro != null && micro.trim().isNotEmpty) {
+        final m = micro.trim();
+        final generic = RegExp(
+          r'^Listen to .+ on YouTube Music',
+          caseSensitive: false,
+        );
+        if (!generic.hasMatch(m)) desc = m;
+      }
+    }
+
+    String? subtitle = p.extractRunsText(hdr['subtitle'])?.trim();
+    if (subtitle != null && subtitle.isEmpty) subtitle = null;
+    String? secondSubtitle = p.extractRunsText(hdr['secondSubtitle'])?.trim();
+    if (secondSubtitle != null && secondSubtitle.isEmpty) secondSubtitle = null;
+
+    String? curator;
+    String? curatorThumb;
+    final face = hdr['facepile'];
+    if (face is Map<String, dynamic>) {
+      final stack = face['avatarStackViewModel'];
+      if (stack is Map<String, dynamic>) {
+        final text = stack['text'];
+        if (text is Map<String, dynamic>) {
+          final c = text['content'] as String?;
+          if (c != null && c.trim().isNotEmpty) curator = c.trim();
+        }
+        final avatars = stack['avatars'] as List<dynamic>?;
+        if (avatars != null && avatars.isNotEmpty) {
+          final first = avatars.first;
+          if (first is Map<String, dynamic>) {
+            final vm = first['avatarViewModel'] as Map<String, dynamic>?;
+            final sources = vm?['image']?['sources'] as List<dynamic>?;
+            if (sources != null && sources.isNotEmpty) {
+              final s = sources.first;
+              if (s is Map<String, dynamic>) {
+                final u = s['url'] as String?;
+                if (u != null && u.isNotEmpty) {
+                  curatorThumb = p.upgradeThumbResolution(u, '');
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Album / single pages: primary artist + avatar from strapline (no facepile).
+    if ((curator == null || curator.isEmpty) ||
+        (curatorThumb == null || curatorThumb.isEmpty)) {
+      final strap = hdr['straplineTextOne'];
+      if (curator == null || curator.isEmpty) {
+        final name = p.extractRunsText(strap)?.trim();
+        if (name != null && name.isNotEmpty) curator = name;
+      }
+      if (curatorThumb == null || curatorThumb.isEmpty) {
+        final st = hdr['straplineThumbnail'];
+        if (st is Map<String, dynamic>) {
+          final raw = p.extractThumbnailUrl(st);
+          if (raw != null && raw.isNotEmpty) {
+            curatorThumb = p.upgradeThumbResolution(raw, '');
+          }
+        }
+      }
+    }
+
+    if ((desc == null || desc.isEmpty) &&
+        (curator == null || curator.isEmpty) &&
+        (curatorThumb == null || curatorThumb.isEmpty) &&
+        (subtitle == null || subtitle.isEmpty) &&
+        (secondSubtitle == null || secondSubtitle.isEmpty)) {
+      return null;
+    }
+    return PlaylistBrowseMeta(
+      description: desc,
+      curatorName: curator,
+      curatorThumbnailUrl: curatorThumb,
+      subtitle: subtitle,
+      secondSubtitle: secondSubtitle,
+    );
+  }
+
+  /// Prefer [extractPlaylistBrowseMeta], then artist [musicImmersiveHeaderRenderer].
+  static PlaylistBrowseMeta? extractCollectionBrowseMeta(
+    Map<String, dynamic> browseData,
+  ) {
+    return extractPlaylistBrowseMeta(browseData) ??
+        extractImmersiveHeaderBrowseMeta(browseData);
+  }
+
+  /// Artist home: full song list lives on a separate playlist browse ("See all"
+  /// on **Top songs**). Returns [browseId] + [params] from the shelf title run.
+  static ({String browseId, String? params})? extractArtistTopSongsBrowse(
+    Map<String, dynamic> browseData,
+  ) {
+    ({String browseId, String? params})? found;
+
+    void walk(dynamic node) {
+      if (found != null) return;
+      if (node is Map<String, dynamic>) {
+        final shelf = node['musicShelfRenderer'];
+        if (shelf is Map<String, dynamic>) {
+          final shelfTitle = p.extractRunsText(shelf['title']) ?? '';
+          if (RegExp(r'top\s+songs', caseSensitive: false)
+              .hasMatch(shelfTitle.trim())) {
+            final runs = shelf['title']?['runs'] as List<dynamic>?;
+            if (runs != null) {
+              for (final run in runs) {
+                if (run is! Map<String, dynamic>) continue;
+                final be = run['navigationEndpoint']?['browseEndpoint']
+                    as Map<String, dynamic>?;
+                final bid = be?['browseId'] as String?;
+                if (bid != null && bid.isNotEmpty) {
+                  found = (
+                    browseId: bid,
+                    params: be?['params'] as String?,
+                  );
+                  return;
+                }
+              }
+            }
+          }
+        }
+        for (final v in node.values) {
+          walk(v);
+        }
+      } else if (node is List) {
+        for (final v in node) {
+          walk(v);
+          if (found != null) return;
+        }
+      }
+    }
+
+    walk(browseData);
+    return found;
+  }
+
+  /// Artist channel: root `header.musicImmersiveHeaderRenderer` — bio in
+  /// [description], [monthlyListenerCount] as [PlaylistBrowseMeta.subtitle].
+  static PlaylistBrowseMeta? extractImmersiveHeaderBrowseMeta(
+    Map<String, dynamic> browseData,
+  ) {
+    final rootHeader = browseData['header'] as Map<String, dynamic>?;
+    final immersive =
+        rootHeader?['musicImmersiveHeaderRenderer'] as Map<String, dynamic>?;
+    if (immersive == null) return null;
+
+    String? desc = p.extractRunsText(immersive['description'])?.trim();
+    if (desc == null || desc.isEmpty) {
+      final micro = browseData['microformat']?['microformatDataRenderer']
+          ?['description'] as String?;
+      if (micro != null && micro.trim().isNotEmpty) {
+        desc = micro.trim();
+      }
+    }
+    if (desc == null || desc.isEmpty) {
+      desc = _extractFirstMusicDescriptionShelfDescription(browseData);
+    }
+
+    final monthly =
+        p.extractRunsText(immersive['monthlyListenerCount'])?.trim();
+
+    final channelTitle = p.extractRunsText(immersive['title'])?.trim();
+
+    // Hero cover: immersive header thumb (largest run, e.g. w1000-h416). Do not run
+    // [upgradeThumbResolution] — it forces =w544-h544 and replaces the official crop.
+    String? channelThumb = p.extractThumbnailUrl(immersive['thumbnail']);
+    if (channelThumb == null || channelThumb.isEmpty) {
+      final microThumbNode =
+          browseData['microformat']?['microformatDataRenderer']?['thumbnail'];
+      channelThumb = p.extractThumbnailUrl(microThumbNode);
+      if (channelThumb != null && channelThumb.isNotEmpty) {
+        channelThumb = p.upgradeThumbResolution(channelThumb, '');
+      }
+    }
+
+    final hasAny = (desc != null && desc.isNotEmpty) ||
+        (monthly != null && monthly.isNotEmpty) ||
+        (channelTitle != null && channelTitle.isNotEmpty) ||
+        (channelThumb != null && channelThumb.isNotEmpty);
+    if (!hasAny) return null;
+
+    return PlaylistBrowseMeta(
+      description: desc,
+      curatorName: null,
+      curatorThumbnailUrl: null,
+      subtitle: (monthly != null && monthly.isNotEmpty) ? monthly : null,
+      secondSubtitle: null,
+      channelTitle: (channelTitle != null && channelTitle.isNotEmpty)
+          ? channelTitle
+          : null,
+      channelThumbnailUrl: (channelThumb != null && channelThumb.isNotEmpty)
+          ? channelThumb
+          : null,
+    );
+  }
+
+  static String? _extractFirstMusicDescriptionShelfDescription(
+    Map<String, dynamic> root,
+  ) {
+    String? found;
+    void walk(dynamic node) {
+      if (found != null) return;
+      if (node is Map<String, dynamic>) {
+        final shelf = node['musicDescriptionShelfRenderer'];
+        if (shelf is Map<String, dynamic>) {
+          final inner = shelf['description'];
+          final t = p.extractRunsText(inner);
+          if (t != null && t.trim().isNotEmpty) {
+            found = t.trim();
+            return;
+          }
+        }
+        for (final v in node.values) {
+          walk(v);
+        }
+      } else if (node is List) {
+        for (final v in node) {
+          walk(v);
+        }
+      }
+    }
+
+    walk(root);
+    return found;
+  }
+
+  static Map<String, dynamic>? _findPlaylistStyleHeader(
+    Map<String, dynamic> root,
+  ) {
+    Map<String, dynamic>? found;
+    void walk(dynamic node) {
+      if (found != null) return;
+      if (node is Map<String, dynamic>) {
+        final hdr = node['musicResponsiveHeaderRenderer'];
+        if (hdr is Map<String, dynamic> && _looksLikePlaylistHeader(hdr)) {
+          found = hdr;
+          return;
+        }
+        for (final v in node.values) {
+          walk(v);
+        }
+      } else if (node is List) {
+        for (final v in node) {
+          walk(v);
+        }
+      }
+    }
+
+    walk(root);
+    return found;
+  }
+
+  static bool _looksLikePlaylistHeader(Map<String, dynamic> hdr) {
+    if (hdr['facepile'] != null) return true;
+    final desc = hdr['description'];
+    if (desc is Map<String, dynamic> &&
+        desc['musicDescriptionShelfRenderer'] != null) {
+      return true;
+    }
+    // Release / album detail uses strapline artist row instead of facepile.
+    if (hdr['straplineTextOne'] != null || hdr['straplineThumbnail'] != null) {
+      return true;
+    }
+    return false;
+  }
+}

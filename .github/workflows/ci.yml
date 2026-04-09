@@ -19,13 +19,13 @@ jobs:
       - name: Install root dependencies
         run: flutter pub get
 
-      - name: Install pkg/scrapper dependencies
+      - name: Install pkg/tunify_source_youtube_music dependencies
         run: flutter pub get
-        working-directory: pkg/scrapper
+        working-directory: pkg/tunify_source_youtube_music
 
-      - name: Install pkg/logger dependencies
-        run: flutter pub get
-        working-directory: pkg/logger
+      - name: Install pkg/tunify_music_ports dependencies
+        run: dart pub get
+        working-directory: pkg/tunify_music_ports
 
       - name: Install pkg/tunify_database dependencies
         run: flutter pub get

@@ -3,7 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:tunify/data/models/song.dart';
 import 'package:tunify_database/tunify_database.dart';
-import 'package:tunify_logger/tunify_logger.dart';
+import 'package:tunify/core/utils/app_log.dart';
 
 import 'package:tunify/data/repositories/database_repository.dart';
 
@@ -59,7 +59,7 @@ final showExplicitContentProvider =
 );
 
 /// Persists the explicit-content filter setting to SQLite + SharedPreferences,
-/// syncing with Supabase via [DatabaseRepository] on auth changes.
+/// reloading from [DatabaseRepository] on auth / guest-mode changes.
 class ShowExplicitContentNotifier extends _BoolSettingNotifier {
   ShowExplicitContentNotifier()
       : super(settingKey: PlaybackSettingKeys.showExplicitContent);

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/theme/app_theme.dart';
+import 'package:tunify/v2/features/loading/presentation/screens/loading_screen.dart';
 import 'package:tunify/v2/features/welcome/presentation/screens/welcome_screen.dart';
 
 void main() {

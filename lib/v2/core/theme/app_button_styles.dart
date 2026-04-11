@@ -18,7 +18,7 @@ class AppButtonStyles {
   }) {
     return SizedBox(
       width: width,
-      height: 48,
+      height: AppSpacing.xxxl,
       child: Material(
         color: AppColors.darkSurface,
         borderRadius: BorderRadius.circular(AppBorderRadius.pill),
@@ -27,7 +27,7 @@ class AppButtonStyles {
           borderRadius: BorderRadius.circular(AppBorderRadius.pill),
           child: Container(
             alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 43),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxxl - 5),
             child: Text(
               label.toUpperCase(),
               style: AppTextStyles.buttonUppercase.copyWith(
@@ -50,7 +50,7 @@ class AppButtonStyles {
   }) {
     return SizedBox(
       width: width,
-      height: 48,
+      height: AppSpacing.xxxl,
       child: Material(
         color: AppColors.brandGreen,
         borderRadius: BorderRadius.circular(AppBorderRadius.pill),
@@ -59,7 +59,7 @@ class AppButtonStyles {
           borderRadius: BorderRadius.circular(AppBorderRadius.pill),
           child: Container(
             alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 43),
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxxl - 5),
             child: Text(
               label.toUpperCase(),
               style: AppTextStyles.buttonUppercase.copyWith(

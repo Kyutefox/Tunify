@@ -3,6 +3,7 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/auth/presentation/screens/auth_choice_screen.dart';
 import 'package:tunify/v2/features/welcome/presentation/widgets/tunify_logo.dart';
 
 /// Tunify Welcome Screen
@@ -31,7 +32,7 @@ class WelcomeScreen extends StatelessWidget {
               const Spacer(flex: 2),
 
               // Tunify Logo - Brand Green
-              const TunifyLogo(size: 72),
+              const TunifyLogo(size: AppSpacing.xxxl + 24),
 
               const SizedBox(height: AppSpacing.xxl),
 
@@ -50,7 +51,13 @@ class WelcomeScreen extends StatelessWidget {
                 label: 'Sign up free',
                 width: double.infinity,
                 onPressed: () {
-                  // TODO: Navigate to sign up flow
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AuthChoiceScreen(
+                        mode: AuthMode.signup,
+                      ),
+                    ),
+                  );
                 },
               ),
 
@@ -62,7 +69,13 @@ class WelcomeScreen extends StatelessWidget {
                 label: 'Log in',
                 width: double.infinity,
                 onPressed: () {
-                  // TODO: Navigate to login flow
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const AuthChoiceScreen(
+                        mode: AuthMode.login,
+                      ),
+                    ),
+                  );
                 },
               ),
 

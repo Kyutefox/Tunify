@@ -3,26 +3,20 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/auth/presentation/screens/signup_password_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
 
-/// Forgot Password Screen
+/// Sign Up Step 1: Email
 ///
-/// Password recovery flow:
-/// - Email/username input
-/// - Send reset link button
-///
-/// Per DESIGN.md:
-/// - Background: #121212 (nearBlack)
-/// - Inputs: transparent bg, 1px #7c7c7c border, 6px radius
-/// - Primary CTA: Brand Green Large Pill
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+/// Registration flow - collect email address
+class SignupEmailScreen extends StatefulWidget {
+  const SignupEmailScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<SignupEmailScreen> createState() => _SignupEmailScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _SignupEmailScreenState extends State<SignupEmailScreen> {
   final _emailController = TextEditingController();
 
   @override
@@ -52,7 +46,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Forgot password',
+          'Sign up',
           style: AppTextStyles.featureHeading.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -67,9 +61,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               children: [
                 const SizedBox(height: AppSpacing.xl),
 
-                // Email/username input
+                // Email input
                 AuthInputField(
-                  label: 'Email or username',
+                  label: 'Email',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   onChanged: (_) => setState(() {}),
@@ -77,13 +71,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
                 const SizedBox(height: AppSpacing.xxxl),
 
-                // Send reset link button
+                // Next button
                 AppButtonStyles.brandGreenLargePill(
-                  label: 'Send reset link',
+                  label: 'Next',
                   width: double.infinity,
                   onPressed: _isInputValid
                       ? () {
-                          // TODO: Implement password reset
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const SignupPasswordScreen(),
+                            ),
+                          );
                         }
                       : null,
                 ),

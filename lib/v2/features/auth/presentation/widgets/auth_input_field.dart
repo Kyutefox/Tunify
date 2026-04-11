@@ -17,6 +17,7 @@ class AuthInputField extends StatelessWidget {
   final bool obscureText;
   final VoidCallback? onToggleVisibility;
   final TextInputType? keyboardType;
+  final void Function(String)? onChanged;
 
   const AuthInputField({
     super.key,
@@ -26,6 +27,7 @@ class AuthInputField extends StatelessWidget {
     this.obscureText = false,
     this.onToggleVisibility,
     this.keyboardType,
+    this.onChanged,
   });
 
   @override
@@ -48,6 +50,7 @@ class AuthInputField extends StatelessWidget {
           obscureText: isPassword && obscureText,
           keyboardType: keyboardType,
           style: AppTextStyles.body,
+          onChanged: onChanged,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.transparent,

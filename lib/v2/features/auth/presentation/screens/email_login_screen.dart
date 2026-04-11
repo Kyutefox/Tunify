@@ -39,6 +39,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
     super.dispose();
   }
 
+  bool get _isFormValid {
+    return _emailController.text.trim().isNotEmpty &&
+        _passwordController.text.trim().isNotEmpty;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -72,6 +77,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                   label: 'Email or username',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  onChanged: (_) => setState(() {}),
                 ),
 
                 const SizedBox(height: AppSpacing.lg),
@@ -87,6 +93,7 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                       _obscurePassword = !_obscurePassword;
                     });
                   },
+                  onChanged: (_) => setState(() {}),
                 ),
 
                 const SizedBox(height: AppSpacing.lg),
@@ -118,9 +125,11 @@ class _EmailLoginScreenState extends State<EmailLoginScreen> {
                 AppButtonStyles.brandGreenLargePill(
                   label: 'Sign in',
                   width: double.infinity,
-                  onPressed: () {
-                    // TODO: Implement login
-                  },
+                  onPressed: _isFormValid
+                      ? () {
+                          // TODO: Implement login
+                        }
+                      : null,
                 ),
               ],
             ),

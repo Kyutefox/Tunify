@@ -3,40 +3,31 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/auth/presentation/screens/signup_username_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
 
-/// Forgot Password Screen
+/// Sign Up Step 2: Password
 ///
-/// Password recovery flow:
-/// - Email/username input
-/// - Send reset link button
-///
-/// Per DESIGN.md:
-/// - Background: #121212 (nearBlack)
-/// - Inputs: transparent bg, 1px #7c7c7c border, 6px radius
-/// - Primary CTA: Brand Green Large Pill
-class ForgotPasswordScreen extends StatefulWidget {
-  const ForgotPasswordScreen({super.key});
+/// Registration flow - create password
+class SignupPasswordScreen extends StatefulWidget {
+  const SignupPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  State<SignupPasswordScreen> createState() => _SignupPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  final _emailController = TextEditingController();
+class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
+  final _passwordController = TextEditingController();
+  bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
   bool get _isInputValid {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) return false;
-    // Simple email validation regex
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(email);
+    return _passwordController.text.trim().isNotEmpty;
   }
 
   @override
@@ -52,7 +43,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(
-          'Forgot password',
+          'Sign up',
           style: AppTextStyles.featureHeading.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -67,23 +58,33 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               children: [
                 const SizedBox(height: AppSpacing.xl),
 
-                // Email/username input
+                // Password input
                 AuthInputField(
-                  label: 'Email or username',
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
+                  label: 'Password',
+                  controller: _passwordController,
+                  isPassword: true,
+                  obscureText: _obscurePassword,
+                  onToggleVisibility: () {
+                    setState(() {
+                      _obscurePassword = !_obscurePassword;
+                    });
+                  },
                   onChanged: (_) => setState(() {}),
                 ),
 
                 const SizedBox(height: AppSpacing.xxxl),
 
-                // Send reset link button
+                // Next button
                 AppButtonStyles.brandGreenLargePill(
-                  label: 'Send reset link',
+                  label: 'Next',
                   width: double.infinity,
                   onPressed: _isInputValid
                       ? () {
-                          // TODO: Implement password reset
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const SignupUsernameScreen(),
+                            ),
+                          );
                         }
                       : null,
                 ),

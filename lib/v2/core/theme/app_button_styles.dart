@@ -48,14 +48,15 @@ class AppButtonStyles {
     VoidCallback? onPressed,
     double? width,
   }) {
+    final bool isEnabled = onPressed != null;
     return SizedBox(
       width: width,
       height: AppSpacing.xxxl,
       child: Material(
-        color: AppColors.brandGreen,
+        color: isEnabled ? AppColors.brandGreen : AppColors.lightBorder,
         borderRadius: BorderRadius.circular(AppBorderRadius.pill),
         child: InkWell(
-          onTap: onPressed,
+          onTap: isEnabled ? onPressed : null,
           borderRadius: BorderRadius.circular(AppBorderRadius.pill),
           child: Container(
             alignment: Alignment.center,
@@ -63,7 +64,7 @@ class AppButtonStyles {
             child: Text(
               label.toUpperCase(),
               style: AppTextStyles.buttonUppercase.copyWith(
-                color: AppColors.nearBlack,
+                color: isEnabled ? AppColors.nearBlack : AppColors.white.withValues(alpha: 0.5),
                 fontWeight: FontWeight.w700,
               ),
             ),

@@ -29,4 +29,11 @@ class AppColors {
   static const Color separator = Color(0xFFb3b3b3);
   static const Color lightSurface = Color(0xFFeeeeee);
   static const Color brandGreenBorder = Color(0xFF1db954);
+
+  /// Library filter pills (Figma “Menu - Library” chips).
+  static const Color filterPillInactive = Color(0xFF313131);
+  static const Color filterPillActive = Color(0xFF1ED760);
+  static const Color filterPillDoubleSecond = Color(0xFF1BBB57);
+  static const Color filterPillCloseSurface = Color(0xFF292929);
+  static const Color filterPillDoubleSecondFg = Color(0xFF313131);
 }

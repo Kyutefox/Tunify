@@ -2,26 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
-import 'package:tunify/v2/core/theme/app_button_styles.dart';
+import 'package:tunify/v2/core/widgets/buttons/filter_double_pill.dart';
+import 'package:tunify/v2/core/widgets/buttons/filter_single_pill.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
 import 'package:tunify/v2/features/home/presentation/providers/home_providers.dart';
 import 'package:tunify/v2/features/settings/presentation/screens/settings_screen.dart';
 
-/// Pinned header: profile + dark pill filters ([AppButtonStyles.navigationDarkPill]).
+/// Pinned header: profile + Figma library filter pills (single + double segment).
 class HomeTopHeader extends ConsumerWidget {
   const HomeTopHeader({super.key});
 
-  static const List<({String label, HomeChipFilter filter})> _chipSpecs = [
-    (label: 'All', filter: HomeChipFilter.all),
-    (label: 'Music', filter: HomeChipFilter.music),
-    (label: 'Podcasts', filter: HomeChipFilter.podcasts),
-  ];
+  /// Figma secondary segment label (same for Music and Podcasts rows).
+  static const String _secondaryTrailingLabel = 'Following';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final mq = MediaQuery.of(context);
-    final chip = ref.watch(homeChipFilterProvider);
-    final chipNotifier = ref.read(homeChipFilterProvider.notifier);
+    final pills = ref.watch(homeFilterPillsProvider);
+    final notifier = ref.read(homeFilterPillsProvider.notifier);
 
     return Material(
       color: AppColors.nearBlack,
@@ -40,14 +38,37 @@ class HomeTopHeader extends ConsumerWidget {
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    for (var i = 0; i < _chipSpecs.length; i++) ...[
-                      if (i > 0) SizedBox(width: AppSpacing.md),
-                      AppButtonStyles.navigationDarkPill(
-                        label: _chipSpecs[i].label,
-                        selected: chip == _chipSpecs[i].filter,
-                        onPressed: () => chipNotifier.select(_chipSpecs[i].filter),
-                      ),
-                    ],
+                    FilterSinglePill(
+                      label: 'All',
+                      selected: pills.band == HomeContentBand.all,
+                      onPressed: notifier.selectAll,
+                    ),
+                    SizedBox(width: AppSpacing.md),
+                    FilterDoublePill(
+                      primaryLabel: 'Music',
+                      secondaryLabel: _secondaryTrailingLabel,
+                      primarySelected: pills.band == HomeContentBand.music,
+                      secondarySelected:
+                          pills.band == HomeContentBand.music &&
+                              pills.musicSecondaryOn,
+                      secondaryRevealed: pills.musicSecondaryExpanded,
+                      onPrimaryPressed: notifier.tapMusicPrimary,
+                      onSecondaryPressed: notifier.tapMusicSecondary,
+                      showCloseControl: false,
+                    ),
+                    SizedBox(width: AppSpacing.md),
+                    FilterDoublePill(
+                      primaryLabel: 'Podcasts',
+                      secondaryLabel: _secondaryTrailingLabel,
+                      primarySelected: pills.band == HomeContentBand.podcasts,
+                      secondarySelected:
+                          pills.band == HomeContentBand.podcasts &&
+                              pills.podcastsSecondaryOn,
+                      secondaryRevealed: pills.podcastsSecondaryExpanded,
+                      onPrimaryPressed: notifier.tapPodcastsPrimary,
+                      onSecondaryPressed: notifier.tapPodcastsSecondary,
+                      showCloseControl: false,
+                    ),
                   ],
                 ),
               ),

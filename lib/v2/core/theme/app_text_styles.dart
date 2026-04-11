@@ -118,4 +118,12 @@ class AppTextStyles {
     color: AppColors.silver,
     height: 1.0,
   );
+
+  /// Filter / library chips — Body 7 (Figma): 11px / 16px line, weight ~450.
+  static const TextStyle filterPillLabel = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    height: 16 / 11,
+    letterSpacing: 0,
+  );
 }

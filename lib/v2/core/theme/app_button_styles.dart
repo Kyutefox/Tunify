@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/core/widgets/buttons/filter_single_pill.dart';
 
 /// Button styles strictly per DESIGN.md Component Stylings section
 class AppButtonStyles {
@@ -140,38 +141,22 @@ class AppButtonStyles {
     );
   }
 
-  /// DESIGN.md — **Dark Pill**: navigation / filter pills.
-  /// Inactive: `#1f1f1f` ([AppColors.midDark]), text [AppTextStyles.navLink].
-  /// Active (functional accent): [AppColors.brandGreen], [AppTextStyles.navLinkBold] on [AppColors.nearBlack].
-  /// Padding `8×16`, radius full pill (`9999px`).
+  /// Library-style filter pill (Figma “Menu - Library” single chip).
+  ///
+  /// Optional [showCloseControl] + [onClose] match Figma category row.
   static Widget navigationDarkPill({
     required String label,
     required bool selected,
     VoidCallback? onPressed,
+    bool showCloseControl = false,
+    VoidCallback? onClose,
   }) {
-    final bg = selected ? AppColors.brandGreen : AppColors.midDark;
-    final fg = selected ? AppColors.nearBlack : AppColors.silver;
-    final textStyle = selected
-        ? AppTextStyles.navLinkBold.copyWith(color: fg)
-        : AppTextStyles.navLink.copyWith(color: fg);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(AppBorderRadius.fullPill),
-        child: Ink(
-          decoration: BoxDecoration(
-            color: bg,
-            borderRadius: BorderRadius.circular(AppBorderRadius.fullPill),
-          ),
-          padding: const EdgeInsets.symmetric(
-            vertical: AppSpacing.md,
-            horizontal: AppSpacing.lg,
-          ),
-          child: Text(label, style: textStyle),
-        ),
-      ),
+    return FilterSinglePill(
+      label: label,
+      selected: selected,
+      onPressed: onPressed,
+      showCloseControl: showCloseControl,
+      onClose: onClose,
     );
   }
 }

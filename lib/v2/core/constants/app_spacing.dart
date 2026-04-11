@@ -9,4 +9,9 @@ class AppSpacing {
   static const double xl = 24;
   static const double xxl = 32;
   static const double xxxl = 48;
+
+  // Component-specific sizes
+  static const double checkboxSize = 24;
+  static const double checkboxIconSize = 16;
+  static const double checkboxBorderRadius = 4;
 }

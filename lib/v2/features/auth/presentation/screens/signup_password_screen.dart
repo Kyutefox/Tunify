@@ -1,22 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/signup_username_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
 
 /// Sign Up Step 2: Password
 ///
 /// Registration flow - create password
-class SignupPasswordScreen extends StatefulWidget {
+/// Uses Riverpod for form validation state per RULES.md
+class SignupPasswordScreen extends ConsumerStatefulWidget {
   const SignupPasswordScreen({super.key});
 
   @override
-  State<SignupPasswordScreen> createState() => _SignupPasswordScreenState();
+  ConsumerState<SignupPasswordScreen> createState() =>
+      _SignupPasswordScreenState();
 }
 
-class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
+class _SignupPasswordScreenState extends ConsumerState<SignupPasswordScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
@@ -26,12 +30,11 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
     super.dispose();
   }
 
-  bool get _isInputValid {
-    return _passwordController.text.trim().isNotEmpty;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final formState = ref.watch(formValidationProvider);
+    final formNotifier = ref.read(formValidationProvider.notifier);
+
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
       appBar: AppBar(
@@ -69,16 +72,17 @@ class _SignupPasswordScreenState extends State<SignupPasswordScreen> {
                       _obscurePassword = !_obscurePassword;
                     });
                   },
-                  onChanged: (_) => setState(() {}),
+                  onChanged: formNotifier.setPassword,
                 ),
 
                 const SizedBox(height: AppSpacing.xxxl),
 
                 // Next button
+                // Password validation logic is in the provider per RULES.md
                 AppButtonStyles.brandGreenLargePill(
                   label: 'Next',
                   width: double.infinity,
-                  onPressed: _isInputValid
+                  onPressed: formState.isPasswordValid
                       ? () {
                           Navigator.of(context).push(
                             MaterialPageRoute(

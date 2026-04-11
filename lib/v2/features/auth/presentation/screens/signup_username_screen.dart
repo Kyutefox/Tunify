@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
 
 /// Sign Up Step 3: Username
 ///
 /// Registration flow - create username
-class SignupUsernameScreen extends StatefulWidget {
+/// Uses Riverpod for form validation state per RULES.md:
+/// - No business logic in UI
+/// - State management through providers
+class SignupUsernameScreen extends ConsumerStatefulWidget {
   const SignupUsernameScreen({super.key});
 
   @override
-  State<SignupUsernameScreen> createState() => _SignupUsernameScreenState();
+  ConsumerState<SignupUsernameScreen> createState() =>
+      _SignupUsernameScreenState();
 }
 
-class _SignupUsernameScreenState extends State<SignupUsernameScreen> {
+class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
   final _usernameController = TextEditingController();
-  bool _agreedToTerms = false;
 
   @override
   void dispose() {
@@ -25,12 +30,11 @@ class _SignupUsernameScreenState extends State<SignupUsernameScreen> {
     super.dispose();
   }
 
-  bool get _isFormValid {
-    return _usernameController.text.trim().isNotEmpty && _agreedToTerms;
-  }
-
   @override
   Widget build(BuildContext context) {
+    final formState = ref.watch(formValidationProvider);
+    final formNotifier = ref.read(formValidationProvider.notifier);
+
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
       appBar: AppBar(
@@ -62,7 +66,7 @@ class _SignupUsernameScreenState extends State<SignupUsernameScreen> {
                   label: 'Username',
                   controller: _usernameController,
                   keyboardType: TextInputType.text,
-                  onChanged: (_) => setState(() {}),
+                  onChanged: formNotifier.setUsername,
                 ),
 
                 const SizedBox(height: AppSpacing.lg),
@@ -113,30 +117,27 @@ class _SignupUsernameScreenState extends State<SignupUsernameScreen> {
                     const SizedBox(width: AppSpacing.sm),
                     // Checkbox on the right
                     GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _agreedToTerms = !_agreedToTerms;
-                        });
-                      },
+                      onTap: formNotifier.toggleAgreedToTerms,
                       child: Container(
-                        width: 24,
-                        height: 24,
+                        width: AppSpacing.checkboxSize,
+                        height: AppSpacing.checkboxSize,
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: _agreedToTerms
+                            color: formState.agreedToTerms
                                 ? AppColors.brandGreen
                                 : AppColors.lightBorder,
                             width: 2,
                           ),
-                          borderRadius: BorderRadius.circular(4),
-                          color: _agreedToTerms
+                          borderRadius: BorderRadius.circular(
+                              AppSpacing.checkboxBorderRadius),
+                          color: formState.agreedToTerms
                               ? AppColors.brandGreen
                               : Colors.transparent,
                         ),
-                        child: _agreedToTerms
+                        child: formState.agreedToTerms
                             ? const Icon(
                                 Icons.check,
-                                size: 16,
+                                size: AppSpacing.checkboxIconSize,
                                 color: AppColors.nearBlack,
                               )
                             : null,
@@ -148,10 +149,11 @@ class _SignupUsernameScreenState extends State<SignupUsernameScreen> {
                 const SizedBox(height: AppSpacing.xxl),
 
                 // Create account button
+                // Validation logic is in the provider per RULES.md
                 AppButtonStyles.brandGreenLargePill(
                   label: 'Create account',
                   width: double.infinity,
-                  onPressed: _isFormValid
+                  onPressed: formState.isUsernameStepValid
                       ? () {
                           // TODO: Complete registration
                         }

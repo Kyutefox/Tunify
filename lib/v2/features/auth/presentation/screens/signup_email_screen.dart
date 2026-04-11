@@ -1,22 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/signup_password_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
 
 /// Sign Up Step 1: Email
 ///
 /// Registration flow - collect email address
-class SignupEmailScreen extends StatefulWidget {
+/// Uses Riverpod for form validation state per RULES.md
+class SignupEmailScreen extends ConsumerStatefulWidget {
   const SignupEmailScreen({super.key});
 
   @override
-  State<SignupEmailScreen> createState() => _SignupEmailScreenState();
+  ConsumerState<SignupEmailScreen> createState() => _SignupEmailScreenState();
 }
 
-class _SignupEmailScreenState extends State<SignupEmailScreen> {
+class _SignupEmailScreenState extends ConsumerState<SignupEmailScreen> {
   final _emailController = TextEditingController();
 
   @override
@@ -25,16 +28,11 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
     super.dispose();
   }
 
-  bool get _isInputValid {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) return false;
-    // Simple email validation regex
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(email);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final formState = ref.watch(formValidationProvider);
+    final formNotifier = ref.read(formValidationProvider.notifier);
+
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
       appBar: AppBar(
@@ -66,16 +64,17 @@ class _SignupEmailScreenState extends State<SignupEmailScreen> {
                   label: 'Email',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  onChanged: (_) => setState(() {}),
+                  onChanged: formNotifier.setEmail,
                 ),
 
                 const SizedBox(height: AppSpacing.xxxl),
 
                 // Next button
+                // Email validation logic is in the provider per RULES.md
                 AppButtonStyles.brandGreenLargePill(
                   label: 'Next',
                   width: double.infinity,
-                  onPressed: _isInputValid
+                  onPressed: formState.isEmailValid
                       ? () {
                           Navigator.of(context).push(
                             MaterialPageRoute(

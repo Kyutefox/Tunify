@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
 
 /// Forgot Password Screen
@@ -15,14 +17,17 @@ import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.da
 /// - Background: #121212 (nearBlack)
 /// - Inputs: transparent bg, 1px #7c7c7c border, 6px radius
 /// - Primary CTA: Brand Green Large Pill
-class ForgotPasswordScreen extends StatefulWidget {
+///
+/// Uses Riverpod for form validation state per RULES.md
+class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
-class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
+class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   final _emailController = TextEditingController();
 
   @override
@@ -31,16 +36,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     super.dispose();
   }
 
-  bool get _isInputValid {
-    final email = _emailController.text.trim();
-    if (email.isEmpty) return false;
-    // Simple email validation regex
-    final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-    return emailRegex.hasMatch(email);
-  }
-
   @override
   Widget build(BuildContext context) {
+    final formState = ref.watch(formValidationProvider);
+    final formNotifier = ref.read(formValidationProvider.notifier);
+
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
       appBar: AppBar(
@@ -72,16 +72,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                   label: 'Email or username',
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
-                  onChanged: (_) => setState(() {}),
+                  onChanged: formNotifier.setEmail,
                 ),
 
                 const SizedBox(height: AppSpacing.xxxl),
 
                 // Send reset link button
+                // Email validation logic is in the provider per RULES.md
                 AppButtonStyles.brandGreenLargePill(
                   label: 'Send reset link',
                   width: double.infinity,
-                  onPressed: _isInputValid
+                  onPressed: formState.isEmailValid
                       ? () {
                           // TODO: Implement password reset
                         }

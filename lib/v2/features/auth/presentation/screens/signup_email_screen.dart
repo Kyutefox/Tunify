@@ -70,7 +70,7 @@ class _SignupEmailScreenState extends ConsumerState<SignupEmailScreen> {
                 const SizedBox(height: AppSpacing.xxxl),
 
                 // Next button
-                // Email validation logic is in the provider per RULES.md
+                // Disabled when email is empty or invalid
                 AppButtonStyles.brandGreenLargePill(
                   label: 'Next',
                   width: double.infinity,

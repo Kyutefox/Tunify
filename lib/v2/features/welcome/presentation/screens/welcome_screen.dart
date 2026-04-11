@@ -4,6 +4,8 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/auth_choice_screen.dart';
+import 'package:tunify/v2/features/auth/presentation/screens/privacy_policy_screen.dart';
+import 'package:tunify/v2/features/auth/presentation/screens/terms_of_use_screen.dart';
 import 'package:tunify/v2/features/welcome/presentation/widgets/tunify_logo.dart';
 
 /// Tunify Welcome Screen
@@ -85,38 +87,56 @@ class WelcomeScreen extends StatelessWidget {
               // DESIGN.md: Micro 10px/400, silver color
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-                child: Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: 'By tapping on "Sign up free", you agree to our ',
-                        style: AppTextStyles.micro,
-                      ),
-                      TextSpan(
-                        text: 'Terms of Service',
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    Text(
+                      'By tapping on "Sign up free", you agree to our ',
+                      style: AppTextStyles.micro,
+                      textAlign: TextAlign.center,
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const TermsOfUseScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Terms of use',
                         style: AppTextStyles.micro.copyWith(
                           color: AppColors.brandGreen,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      TextSpan(
-                        text: ' and ',
-                        style: AppTextStyles.micro,
-                      ),
-                      TextSpan(
-                        text: 'Privacy Policy',
+                    ),
+                    Text(
+                      ' and ',
+                      style: AppTextStyles.micro,
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => const PrivacyPolicyScreen(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        'Privacy Policy',
                         style: AppTextStyles.micro.copyWith(
                           color: AppColors.brandGreen,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      TextSpan(
-                        text: '.',
-                        style: AppTextStyles.micro,
-                      ),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
+                    ),
+                    Text(
+                      '.',
+                      style: AppTextStyles.micro,
+                    ),
+                  ],
                 ),
               ),
 

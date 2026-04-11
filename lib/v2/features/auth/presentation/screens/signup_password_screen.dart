@@ -78,7 +78,7 @@ class _SignupPasswordScreenState extends ConsumerState<SignupPasswordScreen> {
                 const SizedBox(height: AppSpacing.xxxl),
 
                 // Next button
-                // Password validation logic is in the provider per RULES.md
+                // Disabled when password is empty
                 AppButtonStyles.brandGreenLargePill(
                   label: 'Next',
                   width: double.infinity,

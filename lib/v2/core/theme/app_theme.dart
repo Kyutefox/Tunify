@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 
@@ -90,6 +90,44 @@ class AppTheme {
         unselectedItemColor: AppColors.silver,
         type: BottomNavigationBarType.fixed,
         elevation: 0,
+      ),
+      // Fix page transition glimpsing with custom transitions
+      pageTransitionsTheme: PageTransitionsTheme(
+        builders: {
+          TargetPlatform.android: _TunifyPageTransitionBuilder(),
+          TargetPlatform.iOS: _TunifyPageTransitionBuilder(),
+        },
+      ),
+    );
+  }
+}
+
+/// Custom page transition builder that maintains dark background
+/// throughout the transition to prevent content glimpsing
+class _TunifyPageTransitionBuilder extends PageTransitionsBuilder {
+  @override
+  Widget buildTransitions<T>(
+    PageRoute<T> route,
+    BuildContext context,
+    Animation<double> animation,
+    Animation<double> secondaryAnimation,
+    Widget child,
+  ) {
+    // Use fade + slide with consistent dark background
+    return Container(
+      color: AppColors.nearBlack,
+      child: FadeTransition(
+        opacity: animation,
+        child: SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(0.05, 0.0),
+            end: Offset.zero,
+          ).animate(CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeInOutCubic,
+          )),
+          child: child,
+        ),
       ),
     );
   }

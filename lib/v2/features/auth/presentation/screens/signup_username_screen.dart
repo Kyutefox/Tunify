@@ -5,6 +5,8 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
+import 'package:tunify/v2/features/auth/presentation/screens/privacy_policy_screen.dart';
+import 'package:tunify/v2/features/auth/presentation/screens/terms_of_use_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
 
 /// Sign Up Step 3: Username
@@ -73,49 +75,63 @@ class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
 
                 // Terms agreement checkbox
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Expanded(
-                      child: RichText(
-                        text: TextSpan(
-                          style: AppTextStyles.caption.copyWith(
-                            color: AppColors.white,
+                      child: Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [
+                          // I agree to the Tunify
+                          Text(
+                            'I agree to the Tunify ',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.white,
+                            ),
                           ),
-                          children: [
-                            const TextSpan(text: 'I agree to the Tunify '),
-                            WidgetSpan(
-                              child: GestureDetector(
-                                onTap: () {
-                                  // TODO: Navigate to Terms of use
-                                },
-                                child: Text(
-                                  'Terms of use',
-                                  style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.brandGreen,
-                                  ),
+                          // Terms of use link
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const TermsOfUseScreen(),
                                 ),
+                              );
+                            },
+                            child: Text(
+                              'Terms of use',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.brandGreen,
                               ),
                             ),
-                            const TextSpan(text: ' and '),
-                            WidgetSpan(
-                              child: GestureDetector(
-                                onTap: () {
-                                  // TODO: Navigate to Privacy Policy
-                                },
-                                child: Text(
-                                  'Privacy Policy',
-                                  style: AppTextStyles.caption.copyWith(
-                                    color: AppColors.brandGreen,
-                                  ),
+                          ),
+                          // and
+                          Text(
+                            ' and ',
+                            style: AppTextStyles.caption.copyWith(
+                              color: AppColors.white,
+                            ),
+                          ),
+                          // Privacy Policy link
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => const PrivacyPolicyScreen(),
                                 ),
+                              );
+                            },
+                            child: Text(
+                              'Privacy Policy',
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.brandGreen,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: AppSpacing.sm),
-                    // Checkbox on the right
+                    // Circular checkbox on the right
                     GestureDetector(
                       onTap: formNotifier.toggleAgreedToTerms,
                       child: Container(
@@ -128,8 +144,7 @@ class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
                                 : AppColors.lightBorder,
                             width: 2,
                           ),
-                          borderRadius: BorderRadius.circular(
-                              AppSpacing.checkboxBorderRadius),
+                          borderRadius: BorderRadius.circular(50),
                           color: formState.agreedToTerms
                               ? AppColors.brandGreen
                               : Colors.transparent,

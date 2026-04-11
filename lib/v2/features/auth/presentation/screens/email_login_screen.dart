@@ -124,7 +124,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                 const SizedBox(height: AppSpacing.xxxl),
 
                 // Sign in button
-                // Form validation logic is in the provider per RULES.md
+                // Disabled when email or password is empty
                 AppButtonStyles.brandGreenLargePill(
                   label: 'Sign in',
                   width: double.infinity,

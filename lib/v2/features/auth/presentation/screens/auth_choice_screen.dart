@@ -47,9 +47,6 @@ class AuthChoiceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final horizontalPadding = size.width * 0.08;
-
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
       appBar: AppBar(
@@ -62,13 +59,13 @@ class AuthChoiceScreen extends StatelessWidget {
       ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
             children: [
               const Spacer(flex: 1),
 
               // Tunify Logo - Same as Welcome screen
-              const TunifyLogo(size: 72),
+              const TunifyLogo(size: AppSpacing.xxxl + 24),
 
               const SizedBox(height: AppSpacing.xxl),
 

@@ -6,6 +6,7 @@ import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/auth_choice_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/privacy_policy_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/terms_of_use_screen.dart';
+import 'package:tunify/v2/features/settings/presentation/screens/settings_screen.dart';
 import 'package:tunify/v2/features/welcome/presentation/widgets/tunify_logo.dart';
 
 /// Tunify Welcome Screen
@@ -21,17 +22,34 @@ class WelcomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    final horizontalPadding = size.width * 0.08;
-
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
+      appBar: AppBar(
+        backgroundColor: AppColors.nearBlack,
+        elevation: 0,
+        actions: [
+          // Settings icon
+          IconButton(
+            icon: const Icon(
+              Icons.settings_outlined,
+              color: AppColors.white,
+            ),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => const SettingsScreen(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Column(
             children: [
-              const Spacer(flex: 2),
+              const Spacer(flex: 1),
 
               // Tunify Logo - Brand Green
               const TunifyLogo(size: AppSpacing.xxxl + 24),

@@ -119,7 +119,7 @@ class AppButtonStyles {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       icon,
-                      const SizedBox(width: 8),
+                      const SizedBox(width: AppSpacing.sm),
                       Text(
                         label.toUpperCase(),
                         style: AppTextStyles.buttonUppercase.copyWith(

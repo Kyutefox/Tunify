@@ -1,0 +1,70 @@
+import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_spacing.dart';
+
+/// Home screen geometry and insets — built from [AppSpacing] only.
+///
+/// Non–grid multiples (e.g. carousel thumb width) stay in this feature file, not `core`.
+abstract final class HomeLayout {
+  HomeLayout._();
+
+  static double _belowStatusGap() => AppSpacing.xxl + AppSpacing.xs;
+
+  /// Pinned header padding (horizontal [AppSpacing.lg]).
+  static EdgeInsets headerPadding(MediaQueryData mq) {
+    final top = mq.padding.top + _belowStatusGap();
+    return EdgeInsets.fromLTRB(
+      AppSpacing.lg,
+      top,
+      AppSpacing.lg,
+      AppSpacing.md,
+    );
+  }
+
+  /// Top inset for the scroll view so content clears the pinned header.
+  static double scrollContentTopOffset(MediaQueryData mq) {
+    final p = headerPadding(mq);
+    return p.top + profileAvatarDiameter + p.bottom;
+  }
+
+  /// Slim grid row (6.5 × 8px grid steps → 56).
+  static double get slimRowHeight => AppSpacing.xxxl + AppSpacing.md;
+
+  static double get slimThumbSize => slimRowHeight;
+
+  static double get heroAvatarDiameter => AppSpacing.xxxl;
+
+  /// Hero artwork width/height — tuned for mock layout (not on 8px grid).
+  static const double heroPromoArtSize = 142;
+
+  /// Carousel art — reference square 147 at [carouselDesignShelfInnerWidth] wide viewport.
+  /// Artist (circle) and album/playlist (square) use the **same** scaled width/height; only clip differs.
+  static const double carouselThumbLarge = 147;
+
+  /// Reference inner shelf width (390pt frame minus 16pt leading gutter).
+  static const double carouselDesignShelfInnerWidth = 374;
+
+  /// Space under art for labels (title + subtitle stack for square; same row height for circle).
+  static const double _carouselTextBlock = 51;
+
+  /// Clamp carousel art so shelves stay usable on small / large phones (RULES: no magic in UI).
+  static const double carouselThumbClampMin = 112;
+  static const double carouselThumbClampMax = 168;
+
+  /// Scales with shelf viewport — used for **both** square and circular carousel art.
+  static double carouselThumbSize(double shelfViewportWidth) {
+    final w = shelfViewportWidth * carouselThumbLarge / carouselDesignShelfInnerWidth;
+    return w.clamp(carouselThumbClampMin, carouselThumbClampMax);
+  }
+
+  /// Shelf row height for any carousel thumb of size [thumb].
+  static double carouselShelfHeight(double thumb) =>
+      thumb + AppSpacing.md + _carouselTextBlock;
+
+  /// Fixed reference (147 + 8 + 51) when viewport is unknown.
+  static const double carouselShelfTall = 206;
+
+  static double get profileAvatarDiameter => AppSpacing.xxl;
+
+  static double get profileAvatarIconSize =>
+      AppSpacing.lg + AppSpacing.sm - AppSpacing.xs;
+}

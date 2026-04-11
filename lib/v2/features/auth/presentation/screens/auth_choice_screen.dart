@@ -3,6 +3,7 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/auth/presentation/screens/email_login_screen.dart';
 import 'package:tunify/v2/features/welcome/presentation/widgets/tunify_logo.dart';
 
 /// Auth Choice Screen - Spotify-inspired social login options
@@ -106,7 +107,11 @@ class AuthChoiceScreen extends StatelessWidget {
                 label: 'Continue with Email or phone',
                 icon: Icons.email_outlined,
                 onPressed: () {
-                  // TODO: Navigate to email/phone form
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const EmailLoginScreen(),
+                    ),
+                  );
                 },
               ),
 

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tunify/data/models/library_folder.dart';
+import 'package:tunify/v1/data/models/library_folder.dart';
 
 LibraryFolder _folder({
   String id = 'f1',

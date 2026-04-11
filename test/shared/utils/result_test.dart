@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:tunify/core/utils/result.dart';
+import 'package:tunify/v1/core/utils/result.dart';
 
 void main() {
   group('Result', () {

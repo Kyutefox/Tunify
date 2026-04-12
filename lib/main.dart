@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/theme/app_theme.dart';
-import 'package:tunify/v2/features/home/presentation/screens/home_screen.dart';
+import 'package:tunify/v2/features/welcome/presentation/screens/welcome_screen.dart';
 
 void main() {
   runApp(
@@ -25,11 +25,7 @@ class TunifyApp extends StatelessWidget {
         scaffoldBackgroundColor: AppColors.nearBlack,
       ),
       themeMode: ThemeMode.dark,
-      // v2 home preview. Swap to `WelcomeScreen()` for onboarding.
-      home: Scaffold(
-        backgroundColor: AppColors.nearBlack,
-        body: const HomeScreen(),
-      ),
+      home: const WelcomeScreen(),
       // Custom page transitions to prevent content glimpsing
       builder: (context, child) {
         return Container(

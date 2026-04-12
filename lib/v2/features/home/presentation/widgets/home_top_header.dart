@@ -6,7 +6,7 @@ import 'package:tunify/v2/core/widgets/buttons/filter_double_pill.dart';
 import 'package:tunify/v2/core/widgets/buttons/filter_single_pill.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
 import 'package:tunify/v2/features/home/presentation/providers/home_providers.dart';
-import 'package:tunify/v2/features/settings/presentation/screens/settings_screen.dart';
+import 'package:tunify/v2/features/home/presentation/widgets/home_user_menu_panel.dart';
 
 /// Pinned header: profile + Figma library filter pills (single + double segment).
 class HomeTopHeader extends ConsumerWidget {
@@ -95,13 +95,7 @@ class _ProfileAvatarButton extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         customBorder: const CircleBorder(),
-        onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute<void>(
-              builder: (context) => const SettingsScreen(),
-            ),
-          );
-        },
+        onTap: () => showHomeUserMenu(context),
         child: Ink(
           height: diameter,
           width: diameter,

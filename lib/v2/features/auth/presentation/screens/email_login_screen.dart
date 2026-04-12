@@ -7,6 +7,7 @@ import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
+import 'package:tunify/v2/features/home/presentation/screens/home_screen.dart';
 
 /// Email/Phone Login Screen - Minimal form design
 ///
@@ -130,7 +131,15 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                   width: double.infinity,
                   onPressed: formState.isLoginFormValid
                       ? () {
-                          // TODO: Implement login
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute<void>(
+                              builder: (context) => const Scaffold(
+                                backgroundColor: AppColors.nearBlack,
+                                body: HomeScreen(),
+                              ),
+                            ),
+                            (route) => false,
+                          );
                         }
                       : null,
                 ),
@@ -138,7 +147,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
             ),
           ),
         ),
-          ),
-      );
+      ),
+    );
   }
 }

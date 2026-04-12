@@ -9,21 +9,29 @@ class HomeSlimGrid extends StatelessWidget {
   const HomeSlimGrid({
     super.key,
     required this.tiles,
+    this.omitTrailingShelfGap = false,
   });
 
   final List<HomeSlimTile> tiles;
+
+  /// When true (e.g. Quick picks pages), no bottom [HomeLayout.shelfTrailingAfterContent] so the
+  /// parent owns the boundary gap once per shelf.
+  final bool omitTrailingShelfGap;
 
   @override
   Widget build(BuildContext context) {
     final gap = AppSpacing.md;
     final horizontalPadding = AppSpacing.lg;
+    final bottomPad = omitTrailingShelfGap
+        ? 0.0
+        : HomeLayout.shelfTrailingAfterContent;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
         horizontalPadding,
         AppSpacing.md,
         horizontalPadding,
-        0,
+        bottomPad,
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -53,6 +61,7 @@ class HomeSlimGrid extends StatelessWidget {
     return TrackSlimCard(
       title: tile.title,
       mockThumbArgbColors: tile.thumbColors,
+      artworkUrl: tile.artworkUrl,
       rowHeight: HomeLayout.slimRowHeight,
       thumbSize: HomeLayout.slimThumbSize,
       showNowPlayingIndicator: tile.showNowPlayingIndicator,

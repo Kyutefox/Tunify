@@ -38,8 +38,17 @@ class FormValidationState {
   /// Checks if password is not empty
   bool get isPasswordValid => password.trim().isNotEmpty;
 
-  /// Checks if username is not empty
-  bool get isUsernameValid => username.trim().isNotEmpty;
+  /// Backend requires at least 8 characters on registration.
+  bool get isSignUpPasswordValid => password.trim().length >= 8;
+
+  /// Checks username rules aligned with `POST /v1/auth/register`.
+  bool get isUsernameValid {
+    final u = username.trim();
+    if (u.length < 3 || u.length > 50) {
+      return false;
+    }
+    return RegExp(r'^[a-zA-Z0-9_]+$').hasMatch(u);
+  }
 
   /// Validates complete login form (email + password)
   bool get isLoginFormValid =>

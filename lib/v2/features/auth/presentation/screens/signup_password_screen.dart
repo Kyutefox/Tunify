@@ -82,11 +82,12 @@ class _SignupPasswordScreenState extends ConsumerState<SignupPasswordScreen> {
                 AppButtonStyles.brandGreenLargePill(
                   label: 'Next',
                   width: double.infinity,
-                  onPressed: formState.isPasswordValid
+                  onPressed: formState.isSignUpPasswordValid
                       ? () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
-                              builder: (context) => const SignupUsernameScreen(),
+                              builder: (context) =>
+                                  const SignupUsernameScreen(),
                             ),
                           );
                         }

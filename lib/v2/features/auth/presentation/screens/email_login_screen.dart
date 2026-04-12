@@ -4,10 +4,13 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
+import 'package:tunify/v2/features/home/presentation/providers/home_providers.dart';
 import 'package:tunify/v2/features/home/presentation/screens/home_screen.dart';
+import 'package:tunify/v2/features/user/presentation/providers/user_providers.dart';
 
 /// Email/Phone Login Screen - Minimal form design
 ///
@@ -36,6 +39,7 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -127,18 +131,39 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                 // Sign in button
                 // Disabled when email or password is empty
                 AppButtonStyles.brandGreenLargePill(
-                  label: 'Sign in',
+                  label: _isSubmitting ? 'Signing in…' : 'Sign in',
                   width: double.infinity,
-                  onPressed: formState.isLoginFormValid
-                      ? () {
-                          Navigator.of(context).pushAndRemoveUntil(
-                            MaterialPageRoute<void>(
-                              builder: (context) => const Scaffold(
-                                backgroundColor: AppColors.nearBlack,
-                                body: HomeScreen(),
-                              ),
-                            ),
-                            (route) => false,
+                  onPressed: formState.isLoginFormValid && !_isSubmitting
+                      ? () async {
+                          setState(() => _isSubmitting = true);
+                          final auth = ref.read(authRepositoryProvider);
+                          final result = await auth.signInWithEmailPassword(
+                            formState.email.trim(),
+                            formState.password,
+                          );
+                          if (!context.mounted) {
+                            return;
+                          }
+                          setState(() => _isSubmitting = false);
+                          result.fold(
+                            (_) {
+                              ref.invalidate(homeFeedProvider);
+                              ref.invalidate(currentUserProvider);
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute<void>(
+                                  builder: (context) => const Scaffold(
+                                    backgroundColor: AppColors.nearBlack,
+                                    body: HomeScreen(),
+                                  ),
+                                ),
+                                (route) => false,
+                              );
+                            },
+                            (failure) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(failure.message)),
+                              );
+                            },
                           );
                         }
                       : null,

@@ -17,11 +17,11 @@ class HomeHeroRecommendedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        AppSpacing.xl,
+        0,
         AppSpacing.lg,
-        AppSpacing.md,
+        HomeLayout.shelfTrailingAfterContent,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

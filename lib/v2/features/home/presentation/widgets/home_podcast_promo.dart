@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/widgets/cards/podcast_promo_card.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
+import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
 
 /// Home feed wrapper for the shared [PodcastPromoCard].
 class HomePodcastPromoView extends StatelessWidget {
@@ -15,11 +16,11 @@ class HomePodcastPromoView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
+      padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
-        AppSpacing.xl + AppSpacing.xs,
+        0,
         AppSpacing.lg,
-        AppSpacing.md,
+        HomeLayout.shelfTrailingAfterContent,
       ),
       child: PodcastPromoCard(
         title: data.title,

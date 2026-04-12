@@ -25,8 +25,7 @@ class HomeCarouselShelf extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        top: section.sectionTopPadding,
-        bottom: AppSpacing.md,
+        bottom: HomeLayout.shelfTrailingAfterContent,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -40,38 +39,50 @@ class HomeCarouselShelf extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ),
-          SizedBox(height: section.titleToCarouselGap),
+          SizedBox(height: HomeLayout.shelfTitleToHorizontalRowGap),
           Padding(
             padding: const EdgeInsets.only(left: AppSpacing.lg),
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final thumb = HomeLayout.carouselThumbSize(constraints.maxWidth);
-                final shelfHeight = HomeLayout.carouselShelfHeight(thumb);
-
-                return SizedBox(
-                  height: shelfHeight,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: section.items.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(width: AppSpacing.lg),
-                    itemBuilder: (context, index) {
-                      final item = section.items[index];
-                      if (isCircle) {
-                        return ArtistShelfCard(
-                          thumbSize: thumb,
-                          title: item.title,
-                          mockArtArgbColors: item.imageColors,
-                        );
-                      }
-                      return AlbumShelfCard(
-                        thumbSize: thumb,
-                        title: item.title,
-                        subtitle: item.subtitle,
-                        imageBorderRadius: item.imageBorderRadius,
-                        mockArtArgbColors: item.imageColors,
-                      );
-                    },
+                final gapW = AppSpacing.lg;
+                final tiles = <Widget>[];
+                for (var i = 0; i < section.items.length; i++) {
+                  if (i > 0) {
+                    tiles.add(SizedBox(width: gapW));
+                  }
+                  final item = section.items[i];
+                  tiles.add(
+                    SizedBox(
+                      width: thumb,
+                      child: isCircle
+                          ? ArtistShelfCard(
+                              thumbSize: thumb,
+                              title: item.title,
+                              mockArtArgbColors: item.imageColors,
+                              artworkUrl: item.artworkUrl,
+                            )
+                          : AlbumShelfCard(
+                              thumbSize: thumb,
+                              title: item.title,
+                              subtitle: item.subtitle,
+                              imageBorderRadius: item.imageBorderRadius,
+                              mockArtArgbColors: item.imageColors,
+                              artworkUrl: item.artworkUrl,
+                            ),
+                    ),
+                  );
+                }
+                // Fixed [ListView] height + cross-axis centering left a tall empty band under
+                // short subtitles, so shelf→shelf gaps looked huge vs Quick picks → first shelf.
+                // Intrinsic row height matches the tallest tile in this shelf only.
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: tiles,
+                    ),
                   ),
                 );
               },

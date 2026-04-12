@@ -4,7 +4,7 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/constants/track_slim_card_layout.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
-import 'package:tunify/v2/core/widgets/art/mock_art_gradient.dart';
+import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
 
 /// Compact horizontal row: artwork, title, optional now-playing / overflow / seek.
 class TrackSlimCard extends StatelessWidget {
@@ -12,6 +12,7 @@ class TrackSlimCard extends StatelessWidget {
     super.key,
     required this.title,
     required this.mockThumbArgbColors,
+    this.artworkUrl,
     this.rowHeight,
     this.thumbSize,
     this.showNowPlayingIndicator = false,
@@ -22,6 +23,7 @@ class TrackSlimCard extends StatelessWidget {
 
   final String title;
   final List<int> mockThumbArgbColors;
+  final String? artworkUrl;
   final double? rowHeight;
   final double? thumbSize;
   final bool showNowPlayingIndicator;
@@ -33,7 +35,6 @@ class TrackSlimCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final h = rowHeight ?? TrackSlimCardLayout.defaultRowHeight;
     final thumb = thumbSize ?? TrackSlimCardLayout.defaultThumbSize;
-    final gradient = MockArtGradient.linearCover(mockThumbArgbColors);
 
     return SizedBox(
       height: h,
@@ -50,8 +51,12 @@ class TrackSlimCard extends StatelessWidget {
                   SizedBox(
                     width: thumb,
                     height: thumb,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(gradient: gradient),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
+                      child: ArtworkOrGradient(
+                        imageUrl: artworkUrl,
+                        fallbackArgbColors: mockThumbArgbColors,
+                      ),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),

@@ -12,6 +12,7 @@ import 'package:tunify/v2/features/home/presentation/providers/home_providers.da
 import 'package:tunify/v2/features/home/presentation/widgets/home_carousel_shelf.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_hero_recommended.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_podcast_promo.dart';
+import 'package:tunify/v2/features/home/presentation/widgets/home_quick_picks_shelf.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_slim_grid.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_top_header.dart';
 
@@ -49,8 +50,14 @@ class _HomeFeedLoadedBody extends StatelessWidget {
               padding: EdgeInsets.only(top: topInset, bottom: bottomPad),
               sliver: SliverList(
                 delegate: SliverChildBuilderDelegate(
-                  (context, index) =>
-                      _HomeBlockView(block: feed.blocks[index]),
+                  (context, index) {
+                    final block = feed.blocks[index];
+                    final top = _homeFeedBlockLeadingTop(index, block);
+                    return Padding(
+                      padding: EdgeInsets.only(top: top),
+                      child: _HomeBlockView(block: block),
+                    );
+                  },
                   childCount: feed.blocks.length,
                   addAutomaticKeepAlives: false,
                   addRepaintBoundaries: true,
@@ -99,6 +106,20 @@ class _HomeFeedErrorView extends StatelessWidget {
   }
 }
 
+/// Leading inset applied by [SliverList] above each block so every boundary is
+/// `shelfTrailingAfterContent` + `shelfLeadingBeforeTitle` (e.g. Quick picks bottom + this top).
+double _homeFeedBlockLeadingTop(int index, HomeBlock block) {
+  if (index > 0) {
+    return HomeLayout.shelfLeadingBeforeTitle;
+  }
+  if (block is HomeCarouselBlock ||
+      block is HomeHeroRecommendedBlock ||
+      block is HomePodcastPromoBlock) {
+    return HomeLayout.shelfLeadingBeforeTitle;
+  }
+  return 0;
+}
+
 class _HomeBlockView extends StatelessWidget {
   const _HomeBlockView({required this.block});
 
@@ -107,6 +128,7 @@ class _HomeBlockView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return switch (block) {
+      final HomeQuickPicksBlock qp => HomeQuickPicksShelf(data: qp),
       HomeSlimGridBlock(:final tiles) => HomeSlimGrid(tiles: tiles),
       HomeHeroRecommendedBlock(:final hero) =>
         HomeHeroRecommendedView(data: hero),

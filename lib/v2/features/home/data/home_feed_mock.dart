@@ -1,5 +1,4 @@
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
-import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_feed.dart';
 
@@ -77,8 +76,6 @@ class HomeFeedMock {
             title: 'Jump back in',
             titleSize: HomeCarouselTitleSize.title22,
             thumbKind: HomeCarouselThumbKind.square147,
-            sectionTopPadding: AppSpacing.xl,
-            titleToCarouselGap: AppSpacing.lg,
             items: [
               HomeCarouselItem(
                 id: 'c1a',
@@ -107,9 +104,6 @@ class HomeFeedMock {
             title: 'Your favorite artists',
             titleSize: HomeCarouselTitleSize.title18,
             thumbKind: HomeCarouselThumbKind.circle94,
-            sectionTopPadding: AppSpacing.lg,
-            titleToCarouselGap:
-                AppSpacing.lg + AppSpacing.sm - AppSpacing.xs,
             items: [
               const HomeCarouselItem(
                 id: 'c2a',
@@ -144,8 +138,6 @@ class HomeFeedMock {
             title: 'Made for you',
             titleSize: HomeCarouselTitleSize.title22,
             thumbKind: HomeCarouselThumbKind.square147,
-            sectionTopPadding: AppSpacing.xl,
-            titleToCarouselGap: AppSpacing.lg,
             items: [
               HomeCarouselItem(
                 id: 'c3a',
@@ -177,8 +169,6 @@ class HomeFeedMock {
             title: 'Recently played',
             titleSize: HomeCarouselTitleSize.title22,
             thumbKind: HomeCarouselThumbKind.square147,
-            sectionTopPadding: AppSpacing.xl,
-            titleToCarouselGap: AppSpacing.lg,
             items: [
               HomeCarouselItem(
                 id: 'c4a',
@@ -207,8 +197,6 @@ class HomeFeedMock {
             title: 'Your top mixes',
             titleSize: HomeCarouselTitleSize.title22,
             thumbKind: HomeCarouselThumbKind.square147,
-            sectionTopPadding: AppSpacing.xl,
-            titleToCarouselGap: AppSpacing.lg,
             items: [
               HomeCarouselItem(
                 id: 'c5a',
@@ -237,8 +225,6 @@ class HomeFeedMock {
             title: 'More like Radiohead',
             titleSize: HomeCarouselTitleSize.title22,
             thumbKind: HomeCarouselThumbKind.square147,
-            sectionTopPadding: AppSpacing.lg,
-            titleToCarouselGap: AppSpacing.lg,
             items: [
               HomeCarouselItem(
                 id: 'c6a',
@@ -270,9 +256,6 @@ class HomeFeedMock {
             title: 'Popular radio',
             titleSize: HomeCarouselTitleSize.title18,
             thumbKind: HomeCarouselThumbKind.circle94,
-            sectionTopPadding: AppSpacing.lg,
-            titleToCarouselGap:
-                AppSpacing.lg + AppSpacing.sm - AppSpacing.xs,
             items: [
               const HomeCarouselItem(
                 id: 'c7a',
@@ -307,8 +290,6 @@ class HomeFeedMock {
             title: 'Throwback',
             titleSize: HomeCarouselTitleSize.title22,
             thumbKind: HomeCarouselThumbKind.square147,
-            sectionTopPadding: AppSpacing.xl,
-            titleToCarouselGap: AppSpacing.lg,
             items: [
               HomeCarouselItem(
                 id: 'c8a',

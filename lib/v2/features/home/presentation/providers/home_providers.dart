@@ -1,11 +1,12 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
 import 'package:tunify/v2/features/home/data/repositories/home_repository_impl.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_feed.dart';
 import 'package:tunify/v2/features/home/domain/repositories/home_repository.dart';
 
 final homeRepositoryProvider = Provider<HomeRepository>((ref) {
-  return HomeRepositoryImpl();
+  return HomeRepositoryImpl(api: ref.watch(tunifyApiClientProvider));
 });
 
 final homeFeedProvider = FutureProvider<HomeFeed>((ref) async {
@@ -30,8 +31,10 @@ class HomeFilterPillsState {
   final HomeContentBand band;
   final bool musicSecondaryOn;
   final bool podcastsSecondaryOn;
+
   /// Trailing “Music” segment is visible (after animated reveal).
   final bool musicSecondaryExpanded;
+
   /// Trailing “Podcasts” segment is visible.
   final bool podcastsSecondaryExpanded;
 
@@ -46,7 +49,8 @@ class HomeFilterPillsState {
       band: band ?? this.band,
       musicSecondaryOn: musicSecondaryOn ?? this.musicSecondaryOn,
       podcastsSecondaryOn: podcastsSecondaryOn ?? this.podcastsSecondaryOn,
-      musicSecondaryExpanded: musicSecondaryExpanded ?? this.musicSecondaryExpanded,
+      musicSecondaryExpanded:
+          musicSecondaryExpanded ?? this.musicSecondaryExpanded,
       podcastsSecondaryExpanded:
           podcastsSecondaryExpanded ?? this.podcastsSecondaryExpanded,
     );

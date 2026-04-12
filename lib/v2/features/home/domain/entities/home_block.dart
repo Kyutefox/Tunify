@@ -1,11 +1,10 @@
-import 'package:tunify/v2/core/constants/app_spacing.dart';
-
 /// Slim grid tile (card row).
 class HomeSlimTile {
   const HomeSlimTile({
     required this.id,
     required this.title,
     required this.thumbColors,
+    this.artworkUrl,
     this.showNowPlayingIndicator = false,
     this.showMoreMenu = false,
     this.showSeekBar = false,
@@ -15,6 +14,8 @@ class HomeSlimTile {
   final String id;
   final String title;
   final List<int> thumbColors;
+  /// When set (e.g. from `GET /v1/browse/home`), shown instead of [thumbColors] gradient.
+  final String? artworkUrl;
   final bool showNowPlayingIndicator;
   final bool showMoreMenu;
   final bool showSeekBar;
@@ -47,12 +48,15 @@ class HomeCarouselItem {
     this.subtitle,
     required this.imageColors,
     this.imageBorderRadius = 0,
+    this.artworkUrl,
   });
 
   final String id;
   final String title;
   final String? subtitle;
   final List<int> imageColors;
+  /// When set, shelf art loads from the network instead of [imageColors] only.
+  final String? artworkUrl;
 
   /// 0 = square, 8 = rounded square, 9999 = circle (94×94).
   final double imageBorderRadius;
@@ -81,8 +85,6 @@ class HomeCarouselSection {
     required this.titleSize,
     required this.thumbKind,
     required this.items,
-    this.sectionTopPadding = AppSpacing.xl,
-    this.titleToCarouselGap = AppSpacing.lg,
   });
 
   final String id;
@@ -90,12 +92,6 @@ class HomeCarouselSection {
   final HomeCarouselTitleSize titleSize;
   final HomeCarouselThumbKind thumbKind;
   final List<HomeCarouselItem> items;
-
-  /// Figma: 24 or 16 top padding on “Carousel orizzontale”.
-  final double sectionTopPadding;
-
-  /// Figma: 16 or 18 gap between title row and carousel.
-  final double titleToCarouselGap;
 }
 
 sealed class HomeBlock {
@@ -118,6 +114,23 @@ class HomeCarouselBlock extends HomeBlock {
   const HomeCarouselBlock(this.section) : super();
 
   final HomeCarouselSection section;
+}
+
+/// Server-driven Quick picks (`HomePageResponse.quick_picks`): paged 2-column slim grid.
+class HomeQuickPicksBlock extends HomeBlock {
+  const HomeQuickPicksBlock({
+    required this.title,
+    this.subtitle,
+    required this.tiles,
+    required this.visibleColumns,
+    required this.visibleRows,
+  }) : super();
+
+  final String title;
+  final String? subtitle;
+  final List<HomeSlimTile> tiles;
+  final int visibleColumns;
+  final int visibleRows;
 }
 
 /// Large podcast / show promo card (Figma “Card podcat”).

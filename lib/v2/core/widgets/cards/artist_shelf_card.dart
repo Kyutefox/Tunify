@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
-import 'package:tunify/v2/core/widgets/art/mock_art_gradient.dart';
+import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
 
 /// Circular-art shelf tile (artists).
 class ArtistShelfCard extends StatelessWidget {
@@ -11,16 +11,16 @@ class ArtistShelfCard extends StatelessWidget {
     required this.thumbSize,
     required this.title,
     required this.mockArtArgbColors,
+    this.artworkUrl,
   });
 
   final double thumbSize;
   final String title;
   final List<int> mockArtArgbColors;
+  final String? artworkUrl;
 
   @override
   Widget build(BuildContext context) {
-    final gradient = MockArtGradient.linearCover(mockArtArgbColors);
-
     return SizedBox(
       width: thumbSize,
       child: Column(
@@ -31,8 +31,9 @@ class ArtistShelfCard extends StatelessWidget {
             child: SizedBox(
               width: thumbSize,
               height: thumbSize,
-              child: DecoratedBox(
-                decoration: BoxDecoration(gradient: gradient),
+              child: ArtworkOrGradient(
+                imageUrl: artworkUrl,
+                fallbackArgbColors: mockArtArgbColors,
               ),
             ),
           ),

@@ -4,10 +4,14 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/privacy_policy_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/terms_of_use_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
+import 'package:tunify/v2/features/home/presentation/providers/home_providers.dart';
+import 'package:tunify/v2/features/home/presentation/screens/home_screen.dart';
+import 'package:tunify/v2/features/user/presentation/providers/user_providers.dart';
 
 /// Sign Up Step 3: Username
 ///
@@ -25,6 +29,7 @@ class SignupUsernameScreen extends ConsumerStatefulWidget {
 
 class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
   final _usernameController = TextEditingController();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -93,7 +98,8 @@ class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => const TermsOfUseScreen(),
+                                  builder: (context) =>
+                                      const TermsOfUseScreen(),
                                 ),
                               );
                             },
@@ -116,7 +122,8 @@ class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
                             onTap: () {
                               Navigator.of(context).push(
                                 MaterialPageRoute(
-                                  builder: (context) => const PrivacyPolicyScreen(),
+                                  builder: (context) =>
+                                      const PrivacyPolicyScreen(),
                                 ),
                               );
                             },
@@ -166,11 +173,42 @@ class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
                 // Create account button
                 // Validation logic is in the provider per RULES.md
                 AppButtonStyles.brandGreenLargePill(
-                  label: 'Create account',
+                  label: _isSubmitting ? 'Creating account…' : 'Create account',
                   width: double.infinity,
-                  onPressed: formState.isUsernameStepValid
-                      ? () {
-                          // TODO: Complete registration
+                  onPressed: formState.isUsernameStepValid && !_isSubmitting
+                      ? () async {
+                          setState(() => _isSubmitting = true);
+                          final auth = ref.read(authRepositoryProvider);
+                          final result = await auth.signUp(
+                            formState.email.trim(),
+                            formState.password,
+                            formState.username.trim(),
+                          );
+                          if (!context.mounted) {
+                            return;
+                          }
+                          setState(() => _isSubmitting = false);
+                          result.fold(
+                            (_) {
+                              ref.invalidate(homeFeedProvider);
+                              ref.invalidate(currentUserProvider);
+                              ref.read(formValidationProvider.notifier).reset();
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute<void>(
+                                  builder: (context) => const Scaffold(
+                                    backgroundColor: AppColors.nearBlack,
+                                    body: HomeScreen(),
+                                  ),
+                                ),
+                                (route) => false,
+                              );
+                            },
+                            (failure) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text(failure.message)),
+                              );
+                            },
+                          );
                         }
                       : null,
                 ),

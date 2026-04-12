@@ -7,6 +7,16 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 abstract final class HomeLayout {
   HomeLayout._();
 
+  /// Space **above** a shelf section title (carousel, hero, podcast promo, …).
+  static double get shelfLeadingBeforeTitle => AppSpacing.xl;
+
+  /// Space **below** shelf content before the next block (pairs with the next block’s
+  /// [shelfLeadingBeforeTitle] so every boundary is `md + xl` from tokens only).
+  static double get shelfTrailingAfterContent => AppSpacing.md;
+
+  /// Space between the shelf title line and the horizontal card row (carousel / same stack).
+  static double get shelfTitleToHorizontalRowGap => AppSpacing.lg;
+
   static double _belowStatusGap() => AppSpacing.xxl + AppSpacing.xs;
 
   /// Pinned header padding (horizontal [AppSpacing.lg]).
@@ -31,6 +41,13 @@ abstract final class HomeLayout {
 
   static double get slimThumbSize => slimRowHeight;
 
+  /// Height of one Quick picks page: matches [HomeSlimGrid] top inset + tile rows + row gaps.
+  static double quickPicksPageHeight(int visibleRows) {
+    final rows = visibleRows < 1 ? 1 : visibleRows;
+    final gap = AppSpacing.md;
+    return AppSpacing.md + rows * slimRowHeight + (rows - 1) * gap;
+  }
+
   static double get heroAvatarDiameter => AppSpacing.xxxl;
 
   /// Hero artwork width/height — tuned for mock layout (not on 8px grid).
@@ -43,9 +60,6 @@ abstract final class HomeLayout {
   /// Reference inner shelf width (390pt frame minus 16pt leading gutter).
   static const double carouselDesignShelfInnerWidth = 374;
 
-  /// Space under art for labels (title + subtitle stack for square; same row height for circle).
-  static const double _carouselTextBlock = 51;
-
   /// Clamp carousel art so shelves stay usable on small / large phones (RULES: no magic in UI).
   static const double carouselThumbClampMin = 112;
   static const double carouselThumbClampMax = 168;
@@ -55,13 +69,6 @@ abstract final class HomeLayout {
     final w = shelfViewportWidth * carouselThumbLarge / carouselDesignShelfInnerWidth;
     return w.clamp(carouselThumbClampMin, carouselThumbClampMax);
   }
-
-  /// Shelf row height for any carousel thumb of size [thumb].
-  static double carouselShelfHeight(double thumb) =>
-      thumb + AppSpacing.md + _carouselTextBlock;
-
-  /// Fixed reference (147 + 8 + 51) when viewport is unknown.
-  static const double carouselShelfTall = 206;
 
   static double get profileAvatarDiameter => AppSpacing.xxl;
 

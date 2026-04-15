@@ -52,7 +52,7 @@ class WelcomeScreen extends StatelessWidget {
               const Spacer(flex: 1),
 
               // Tunify Logo - Brand Green
-              const TunifyLogo(size: AppSpacing.xxxl + 24),
+              const TunifyLogo(size: AppSpacing.welcomeLogoSize),
 
               const SizedBox(height: AppSpacing.xxl),
 

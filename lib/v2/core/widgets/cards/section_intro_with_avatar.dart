@@ -34,7 +34,7 @@ class SectionIntroWithAvatar extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(width: AppSpacing.lg - AppSpacing.sm),
+        const SizedBox(width: AppSpacing.lg - AppSpacing.sm),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.only(right: AppSpacing.lg),

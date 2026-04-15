@@ -20,17 +20,15 @@ class HomeSlimGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gap = AppSpacing.md;
-    final horizontalPadding = AppSpacing.lg;
     final bottomPad = omitTrailingShelfGap
         ? 0.0
         : HomeLayout.shelfTrailingAfterContent;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        horizontalPadding,
+        AppSpacing.lg,
         AppSpacing.md,
-        horizontalPadding,
+        AppSpacing.lg,
         bottomPad,
       ),
       child: Column(
@@ -38,12 +36,12 @@ class HomeSlimGrid extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           for (int i = 0; i < tiles.length; i += 2) ...[
-            if (i > 0) SizedBox(height: gap),
+            if (i > 0) const SizedBox(height: AppSpacing.md),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(child: _tileCard(tiles[i])),
-                SizedBox(width: gap),
+                const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: i + 1 < tiles.length
                       ? _tileCard(tiles[i + 1])

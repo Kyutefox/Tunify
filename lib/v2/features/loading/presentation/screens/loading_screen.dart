@@ -24,18 +24,27 @@ class _LoadingScreenState extends State<LoadingScreen>
   late AnimationController _controller;
   late List<Animation<double>> _animations;
 
+  static const int _dotCount = 3;
+  static const Duration _cycleDuration = Duration(milliseconds: 1200);
+  static const double _staggerOffset = 0.2;
+  static const double _staggerSpan = 0.6;
+  static const double _minScale = 0.6;
+  static const double _scaleRange = 0.4;
+  static const double _minOpacity = 0.4;
+  static const double _opacityRange = 0.6;
+
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1200),
+      duration: _cycleDuration,
     )..repeat();
 
     // Create staggered animations for each dot
-    _animations = List.generate(3, (index) {
-      final start = index * 0.2;
-      final end = start + 0.6;
+    _animations = List.generate(_dotCount, (index) {
+      final start = index * _staggerOffset;
+      final end = start + _staggerSpan;
       return Tween<double>(begin: 0.0, end: 1.0).animate(
         CurvedAnimation(
           parent: _controller,
@@ -56,14 +65,12 @@ class _LoadingScreenState extends State<LoadingScreen>
     final dots = Center(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(3, (index) {
+        children: List.generate(_dotCount, (index) {
           return AnimatedBuilder(
             animation: _animations[index],
             builder: (context, child) {
-              // Calculate scale based on animation value
-              // Goes from 0.6 to 1.0 and back
-              final scale = 0.6 + (_animations[index].value * 0.4);
-              final opacity = 0.4 + (_animations[index].value * 0.6);
+              final scale = _minScale + (_animations[index].value * _scaleRange);
+              final opacity = _minOpacity + (_animations[index].value * _opacityRange);
 
               return Container(
                 width: AppSpacing.lg,

@@ -48,21 +48,23 @@ class ListenNowPillButton extends StatelessWidget {
 class _ListenModeBarsIcon extends StatelessWidget {
   const _ListenModeBarsIcon();
 
-  static const double _w = 18;
-  static const double _h = 20;
+  static const double _containerWidth = 18;
+  static const double _containerHeight = 20;
+  static const double _barWidth = 3;
+  static const List<double> _barHeights = [14, 20, 10];
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: _w,
-      height: _h,
+      width: _containerWidth,
+      height: _containerHeight,
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          for (final h in [14.0, 20.0, 10.0])
+          for (final h in _barHeights)
             Container(
-              width: 3,
+              width: _barWidth,
               height: h,
               decoration: BoxDecoration(
                 color: AppColors.white,

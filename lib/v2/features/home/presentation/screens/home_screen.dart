@@ -37,9 +37,9 @@ class _HomeFeedLoadedBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final bottomPad = mq.padding.bottom + AppSpacing.xxl;
-    final topInset = HomeLayout.scrollContentTopOffset(mq);
+    final padding = MediaQuery.paddingOf(context);
+    final bottomPad = padding.bottom + AppSpacing.xxl;
+    final topInset = HomeLayout.scrollContentTopOffset(padding);
 
     return Stack(
       clipBehavior: Clip.none,

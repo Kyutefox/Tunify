@@ -14,4 +14,13 @@ class AppSpacing {
   static const double checkboxSize = 24;
   static const double checkboxIconSize = 16;
   static const double checkboxBorderRadius = 4;
+
+  /// Welcome screen logo diameter (xxxl + xl = 72).
+  static const double welcomeLogoSize = xxxl + xl;
+
+  /// Session avatar button diameter in the top navigation row.
+  static const double navAvatarSize = 36;
+
+  /// Session avatar fallback icon size.
+  static const double navAvatarIconSize = 20;
 }

@@ -60,5 +60,5 @@ class SettingsNotifier extends Notifier<SettingsState> {
 ///
 /// Global provider for accessing settings throughout the app
 final settingsProvider = NotifierProvider<SettingsNotifier, SettingsState>(
-  () => SettingsNotifier(),
+  SettingsNotifier.new,
 );

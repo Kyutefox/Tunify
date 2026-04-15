@@ -41,121 +41,111 @@ class PodcastPromoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final gradient = MockArtGradient.linearCover(mockCoverArgbColors);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final innerWidth = constraints.maxWidth;
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(PodcastPromoLayout.cardCornerRadius),
-          child: ColoredBox(
-            color: Color(backgroundArgb),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg,
-                AppSpacing.md + AppSpacing.sm + AppSpacing.xs,
-                AppSpacing.lg,
-                AppSpacing.md + AppSpacing.sm + AppSpacing.xs,
-              ),
-              child: SizedBox(
-                width: innerWidth,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(PodcastPromoLayout.cardCornerRadius),
+      child: ColoredBox(
+        color: Color(backgroundArgb),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: PodcastPromoLayout.verticalPadding,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(
+                      AppBorderRadius.standard,
+                    ),
+                    child: SizedBox(
+                      width: PodcastPromoLayout.coverSize,
+                      height: PodcastPromoLayout.coverSize,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(gradient: gradient),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(
-                            AppBorderRadius.standard,
-                          ),
-                          child: SizedBox(
-                            width: PodcastPromoLayout.coverSize,
-                            height: PodcastPromoLayout.coverSize,
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(gradient: gradient),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Text(
-                                      title,
-                                      style: AppTextStyles.sectionTitle.copyWith(
-                                        height: 26 / 24,
-                                        letterSpacing: -0.55,
-                                      ),
-                                      maxLines: 3,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                  TunifyMoreIconButton(
-                                    style: TunifyMoreIconStyle.vertical,
-                                    color: AppColors.white.withValues(alpha: 0.95),
-                                    onPressed: onMore,
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: AppSpacing.sm),
-                              Text(
-                                showSubtitle,
-                                style: AppTextStyles.small.copyWith(
-                                  color: AppColors.white.withValues(alpha: 0.6),
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                title,
+                                style: AppTextStyles.sectionTitle.copyWith(
+                                  height: PodcastPromoLayout.titleLineHeightRatio,
+                                  letterSpacing: PodcastPromoLayout.titleLetterSpacing,
                                 ),
                                 maxLines: 3,
                                 overflow: TextOverflow.ellipsis,
                               ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      episodeDescription,
-                      style: AppTextStyles.small.copyWith(color: AppColors.white),
-                      maxLines: 5,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: AppSpacing.lg + AppSpacing.sm - AppSpacing.xs),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        ListenNowPillButton(
-                          label: listenNowLabel,
-                          onPressed: onListenNow,
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TunifyAddToLibraryIconButton(
-                              onPressed: onAddToLibrary,
-                              iconColor: AppColors.white.withValues(alpha: 0.95),
                             ),
-                            const SizedBox(width: AppSpacing.lg),
-                            TunifyPlayCircleButton(
-                              diameter: PodcastPromoLayout.playButtonOuter,
-                              iconSize: PodcastPromoLayout.playButtonInner,
-                              onPressed: onPlay,
+                            TunifyMoreIconButton(
+                              style: TunifyMoreIconStyle.vertical,
+                              color: AppColors.white.withValues(alpha: 0.95),
+                              onPressed: onMore,
                             ),
                           ],
                         ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          showSubtitle,
+                          style: AppTextStyles.small.copyWith(
+                            color: AppColors.white.withValues(alpha: 0.6),
+                          ),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                episodeDescription,
+                style: AppTextStyles.small.copyWith(color: AppColors.white),
+                maxLines: 5,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: PodcastPromoLayout.descriptionToActionsGap),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ListenNowPillButton(
+                    label: listenNowLabel,
+                    onPressed: onListenNow,
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TunifyAddToLibraryIconButton(
+                        onPressed: onAddToLibrary,
+                        iconColor: AppColors.white.withValues(alpha: 0.95),
+                      ),
+                      const SizedBox(width: AppSpacing.lg),
+                      TunifyPlayCircleButton(
+                        diameter: PodcastPromoLayout.playButtonOuter,
+                        iconSize: PodcastPromoLayout.playButtonInner,
+                        onPressed: onPlay,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

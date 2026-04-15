@@ -31,71 +31,65 @@ class AlbumPromoRowCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final gradient = MockArtGradient.linearCover(mockSquareArtArgbColors);
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final cardWidth = constraints.maxWidth;
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(AppBorderRadius.comfortable),
-          child: ColoredBox(
-            color: AppColors.darkCard,
-            child: SizedBox(
-              width: cardWidth,
-              height: artSize,
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: artSize,
-                    height: artSize,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(gradient: gradient),
-                    ),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppBorderRadius.comfortable),
+      child: ColoredBox(
+        color: AppColors.darkCard,
+        child: SizedBox(
+          height: artSize,
+          child: Row(
+            children: [
+              SizedBox(
+                width: artSize,
+                height: artSize,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(gradient: gradient),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.lg),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    0,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
+                    AppSpacing.lg,
                   ),
-                  const SizedBox(width: AppSpacing.lg),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(
-                        0,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                        AppSpacing.lg,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(title, style: AppTextStyles.smallBold),
-                              Text(
-                                subtitle,
-                                style: AppTextStyles.small.copyWith(
-                                  color: AppColors.nearWhite,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              TunifyAddToLibraryIconButton(onPressed: onAddPressed),
-                              TunifyPlayCircleButton(
-                                diameter: AppSpacing.xxl,
-                                iconSize: AlbumPromoRowLayout.miniPlayGlyphSize,
-                                onPressed: onPlayPressed,
-                              ),
-                            ],
+                          Text(title, style: AppTextStyles.smallBold),
+                          Text(
+                            subtitle,
+                            style: AppTextStyles.small.copyWith(
+                              color: AppColors.nearWhite,
+                            ),
                           ),
                         ],
                       ),
-                    ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          TunifyAddToLibraryIconButton(onPressed: onAddPressed),
+                          TunifyPlayCircleButton(
+                            diameter: AppSpacing.xxl,
+                            iconSize: AlbumPromoRowLayout.miniPlayGlyphSize,
+                            onPressed: onPlayPressed,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

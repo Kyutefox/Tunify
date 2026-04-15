@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
+import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/core/widgets/avatar/network_avatar_image.dart';
 import 'package:tunify/v2/features/auth/domain/entities/user_entity.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/auth_session_provider.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_menu_layout.dart';
@@ -116,12 +117,6 @@ class _SwipeToCloseMenuPanelState extends State<_SwipeToCloseMenuPanel> {
   }
 }
 
-/// Figma tokens local to this menu (Circular Std → system UI).
-abstract final class _HomeMenuColors {
-  static const Color viewProfile = Color(0xFFDEDEDE);
-  static const Color separator10 = Color.fromRGBO(255, 255, 255, 0.1);
-}
-
 class _HomeUserMenuPanelBody extends ConsumerWidget {
   const _HomeUserMenuPanelBody({
     required this.panelWidth,
@@ -133,37 +128,12 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
   final VoidCallback onOpenSettings;
   final VoidCallback onDismiss;
 
-  static const TextStyle _titleName = TextStyle(
-    fontSize: 19,
-    height: 23 / 19,
-    fontWeight: FontWeight.w700,
-    letterSpacing: -0.5,
-    color: AppColors.white,
-    decoration: TextDecoration.none,
-  );
-
-  static const TextStyle _viewProfile = TextStyle(
-    fontSize: 12,
-    height: 17 / 12,
-    fontWeight: FontWeight.w400,
-    color: _HomeMenuColors.viewProfile,
-    decoration: TextDecoration.none,
-  );
-
-  static const TextStyle _itemLabel = TextStyle(
-    fontSize: 15,
-    height: 19 / 15,
-    fontWeight: FontWeight.w400,
-    color: AppColors.white,
-    decoration: TextDecoration.none,
-  );
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authSessionProvider).whenOrNull(data: (value) => value);
     final displayName = _displayName(user);
     final profileSubtitle = _profileSubtitle(user);
-    final avatarUrl = _avatarUrl(user);
+    final avatarUrl = avatarUrlFromUser(user);
 
     return _SwipeToCloseMenuPanel(
       panelWidth: panelWidth,
@@ -205,12 +175,14 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
                                   ),
                                   clipBehavior: Clip.antiAlias,
                                   child: avatarUrl == null
-                                      ? const Icon(
-                                          Icons.person_rounded,
-                                          color: AppColors.white,
-                                          size: 28,
+                                      ? AvatarFallbackIcon(
+                                          size: HomeMenuLayout.avatarIconSizePt,
                                         )
-                                      : _NetworkAvatarImage(url: avatarUrl),
+                                      : NetworkAvatarImage(
+                                          url: avatarUrl,
+                                          fallbackIconSize:
+                                              HomeMenuLayout.avatarIconSizePt,
+                                        ),
                                 ),
                                 const SizedBox(
                                   width: HomeMenuLayout.titleAvatarGapPt,
@@ -224,7 +196,7 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
                                       Text.rich(
                                         TextSpan(
                                           text: displayName,
-                                          style: _titleName,
+                                          style: AppTextStyles.menuTitleName,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -232,7 +204,7 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
                                       Text.rich(
                                         TextSpan(
                                           text: profileSubtitle,
-                                          style: _viewProfile,
+                                          style: AppTextStyles.menuViewProfile,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
@@ -249,7 +221,7 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
                           width: panelWidth,
                           height: 1,
                           child: const ColoredBox(
-                            color: _HomeMenuColors.separator10,
+                            color: AppColors.separator10,
                           ),
                         ),
                         const SizedBox(height: HomeMenuLayout.sectionGapPt),
@@ -305,7 +277,7 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
                         width: panelWidth,
                         height: 1,
                         child: const ColoredBox(
-                          color: _HomeMenuColors.separator10,
+                          color: AppColors.separator10,
                         ),
                       ),
                       const SizedBox(height: HomeMenuLayout.itemListGapPt),
@@ -334,41 +306,6 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
   }
 }
 
-class _NetworkAvatarImage extends StatelessWidget {
-  const _NetworkAvatarImage({required this.url});
-
-  final String url;
-
-  @override
-  Widget build(BuildContext context) {
-    if (_isSvg(url)) {
-      return SvgPicture.network(
-        url,
-        fit: BoxFit.cover,
-        placeholderBuilder: (_) => const _AvatarFallbackIcon(),
-      );
-    }
-    return Image.network(
-      url,
-      fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => const _AvatarFallbackIcon(),
-    );
-  }
-}
-
-class _AvatarFallbackIcon extends StatelessWidget {
-  const _AvatarFallbackIcon();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Icon(
-      Icons.person_rounded,
-      color: AppColors.white,
-      size: 28,
-    );
-  }
-}
-
 String _displayName(UserEntity? user) {
   final preferred = user?.displayName?.trim();
   if (preferred != null && preferred.isNotEmpty) {
@@ -387,26 +324,6 @@ String _profileSubtitle(UserEntity? user) {
     return email;
   }
   return 'View profile';
-}
-
-String? _avatarUrl(UserEntity? user) {
-  final raw = user?.photoUrl?.trim();
-  if (raw == null || raw.isEmpty) {
-    return null;
-  }
-  return raw;
-}
-
-bool _isSvg(String url) {
-  final lower = url.toLowerCase();
-  if (lower.contains('.svg')) {
-    return true;
-  }
-  final uri = Uri.tryParse(lower);
-  if (uri == null) {
-    return lower.contains('/svg');
-  }
-  return uri.path.endsWith('/svg') || uri.path.endsWith('.svg');
 }
 
 class _MenuItemRow extends StatelessWidget {
@@ -438,7 +355,7 @@ class _MenuItemRow extends StatelessWidget {
                   child: Icon(
                     icon,
                     color: AppColors.white,
-                    size: 24,
+                    size: HomeMenuLayout.menuItemIconSizePt,
                   ),
                 ),
               ),
@@ -447,7 +364,7 @@ class _MenuItemRow extends StatelessWidget {
                 child: Text.rich(
                   TextSpan(
                     text: label,
-                    style: _HomeUserMenuPanelBody._itemLabel,
+                    style: AppTextStyles.menuItemLabel,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

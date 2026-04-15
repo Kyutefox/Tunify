@@ -126,4 +126,32 @@ class AppTextStyles {
     height: 16 / 11,
     letterSpacing: 0,
   );
+
+  // Menu panel: user display name — 19px/700, tight letter-spacing
+  static const TextStyle menuTitleName = TextStyle(
+    fontSize: 19,
+    height: 23 / 19,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.5,
+    color: AppColors.white,
+    decoration: TextDecoration.none,
+  );
+
+  // Menu panel: profile subtitle — 12px/400
+  static const TextStyle menuViewProfile = TextStyle(
+    fontSize: 12,
+    height: 17 / 12,
+    fontWeight: FontWeight.w400,
+    color: Color(0xFFDEDEDE),
+    decoration: TextDecoration.none,
+  );
+
+  // Menu panel: item label — 15px/400
+  static const TextStyle menuItemLabel = TextStyle(
+    fontSize: 15,
+    height: 19 / 15,
+    fontWeight: FontWeight.w400,
+    color: AppColors.white,
+    decoration: TextDecoration.none,
+  );
 }

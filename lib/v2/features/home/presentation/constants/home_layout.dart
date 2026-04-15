@@ -17,11 +17,9 @@ abstract final class HomeLayout {
   /// Space between the shelf title line and the horizontal card row (carousel / same stack).
   static double get shelfTitleToHorizontalRowGap => AppSpacing.lg;
 
-  static double _belowStatusGap() => AppSpacing.xxl + AppSpacing.xs;
-
   /// Pinned header padding (horizontal [AppSpacing.lg]).
-  static EdgeInsets headerPadding(MediaQueryData mq) {
-    final top = mq.padding.top + _belowStatusGap();
+  static EdgeInsets headerPadding(EdgeInsets safeArea) {
+    final top = safeArea.top + AppSpacing.sm;
     return EdgeInsets.fromLTRB(
       AppSpacing.lg,
       top,
@@ -31,8 +29,8 @@ abstract final class HomeLayout {
   }
 
   /// Top inset for the scroll view so content clears the pinned header.
-  static double scrollContentTopOffset(MediaQueryData mq) {
-    final p = headerPadding(mq);
+  static double scrollContentTopOffset(EdgeInsets safeArea) {
+    final p = headerPadding(safeArea);
     return p.top + profileAvatarDiameter + p.bottom;
   }
 

@@ -15,9 +15,11 @@ abstract final class HomeMenuLayout {
   static const double titleAvatarGapPt = 12;
 
   static const double avatarSizePt = 50;
+  static const double avatarIconSizePt = 28;
   static const double menuItemRowHeightPt = 32;
   static const double menuItemIconGapPt = 8;
   static const double menuIconBoxPt = 32;
+  static const double menuItemIconSizePt = 24;
 
   /// Outer shell width (phone frame).
   static double panelWidth(double screenWidth) =>

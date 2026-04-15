@@ -36,4 +36,7 @@ class AppColors {
   static const Color filterPillDoubleSecond = Color(0xFF1BBB57);
   static const Color filterPillCloseSurface = Color(0xFF292929);
   static const Color filterPillDoubleSecondFg = Color(0xFF313131);
+
+  /// 10% white separator used in menu panels and dividers.
+  static const Color separator10 = Color.fromRGBO(255, 255, 255, 0.1);
 }

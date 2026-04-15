@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/constants/app_strings.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/features/home/data/home_feed_skeleton.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_feed.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
@@ -14,7 +16,6 @@ import 'package:tunify/v2/features/home/presentation/widgets/home_podcast_promo.
 import 'package:tunify/v2/features/home/presentation/widgets/home_quick_picks_shelf.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_slim_grid.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_top_header.dart';
-import 'package:tunify/v2/features/loading/presentation/screens/loading_screen.dart';
 
 /// Home scroll + pinned header. Presentation only (RULES.md: Riverpod, no business logic).
 class HomeScreen extends ConsumerWidget {
@@ -23,17 +24,24 @@ class HomeScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return ref.watch(homeFeedProvider).when(
-          data: _HomeFeedLoadedBody.new,
-          loading: () => const _HomeFeedLoadingView(),
+          data: (feed) => _HomeFeedLoadedBody(feed: feed, isLoading: false),
+          loading: () => _HomeFeedLoadedBody(
+            feed: HomeFeedSkeleton.build(),
+            isLoading: true,
+          ),
           error: (_, __) => const _HomeFeedErrorView(),
         );
   }
 }
 
 class _HomeFeedLoadedBody extends StatelessWidget {
-  const _HomeFeedLoadedBody(this.feed);
+  const _HomeFeedLoadedBody({
+    required this.feed,
+    required this.isLoading,
+  });
 
   final HomeFeed feed;
+  final bool isLoading;
 
   @override
   Widget build(BuildContext context) {
@@ -41,48 +49,42 @@ class _HomeFeedLoadedBody extends StatelessWidget {
     final bottomPad = padding.bottom + AppSpacing.xxl;
     final topInset = HomeLayout.scrollContentTopOffset(padding);
 
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: EdgeInsets.only(top: topInset, bottom: bottomPad),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final block = feed.blocks[index];
-                    final top = _homeFeedBlockLeadingTop(index, block);
-                    return Padding(
-                      padding: EdgeInsets.only(top: top),
-                      child: _HomeBlockView(block: block),
-                    );
-                  },
-                  childCount: feed.blocks.length,
-                  addAutomaticKeepAlives: false,
-                  addRepaintBoundaries: true,
+    return Skeletonizer(
+      enabled: isLoading,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: EdgeInsets.only(top: topInset, bottom: bottomPad),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final block = feed.blocks[index];
+                      final top = _homeFeedBlockLeadingTop(index, block);
+                      return Padding(
+                        padding: EdgeInsets.only(top: top),
+                        child: _HomeBlockView(block: block),
+                      );
+                    },
+                    childCount: feed.blocks.length,
+                    addAutomaticKeepAlives: false,
+                    addRepaintBoundaries: true,
+                  ),
                 ),
               ),
-            ),
-          ],
-        ),
-        const Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: HomeTopHeader(),
-        ),
-      ],
+            ],
+          ),
+          const Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: HomeTopHeader(),
+          ),
+        ],
+      ),
     );
-  }
-}
-
-class _HomeFeedLoadingView extends StatelessWidget {
-  const _HomeFeedLoadingView();
-
-  @override
-  Widget build(BuildContext context) {
-    return const LoadingScreen(embedInParentScaffold: true);
   }
 }
 

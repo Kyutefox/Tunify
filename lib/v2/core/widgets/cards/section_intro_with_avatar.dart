@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
-import 'package:tunify/v2/core/widgets/art/mock_art_gradient.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 
 /// Section label + title beside a circular mock-avatar.
 class SectionIntroWithAvatar extends StatelessWidget {
@@ -20,8 +20,6 @@ class SectionIntroWithAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = MockArtGradient.linearCover(mockAvatarArgbColors);
-
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -29,9 +27,7 @@ class SectionIntroWithAvatar extends StatelessWidget {
           child: SizedBox(
             width: avatarDiameter,
             height: avatarDiameter,
-            child: DecoratedBox(
-              decoration: BoxDecoration(gradient: gradient),
-            ),
+            child: const ColoredBox(color: AppColors.darkSurface),
           ),
         ),
         const SizedBox(width: AppSpacing.lg - AppSpacing.sm),

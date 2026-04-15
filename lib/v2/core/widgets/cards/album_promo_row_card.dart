@@ -4,7 +4,6 @@ import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
-import 'package:tunify/v2/core/widgets/art/mock_art_gradient.dart';
 import 'package:tunify/v2/core/widgets/buttons/tunify_add_to_library_icon_button.dart';
 import 'package:tunify/v2/core/widgets/buttons/tunify_play_circle_button.dart';
 
@@ -29,8 +28,6 @@ class AlbumPromoRowCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = MockArtGradient.linearCover(mockSquareArtArgbColors);
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(AppBorderRadius.comfortable),
       child: ColoredBox(
@@ -42,9 +39,7 @@ class AlbumPromoRowCard extends StatelessWidget {
               SizedBox(
                 width: artSize,
                 height: artSize,
-                child: DecoratedBox(
-                  decoration: BoxDecoration(gradient: gradient),
-                ),
+                child: const ColoredBox(color: AppColors.darkSurface),
               ),
               const SizedBox(width: AppSpacing.lg),
               Expanded(

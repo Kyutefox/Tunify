@@ -4,7 +4,6 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/constants/podcast_promo_layout.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
-import 'package:tunify/v2/core/widgets/art/mock_art_gradient.dart';
 import 'package:tunify/v2/core/widgets/buttons/listen_now_pill_button.dart';
 import 'package:tunify/v2/core/widgets/buttons/tunify_add_to_library_icon_button.dart';
 import 'package:tunify/v2/core/widgets/buttons/tunify_more_icon_button.dart';
@@ -39,8 +38,6 @@ class PodcastPromoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = MockArtGradient.linearCover(mockCoverArgbColors);
-
     return ClipRRect(
       borderRadius: BorderRadius.circular(PodcastPromoLayout.cardCornerRadius),
       child: ColoredBox(
@@ -64,9 +61,7 @@ class PodcastPromoCard extends StatelessWidget {
                     child: SizedBox(
                       width: PodcastPromoLayout.coverSize,
                       height: PodcastPromoLayout.coverSize,
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(gradient: gradient),
-                      ),
+                      child: const ColoredBox(color: AppColors.darkSurface),
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),

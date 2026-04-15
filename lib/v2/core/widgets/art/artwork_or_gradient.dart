@@ -1,19 +1,26 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:tunify/v2/core/widgets/art/mock_art_gradient.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 
-/// Remote artwork when [imageUrl] is set; otherwise [MockArtGradient] from [fallbackArgbColors].
+/// Remote artwork when [imageUrl] is set; otherwise a neutral dark placeholder.
+///
+/// Loading shimmer is handled by [Skeletonizer] at the page level —
+/// individual widgets don't need gradient placeholders.
 class ArtworkOrGradient extends StatelessWidget {
   const ArtworkOrGradient({
     super.key,
     this.imageUrl,
-    required this.fallbackArgbColors,
+    this.fallbackArgbColors = const [],
     this.fit = BoxFit.cover,
   });
 
   final String? imageUrl;
+
+  /// Kept for API compat but no longer rendered as a gradient.
   final List<int> fallbackArgbColors;
   final BoxFit fit;
+
+  static const _placeholder = ColoredBox(color: AppColors.darkSurface);
 
   @override
   Widget build(BuildContext context) {
@@ -23,22 +30,10 @@ class ArtworkOrGradient extends StatelessWidget {
         imageUrl: url,
         fit: fit,
         fadeInDuration: const Duration(milliseconds: 150),
-        placeholder: (_, __) => DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: MockArtGradient.linearCover(fallbackArgbColors),
-          ),
-        ),
-        errorWidget: (_, __, ___) => DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: MockArtGradient.linearCover(fallbackArgbColors),
-          ),
-        ),
+        placeholder: (_, __) => _placeholder,
+        errorWidget: (_, __, ___) => _placeholder,
       );
     }
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: MockArtGradient.linearCover(fallbackArgbColors),
-      ),
-    );
+    return _placeholder;
   }
 }

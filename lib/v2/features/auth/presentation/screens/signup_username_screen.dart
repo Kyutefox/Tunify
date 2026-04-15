@@ -5,12 +5,12 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/auth_session_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/privacy_policy_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/terms_of_use_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
 import 'package:tunify/v2/features/home/presentation/providers/home_providers.dart';
-import 'package:tunify/v2/features/home/presentation/screens/home_screen.dart';
 import 'package:tunify/v2/features/user/presentation/providers/user_providers.dart';
 
 /// Sign Up Step 3: Username
@@ -189,19 +189,13 @@ class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
                           }
                           setState(() => _isSubmitting = false);
                           result.fold(
-                            (_) {
+                            (user) {
                               ref.invalidate(homeFeedProvider);
                               ref.invalidate(currentUserProvider);
                               ref.read(formValidationProvider.notifier).reset();
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute<void>(
-                                  builder: (context) => const Scaffold(
-                                    backgroundColor: AppColors.nearBlack,
-                                    body: HomeScreen(),
-                                  ),
-                                ),
-                                (route) => false,
-                              );
+                              ref
+                                  .read(authSessionProvider.notifier)
+                                  .applySignedInUser(user);
                             },
                             (failure) {
                               ScaffoldMessenger.of(context).showSnackBar(

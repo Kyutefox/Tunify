@@ -6,7 +6,9 @@ abstract final class HomeApiMapper {
   static HomeFeed fromHomePageJson(Map<String, dynamic> root) {
     final blocks = <HomeBlock>[];
 
-    final qp = root['quick_picks'];
+    // Canonical backend contract field (provider-agnostic).
+    // Keep legacy fallback only for backward compatibility during rollout.
+    final qp = root['recommended_tracks'] ?? root['quick_picks'];
     if (qp is Map<String, dynamic>) {
       final block = _mapQuickPicksBlock(qp);
       if (block != null) {
@@ -51,7 +53,7 @@ abstract final class HomeApiMapper {
     final cols = (json['visible_columns'] as num?)?.toInt().clamp(1, 4) ?? 2;
     final rows = (json['visible_rows'] as num?)?.toInt().clamp(1, 8) ?? 4;
     return HomeQuickPicksBlock(
-      title: json['title'] as String? ?? 'Quick picks',
+      title: json['title'] as String? ?? 'Recommended tracks',
       subtitle: json['subtitle'] as String?,
       tiles: tiles,
       visibleColumns: cols,

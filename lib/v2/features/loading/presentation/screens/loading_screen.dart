@@ -7,7 +7,13 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 /// Dedicated loading page with Spotify-style 3-dot horizontal loader
 /// Used for initialization and async operations
 class LoadingScreen extends StatefulWidget {
-  const LoadingScreen({super.key});
+  const LoadingScreen({
+    super.key,
+    this.embedInParentScaffold = false,
+  });
+
+  /// When true, omits [Scaffold] so this can sit inside another scaffold (e.g. home feed).
+  final bool embedInParentScaffold;
 
   @override
   State<LoadingScreen> createState() => _LoadingScreenState();
@@ -47,43 +53,51 @@ class _LoadingScreenState extends State<LoadingScreen>
 
   @override
   Widget build(BuildContext context) {
+    final dots = Center(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: List.generate(3, (index) {
+          return AnimatedBuilder(
+            animation: _animations[index],
+            builder: (context, child) {
+              // Calculate scale based on animation value
+              // Goes from 0.6 to 1.0 and back
+              final scale = 0.6 + (_animations[index].value * 0.4);
+              final opacity = 0.4 + (_animations[index].value * 0.6);
+
+              return Container(
+                width: AppSpacing.lg,
+                height: AppSpacing.lg,
+                margin: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.sm,
+                ),
+                decoration: BoxDecoration(
+                  color: Color.fromRGBO(
+                    255,
+                    255,
+                    255,
+                    opacity,
+                  ),
+                  shape: BoxShape.circle,
+                ),
+                transform: Matrix4.identity()..scaleByDouble(scale, scale, 1, 1),
+                transformAlignment: Alignment.center,
+              );
+            },
+          );
+        }),
+      ),
+    );
+
+    if (widget.embedInParentScaffold) {
+      return ColoredBox(
+        color: AppColors.nearBlack,
+        child: dots,
+      );
+    }
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
-      body: Center(
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(3, (index) {
-            return AnimatedBuilder(
-              animation: _animations[index],
-              builder: (context, child) {
-                // Calculate scale based on animation value
-                // Goes from 0.6 to 1.0 and back
-                final scale = 0.6 + (_animations[index].value * 0.4);
-                final opacity = 0.4 + (_animations[index].value * 0.6);
-
-                return Container(
-                  width: AppSpacing.lg,
-                  height: AppSpacing.lg,
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: AppSpacing.sm,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Color.fromRGBO(
-                      255,
-                      255,
-                      255,
-                      opacity,
-                    ),
-                    shape: BoxShape.circle,
-                  ),
-                  transform: Matrix4.identity()..scale(scale),
-                  transformAlignment: Alignment.center,
-                );
-              },
-            );
-          }),
-        ),
-      ),
+      body: dots,
     );
   }
 }

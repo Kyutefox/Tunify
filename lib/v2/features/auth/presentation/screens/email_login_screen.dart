@@ -5,11 +5,11 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/auth_session_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
 import 'package:tunify/v2/features/home/presentation/providers/home_providers.dart';
-import 'package:tunify/v2/features/home/presentation/screens/home_screen.dart';
 import 'package:tunify/v2/features/user/presentation/providers/user_providers.dart';
 
 /// Email/Phone Login Screen - Minimal form design
@@ -40,6 +40,20 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
   bool _isSubmitting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Riverpod forbids modifying providers during build/initState; defer to next frame.
+    // Keeps [TextEditingController] text and [formValidationProvider] aligned after
+    // sign-out or back navigation (empty fields vs stale provider enabled the CTA).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      ref.read(formValidationProvider.notifier).reset();
+    });
+  }
 
   @override
   void dispose() {
@@ -146,18 +160,12 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                           }
                           setState(() => _isSubmitting = false);
                           result.fold(
-                            (_) {
+                            (user) {
                               ref.invalidate(homeFeedProvider);
                               ref.invalidate(currentUserProvider);
-                              Navigator.of(context).pushAndRemoveUntil(
-                                MaterialPageRoute<void>(
-                                  builder: (context) => const Scaffold(
-                                    backgroundColor: AppColors.nearBlack,
-                                    body: HomeScreen(),
-                                  ),
-                                ),
-                                (route) => false,
-                              );
+                              ref
+                                  .read(authSessionProvider.notifier)
+                                  .applySignedInUser(user);
                             },
                             (failure) {
                               ScaffoldMessenger.of(context).showSnackBar(

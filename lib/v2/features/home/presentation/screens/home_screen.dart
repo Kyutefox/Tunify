@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/constants/app_strings.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
@@ -15,6 +14,7 @@ import 'package:tunify/v2/features/home/presentation/widgets/home_podcast_promo.
 import 'package:tunify/v2/features/home/presentation/widgets/home_quick_picks_shelf.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_slim_grid.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_top_header.dart';
+import 'package:tunify/v2/features/loading/presentation/screens/loading_screen.dart';
 
 /// Home scroll + pinned header. Presentation only (RULES.md: Riverpod, no business logic).
 class HomeScreen extends ConsumerWidget {
@@ -82,9 +82,7 @@ class _HomeFeedLoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: AppColors.brandGreen),
-    );
+    return const LoadingScreen(embedInParentScaffold: true);
   }
 }
 

@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/theme/app_button_styles.dart';
+import 'package:tunify/v2/features/auth/domain/entities/user_entity.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/auth_session_provider.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_menu_layout.dart';
 import 'package:tunify/v2/features/settings/presentation/screens/settings_screen.dart';
 
@@ -117,7 +122,7 @@ abstract final class _HomeMenuColors {
   static const Color separator10 = Color.fromRGBO(255, 255, 255, 0.1);
 }
 
-class _HomeUserMenuPanelBody extends StatelessWidget {
+class _HomeUserMenuPanelBody extends ConsumerWidget {
   const _HomeUserMenuPanelBody({
     required this.panelWidth,
     required this.onOpenSettings,
@@ -154,7 +159,12 @@ class _HomeUserMenuPanelBody extends StatelessWidget {
   );
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authSessionProvider).whenOrNull(data: (value) => value);
+    final displayName = _displayName(user);
+    final profileSubtitle = _profileSubtitle(user);
+    final avatarUrl = _avatarUrl(user);
+
     return _SwipeToCloseMenuPanel(
       panelWidth: panelWidth,
       onDismiss: onDismiss,
@@ -169,55 +179,110 @@ class _HomeUserMenuPanelBody extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                    HomeMenuLayout.titleRowLeadingPadPt,
-                    0,
-                    HomeMenuLayout.titleRowTrailingPadPt,
-                    0,
-                  ),
-                  child: SizedBox(
-                    height: HomeMenuLayout.avatarSizePt,
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Container(
-                          width: HomeMenuLayout.avatarSizePt,
-                          height: HomeMenuLayout.avatarSizePt,
-                          decoration: const BoxDecoration(
-                            color: AppColors.midCard,
-                            shape: BoxShape.circle,
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            HomeMenuLayout.titleRowLeadingPadPt,
+                            0,
+                            HomeMenuLayout.titleRowTrailingPadPt,
+                            0,
                           ),
-                          clipBehavior: Clip.antiAlias,
-                          child: const Icon(
-                            Icons.person_rounded,
-                            color: AppColors.white,
-                            size: 28,
+                          child: SizedBox(
+                            height: HomeMenuLayout.avatarSizePt,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Container(
+                                  width: HomeMenuLayout.avatarSizePt,
+                                  height: HomeMenuLayout.avatarSizePt,
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.midCard,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  clipBehavior: Clip.antiAlias,
+                                  child: avatarUrl == null
+                                      ? const Icon(
+                                          Icons.person_rounded,
+                                          color: AppColors.white,
+                                          size: 28,
+                                        )
+                                      : _NetworkAvatarImage(url: avatarUrl),
+                                ),
+                                const SizedBox(
+                                  width: HomeMenuLayout.titleAvatarGapPt,
+                                ),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text.rich(
+                                        TextSpan(
+                                          text: displayName,
+                                          style: _titleName,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      Text.rich(
+                                        TextSpan(
+                                          text: profileSubtitle,
+                                          style: _viewProfile,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(
-                          width: HomeMenuLayout.titleAvatarGapPt,
+                        const SizedBox(height: HomeMenuLayout.sectionGapPt),
+                        SizedBox(
+                          width: panelWidth,
+                          height: 1,
+                          child: const ColoredBox(
+                            color: _HomeMenuColors.separator10,
+                          ),
                         ),
-                        Expanded(
+                        const SizedBox(height: HomeMenuLayout.sectionGapPt),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            HomeMenuLayout.titleRowLeadingPadPt,
+                            0,
+                            HomeMenuLayout.titleRowTrailingPadPt,
+                            0,
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text.rich(
-                                TextSpan(
-                                  text: 'Damon98',
-                                  style: _titleName,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              _MenuItemRow(
+                                icon: Icons.newspaper_outlined,
+                                label: "What's new",
+                                onTap: () {},
                               ),
-                              Text.rich(
-                                TextSpan(
-                                  text: 'View profile',
-                                  style: _viewProfile,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                              const SizedBox(
+                                height: HomeMenuLayout.itemListGapPt,
+                              ),
+                              _MenuItemRow(
+                                icon: Icons.history_rounded,
+                                label: 'Listening history',
+                                onTap: () {},
+                              ),
+                              const SizedBox(
+                                height: HomeMenuLayout.itemListGapPt,
+                              ),
+                              _MenuItemRow(
+                                icon: Icons.settings_outlined,
+                                label: 'Settings and privacy',
+                                onTap: onOpenSettings,
                               ),
                             ],
                           ),
@@ -226,45 +291,36 @@ class _HomeUserMenuPanelBody extends StatelessWidget {
                     ),
                   ),
                 ),
-                const SizedBox(height: HomeMenuLayout.sectionGapPt),
-                SizedBox(
-                  width: panelWidth,
-                  height: 1,
-                  child: const ColoredBox(
-                    color: _HomeMenuColors.separator10,
-                  ),
-                ),
-                const SizedBox(height: HomeMenuLayout.sectionGapPt),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(
                     HomeMenuLayout.titleRowLeadingPadPt,
-                    0,
+                    HomeMenuLayout.sectionGapPt,
                     HomeMenuLayout.titleRowTrailingPadPt,
                     0,
                   ),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      _MenuItemRow(
-                        icon: Icons.newspaper_outlined,
-                        label: "What's new",
-                        onTap: () {},
+                      SizedBox(
+                        width: panelWidth,
+                        height: 1,
+                        child: const ColoredBox(
+                          color: _HomeMenuColors.separator10,
+                        ),
                       ),
-                      const SizedBox(
-                        height: HomeMenuLayout.itemListGapPt,
-                      ),
-                      _MenuItemRow(
-                        icon: Icons.history_rounded,
-                        label: 'Listening history',
-                        onTap: () {},
-                      ),
-                      const SizedBox(
-                        height: HomeMenuLayout.itemListGapPt,
-                      ),
-                      _MenuItemRow(
-                        icon: Icons.settings_outlined,
-                        label: 'Settings and privacy',
-                        onTap: onOpenSettings,
+                      const SizedBox(height: HomeMenuLayout.itemListGapPt),
+                      AppButtonStyles.darkPill(
+                        label: 'Log out',
+                        width: double.infinity,
+                        onPressed: () async {
+                          final container = ProviderScope.containerOf(context);
+                          final nav =
+                              Navigator.of(context, rootNavigator: true);
+                          nav.pop();
+                          await container
+                              .read(authSessionProvider.notifier)
+                              .signOut();
+                        },
                       ),
                     ],
                   ),
@@ -276,6 +332,81 @@ class _HomeUserMenuPanelBody extends StatelessWidget {
       ),
     );
   }
+}
+
+class _NetworkAvatarImage extends StatelessWidget {
+  const _NetworkAvatarImage({required this.url});
+
+  final String url;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_isSvg(url)) {
+      return SvgPicture.network(
+        url,
+        fit: BoxFit.cover,
+        placeholderBuilder: (_) => const _AvatarFallbackIcon(),
+      );
+    }
+    return Image.network(
+      url,
+      fit: BoxFit.cover,
+      errorBuilder: (_, __, ___) => const _AvatarFallbackIcon(),
+    );
+  }
+}
+
+class _AvatarFallbackIcon extends StatelessWidget {
+  const _AvatarFallbackIcon();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Icon(
+      Icons.person_rounded,
+      color: AppColors.white,
+      size: 28,
+    );
+  }
+}
+
+String _displayName(UserEntity? user) {
+  final preferred = user?.displayName?.trim();
+  if (preferred != null && preferred.isNotEmpty) {
+    return preferred;
+  }
+  final username = user?.username.trim();
+  if (username != null && username.isNotEmpty) {
+    return username;
+  }
+  return 'User';
+}
+
+String _profileSubtitle(UserEntity? user) {
+  final email = user?.email.trim();
+  if (email != null && email.isNotEmpty) {
+    return email;
+  }
+  return 'View profile';
+}
+
+String? _avatarUrl(UserEntity? user) {
+  final raw = user?.photoUrl?.trim();
+  if (raw == null || raw.isEmpty) {
+    return null;
+  }
+  return raw;
+}
+
+bool _isSvg(String url) {
+  final lower = url.toLowerCase();
+  if (lower.contains('.svg')) {
+    return true;
+  }
+  final uri = Uri.tryParse(lower);
+  if (uri == null) {
+    return lower.contains('/svg');
+  }
+  return uri.path.endsWith('/svg') || uri.path.endsWith('.svg');
 }
 
 class _MenuItemRow extends StatelessWidget {

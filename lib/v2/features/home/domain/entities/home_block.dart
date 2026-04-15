@@ -116,7 +116,8 @@ class HomeCarouselBlock extends HomeBlock {
   final HomeCarouselSection section;
 }
 
-/// Server-driven Quick picks (`HomePageResponse.quick_picks`): paged 2-column slim grid.
+/// Server-driven recommended tracks (`HomePageResponse.recommended_tracks`):
+/// paged 2-column slim grid.
 class HomeQuickPicksBlock extends HomeBlock {
   const HomeQuickPicksBlock({
     required this.title,

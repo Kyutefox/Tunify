@@ -9,6 +9,47 @@ import 'package:tunify/v2/core/widgets/buttons/filter_single_pill.dart';
 class AppButtonStyles {
   AppButtonStyles._();
 
+  /// Dark Pill Button
+  /// DESIGN.md §4 Buttons — Dark Pill: background `#1f1f1f`, text `#ffffff` or `#b3b3b3`,
+  /// padding `8px 16px`, radius `9999px` (full pill). Navigation / secondary actions.
+  static Widget darkPill({
+    required String label,
+    VoidCallback? onPressed,
+    double? width,
+    bool mutedText = false,
+  }) {
+    final bool isEnabled = onPressed != null;
+    final Color textColor = !isEnabled
+        ? AppColors.silver.withValues(alpha: 0.5)
+        : (mutedText ? AppColors.silver : AppColors.white);
+    return SizedBox(
+      width: width,
+      height: AppSpacing.xxxl,
+      child: Material(
+        color: AppColors.midDark,
+        borderRadius: BorderRadius.circular(AppBorderRadius.fullPill),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppBorderRadius.fullPill),
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.md,
+            ),
+            child: Text(
+              label.toUpperCase(),
+              style: AppTextStyles.buttonUppercase.copyWith(
+                color: textColor,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   /// Dark Large Pill Button
   /// DESIGN.md: Background #181818, Text #ffffff, Padding 0px 43px, Radius 500px
   /// Use: Primary app navigation buttons

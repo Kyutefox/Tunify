@@ -21,20 +21,24 @@ class SearchExploreCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: width,
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(AppBorderRadius.comfortable),
-      ),
-      padding: EdgeInsets.all(padding),
-      child: Align(
-        alignment: Alignment.bottomLeft,
-        child: Text(
-          title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.bodyBold.copyWith(fontSize: titleFontSize),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(AppBorderRadius.comfortable),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(padding),
+          child: Align(
+            alignment: Alignment.bottomLeft,
+            child: Text(
+              title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTextStyles.bodyBold.copyWith(fontSize: titleFontSize),
+            ),
+          ),
         ),
       ),
     );

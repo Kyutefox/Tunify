@@ -55,6 +55,8 @@ class SearchScreen extends ConsumerWidget {
                 height: SearchLayout.exploreRailHeight,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
+                  addAutomaticKeepAlives: false,
+                  addRepaintBoundaries: true,
                   itemBuilder: (context, index) => SearchExploreCard(
                     title: _exploreTiles[index].title,
                     backgroundColor: _exploreTiles[index].color,
@@ -99,6 +101,8 @@ class SearchScreen extends ConsumerWidget {
                   titleFontSize: SearchLayout.browseCardTitleFontSize,
                 ),
                 childCount: _browseTiles.length,
+                addAutomaticKeepAlives: false,
+                addRepaintBoundaries: true,
               ),
               gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
                 maxCrossAxisExtent: SearchLayout.tileMaxWidth,
@@ -128,17 +132,19 @@ class _TopActionButton extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       customBorder: const CircleBorder(),
-      child: Container(
+      child: SizedBox(
         width: SearchLayout.topActionSize,
         height: SearchLayout.topActionSize,
-        decoration: const BoxDecoration(
-          color: AppColors.midDark,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          icon,
-          color: AppColors.white,
-          size: SearchLayout.topActionIconSize,
+        child: DecoratedBox(
+          decoration: const BoxDecoration(
+            color: AppColors.midDark,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            icon,
+            color: AppColors.white,
+            size: SearchLayout.topActionIconSize,
+          ),
         ),
       ),
     );
@@ -150,29 +156,33 @@ class _SearchInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: SearchLayout.searchInputHeight,
-      decoration: BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.circular(AppBorderRadius.comfortable),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: SearchLayout.searchInputHorizontalPadding),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.search_rounded,
-            color: AppColors.nearBlack,
-            size: SearchLayout.searchIconSize,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Text(
-            'What do you want to play?',
-            style: AppTextStyles.caption.copyWith(
+    return RepaintBoundary(
+      child: Container(
+        height: SearchLayout.searchInputHeight,
+        decoration: BoxDecoration(
+          color: AppColors.white,
+          borderRadius: BorderRadius.circular(AppBorderRadius.comfortable),
+        ),
+        padding: const EdgeInsets.symmetric(
+          horizontal: SearchLayout.searchInputHorizontalPadding,
+        ),
+        child: Row(
+          children: [
+            const Icon(
+              Icons.search_rounded,
               color: AppColors.nearBlack,
-              fontWeight: FontWeight.w600,
+              size: SearchLayout.searchIconSize,
             ),
-          ),
-        ],
+            const SizedBox(width: AppSpacing.md),
+            Text(
+              'What do you want to play?',
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.nearBlack,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -251,27 +261,28 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
         child: Stack(
           children: [
             // Nav row: translates upward with scroll, clipped as it exits.
-            Positioned(
-              top: -shrinkOffset,
-              left: 0,
-              right: 0,
-              child: Opacity(
-                opacity: 1.0 - collapseProgress,
-                child: AppTopNavigation(
-                  leadingOnTap: onAvatarTap,
-                  middle: Text(
-                    'Search',
-                    style: AppTextStyles.sectionTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: _TopActionButton(
-                    icon: Icons.camera_alt_outlined,
-                    onTap: () {},
+            if (collapseProgress < 1.0)
+              Positioned(
+                top: -shrinkOffset,
+                left: 0,
+                right: 0,
+                child: Opacity(
+                  opacity: 1.0 - collapseProgress,
+                  child: AppTopNavigation(
+                    leadingOnTap: onAvatarTap,
+                    middle: Text(
+                      'Search',
+                      style: AppTextStyles.sectionTitle,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    trailing: _TopActionButton(
+                      icon: Icons.camera_alt_outlined,
+                      onTap: () {},
+                    ),
                   ),
                 ),
               ),
-            ),
             // Search input: always anchored at the bottom of the header.
             Positioned(
               left: SearchLayout.horizontalPadding,

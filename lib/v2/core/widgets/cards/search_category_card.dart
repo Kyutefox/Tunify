@@ -19,19 +19,21 @@ class SearchCategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return DecoratedBox(
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(AppBorderRadius.comfortable),
       ),
-      padding: EdgeInsets.all(padding),
-      child: Align(
-        alignment: Alignment.topLeft,
-        child: Text(
-          title,
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-          style: AppTextStyles.bodyBold.copyWith(fontSize: titleFontSize),
+      child: Padding(
+        padding: EdgeInsets.all(padding),
+        child: Align(
+          alignment: Alignment.topLeft,
+          child: Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTextStyles.bodyBold.copyWith(fontSize: titleFontSize),
+          ),
         ),
       ),
     );

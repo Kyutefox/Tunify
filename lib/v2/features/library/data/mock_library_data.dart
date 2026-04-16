@@ -1,4 +1,5 @@
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/domain/library_known_creators.dart';
 
 /// Static mock library items matching the Figma Spotify iOS 2024 Library screen
 /// exactly. Order follows the grid-view screenshot (Image 1) top-left → right,
@@ -14,7 +15,7 @@ abstract final class MockLibraryData {
       subtitle: 'Playlist · 16 songs',
       kind: LibraryItemKind.playlist,
       isPinned: true,
-      creatorName: 'You',
+      creatorName: LibraryKnownCreators.you,
       systemArtwork: SystemArtworkType.likedSongs,
     ),
     LibraryItem(
@@ -139,7 +140,7 @@ abstract final class MockLibraryData {
       title: 'Best for me',
       subtitle: 'Playlist · Damon98',
       kind: LibraryItemKind.playlist,
-      creatorName: 'Damon98',
+      creatorName: LibraryKnownCreators.damon98,
     ),
     LibraryItem(
       id: 'protection',
@@ -172,7 +173,7 @@ abstract final class MockLibraryData {
       title: 'Rock School',
       subtitle: 'Playlist · Spotify',
       kind: LibraryItemKind.playlist,
-      creatorName: 'Spotify',
+      creatorName: LibraryKnownCreators.spotify,
     ),
     // ── Row 9 ──────────────────────────────────────────────
     LibraryItem(
@@ -186,7 +187,7 @@ abstract final class MockLibraryData {
       title: 'Oasis Vs Blur',
       subtitle: 'Playlist · Damon98',
       kind: LibraryItemKind.playlist,
-      creatorName: 'Damon98',
+      creatorName: LibraryKnownCreators.damon98,
     ),
     LibraryItem(
       id: 'skinee-colbie',

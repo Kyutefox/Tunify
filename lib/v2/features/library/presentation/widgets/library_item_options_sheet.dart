@@ -6,6 +6,7 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/domain/library_known_creators.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_layout.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/system_artwork.dart';
 
@@ -81,7 +82,7 @@ class _LibraryItemOptionsSheet extends StatelessWidget {
       label: 'Share',
     ));
 
-    if (item.creatorName != 'You') {
+    if (item.creatorName != LibraryKnownCreators.you) {
       actions.add(_OptionAction(
         icon: AppIcons.addCircle,
         label: 'Add to Your Library',

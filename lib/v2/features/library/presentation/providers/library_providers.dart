@@ -1,7 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tunify/v2/features/library/data/mock_library_data.dart';
+import 'package:tunify/v2/features/library/data/mock_library_repository.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/domain/library_items_query.dart';
+import 'package:tunify/v2/features/library/domain/repositories/library_repository.dart';
 
 /// Immutable view-state for the library screen.
 @immutable
@@ -84,75 +86,19 @@ final libraryControllerProvider =
   LibraryController.new,
 );
 
+/// Data access for library lists and detail models (swap implementation for real API).
+final libraryRepositoryProvider = Provider<LibraryRepository>((ref) {
+  return MockLibraryRepository();
+});
+
 /// Derived provider: filtered + sorted library items.
 final libraryItemsProvider = Provider<List<LibraryItem>>((ref) {
   final viewState = ref.watch(libraryControllerProvider);
-  final allItems = MockLibraryData.items;
-
-  final filtered = _applyFilter(
-    allItems,
-    viewState.filter,
-    viewState.playlistSubFilter,
+  final allItems = ref.watch(libraryRepositoryProvider).libraryItems;
+  return LibraryItemsQuery.apply(
+    items: allItems,
+    filter: viewState.filter,
+    playlistSubFilter: viewState.playlistSubFilter,
+    sortMode: viewState.sortMode,
   );
-  return _applySort(filtered, viewState.sortMode);
 });
-
-List<LibraryItem> _applyFilter(
-  List<LibraryItem> items,
-  LibraryFilter filter,
-  LibraryPlaylistSubFilter subFilter,
-) {
-  var result = switch (filter) {
-    LibraryFilter.all => items,
-    LibraryFilter.playlists =>
-      items.where((i) => i.kind == LibraryItemKind.playlist).toList(),
-    LibraryFilter.artists =>
-      items.where((i) => i.kind == LibraryItemKind.artist).toList(),
-    LibraryFilter.albums =>
-      items.where((i) => i.kind == LibraryItemKind.album).toList(),
-    LibraryFilter.podcasts =>
-      items.where((i) => i.kind == LibraryItemKind.podcast).toList(),
-  };
-
-  if (filter == LibraryFilter.playlists) {
-    result = switch (subFilter) {
-      LibraryPlaylistSubFilter.none => result,
-      LibraryPlaylistSubFilter.byYou =>
-        result.where((i) => i.creatorName == 'You' || i.creatorName == 'Damon98').toList(),
-      LibraryPlaylistSubFilter.bySpotify =>
-        result.where((i) => i.creatorName == 'Spotify').toList(),
-    };
-  }
-
-  return result;
-}
-
-List<LibraryItem> _applySort(
-  List<LibraryItem> items,
-  LibrarySortMode mode,
-) {
-  final pinned = items.where((i) => i.isPinned).toList();
-  final unpinned = List<LibraryItem>.from(
-    items.where((i) => !i.isPinned),
-  );
-
-  switch (mode) {
-    case LibrarySortMode.recents:
-      break;
-    case LibrarySortMode.recentlyAdded:
-      final reversed = unpinned.reversed.toList();
-      return [...pinned, ...reversed];
-    case LibrarySortMode.alphabetical:
-      unpinned.sort(
-        (a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()),
-      );
-    case LibrarySortMode.creator:
-      unpinned.sort((a, b) {
-        final ca = a.creatorName ?? a.title;
-        final cb = b.creatorName ?? b.title;
-        return ca.toLowerCase().compareTo(cb.toLowerCase());
-      });
-  }
-
-  return [...pinned, ...unpinned];
-}

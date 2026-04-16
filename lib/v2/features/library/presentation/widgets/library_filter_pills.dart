@@ -4,6 +4,7 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/widgets/buttons/filter_pill_row.dart';
 import 'package:tunify/v2/core/widgets/buttons/filter_single_pill.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/presentation/constants/library_layout.dart';
 import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
 
 /// Horizontally scrolling filter pills for the library screen.
@@ -31,7 +32,7 @@ class LibraryFilterPills extends ConsumerWidget {
     const animCurve = Curves.easeOutCubic;
 
     return SizedBox(
-      height: 30,
+      height: LibraryLayout.filterPillsRowHeight,
       child: Align(
         alignment: Alignment.centerLeft,
         child: ClipRect(
@@ -115,7 +116,8 @@ class LibraryFilterPills extends ConsumerWidget {
       widgets.add(
         FilterSinglePill(
           label: 'By you',
-          selected: viewState.playlistSubFilter == LibraryPlaylistSubFilter.byYou,
+          selected:
+              viewState.playlistSubFilter == LibraryPlaylistSubFilter.byYou,
           onPressed: () =>
               notifier.setPlaylistSubFilter(LibraryPlaylistSubFilter.byYou),
         ),
@@ -124,7 +126,8 @@ class LibraryFilterPills extends ConsumerWidget {
       widgets.add(
         FilterSinglePill(
           label: 'By Spotify',
-          selected: viewState.playlistSubFilter == LibraryPlaylistSubFilter.bySpotify,
+          selected:
+              viewState.playlistSubFilter == LibraryPlaylistSubFilter.bySpotify,
           onPressed: () =>
               notifier.setPlaylistSubFilter(LibraryPlaylistSubFilter.bySpotify),
         ),

@@ -5,6 +5,7 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_layout.dart';
+import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
 
@@ -103,7 +104,7 @@ class LibrarySortControls extends ConsumerWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                   child: Text(
-                    'Sort by',
+                    LibraryStrings.sortBy,
                     style: AppTextStyles.featureHeading
                         .copyWith(fontWeight: FontWeight.w700),
                   ),
@@ -155,9 +156,7 @@ class _SortOption extends StatelessWidget {
                 child: Text(
                   label,
                   style: AppTextStyles.body.copyWith(
-                    color: isSelected
-                        ? AppColors.brandGreen
-                        : AppColors.white,
+                    color: isSelected ? AppColors.brandGreen : AppColors.white,
                   ),
                 ),
               ),

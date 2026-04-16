@@ -14,9 +14,14 @@ import 'package:tunify/v2/features/library/presentation/widgets/system_artwork.d
 /// Square artwork filling the available width (artists → circular clip),
 /// title (white, bold 11px) and subtitle (silver 11px) below.
 class LibraryGridTile extends StatelessWidget {
-  const LibraryGridTile({super.key, required this.item});
+  const LibraryGridTile({
+    super.key,
+    required this.item,
+    this.onTap,
+  });
 
   final LibraryItem item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +29,7 @@ class LibraryGridTile extends StatelessWidget {
 
     return TunifyPressFeedback(
       borderRadius: BorderRadius.circular(AppBorderRadius.standard),
+      onTap: onTap,
       onLongPress: () => showLibraryItemOptionsSheet(context, item),
       child: Column(
         crossAxisAlignment:

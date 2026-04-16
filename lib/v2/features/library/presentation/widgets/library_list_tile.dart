@@ -16,9 +16,14 @@ import 'package:tunify/v2/features/library/presentation/widgets/system_artwork.d
 /// 54×54 artwork (artists → circular), 15px title white, 13px subtitle silver,
 /// green pin dot inline before subtitle for pinned items.
 class LibraryListTile extends StatelessWidget {
-  const LibraryListTile({super.key, required this.item});
+  const LibraryListTile({
+    super.key,
+    required this.item,
+    this.onTap,
+  });
 
   final LibraryItem item;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +33,7 @@ class LibraryListTile extends StatelessWidget {
 
     return TunifyPressFeedback(
       borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
+      onTap: onTap,
       onLongPress: () => showLibraryItemOptionsSheet(context, item),
       child: SizedBox(
         height: LibraryLayout.listRowHeight,

@@ -8,7 +8,9 @@ import 'package:tunify/v2/core/widgets/navigation/app_top_navigation.dart';
 import 'package:tunify/v2/core/widgets/navigation/user_menu_launcher.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_layout.dart';
+import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
 import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
+import 'package:tunify/v2/features/library/presentation/screens/library_playlist_details_screen.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_filter_pills.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_grid_tile.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_list_tile.dart';
@@ -25,8 +27,7 @@ class LibraryScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final viewState = ref.watch(libraryControllerProvider);
     final items = ref.watch(libraryItemsProvider);
-    final bottomInset =
-        MediaQuery.paddingOf(context).bottom + AppSpacing.xxl;
+    final bottomInset = MediaQuery.paddingOf(context).bottom + AppSpacing.xxl;
 
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
@@ -36,10 +37,10 @@ class LibraryScreen extends ConsumerWidget {
           AppTopNavigation(
             leadingOnTap: () => launchUserMenu(context),
             middle: Text(
-              'Your Library',
+              LibraryStrings.yourLibrary,
               style: AppTextStyles.sectionTitle.copyWith(
-                fontSize: 22,
-                height: 26 / 22,
+                fontSize: LibraryLayout.screenTitleFontSize,
+                height: LibraryLayout.screenTitleLineHeight,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -47,7 +48,8 @@ class LibraryScreen extends ConsumerWidget {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                AppIcon(icon: AppIcons.search, color: AppColors.white, size: 24),
+                AppIcon(
+                    icon: AppIcons.search, color: AppColors.white, size: 24),
                 SizedBox(width: AppSpacing.lg),
                 AppIcon(icon: AppIcons.add, color: AppColors.white, size: 28),
               ],
@@ -80,7 +82,7 @@ class LibraryScreen extends ConsumerWidget {
           // ── Content body ──
           Expanded(
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 250),
+              duration: LibraryLayout.gridListSwitchDuration,
               child: viewState.viewMode == LibraryViewMode.grid
                   ? _LibraryGridBody(
                       key: const ValueKey('grid'),
@@ -129,7 +131,13 @@ class _LibraryGridBody extends StatelessWidget {
         childAspectRatio: LibraryLayout.gridChildAspectRatio,
       ),
       itemCount: items.length,
-      itemBuilder: (_, index) => LibraryGridTile(item: items[index]),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return LibraryGridTile(
+          item: item,
+          onTap: () => _openDetails(context, item),
+        );
+      },
     );
   }
 }
@@ -152,9 +160,23 @@ class _LibraryListBody extends StatelessWidget {
     return ListView.builder(
       padding: EdgeInsets.only(bottom: bottomInset),
       itemCount: items.length,
-      itemBuilder: (_, index) => LibraryListTile(item: items[index]),
+      itemBuilder: (context, index) {
+        final item = items[index];
+        return LibraryListTile(
+          item: item,
+          onTap: () => _openDetails(context, item),
+        );
+      },
     );
   }
+}
+
+void _openDetails(BuildContext context, LibraryItem item) {
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => LibraryPlaylistDetailsScreen(item: item),
+    ),
+  );
 }
 
 /// Empty state when no items match the current filter.
@@ -171,17 +193,17 @@ class _LibraryEmptyView extends StatelessWidget {
           children: [
             AppIcon(
               icon: AppIcons.libraryMusic,
-              size: 48,
+              size: LibraryLayout.emptyStateIconSize,
               color: AppColors.silver,
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
-              'Nothing here yet',
+              LibraryStrings.nothingHereTitle,
               style: AppTextStyles.featureHeading,
             ),
             const SizedBox(height: AppSpacing.md),
             Text(
-              'Your saved music, podcasts, and playlists will appear here.',
+              LibraryStrings.nothingHereBody,
               textAlign: TextAlign.center,
               style: AppTextStyles.caption,
             ),

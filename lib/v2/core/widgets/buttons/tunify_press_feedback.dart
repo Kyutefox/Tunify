@@ -11,6 +11,7 @@ class TunifyPressFeedback extends StatefulWidget {
   const TunifyPressFeedback({
     super.key,
     required this.child,
+    this.onTap,
     required this.onLongPress,
     this.borderRadius =
         const BorderRadius.all(Radius.circular(AppBorderRadius.subtle)),
@@ -19,6 +20,7 @@ class TunifyPressFeedback extends StatefulWidget {
   });
 
   final Widget child;
+  final VoidCallback? onTap;
   final VoidCallback onLongPress;
   final BorderRadius borderRadius;
   final bool enableHaptics;
@@ -57,6 +59,7 @@ class _TunifyPressFeedbackState extends State<TunifyPressFeedback> {
           _setPressed(false);
           _hapticFired = false;
         },
+        onTap: widget.onTap,
         onTapCancel: () {
           _setPressed(false);
           _hapticFired = false;

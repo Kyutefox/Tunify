@@ -55,4 +55,17 @@ abstract final class LibraryLayout {
 
   /// Shadow gradient height between fixed header and scroll area.
   static const double headerShadowHeight = 6;
+
+  /// Filter pills row (collapsed + expanded) vertical extent.
+  static const double filterPillsRowHeight = 30;
+
+  /// Main library screen title (Figma “Your Library”).
+  static const double screenTitleFontSize = 22;
+  static const double screenTitleLineHeight = 26 / 22;
+
+  /// Grid ↔ list body transition.
+  static const Duration gridListSwitchDuration = Duration(milliseconds: 250);
+
+  /// Empty-state leading icon diameter.
+  static const double emptyStateIconSize = 48;
 }

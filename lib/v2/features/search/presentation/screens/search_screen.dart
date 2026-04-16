@@ -10,7 +10,9 @@ import 'package:tunify/v2/core/widgets/navigation/app_top_navigation.dart';
 import 'package:tunify/v2/core/widgets/navigation/user_menu_launcher.dart';
 import 'package:tunify/v2/features/search/domain/entities/search_models.dart';
 import 'package:tunify/v2/features/search/presentation/constants/search_discovery_tiles.dart';
+import 'package:tunify/v2/features/search/presentation/constants/search_mood_tile_colors.dart';
 import 'package:tunify/v2/features/search/presentation/providers/search_providers.dart';
+import 'package:tunify/v2/features/search/presentation/providers/moods_providers.dart';
 import 'package:tunify/v2/features/search/presentation/widgets/search_focus_bodies.dart';
 import 'package:tunify/v2/features/search/presentation/widgets/search_filter_chips_row.dart';
 import 'package:tunify/v2/features/search/presentation/widgets/search_focus_header.dart';
@@ -20,6 +22,7 @@ class SearchScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final moodsAsync = ref.watch(moodsAndGenresProvider);
     final safeArea = MediaQuery.paddingOf(context);
     final bottomInset = safeArea.bottom + AppSpacing.xxl;
 
@@ -90,24 +93,67 @@ class SearchScreen extends ConsumerWidget {
           SliverPadding(
             padding: EdgeInsets.fromLTRB(
                 AppSpacing.lg, 0, AppSpacing.lg, bottomInset),
-            sliver: SliverGrid(
-              gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                maxCrossAxisExtent: 220,
-                mainAxisSpacing: AppSpacing.md,
-                crossAxisSpacing: AppSpacing.md,
-                mainAxisExtent: 104,
+            sliver: moodsAsync.when(
+              data: (moods) {
+                final colorSeed = moods.fold<int>(
+                  0,
+                  (acc, mood) =>
+                      acc ^ mood.browseId.hashCode ^ mood.title.hashCode,
+                );
+                final moodTileColors = buildRandomizedMoodTileColors(
+                  moods.length,
+                  seed: colorSeed,
+                );
+                return SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    maxCrossAxisExtent: 220,
+                    mainAxisSpacing: AppSpacing.md,
+                    crossAxisSpacing: AppSpacing.md,
+                    mainAxisExtent: 104,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final mood = moods[index];
+                      return SearchCategoryCard(
+                        title: mood.title,
+                        backgroundColor: moodTileColors[index],
+                        padding: AppSpacing.lg,
+                        titleFontSize: 18,
+                      );
+                    },
+                    childCount: moods.length,
+                  ),
+                );
+              },
+              loading: () => const SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 240,
+                  child: Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final tile = searchBrowseTiles[index];
-                  return SearchCategoryCard(
-                    title: tile.$1,
-                    backgroundColor: tile.$2,
-                    padding: AppSpacing.lg,
-                    titleFontSize: 18,
-                  );
-                },
-                childCount: searchBrowseTiles.length,
+              error: (err, _) => SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 240,
+                  child: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      child: Text(
+                        'Failed to load moods',
+                        style: AppTextStyles.small,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                ),
               ),
             ),
           ),

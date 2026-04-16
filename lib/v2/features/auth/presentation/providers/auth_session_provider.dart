@@ -13,6 +13,22 @@ final authSessionProvider =
   AuthSessionNotifier.new,
 );
 
+/// True only right after explicit sign-in/sign-up.
+/// While true, UI should show full loading screen until first home feed resolves.
+final postLoginBootstrapProvider =
+    NotifierProvider<PostLoginBootstrapNotifier, bool>(
+  PostLoginBootstrapNotifier.new,
+);
+
+class PostLoginBootstrapNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void enable() => state = true;
+
+  void disable() => state = false;
+}
+
 class AuthSessionNotifier extends AsyncNotifier<UserEntity?> {
   @override
   Future<UserEntity?> build() async {
@@ -31,6 +47,7 @@ class AuthSessionNotifier extends AsyncNotifier<UserEntity?> {
 
   /// Called after a successful sign-in / sign-up when [UserEntity] is already available.
   void applySignedInUser(UserEntity user) {
+    ref.read(postLoginBootstrapProvider.notifier).enable();
     state = AsyncData(user);
   }
 
@@ -39,6 +56,7 @@ class AuthSessionNotifier extends AsyncNotifier<UserEntity?> {
     final result = await auth.signOut();
     result.fold((_) {}, (_) {});
     state = const AsyncData(null);
+    ref.read(postLoginBootstrapProvider.notifier).disable();
     ref.invalidate(homeFeedProvider);
     ref.invalidate(currentUserProvider);
     ref.invalidate(formValidationProvider);

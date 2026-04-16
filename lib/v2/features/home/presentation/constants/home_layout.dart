@@ -31,7 +31,8 @@ abstract final class HomeLayout {
   /// Top inset for the scroll view so content clears the pinned header.
   static double scrollContentTopOffset(EdgeInsets safeArea) {
     final p = headerPadding(safeArea);
-    return p.top + profileAvatarDiameter + p.bottom;
+    // Keep the first shelf from visually touching/cropping into the pinned header.
+    return p.top + profileAvatarDiameter + p.bottom + AppSpacing.sm;
   }
 
   /// Slim grid row (6.5 × 8px grid steps → 56).
@@ -64,7 +65,8 @@ abstract final class HomeLayout {
 
   /// Scales with shelf viewport — used for **both** square and circular carousel art.
   static double carouselThumbSize(double shelfViewportWidth) {
-    final w = shelfViewportWidth * carouselThumbLarge / carouselDesignShelfInnerWidth;
+    final w =
+        shelfViewportWidth * carouselThumbLarge / carouselDesignShelfInnerWidth;
     return w.clamp(carouselThumbClampMin, carouselThumbClampMax);
   }
 

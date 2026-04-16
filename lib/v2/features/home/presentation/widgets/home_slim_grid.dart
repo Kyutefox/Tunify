@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
+import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/widgets/cards/track_slim_card.dart';
+import 'package:tunify/v2/core/widgets/buttons/tunify_press_feedback.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
 
@@ -20,9 +24,8 @@ class HomeSlimGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = omitTrailingShelfGap
-        ? 0.0
-        : HomeLayout.shelfTrailingAfterContent;
+    final bottomPad =
+        omitTrailingShelfGap ? 0.0 : HomeLayout.shelfTrailingAfterContent;
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -40,11 +43,11 @@ class HomeSlimGrid extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _tileCard(tiles[i])),
+                Expanded(child: _tileCard(context, tiles[i])),
                 const SizedBox(width: AppSpacing.md),
                 Expanded(
                   child: i + 1 < tiles.length
-                      ? _tileCard(tiles[i + 1])
+                      ? _tileCard(context, tiles[i + 1])
                       : const SizedBox.shrink(),
                 ),
               ],
@@ -55,17 +58,30 @@ class HomeSlimGrid extends StatelessWidget {
     );
   }
 
-  Widget _tileCard(HomeSlimTile tile) {
-    return TrackSlimCard(
+  Widget _tileCard(BuildContext context, HomeSlimTile tile) {
+    final libraryItem = LibraryItem(
+      id: tile.id,
       title: tile.title,
-      mockThumbArgbColors: tile.thumbColors,
-      artworkUrl: tile.artworkUrl,
-      rowHeight: HomeLayout.slimRowHeight,
-      thumbSize: HomeLayout.slimThumbSize,
-      showNowPlayingIndicator: tile.showNowPlayingIndicator,
-      showMoreMenu: tile.showMoreMenu,
-      showSeekBar: tile.showSeekBar,
-      seekProgress: tile.seekProgress,
+      subtitle: 'Playlist',
+      kind: LibraryItemKind.playlist,
+      imageUrl: tile.artworkUrl,
+      creatorName: 'Tunify',
+    );
+
+    return TunifyPressFeedback(
+      borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
+      onLongPress: () => showLibraryItemOptionsSheet(context, libraryItem),
+      child: TrackSlimCard(
+        title: tile.title,
+        mockThumbArgbColors: tile.thumbColors,
+        artworkUrl: tile.artworkUrl,
+        rowHeight: HomeLayout.slimRowHeight,
+        thumbSize: HomeLayout.slimThumbSize,
+        showNowPlayingIndicator: tile.showNowPlayingIndicator,
+        showMoreMenu: tile.showMoreMenu,
+        showSeekBar: tile.showSeekBar,
+        seekProgress: tile.seekProgress,
+      ),
     );
   }
 }

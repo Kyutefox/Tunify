@@ -46,8 +46,7 @@ class HomeTopHeader extends ConsumerWidget {
               primaryLabel: 'Podcasts',
               secondaryLabel: _secondaryTrailingLabel,
               primarySelected: pills.band == HomeContentBand.podcasts,
-              secondarySelected:
-                  pills.band == HomeContentBand.podcasts &&
+              secondarySelected: pills.band == HomeContentBand.podcasts &&
                   pills.podcastsSecondaryOn,
               secondaryRevealed: pills.podcastsSecondaryExpanded,
               onPrimaryPressed: notifier.tapPodcastsPrimary,

@@ -38,8 +38,8 @@ class EmailLoginScreen extends ConsumerStatefulWidget {
 class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
-  bool _isSubmitting = false;
+  final ValueNotifier<bool> _obscurePassword = ValueNotifier<bool>(true);
+  final ValueNotifier<bool> _isSubmitting = ValueNotifier<bool>(false);
 
   @override
   void initState() {
@@ -59,6 +59,8 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _obscurePassword.dispose();
+    _isSubmitting.dispose();
     super.dispose();
   }
 
@@ -104,17 +106,19 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                 const SizedBox(height: AppSpacing.lg),
 
                 // Password input
-                AuthInputField(
-                  label: 'Password',
-                  controller: _passwordController,
-                  isPassword: true,
-                  obscureText: _obscurePassword,
-                  onToggleVisibility: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
+                ValueListenableBuilder<bool>(
+                  valueListenable: _obscurePassword,
+                  builder: (context, obscurePassword, _) {
+                    return AuthInputField(
+                      label: 'Password',
+                      controller: _passwordController,
+                      isPassword: true,
+                      obscureText: obscurePassword,
+                      onToggleVisibility: () =>
+                          _obscurePassword.value = !obscurePassword,
+                      onChanged: formNotifier.setPassword,
+                    );
                   },
-                  onChanged: formNotifier.setPassword,
                 ),
 
                 const SizedBox(height: AppSpacing.lg),
@@ -144,37 +148,42 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
 
                 // Sign in button
                 // Disabled when email or password is empty
-                AppButtonStyles.brandGreenLargePill(
-                  label: _isSubmitting ? 'Signing in…' : 'Sign in',
-                  width: double.infinity,
-                  onPressed: formState.isLoginFormValid && !_isSubmitting
-                      ? () async {
-                          setState(() => _isSubmitting = true);
-                          final auth = ref.read(authRepositoryProvider);
-                          final result = await auth.signInWithEmailPassword(
-                            formState.email.trim(),
-                            formState.password,
-                          );
-                          if (!context.mounted) {
-                            return;
-                          }
-                          setState(() => _isSubmitting = false);
-                          result.fold(
-                            (user) {
-                              ref.invalidate(homeFeedProvider);
-                              ref.invalidate(currentUserProvider);
-                              ref
-                                  .read(authSessionProvider.notifier)
-                                  .applySignedInUser(user);
-                            },
-                            (failure) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(failure.message)),
+                ValueListenableBuilder<bool>(
+                  valueListenable: _isSubmitting,
+                  builder: (context, isSubmitting, _) {
+                    return AppButtonStyles.brandGreenLargePill(
+                      label: isSubmitting ? 'Signing in…' : 'Sign in',
+                      width: double.infinity,
+                      onPressed: formState.isLoginFormValid && !isSubmitting
+                          ? () async {
+                              _isSubmitting.value = true;
+                              final auth = ref.read(authRepositoryProvider);
+                              final result = await auth.signInWithEmailPassword(
+                                formState.email.trim(),
+                                formState.password,
                               );
-                            },
-                          );
-                        }
-                      : null,
+                              if (!context.mounted) {
+                                return;
+                              }
+                              _isSubmitting.value = false;
+                              result.fold(
+                                (user) {
+                                  ref.invalidate(homeFeedProvider);
+                                  ref.invalidate(currentUserProvider);
+                                  ref
+                                      .read(authSessionProvider.notifier)
+                                      .applySignedInUser(user);
+                                },
+                                (failure) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(failure.message)),
+                                  );
+                                },
+                              );
+                            }
+                          : null,
+                    );
+                  },
                 ),
               ],
             ),

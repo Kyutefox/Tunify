@@ -29,21 +29,21 @@ Future<void> showHomeUserMenu(BuildContext context) {
           width: sidebarW,
           height: size.height,
           child: _HomeUserMenuPanelBody(
-              panelWidth: sidebarW,
-              onOpenSettings: () {
-                final nav = Navigator.of(dialogContext, rootNavigator: true);
-                nav.pop();
-                Future<void>.microtask(() {
-                  nav.push<void>(
-                    MaterialPageRoute<void>(
-                      builder: (_) => const SettingsScreen(),
-                    ),
-                  );
-                });
-              },
-              onDismiss: () =>
-                  Navigator.of(dialogContext, rootNavigator: true).pop(),
-            ),
+            panelWidth: sidebarW,
+            onOpenSettings: () {
+              final nav = Navigator.of(dialogContext, rootNavigator: true);
+              nav.pop();
+              Future<void>.microtask(() {
+                nav.push<void>(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const SettingsScreen(),
+                  ),
+                );
+              });
+            },
+            onDismiss: () =>
+                Navigator.of(dialogContext, rootNavigator: true).pop(),
+          ),
         ),
       );
     },
@@ -82,25 +82,29 @@ class _SwipeToCloseMenuPanel extends StatefulWidget {
 }
 
 class _SwipeToCloseMenuPanelState extends State<_SwipeToCloseMenuPanel> {
-  double _dragDx = 0;
+  final ValueNotifier<double> _dragDx = ValueNotifier<double>(0);
 
   static const double _closeVelocity = 500;
 
+  @override
+  void dispose() {
+    _dragDx.dispose();
+    super.dispose();
+  }
+
   void _onDragUpdate(DragUpdateDetails d) {
-    setState(() {
-      _dragDx = (_dragDx + d.delta.dx).clamp(-widget.panelWidth, 0.0);
-    });
+    _dragDx.value = (_dragDx.value + d.delta.dx).clamp(-widget.panelWidth, 0.0);
   }
 
   void _onDragEnd(DragEndDetails d) {
     final vx = d.velocity.pixelsPerSecond.dx;
     final threshold = widget.panelWidth * 0.2;
-    final shouldClose = _dragDx <= -threshold || vx < -_closeVelocity;
+    final shouldClose = _dragDx.value <= -threshold || vx < -_closeVelocity;
     if (shouldClose) {
       widget.onDismiss();
       return;
     }
-    setState(() => _dragDx = 0);
+    _dragDx.value = 0;
   }
 
   @override
@@ -109,8 +113,14 @@ class _SwipeToCloseMenuPanelState extends State<_SwipeToCloseMenuPanel> {
       onHorizontalDragUpdate: _onDragUpdate,
       onHorizontalDragEnd: _onDragEnd,
       behavior: HitTestBehavior.opaque,
-      child: Transform.translate(
-        offset: Offset(_dragDx, 0),
+      child: ValueListenableBuilder<double>(
+        valueListenable: _dragDx,
+        builder: (context, dragDx, child) {
+          return Transform.translate(
+            offset: Offset(dragDx, 0),
+            child: child,
+          );
+        },
         child: widget.child,
       ),
     );
@@ -130,7 +140,8 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authSessionProvider).whenOrNull(data: (value) => value);
+    final user =
+        ref.watch(authSessionProvider).whenOrNull(data: (value) => value);
     final displayName = _displayName(user);
     final profileSubtitle = _profileSubtitle(user);
     final avatarUrl = avatarUrlFromUser(user);

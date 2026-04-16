@@ -22,11 +22,12 @@ class SignupPasswordScreen extends ConsumerStatefulWidget {
 
 class _SignupPasswordScreenState extends ConsumerState<SignupPasswordScreen> {
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+  final ValueNotifier<bool> _obscurePassword = ValueNotifier<bool>(true);
 
   @override
   void dispose() {
     _passwordController.dispose();
+    _obscurePassword.dispose();
     super.dispose();
   }
 
@@ -62,17 +63,19 @@ class _SignupPasswordScreenState extends ConsumerState<SignupPasswordScreen> {
                 const SizedBox(height: AppSpacing.xl),
 
                 // Password input
-                AuthInputField(
-                  label: 'Password',
-                  controller: _passwordController,
-                  isPassword: true,
-                  obscureText: _obscurePassword,
-                  onToggleVisibility: () {
-                    setState(() {
-                      _obscurePassword = !_obscurePassword;
-                    });
+                ValueListenableBuilder<bool>(
+                  valueListenable: _obscurePassword,
+                  builder: (context, obscurePassword, _) {
+                    return AuthInputField(
+                      label: 'Password',
+                      controller: _passwordController,
+                      isPassword: true,
+                      obscureText: obscurePassword,
+                      onToggleVisibility: () =>
+                          _obscurePassword.value = !obscurePassword,
+                      onChanged: formNotifier.setPassword,
+                    );
                   },
-                  onChanged: formNotifier.setPassword,
                 ),
 
                 const SizedBox(height: AppSpacing.xxxl),

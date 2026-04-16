@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/widgets/navigation/tunify_bottom_nav_bar.dart';
 import 'package:tunify/v2/features/home/presentation/screens/home_screen.dart';
@@ -6,15 +7,8 @@ import 'package:tunify/v2/features/library/presentation/screens/library_screen.d
 import 'package:tunify/v2/features/search/presentation/screens/search_screen.dart';
 
 /// Root shell when a session exists (token + profile).
-class AuthenticatedAppShell extends StatefulWidget {
+class AuthenticatedAppShell extends ConsumerWidget {
   const AuthenticatedAppShell({super.key});
-
-  @override
-  State<AuthenticatedAppShell> createState() => _AuthenticatedAppShellState();
-}
-
-class _AuthenticatedAppShellState extends State<AuthenticatedAppShell> {
-  int _currentIndex = 0;
 
   static const _pages = <Widget>[
     HomeScreen(),
@@ -23,17 +17,31 @@ class _AuthenticatedAppShellState extends State<AuthenticatedAppShell> {
   ];
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentIndex = ref.watch(_shellTabIndexProvider);
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
       body: IndexedStack(
-        index: _currentIndex,
+        index: currentIndex,
         children: _pages,
       ),
       bottomNavigationBar: TunifyBottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
+        currentIndex: currentIndex,
+        onTap: (index) =>
+            ref.read(_shellTabIndexProvider.notifier).setIndex(index),
       ),
     );
+  }
+}
+
+final _shellTabIndexProvider =
+    NotifierProvider<_ShellTabIndexNotifier, int>(_ShellTabIndexNotifier.new);
+
+class _ShellTabIndexNotifier extends Notifier<int> {
+  @override
+  int build() => 0;
+
+  void setIndex(int index) {
+    state = index;
   }
 }

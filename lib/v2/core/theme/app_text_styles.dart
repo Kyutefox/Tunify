@@ -142,7 +142,7 @@ class AppTextStyles {
     fontSize: 12,
     height: 17 / 12,
     fontWeight: FontWeight.w400,
-    color: Color(0xFFDEDEDE),
+    color: AppColors.menuProfileSubtitle,
     decoration: TextDecoration.none,
   );
 

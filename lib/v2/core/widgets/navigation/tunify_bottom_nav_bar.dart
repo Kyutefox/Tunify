@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/navigation_layout.dart';
 
 /// Bottom navigation bar — ported from v1 MobileShell._buildNavBar().
 ///
@@ -34,19 +35,18 @@ class TunifyBottomNavBar extends StatelessWidget {
     final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Container(
-      height: 64 + bottomPadding,
+      height: NavigationLayout.barHeight + bottomPadding,
       decoration: BoxDecoration(
         color: AppColors.nearBlack,
         border: const Border(
           top: BorderSide(
             color: AppColors.separator10,
-            width: 0.5,
+            width: NavigationLayout.topBorderWidth,
           ),
         ),
       ),
       child: Padding(
-        padding:
-            EdgeInsets.only(bottom: bottomPadding > 0 ? bottomPadding : 0),
+        padding: EdgeInsets.only(bottom: bottomPadding > 0 ? bottomPadding : 0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -95,16 +95,18 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 24),
-              const SizedBox(height: 2),
+              Icon(icon, color: color, size: NavigationLayout.iconSize),
+              const SizedBox(height: NavigationLayout.labelGap),
               Text(
                 label,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: color,
-                  fontSize: 11,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: NavigationLayout.labelFontSize,
+                  fontWeight: selected
+                      ? NavigationLayout.selectedLabelWeight
+                      : NavigationLayout.unselectedLabelWeight,
                 ),
               ),
             ],

@@ -29,11 +29,12 @@ class SignupUsernameScreen extends ConsumerStatefulWidget {
 
 class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
   final _usernameController = TextEditingController();
-  bool _isSubmitting = false;
+  final ValueNotifier<bool> _isSubmitting = ValueNotifier<bool>(false);
 
   @override
   void dispose() {
     _usernameController.dispose();
+    _isSubmitting.dispose();
     super.dispose();
   }
 
@@ -172,39 +173,47 @@ class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
 
                 // Create account button
                 // Validation logic is in the provider per RULES.md
-                AppButtonStyles.brandGreenLargePill(
-                  label: _isSubmitting ? 'Creating account…' : 'Create account',
-                  width: double.infinity,
-                  onPressed: formState.isUsernameStepValid && !_isSubmitting
-                      ? () async {
-                          setState(() => _isSubmitting = true);
-                          final auth = ref.read(authRepositoryProvider);
-                          final result = await auth.signUp(
-                            formState.email.trim(),
-                            formState.password,
-                            formState.username.trim(),
-                          );
-                          if (!context.mounted) {
-                            return;
-                          }
-                          setState(() => _isSubmitting = false);
-                          result.fold(
-                            (user) {
-                              ref.invalidate(homeFeedProvider);
-                              ref.invalidate(currentUserProvider);
-                              ref.read(formValidationProvider.notifier).reset();
-                              ref
-                                  .read(authSessionProvider.notifier)
-                                  .applySignedInUser(user);
-                            },
-                            (failure) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text(failure.message)),
+                ValueListenableBuilder<bool>(
+                  valueListenable: _isSubmitting,
+                  builder: (context, isSubmitting, _) {
+                    return AppButtonStyles.brandGreenLargePill(
+                      label:
+                          isSubmitting ? 'Creating account…' : 'Create account',
+                      width: double.infinity,
+                      onPressed: formState.isUsernameStepValid && !isSubmitting
+                          ? () async {
+                              _isSubmitting.value = true;
+                              final auth = ref.read(authRepositoryProvider);
+                              final result = await auth.signUp(
+                                formState.email.trim(),
+                                formState.password,
+                                formState.username.trim(),
                               );
-                            },
-                          );
-                        }
-                      : null,
+                              if (!context.mounted) {
+                                return;
+                              }
+                              _isSubmitting.value = false;
+                              result.fold(
+                                (user) {
+                                  ref.invalidate(homeFeedProvider);
+                                  ref.invalidate(currentUserProvider);
+                                  ref
+                                      .read(formValidationProvider.notifier)
+                                      .reset();
+                                  ref
+                                      .read(authSessionProvider.notifier)
+                                      .applySignedInUser(user);
+                                },
+                                (failure) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(failure.message)),
+                                  );
+                                },
+                              );
+                            }
+                          : null,
+                    );
+                  },
                 ),
               ],
             ),

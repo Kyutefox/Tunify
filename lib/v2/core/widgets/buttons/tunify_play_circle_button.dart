@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 
 /// White filled circle with a play arrow (shared hero / podcast pattern).
 class TunifyPlayCircleButton extends StatelessWidget {
@@ -25,8 +26,8 @@ class TunifyPlayCircleButton extends StatelessWidget {
         child: SizedBox(
           width: diameter,
           height: diameter,
-          child: Icon(
-            Icons.play_arrow_rounded,
+          child: AppIcon(
+            icon: AppIcons.playArrow,
             color: AppColors.nearBlack,
             size: iconSize,
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
@@ -139,8 +140,9 @@ class SearchRecentBody extends ConsumerWidget {
                           ),
                           if (item.isVerified) ...[
                             const SizedBox(width: 4),
-                            const Icon(Icons.verified,
-                                color: AppColors.announcementBlue, size: 12),
+                            AppIcon(
+                              icon: AppIcons.verified,
+                              color: AppColors.announcementBlue, size: 12),
                           ],
                         ],
                       ),
@@ -149,8 +151,9 @@ class SearchRecentBody extends ConsumerWidget {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.close,
-                      size: 20, color: AppColors.silver),
+                  icon: AppIcon(
+                    icon: AppIcons.close,
+                    size: 20, color: AppColors.silver),
                   onPressed: () => notifier.remove(item.id),
                 ),
                 const SizedBox(width: AppSpacing.sm),
@@ -189,7 +192,8 @@ class SearchSuggestionBody extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Row(
                   children: [
-                    const Icon(Icons.search, color: AppColors.white, size: 18),
+                    AppIcon(
+                      icon: AppIcons.search, color: AppColors.white, size: 18),
                     const SizedBox(width: AppSpacing.lg),
                     Expanded(
                       child: Text(
@@ -200,8 +204,9 @@ class SearchSuggestionBody extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const Icon(Icons.north_west,
-                        size: 16, color: AppColors.silver),
+                    AppIcon(
+                      icon: AppIcons.northWest,
+                      size: 16, color: AppColors.silver),
                   ],
                 ),
               ),
@@ -314,8 +319,9 @@ class _TopResultItem extends StatelessWidget {
                     ),
                     if (item.isVerified) ...[
                       const SizedBox(width: 4),
-                      const Icon(Icons.verified,
-                          color: AppColors.announcementBlue, size: 12),
+                      AppIcon(
+                        icon: AppIcons.verified,
+                        color: AppColors.announcementBlue, size: 12),
                     ],
                   ],
                 ),
@@ -412,7 +418,8 @@ class _ResultListItem extends StatelessWidget {
               ],
             ),
           ),
-          const Icon(Icons.chevron_right_rounded, color: AppColors.silver),
+          AppIcon(
+            icon: AppIcons.chevronRight, color: AppColors.silver),
         ],
       ),
     );

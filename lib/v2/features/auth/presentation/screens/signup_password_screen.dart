@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
@@ -43,7 +44,7 @@ class _SignupPasswordScreenState extends ConsumerState<SignupPasswordScreen> {
         elevation: 0,
         centerTitle: true,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+          icon: AppIcon(icon: AppIcons.back, color: AppColors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: Text(

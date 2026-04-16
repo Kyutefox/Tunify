@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/constants/track_slim_card_layout.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
@@ -86,8 +87,8 @@ class TrackSlimCard extends StatelessWidget {
                           ],
                           if (showMoreMenu) ...[
                             const SizedBox(width: AppSpacing.md),
-                            const Icon(
-                              Icons.more_horiz_rounded,
+                            AppIcon(
+                              icon: AppIcons.moreHoriz,
                               size: AppSpacing.lg,
                               color: AppColors.brandGreen,
                             ),

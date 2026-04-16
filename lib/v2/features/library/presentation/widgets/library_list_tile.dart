@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
@@ -99,8 +100,8 @@ class _PinIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Icon(
-      Icons.push_pin,
+    return AppIcon(
+      icon: AppIcons.pushPin,
       size: LibraryLayout.pinIconSize,
       color: AppColors.brandGreen,
     );

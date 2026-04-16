@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
@@ -75,33 +76,33 @@ class _LibraryItemOptionsSheet extends StatelessWidget {
   List<Widget> _buildActions(LibraryItem item) {
     final actions = <_OptionAction>[];
 
-    actions.add(const _OptionAction(
-      icon: Icons.share_outlined,
+    actions.add(_OptionAction(
+      icon: AppIcons.share,
       label: 'Share',
     ));
 
     if (item.creatorName != 'You') {
-      actions.add(const _OptionAction(
-        icon: Icons.add_circle_outline,
+      actions.add(_OptionAction(
+        icon: AppIcons.addCircle,
         label: 'Add to Your Library',
       ));
     }
 
-    actions.add(const _OptionAction(
-      icon: Icons.download_outlined,
+    actions.add(_OptionAction(
+      icon: AppIcons.download,
       label: 'Download',
     ));
 
     if (item.kind != LibraryItemKind.artist &&
         item.kind != LibraryItemKind.podcast) {
-      actions.add(const _OptionAction(
-        icon: Icons.person_outline,
+      actions.add(_OptionAction(
+        icon: AppIcons.personOutline,
         label: 'Go to artist',
       ));
     }
 
-    actions.add(const _OptionAction(
-      icon: Icons.queue_music_outlined,
+    actions.add(_OptionAction(
+      icon: AppIcons.queueMusic,
       label: 'Add to Queue',
     ));
 
@@ -109,20 +110,20 @@ class _LibraryItemOptionsSheet extends StatelessWidget {
         item.kind == LibraryItemKind.playlist) {
       final target = item.kind == LibraryItemKind.album ? 'album' : 'playlist';
       actions.add(_OptionAction(
-        icon: Icons.sensors_rounded,
+        icon: AppIcons.sensors,
         label: 'Go to $target radio',
       ));
     }
 
     if (item.kind != LibraryItemKind.playlist) {
-      actions.add(const _OptionAction(
-        icon: Icons.playlist_add,
+      actions.add(_OptionAction(
+        icon: AppIcons.playlistAddIcon,
         label: 'Add to playlist',
       ));
     }
 
-    actions.add(const _OptionAction(
-      icon: Icons.equalizer_rounded,
+    actions.add(_OptionAction(
+      icon: AppIcons.equalizer,
       label: 'Show Tunify Code',
     ));
 
@@ -191,11 +192,14 @@ class _ItemHeader extends StatelessWidget {
   }
 }
 
-/// Single action row in the options sheet.
+/// Single option row with icon and label.
 class _OptionRow extends StatelessWidget {
-  const _OptionRow({required this.icon, required this.label});
+  const _OptionRow({
+    required this.icon,
+    required this.label,
+  });
 
-  final IconData icon;
+  final List<List<dynamic>> icon;
   final String label;
 
   @override
@@ -209,9 +213,9 @@ class _OptionRow extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(
-              icon,
-              size: LibraryLayout.sheetOptionIconSize,
+            AppIcon(
+              icon: icon,
+              size: 24,
               color: AppColors.silver,
             ),
             const SizedBox(width: AppSpacing.xl),
@@ -234,6 +238,6 @@ class _OptionRow extends StatelessWidget {
 class _OptionAction {
   const _OptionAction({required this.icon, required this.label});
 
-  final IconData icon;
+  final List<List<dynamic>> icon;
   final String label;
 }

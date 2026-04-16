@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/navigation/app_top_navigation.dart';
@@ -43,12 +44,12 @@ class LibraryScreen extends ConsumerWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-            trailing: const Row(
+            trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.search, color: AppColors.white, size: 24),
+                AppIcon(icon: AppIcons.search, color: AppColors.white, size: 24),
                 SizedBox(width: AppSpacing.lg),
-                Icon(Icons.add, color: AppColors.white, size: 28),
+                AppIcon(icon: AppIcons.add, color: AppColors.white, size: 28),
               ],
             ),
           ),
@@ -168,8 +169,8 @@ class _LibraryEmptyView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.library_music_outlined,
+            AppIcon(
+              icon: AppIcons.libraryMusic,
               size: 48,
               color: AppColors.silver,
             ),

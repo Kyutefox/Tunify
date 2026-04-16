@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 
 enum TunifyMoreIconStyle { horizontal, vertical }
@@ -22,11 +23,11 @@ class TunifyMoreIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveSize = size ?? AppSpacing.checkboxSize;
     final icon = style == TunifyMoreIconStyle.vertical
-        ? Icons.more_vert_rounded
-        : Icons.more_horiz_rounded;
+        ? AppIcons.moreVert
+        : AppIcons.moreHoriz;
 
     return IconButton(
-      icon: Icon(icon, size: effectiveSize, color: color),
+      icon: AppIcon(icon: icon, size: effectiveSize, color: color),
       onPressed: onPressed,
       padding: EdgeInsets.zero,
       constraints: const BoxConstraints(),

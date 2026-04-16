@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/features/auth/domain/entities/user_entity.dart';
 
 /// Shared avatar image widget — loads SVG or raster from URL with fallback icon.
@@ -40,8 +41,8 @@ class AvatarFallbackIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Icon(
-        Icons.person_rounded,
+      child: AppIcon(
+        icon: AppIcons.person,
         size: size,
         color: AppColors.white,
       ),

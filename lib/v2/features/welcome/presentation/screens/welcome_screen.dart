@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
@@ -30,8 +31,8 @@ class WelcomeScreen extends StatelessWidget {
         actions: [
           // Settings icon
           IconButton(
-            icon: const Icon(
-              Icons.settings_outlined,
+            icon: AppIcon(
+              icon: AppIcons.settings,
               color: AppColors.white,
             ),
             onPressed: () {

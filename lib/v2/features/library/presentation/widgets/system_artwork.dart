@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 
 /// Fixed gradient + icon artwork for system library items
@@ -35,8 +36,8 @@ class SystemArtwork extends StatelessWidget {
           ),
         ),
         child: Center(
-          child: Icon(
-            config.icon,
+          child: AppIcon(
+            icon: config.icon,
             color: Colors.white,
             size: size * 0.42,
           ),
@@ -47,19 +48,19 @@ class SystemArtwork extends StatelessWidget {
 
   static _SystemArtConfig _configFor(SystemArtworkType type) {
     return switch (type) {
-      SystemArtworkType.likedSongs => const _SystemArtConfig(
-          gradientColors: [
+      SystemArtworkType.likedSongs => _SystemArtConfig(
+          gradientColors: const [
             Color(0xFF4A17C8),
             Color(0xFF8C8CE0),
           ],
-          icon: Icons.favorite,
+          icon: AppIcons.favorite,
         ),
-      SystemArtworkType.yourEpisodes => const _SystemArtConfig(
-          gradientColors: [
+      SystemArtworkType.yourEpisodes => _SystemArtConfig(
+          gradientColors: const [
             Color(0xFF056952),
             Color(0xFF1DB954),
           ],
-          icon: Icons.bookmark,
+          icon: AppIcons.bookmark,
         ),
     };
   }
@@ -73,5 +74,5 @@ class _SystemArtConfig {
   });
 
   final List<Color> gradientColors;
-  final IconData icon;
+  final List<List<dynamic>> icon;
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
@@ -53,7 +54,7 @@ class AuthChoiceScreen extends StatelessWidget {
         backgroundColor: AppColors.nearBlack,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.white),
+          icon: AppIcon(icon: AppIcons.back, color: AppColors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),
@@ -81,7 +82,7 @@ class AuthChoiceScreen extends StatelessWidget {
               // Continue with Google
               _buildSocialButton(
                 label: 'Continue with Google',
-                icon: Icons.g_mobiledata,
+                icon: AppIcons.google,
                 onPressed: () {
                   // TODO: Google sign in
                 },
@@ -92,7 +93,7 @@ class AuthChoiceScreen extends StatelessWidget {
               // Continue with Apple
               _buildSocialButton(
                 label: 'Continue with Apple',
-                icon: Icons.apple,
+                icon: AppIcons.apple,
                 onPressed: () {
                   // TODO: Apple sign in
                 },
@@ -103,7 +104,7 @@ class AuthChoiceScreen extends StatelessWidget {
               // Continue with Email/Phone
               _buildSocialButton(
                 label: 'Continue with Email or phone',
-                icon: Icons.email_outlined,
+                icon: AppIcons.email,
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
@@ -166,7 +167,7 @@ class AuthChoiceScreen extends StatelessWidget {
   /// - Text: CENTERED
   Widget _buildSocialButton({
     required String label,
-    required IconData icon,
+    required List<List<dynamic>> icon,
     required VoidCallback onPressed,
   }) {
     return SizedBox(
@@ -193,8 +194,8 @@ class AuthChoiceScreen extends StatelessWidget {
                 // Left padding + icon
                 Padding(
                   padding: const EdgeInsets.only(left: AppSpacing.lg),
-                  child: Icon(
-                    icon,
+                  child: AppIcon(
+                    icon: icon,
                     color: AppColors.white,
                     size: AppSpacing.xl,
                   ),

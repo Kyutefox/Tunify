@@ -5,6 +5,7 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_layout.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
 
 /// Sort-mode button (left) + grid/list toggle (right).
@@ -32,8 +33,8 @@ class LibrarySortControls extends ConsumerWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(
-                    Icons.swap_vert_rounded,
+                  AppIcon(
+                    icon: AppIcons.swapVert,
                     size: 14,
                     color: AppColors.white,
                   ),
@@ -54,10 +55,10 @@ class LibrarySortControls extends ConsumerWidget {
               behavior: HitTestBehavior.opaque,
               child: Padding(
                 padding: const EdgeInsets.all(AppSpacing.sm),
-                child: Icon(
-                  viewState.viewMode == LibraryViewMode.list
-                      ? Icons.grid_view_rounded
-                      : Icons.view_list_rounded,
+                child: AppIcon(
+                  icon: viewState.viewMode == LibraryViewMode.list
+                      ? AppIcons.gridView
+                      : AppIcons.listView,
                   size: 18,
                   color: AppColors.white,
                 ),
@@ -161,8 +162,8 @@ class _SortOption extends StatelessWidget {
                 ),
               ),
               if (isSelected)
-                const Icon(
-                  Icons.check_rounded,
+                AppIcon(
+                  icon: AppIcons.check,
                   size: 20,
                   color: AppColors.brandGreen,
                 ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_icons.dart';
+import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_button_styles.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/avatar/network_avatar_image.dart';
@@ -247,7 +249,7 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               _MenuItemRow(
-                                icon: Icons.newspaper_outlined,
+                                icon: AppIcons.refresh,
                                 label: "What's new",
                                 onTap: () {},
                               ),
@@ -255,7 +257,7 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
                                 height: HomeMenuLayout.itemListGapPt,
                               ),
                               _MenuItemRow(
-                                icon: Icons.history_rounded,
+                                icon: AppIcons.history,
                                 label: 'Listening history',
                                 onTap: () {},
                               ),
@@ -263,7 +265,7 @@ class _HomeUserMenuPanelBody extends ConsumerWidget {
                                 height: HomeMenuLayout.itemListGapPt,
                               ),
                               _MenuItemRow(
-                                icon: Icons.settings_outlined,
+                                icon: AppIcons.settings,
                                 label: 'Settings and privacy',
                                 onTap: onOpenSettings,
                               ),
@@ -344,7 +346,7 @@ class _MenuItemRow extends StatelessWidget {
     required this.onTap,
   });
 
-  final IconData icon;
+  final List<List<dynamic>> icon;
   final String label;
   final VoidCallback onTap;
 
@@ -354,32 +356,22 @@ class _MenuItemRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        child: SizedBox(
-          height: HomeMenuLayout.menuItemRowHeightPt,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.lg,
+            vertical: AppSpacing.md,
+          ),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(
-                width: HomeMenuLayout.menuIconBoxPt,
-                height: HomeMenuLayout.menuIconBoxPt,
-                child: Center(
-                  child: Icon(
-                    icon,
-                    color: AppColors.white,
-                    size: HomeMenuLayout.menuItemIconSizePt,
-                  ),
-                ),
+              AppIcon(
+                icon: icon,
+                size: 24,
+                color: AppColors.white,
               ),
-              const SizedBox(width: HomeMenuLayout.menuItemIconGapPt),
-              Expanded(
-                child: Text.rich(
-                  TextSpan(
-                    text: label,
-                    style: AppTextStyles.menuItemLabel,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+              const SizedBox(width: AppSpacing.lg),
+              Text(
+                label,
+                style: AppTextStyles.body,
               ),
             ],
           ),

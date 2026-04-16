@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:chromecast_dlna_finder/chromecast_dlna_finder.dart';
 import 'package:flutter/services.dart';
@@ -97,24 +96,6 @@ class DeviceDiscoveryService {
   }
 
   Future<void> openBluetoothSettings() async {
-    if (Platform.isMacOS) {
-      // macOS: open the Bluetooth pane in System Settings / System Preferences.
-      // Try the macOS 13+ URL first; fall back to the legacy pane path.
-      try {
-        final result = await Process.run('open', [
-          'x-apple.systempreferences:com.apple.Bluetooth-Settings.extension',
-        ]);
-        if (result.exitCode != 0) {
-          await Process.run('open', [
-            'x-apple.systempreferences:com.apple.preferences.Bluetooth',
-          ]);
-        }
-      } catch (e) {
-        logWarning('DeviceDiscovery: openBluetoothSettings (macOS) failed: $e',
-            tag: 'DeviceDiscovery');
-      }
-      return;
-    }
     try {
       await _channel.invokeMethod<bool>('openBluetoothSettings');
     } on MissingPluginException {

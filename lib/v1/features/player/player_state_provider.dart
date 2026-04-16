@@ -292,13 +292,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
   /// interrupt the in-flight setup.
   bool _crossfadeInFlight = false;
 
-  /// Last position (ms) seen on macOS, used to detect when AVPlayer stalls
-  /// at the real audio end while the inflated container duration hasn't elapsed.
-  int? _macosLastPositionMs;
-
-  /// Tracks which song id has already had its real duration fetched on macOS
-  /// via the YouTube player API, to avoid duplicate network calls.
-  String? _lastRealDurationFetchedForSongId;
 
   /// Tracks which song id has already triggered silent home refresh.
   String? _silentRefreshTriggeredForSongId;
@@ -668,36 +661,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
     });
   }
 
-  /// On macOS, AVPlayer reads duration from the YouTube DASH container's mvhd
-  /// atom (segment allocation size, e.g. 600 s) rather than the actual audio.
-  /// This fetches the real duration from YouTube's player API (lengthSeconds)
-  /// and overwrites state.duration with the correct value.
-  /// No-op on other platforms. Deduped per song id.
-  void _maybeFetchRealDurationOnMacOS(Song song) {
-    if (!Platform.isMacOS) return;
-    if (_lastRealDurationFetchedForSongId == song.id) return;
-    _lastRealDurationFetchedForSongId = song.id;
-
-    _streamManager.getSongFromPlayer(song.id).then((fetched) {
-      if (fetched == null) return;
-      final realDur = fetched.duration;
-      if (realDur.inMilliseconds <= 0) return;
-      // Guard: song may have changed while the fetch was in-flight.
-      if (state.currentSong?.id != song.id) return;
-      logInfo(
-        'Player: macOS real duration fetched song=${song.id} '
-        'dur=${realDur.inMilliseconds}ms',
-        tag: 'Player',
-      );
-      state = state.copyWith(duration: realDur);
-      _maybeUpdateNotificationDuration(song, realDur);
-    }).catchError((Object e) {
-      logWarning(
-        'Player: macOS real duration fetch failed song=${song.id}: $e',
-        tag: 'Player',
-      );
-    });
-  }
 
   Future<void> _restoreLastSong() async {
     try {
@@ -1010,47 +973,12 @@ class PlayerNotifier extends Notifier<PlayerState> {
             ref.read(homeProvider.notifier).triggerSilentRefresh();
           }
 
-          // ── macOS: trigger completion when position reaches state.duration ──
-          // AVPlayer continues playing silence after the real audio ends because
-          // the container duration is inflated. Two triggers:
-          // 1) Position reaches state.duration (works when duration was clamped).
-          // 2) Position stops advancing for 2 s while still "playing" (catches
-          //    the placeholder-duration case where we couldn't clamp).
-          if (Platform.isMacOS &&
-              !_audioPlayer.isCrossfading &&
-              !_crossfadeInFlight &&
-              state.isPlaying) {
-            final dur = state.duration;
-            final reachedDuration = dur != null &&
-                dur.inMilliseconds > 0 &&
-                position.inMilliseconds >= dur.inMilliseconds - 800;
-            final positionStalled = _macosLastPositionMs != null &&
-                position.inMilliseconds == _macosLastPositionMs &&
-                _macosLastPositionMs! > 0;
-            _macosLastPositionMs = position.inMilliseconds;
-            if (reachedDuration || positionStalled) {
-              logDebug(
-                'Player: macOS completion trigger '
-                '(reachedDuration=$reachedDuration stalled=$positionStalled) '
-                'pos=${position.inMilliseconds}ms dur=${dur?.inMilliseconds}ms',
-                tag: 'Player',
-              );
-              state = state.copyWith(status: PlayerStatus.paused);
-              _macosLastPositionMs = null;
-              _handleCompletion();
-              return;
-            }
-          } else {
-            _macosLastPositionMs = null;
-          }
-
           // ── Gapless: proactively extend playlist 30 s before end on Android ──
           // Skip when crossfade is enabled — the crossfade engine loads the next
           // song on a separate player. Extending the ConcatenatingAudioSource here
           // would cause ExoPlayer to auto-advance to the next track at the natural
           // song boundary, playing two simultaneous instances of the same song
           // while the crossfade secondary is also ramping in.
-          // macOS uses AVFoundation (single-source like iOS), not ExoPlayer CAS.
           if (Platform.isAndroid &&
               state.isGaplessEnabled &&
               state.crossfadeDurationSeconds == 0 &&
@@ -1119,11 +1047,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
 
       if (duration != null && duration.inMilliseconds > 0) {
         Future.microtask(() {
-          // On macOS, AVPlayer reports the bogus container duration (e.g. 600s).
-          // Block it entirely — _maybeFetchRealDurationOnMacOS will set the
-          // correct value once the YouTube player API responds, keeping the UI
-          // at --:-- until then instead of showing a wrong number.
-          if (Platform.isMacOS) return;
           state = state.copyWith(duration: duration);
           final song = state.currentSong;
           if (song != null) {
@@ -1156,10 +1079,8 @@ class PlayerNotifier extends Notifier<PlayerState> {
           idx == state.currentIndex && state.currentSong?.id == song.id;
       if (sameTrack) {
         // Never seed duration from song.duration (the 3:00 placeholder) on any platform.
-        // durationStream (Android/iOS) and _maybeFetchRealDurationOnMacOS (macOS)
-        // will set the correct value once available.
+        // durationStream (Android/iOS) will set the correct value once available.
         _maybeFetchAndApplyNormalizationGain(song);
-        _maybeFetchRealDurationOnMacOS(song);
         return;
       }
 
@@ -1174,7 +1095,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
       unawaited(_prefetchUpcoming(idx));
       unawaited(_initializePlaybackTracking(song.id));
       _maybeFetchAndApplyNormalizationGain(song);
-      _maybeFetchRealDurationOnMacOS(song);
 
       // Reset gapless pre-extend flag for the new track.
       _didPreExtend = false;
@@ -1250,7 +1170,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     final int effectiveIndex;
     if (((isApplePlatform) || state.crossfadeDurationSeconds > 0) &&
         index > 0) {
-      // Apple platforms (iOS, macOS): AVQueuePlayer single-source mode always
+      // iOS: AVQueuePlayer single-source mode always
       // starts at index 0. Android+crossfade: maxItems=1, so toResolve=[queue[0..0]]
       // but effectiveIndex could be >0 after a swap — rebase to avoid RangeError.
       effectiveQueue = queue.sublist(index);
@@ -1563,15 +1483,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
       final dur = _audioPlayer.duration;
       ref.read(playbackPositionProvider.notifier).update(pos);
 
-      // Update duration if available (macOS blocks container duration)
-      final newDuration = Platform.isMacOS
-          ? state.duration
-          : (dur != null && dur.inMilliseconds > 0)
-              ? dur
-              : state.duration;
-
-      if (newDuration != state.duration) {
-        state = state.copyWith(duration: newDuration);
+      // Update duration if available from player
+      if (dur != null && dur.inMilliseconds > 0 && dur != state.duration) {
+        state = state.copyWith(duration: dur);
       }
     } catch (e) {
       logWarning('Player: _syncPositionAndDurationFromPlayer failed: $e',
@@ -1626,8 +1540,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // from _audioPlayer (which hasn't been reset yet), then _syncPlaylistToQueue
     // picks up that non-zero position as initialPosition for the new song.
     _hasLoadedSource = false;
-    _macosLastPositionMs = null;
-    _lastRealDurationFetchedForSongId = null;
     _silentRefreshTriggeredForSongId = null;
     state = state.copyWith(
       currentSong: song,
@@ -1770,7 +1682,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
           // a dedicated secondary player. Adding items here lets ExoPlayer
           // auto-advance at the natural song boundary, bypassing the
           // isCrossfading guard and corrupting crossfade state.
-          // On iOS/macOS the player is in single-source mode (setAudioSource).
+          // On iOS the player is in single-source mode (setAudioSource).
           // addToPlaylist would cause just_audio to wrap sources in a
           // ConcatenatingAudioSource and emit the combined duration of the
           // current + next song, breaking the seek bar. Queue advance is
@@ -1851,7 +1763,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     );
     _applyQueueInvariant();
     // Only call moveInPlaylist when both indices are within the loaded playlist
-    // window. On Apple platforms (iOS/macOS) and crossfade mode, _loadedPlaylistLength
+    // window. On iOS and crossfade mode, _loadedPlaylistLength
     // is always 1, so any drag between indices ≥ 1 would cause ConcatenatingAudioSource
     // to removeAt(n) on a 1-element list → RangeError (length): Invalid value: Only
     // valid value is 0: 1. The app-state queue is already updated above, so skipping
@@ -1936,7 +1848,7 @@ class PlayerNotifier extends Notifier<PlayerState> {
     state = state.copyWith(queue: newQueue);
 
     // Append to the just_audio playlist if it has been set up.
-    // iOS/macOS use single-source mode (setAudioSource). Calling addToPlaylist
+    // iOS uses single-source mode (setAudioSource). Calling addToPlaylist
     // causes just_audio to wrap into a ConcatenatingAudioSource and emit the
     // combined duration of both songs, breaking the seek bar. Queue advance is
     // handled by _syncPlaylistToQueue reloading per song on those platforms.
@@ -2021,7 +1933,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
       // fetch/apply LUFS normalization gain here (the stream playlist path
       // normally handles this via `currentIndexStream`).
       _maybeFetchAndApplyNormalizationGain(song);
-      _maybeFetchRealDurationOnMacOS(song);
       if (resumePosition != null && resumePosition > Duration.zero) {
         await _audioPlayer.seek(resumePosition);
       }
@@ -2150,11 +2061,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
     final nextIndex = state.currentIndex + 1;
     if (_usingPlaylist) {
       if (isApplePlatform) {
-        // Apple platforms (iOS, macOS): single-source mode (no ConcatenatingAudioSource).
+        // iOS: single-source mode (no ConcatenatingAudioSource).
         // Update the current index first so _syncPlaylistToQueue loads the right song.
         _hasLoadedSource = false;
-        _macosLastPositionMs = null;
-        _lastRealDurationFetchedForSongId = null;
         _silentRefreshTriggeredForSongId = null;
         _transitionGeneration++;
         _isTransitioning = false;
@@ -2322,11 +2231,9 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _crossfadeInFlight = false;
     if (_usingPlaylist) {
       if (isApplePlatform) {
-        // Apple platforms (iOS, macOS): single-source mode. Update index then reload.
+        // iOS: single-source mode. Update index then reload.
         final prevIndex = state.currentIndex - 1;
         _hasLoadedSource = false;
-        _macosLastPositionMs = null;
-        _lastRealDurationFetchedForSongId = null;
         _silentRefreshTriggeredForSongId = null;
         _transitionGeneration++;
         _isTransitioning = false;
@@ -2633,17 +2540,13 @@ class PlayerNotifier extends Notifier<PlayerState> {
     _loadedPlaylistLength = 1;
     _didPreExtend = false;
     _isTransitioning = false;
-    // New song — clear the macOS real-duration lock so it gets re-fetched.
-    _macosLastPositionMs = null;
-    _lastRealDurationFetchedForSongId = null;
     _silentRefreshTriggeredForSongId = null;
 
     state = state.copyWith(
       currentIndex: nextIndex,
       currentSong: nextSong,
       // Never seed duration from song.duration (the 3:00 placeholder).
-      // durationStream (Android/iOS) and _maybeFetchRealDurationOnMacOS (macOS)
-      // will set the correct value once available.
+      // durationStream (Android/iOS) will set the correct value once available.
       clearDuration: true,
       status: PlayerStatus.playing,
       clearError: true,
@@ -2657,7 +2560,6 @@ class PlayerNotifier extends Notifier<PlayerState> {
     // Normalization for the new primary. If already fetched during the ramp,
     // _maybeFetchAndApplyNormalizationGain returns early (deduplicated).
     _maybeFetchAndApplyNormalizationGain(nextSong);
-    _maybeFetchRealDurationOnMacOS(nextSong);
     // Restart the position sync timer so it reads from the new primary player.
     _startPositionSyncTimer();
   }

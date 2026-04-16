@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -1530,76 +1529,28 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               child: Center(
                 child: Padding(
                   padding: const EdgeInsets.all(AppSpacing.xxl),
-                  child: Platform.isMacOS
-                      ? _MacOSFolderPrompt(
-                          isLoading: deviceState.isLoading,
-                          error: deviceState.error,
-                          onPick: () => ref
-                              .read(deviceMusicProvider.notifier)
-                              .pickMacOSFolder(),
-                        )
-                      : Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Permission required to access local files',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                color: AppColorsScheme.of(context)
-                                    .textMuted
-                                    .withValues(alpha: 0.7),
-                                fontSize: AppFontSize.base,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            AppButton(
-                              label: 'Grant Permission',
-                              onPressed: () => ref
-                                  .read(deviceMusicProvider.notifier)
-                                  .loadSongs(),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-            )
-          else if (songs.isNotEmpty && Platform.isMacOS)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: kSheetHorizontalPadding, vertical: 8),
-                child: Row(
-                  children: [
-                    Icon(Icons.folder_outlined,
-                        size: 14,
-                        color: AppColorsScheme.of(context).textSecondary),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        deviceState.macOSMusicFolder ?? '',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Permission required to access local files',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
-                          color: AppColorsScheme.of(context).textSecondary,
-                          fontSize: AppFontSize.xs,
+                          color: AppColorsScheme.of(context)
+                              .textMuted
+                              .withValues(alpha: 0.7),
+                          fontSize: AppFontSize.base,
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: () => ref
-                          .read(deviceMusicProvider.notifier)
-                          .pickMacOSFolder(),
-                      child: Text(
-                        'Change',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: AppFontSize.xs,
-                          fontWeight: FontWeight.w600,
-                        ),
+                      const SizedBox(height: AppSpacing.md),
+                      AppButton(
+                        label: 'Grant Permission',
+                        onPressed: () => ref
+                            .read(deviceMusicProvider.notifier)
+                            .loadSongs(),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             )
@@ -3018,73 +2969,6 @@ class _ShuffleModeTile extends StatelessWidget {
 }
 
 // ─── Downloads Pills ──────────────────────────────────────────────────────────
-
-/// Shown on macOS when no music folder has been chosen yet (or on error).
-/// Displays a friendly prompt with a button that calls [onPick].
-class _MacOSFolderPrompt extends StatelessWidget {
-  const _MacOSFolderPrompt({
-    required this.onPick,
-    this.isLoading = false,
-    this.error,
-  });
-
-  final VoidCallback onPick;
-  final bool isLoading;
-  final String? error;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          Icons.folder_open_outlined,
-          size: 48,
-          color: AppColorsScheme.of(context)
-              .textMuted
-              .withValues(alpha: UIOpacity.disabled),
-        ),
-        const SizedBox(height: AppSpacing.md),
-        Text(
-          'Choose a music folder',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppColorsScheme.of(context).textPrimary,
-            fontSize: AppFontSize.lg,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          'Select the folder on your Mac that contains\nyour local audio files.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppColorsScheme.of(context).textMuted.withValues(alpha: 0.7),
-            fontSize: AppFontSize.base,
-          ),
-        ),
-        if (error != null) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Text(
-            error!,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: AppColors.accentRed,
-              fontSize: AppFontSize.sm,
-            ),
-          ),
-        ],
-        const SizedBox(height: AppSpacing.lg),
-        isLoading
-            ? const CircularProgressIndicator(color: AppColors.primary)
-            : AppButton(
-                label: 'Choose Folder…',
-                onPressed: onPick,
-              ),
-      ],
-    );
-  }
-}
 
 class _DownloadsPillRow extends ConsumerWidget {
   const _DownloadsPillRow({required this.songs, required this.sortOrder});

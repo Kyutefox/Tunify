@@ -54,4 +54,7 @@ class AppColors {
 
   /// 10% white separator used in menu panels and dividers.
   static const Color separator10 = Color.fromRGBO(255, 255, 255, 0.1);
+
+  /// Modal bottom sheet background (elevated dark surface).
+  static const Color bottomSheetSurface = Color(0xFF282828);
 }

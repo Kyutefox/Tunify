@@ -29,38 +29,43 @@ class _SearchBar extends StatelessWidget {
   const _SearchBar({
     required this.hint,
     required this.showSortButton,
+    this.onTap,
   });
 
   final String hint;
   final bool showSortButton;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final field = Expanded(
-      child: Container(
-        height: LibraryDetailsLayout.searchBarHeight,
-        decoration: BoxDecoration(
-          color: LibraryDetailsLayout.searchFieldFill,
-          borderRadius: BorderRadius.circular(
-            LibraryDetailsLayout.searchBarCornerRadius,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: LibraryDetailsLayout.searchBarHeight,
+          decoration: BoxDecoration(
+            color: LibraryDetailsLayout.searchFieldFill,
+            borderRadius: BorderRadius.circular(
+              LibraryDetailsLayout.searchBarCornerRadius,
+            ),
           ),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
-        child: Row(
-          children: [
-            Icon(
-              Icons.search,
-              color: AppColors.white,
-              size: LibraryDetailsLayout.searchLeadingIconSize,
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            Text(
-              hint,
-              style: AppTextStyles.smallBold.copyWith(
-                fontSize: LibraryDetailsLayout.searchHintFontSize,
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: Row(
+            children: [
+              Icon(
+                Icons.search,
+                color: AppColors.white,
+                size: LibraryDetailsLayout.searchLeadingIconSize,
               ),
-            ),
-          ],
+              const SizedBox(width: AppSpacing.sm),
+              Text(
+                hint,
+                style: AppTextStyles.smallBold.copyWith(
+                  fontSize: LibraryDetailsLayout.searchHintFontSize,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

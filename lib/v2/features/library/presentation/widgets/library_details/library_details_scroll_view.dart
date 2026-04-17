@@ -42,6 +42,7 @@ class LibraryDetailsScrollView extends StatelessWidget {
     required this.appBarUnderlapHeight,
     this.showInlineBackButton = false,
     this.headerScrollGradientColors = const [],
+    this.onSearchTap,
   });
 
   final LibraryDetailsModel details;
@@ -51,6 +52,7 @@ class LibraryDetailsScrollView extends StatelessWidget {
   final GlobalKey actionRowPlaceholderKey;
   final double appBarUnderlapHeight;
   final bool showInlineBackButton;
+  final VoidCallback? onSearchTap;
 
   /// When non-empty, painted behind the header column so the palette scrolls with content (v1-style).
   final List<Color> headerScrollGradientColors;
@@ -66,6 +68,7 @@ class LibraryDetailsScrollView extends StatelessWidget {
           child: _SearchBar(
             hint: details.searchHint,
             showSortButton: details.showSortButton,
+            onTap: onSearchTap,
           ),
         ),
         SizedBox(

@@ -34,8 +34,6 @@ class LibraryDetailsModel {
     required this.searchHint,
     required this.title,
     required this.subtitlePrimary,
-    required this.subtitleSecondary,
-    required this.statsLine,
     required this.tracks,
     this.heroImageUrl,
     this.gradientTop = AppColors.libraryDefaultGradientTop,
@@ -44,6 +42,8 @@ class LibraryDetailsModel {
     this.showSortButton = false,
     this.showAddRow = false,
     this.collectionDescription,
+    this.collectionStatInfo,
+    this.typeSubtitle,
     this.ownerAvatarUrl,
     this.backgroundGradientMid,
     this.browseRecommendationShelves = const [],
@@ -54,8 +54,6 @@ class LibraryDetailsModel {
   final String searchHint;
   final String title;
   final String subtitlePrimary;
-  final String subtitleSecondary;
-  final String statsLine;
   final List<LibraryDetailsTrack> tracks;
   final String? heroImageUrl;
   final Color gradientTop;
@@ -66,6 +64,14 @@ class LibraryDetailsModel {
 
   /// Long-form blurb from browse (playlist / album description). Not used for static playlists.
   final String? collectionDescription;
+
+  /// Collection stat info (e.g. `1 song • 2 minutes, 59 seconds`) for albums/playlists.
+  /// Null for artists.
+  final String? collectionStatInfo;
+
+  /// Type subtitle (e.g. `Album • 2026` or `Playlist • 2026`) for albums/playlists.
+  /// Shown below owner info with globe icon. Null for artists.
+  final String? typeSubtitle;
 
   /// Curator / owner facepile image from browse (playlist, album). When null, hero owner row uses icon.
   final String? ownerAvatarUrl;
@@ -89,8 +95,6 @@ class LibraryDetailsModel {
       searchHint: searchHint,
       title: title,
       subtitlePrimary: subtitlePrimary,
-      subtitleSecondary: subtitleSecondary,
-      statsLine: statsLine,
       tracks: tracks,
       heroImageUrl: heroImageUrl,
       gradientTop: gradientTop,
@@ -99,6 +103,8 @@ class LibraryDetailsModel {
       showSortButton: showSortButton,
       showAddRow: showAddRow,
       collectionDescription: collectionDescription,
+      collectionStatInfo: collectionStatInfo,
+      typeSubtitle: typeSubtitle,
       ownerAvatarUrl: ownerAvatarUrl,
       backgroundGradientMid: backgroundGradientMid,
       browseRecommendationShelves: browseRecommendationShelves,

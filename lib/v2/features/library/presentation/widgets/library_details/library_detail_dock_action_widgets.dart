@@ -7,18 +7,6 @@ import 'package:tunify/v2/core/widgets/buttons/tunify_play_circle_button.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_detail_mini_cover.dart';
-
-String? firstNonEmptyTrackThumbForDock(LibraryDetailsModel details) {
-  for (final t in details.tracks) {
-    final u = t.thumbUrl?.trim();
-    if (u != null && u.isNotEmpty) {
-      return u;
-    }
-  }
-  return null;
-}
-
 class _DockToolbarIcon extends StatelessWidget {
   const _DockToolbarIcon({required this.icon});
 
@@ -45,20 +33,10 @@ class LibraryPlaylistDockActionLeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isStatic = details.isStaticPlaylist;
+    // Mini cover hidden for all collection types
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        if (!isStatic) ...[
-          LibraryDetailMiniCover(
-            item: details.item,
-            imageUrlOverride: firstNonEmptyTrackThumbForDock(details),
-            width: LibraryDetailsLayout.miniCoverWidth,
-            height: LibraryDetailsLayout.miniCoverHeight,
-            useCollectionImageWhenNoOverride: false,
-          ),
-          const SizedBox(width: AppSpacing.sm),
-        ],
         _DockToolbarIcon(icon: AppIcons.download),
         _DockToolbarIcon(icon: AppIcons.share),
         _DockToolbarIcon(icon: AppIcons.moreVert),
@@ -82,15 +60,10 @@ class LibraryArtistDockActionLeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Mini cover hidden for all collection types
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        LibraryDetailMiniCover(
-          item: details.item,
-          width: LibraryDetailsLayout.miniCoverWidth,
-          height: LibraryDetailsLayout.miniCoverHeight,
-        ),
-        const SizedBox(width: AppSpacing.md),
         Flexible(
           child: Align(
             alignment: Alignment.centerLeft,

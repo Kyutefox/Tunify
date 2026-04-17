@@ -136,6 +136,19 @@ class _PlaylistHero extends StatelessWidget {
             ),
           ),
         ],
+        if (details.typeSubtitle != null && details.typeSubtitle!.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text(
+              details.typeSubtitle!,
+              style: AppTextStyles.caption.copyWith(
+                color: AppColors.silver,
+                height: 1.35,
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.md),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
@@ -149,29 +162,6 @@ class _PlaylistHero extends StatelessWidget {
             ],
           ),
         ),
-        if (details.subtitleSecondary.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.sm),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.language,
-                  size: LibraryDetailsLayout.metaGlobeIconSize,
-                  color: AppColors.silver,
-                ),
-                const SizedBox(width: AppSpacing.sm),
-                Expanded(
-                  child: Text(
-                    details.subtitleSecondary,
-                    style:
-                        AppTextStyles.small.copyWith(color: AppColors.silver),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ],
     );
   }

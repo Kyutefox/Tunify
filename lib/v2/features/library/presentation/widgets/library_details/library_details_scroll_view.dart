@@ -22,6 +22,15 @@ part 'library_details_scroll_view.part_tracks.dart';
 part 'library_details_scroll_view.part_recommendations.dart';
 
 /// Scrollable body for [LibraryDetailsScreen] (keeps the screen widget thin).
+String _buildStatsLine(LibraryDetailsModel details) {
+  final collectionStatInfo = details.collectionStatInfo;
+  
+  if (collectionStatInfo != null && collectionStatInfo.isNotEmpty) {
+    return collectionStatInfo;
+  }
+  return '';
+}
+
 class LibraryDetailsScrollView extends StatelessWidget {
   const LibraryDetailsScrollView({
     super.key,
@@ -188,7 +197,7 @@ class LibraryDetailsScrollView extends StatelessWidget {
           ),
         ),
       ),
-      if (details.statsLine.isNotEmpty)
+      if (details.collectionStatInfo != null && details.collectionStatInfo!.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(
@@ -199,7 +208,7 @@ class LibraryDetailsScrollView extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                details.statsLine,
+                _buildStatsLine(details),
                 style: AppTextStyles.micro.copyWith(
                   color: AppColors.silver,
                   fontWeight: FontWeight.w500,
@@ -207,6 +216,10 @@ class LibraryDetailsScrollView extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      if (details.collectionStatInfo == null || details.collectionStatInfo!.isEmpty)
+        const SliverToBoxAdapter(
+          child: SizedBox(height: AppSpacing.xxxl),
         ),
       if (details.browseRecommendationShelves.isNotEmpty)
         SliverToBoxAdapter(

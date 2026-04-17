@@ -41,8 +41,6 @@ abstract final class MockLibraryDetailsData {
         searchHint: liked ? 'Find in Liked Songs' : 'Find in Your Episodes',
         title: item.title,
         subtitlePrimary: liked ? '1 song' : '3 episodes',
-        subtitleSecondary: '',
-        statsLine: '',
         tracks: liked
             ? const [
                 LibraryDetailsTrack(
@@ -78,8 +76,8 @@ abstract final class MockLibraryDetailsData {
         searchHint: 'Find on this page',
         title: item.title,
         subtitlePrimary: item.creatorName ?? 'Album',
-        subtitleSecondary: '',
-        statsLine: '',
+        collectionStatInfo: '5 songs • about 6 hr 20 min',
+        typeSubtitle: 'Album • 2026',
         tracks: _baseTracks,
         heroImageUrl: item.imageUrl,
         gradientTop: const Color(0xFF6589AE),
@@ -94,10 +92,8 @@ abstract final class MockLibraryDetailsData {
         searchHint: '',
         title: item.title,
         subtitlePrimary: '116.2M monthly listeners',
-        subtitleSecondary: '',
         collectionDescription:
             'Genre-bending artist with a catalog spanning years of hits.',
-        statsLine: '',
         tracks: _baseTracks,
         heroImageUrl: item.imageUrl,
         gradientTop: const Color(0xFF121212),
@@ -111,8 +107,8 @@ abstract final class MockLibraryDetailsData {
       searchHint: 'Find on this page',
       title: item.title.toUpperCase(),
       subtitlePrimary: item.creatorName ?? 'Tunify',
-      subtitleSecondary: '8h 22min',
-      statsLine: '5 songs • about 6 hr 20 min',
+      collectionStatInfo: '5 songs • about 6 hr 20 min',
+      typeSubtitle: 'Playlist • 2026',
       tracks: const [
         LibraryDetailsTrack(
           title: 'Fortnight (feat. Post Malone)',

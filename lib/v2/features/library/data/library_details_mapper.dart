@@ -12,7 +12,7 @@ String? _nonEmptyUrl(String url) {
 }
 
 /// Normalises or upgrades thumbnail URLs to a higher resolution where possible.
-String _upgradeThumbResolution(String? url, [String videoId = '']) {
+String _upgradeThumbResolution(String? url) {
   if (url == null || url.isEmpty) return '';
   if (url.contains('lh3.googleusercontent.com') ||
       url.contains('yt3.ggpht.com')) {
@@ -94,12 +94,8 @@ LibraryDetailsModel libraryDetailsFromBrowse({
           : item.title)
       .trim();
 
-  final typeLine = (meta?.subtitle ?? '').trim();
   final description = (meta?.description ?? '').trim();
   final collectionDescription = description.isEmpty ? null : description;
-  final second = meta?.secondSubtitle?.trim();
-  final statsLine =
-      second != null && second.isNotEmpty ? second : '${tracks.length} songs';
 
   if (type == LibraryDetailsType.artist) {
     final subtitlePrimary = (meta?.subtitle ?? item.subtitle).trim();
@@ -109,9 +105,8 @@ LibraryDetailsModel libraryDetailsFromBrowse({
       searchHint: '',
       title: title,
       subtitlePrimary: subtitlePrimary,
-      subtitleSecondary: '',
       collectionDescription: collectionDescription,
-      statsLine: statsLine,
+      collectionStatInfo: null, // Artists don't have collection stat info
       tracks: rows,
       heroImageUrl: heroUrl,
       gradientTop: const Color(0xFF121212),
@@ -122,10 +117,12 @@ LibraryDetailsModel libraryDetailsFromBrowse({
 
   final ownerLine =
       (meta?.curatorName ?? item.creatorName ?? item.subtitle).trim();
-  final secondaryLine = typeLine.isNotEmpty ? typeLine : item.subtitle.trim();
   final ownerAvatarUrl = _nonEmptyUrl(
     meta?.curatorThumbnailUrl ?? meta?.channelThumbnailUrl ?? '',
   );
+
+  // For album/playlist, subtitle is the type info (e.g., "Album • 2026") shown below owner
+  final typeSubtitle = meta?.subtitle?.trim();
 
   return LibraryDetailsModel(
     type: type,
@@ -133,10 +130,10 @@ LibraryDetailsModel libraryDetailsFromBrowse({
     searchHint: 'Find on this page',
     title: title,
     subtitlePrimary: ownerLine,
-    subtitleSecondary: secondaryLine,
     collectionDescription: collectionDescription,
+    collectionStatInfo: meta?.collectionStatInfo,
+    typeSubtitle: typeSubtitle,
     ownerAvatarUrl: ownerAvatarUrl,
-    statsLine: statsLine,
     tracks: rows,
     heroImageUrl: heroUrl,
     gradientTop: const Color(0xFF6589AE),

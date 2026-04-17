@@ -987,8 +987,9 @@ class BrowseFormatter {
 
     String? subtitle = p.extractRunsText(hdr['subtitle'])?.trim();
     if (subtitle != null && subtitle.isEmpty) subtitle = null;
-    String? secondSubtitle = p.extractRunsText(hdr['secondSubtitle'])?.trim();
-    if (secondSubtitle != null && secondSubtitle.isEmpty) secondSubtitle = null;
+
+    String? collectionStatInfo = p.extractRunsText(hdr['secondSubtitle'])?.trim();
+    if (collectionStatInfo != null && collectionStatInfo.isEmpty) collectionStatInfo = null;
 
     String? curator;
     String? curatorThumb;
@@ -1043,8 +1044,7 @@ class BrowseFormatter {
     if ((desc == null || desc.isEmpty) &&
         (curator == null || curator.isEmpty) &&
         (curatorThumb == null || curatorThumb.isEmpty) &&
-        (subtitle == null || subtitle.isEmpty) &&
-        (secondSubtitle == null || secondSubtitle.isEmpty)) {
+        (subtitle == null || subtitle.isEmpty)) {
       return null;
     }
     return PlaylistBrowseMeta(
@@ -1052,7 +1052,7 @@ class BrowseFormatter {
       curatorName: curator,
       curatorThumbnailUrl: curatorThumb,
       subtitle: subtitle,
-      secondSubtitle: secondSubtitle,
+      collectionStatInfo: collectionStatInfo,
     );
   }
 
@@ -1162,13 +1162,13 @@ class BrowseFormatter {
       curatorName: null,
       curatorThumbnailUrl: null,
       subtitle: (monthly != null && monthly.isNotEmpty) ? monthly : null,
-      secondSubtitle: null,
       channelTitle: (channelTitle != null && channelTitle.isNotEmpty)
           ? channelTitle
           : null,
       channelThumbnailUrl: (channelThumb != null && channelThumb.isNotEmpty)
           ? channelThumb
           : null,
+      collectionStatInfo: null, // Artists don't have collection stat info
     );
   }
 

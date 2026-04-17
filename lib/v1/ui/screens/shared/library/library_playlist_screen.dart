@@ -397,7 +397,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             final cachedCurator = cachedEntry?.curatorName?.trim();
             final cachedCuratorThumb = cachedEntry?.curatorThumbnailUrl?.trim();
             final cachedSub = cachedEntry?.headerSubtitle?.trim();
-            final cachedSub2 = cachedEntry?.headerSecondSubtitle?.trim();
             setState(() {
               _remoteAsLocal = _makePlaylist(
                 id: local.id,
@@ -415,10 +414,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 headerSubtitle: (cachedSub != null && cachedSub.isNotEmpty)
                     ? cachedSub
                     : local.headerSubtitle,
-                headerSecondSubtitle:
-                    (cachedSub2 != null && cachedSub2.isNotEmpty)
-                        ? cachedSub2
-                        : local.headerSecondSubtitle,
                 songs: cached,
                 imageUrl: local.customImageUrl ?? cachedEntry?.imageUrl,
                 browseId: browseId,
@@ -522,31 +517,30 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   LibraryPlaylist _makePlaylist({
     required String id,
     required String name,
-    String description = '',
+    String? description,
     String? curatorName,
     String? curatorThumbnailUrl,
     String? headerSubtitle,
-    String? headerSecondSubtitle,
     required List<Song> songs,
     String? imageUrl,
     String? browseId,
     DateTime? createdAt,
-  }) =>
-      LibraryPlaylist(
-        id: id,
-        name: name,
-        description: description,
-        curatorName: curatorName,
-        curatorThumbnailUrl: curatorThumbnailUrl,
-        headerSubtitle: headerSubtitle,
-        headerSecondSubtitle: headerSecondSubtitle,
-        createdAt: createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
-        songs: songs,
-        customImageUrl: imageUrl,
-        isImported: true,
-        browseId: browseId,
-      );
+  }) {
+    return LibraryPlaylist(
+      id: id,
+      name: name,
+      description: description ?? '',
+      curatorName: curatorName,
+      curatorThumbnailUrl: curatorThumbnailUrl,
+      headerSubtitle: headerSubtitle,
+      createdAt: createdAt ?? DateTime.now(),
+      updatedAt: DateTime.now(),
+      songs: songs,
+      customImageUrl: imageUrl,
+      isImported: true,
+      browseId: browseId,
+    );
+  }
 
   Future<void> _fetchRemoteTracks({bool silent = false}) async {
     final pl = widget.remotePlaylist!;
@@ -580,10 +574,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               headerSubtitle: entry.headerSubtitle?.trim().isNotEmpty == true
                   ? entry.headerSubtitle!.trim()
                   : null,
-              headerSecondSubtitle:
-                  entry.headerSecondSubtitle?.trim().isNotEmpty == true
-                      ? entry.headerSecondSubtitle!.trim()
-                      : null,
               songs: entry.songs,
               imageUrl: imageUrl,
             );
@@ -615,7 +605,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             final songs = firstBatch.map(Song.fromTrack).toList();
             final d = browseMeta?.description?.trim();
             final sub = browseMeta?.subtitle?.trim();
-            final sub2 = browseMeta?.secondSubtitle?.trim();
             CollectionTrackCache.instance.put(
               pl.id,
               songs,
@@ -626,8 +615,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               curatorName: null,
               curatorThumbnailUrl: null,
               headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
-              headerSecondSubtitle:
-                  (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
             );
             final color = await _extractPaletteColor(
                 imageUrl ?? songs.firstOrNull?.thumbnailUrl);
@@ -642,8 +629,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                     ? d
                     : (pl.curatorName ?? pl.description),
                 headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
-                headerSecondSubtitle:
-                    (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
                 songs: songs,
                 imageUrl: imageUrl,
               );
@@ -668,7 +653,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   curatorName: _remoteAsLocal?.curatorName,
                   curatorThumbnailUrl: _remoteAsLocal?.curatorThumbnailUrl,
                   headerSubtitle: _remoteAsLocal?.headerSubtitle,
-                  headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
                 );
               }
             });
@@ -694,7 +678,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             final cn = browseMeta?.curatorName?.trim();
             final ct = browseMeta?.curatorThumbnailUrl?.trim();
             final sub = browseMeta?.subtitle?.trim();
-            final sub2 = browseMeta?.secondSubtitle?.trim();
             CollectionTrackCache.instance.put(
               pl.id,
               songs,
@@ -704,8 +687,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               curatorThumbnailUrl:
                   (ct != null && ct.isNotEmpty) ? ct : pl.curatorThumbnailUrl,
               headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
-              headerSecondSubtitle:
-                  (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
             );
             final color = await _extractPaletteColor(
                 imageUrl ?? songs.firstOrNull?.thumbnailUrl);
@@ -721,8 +702,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 curatorThumbnailUrl:
                     (ct != null && ct.isNotEmpty) ? ct : pl.curatorThumbnailUrl,
                 headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
-                headerSecondSubtitle:
-                    (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
                 songs: songs,
                 imageUrl: imageUrl,
               );
@@ -746,7 +725,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   curatorName: _remoteAsLocal?.curatorName,
                   curatorThumbnailUrl: _remoteAsLocal?.curatorThumbnailUrl,
                   headerSubtitle: _remoteAsLocal?.headerSubtitle,
-                  headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
                 );
               }
             });
@@ -790,7 +768,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             final cachedCurator = entry.curatorName?.trim();
             final cachedCuratorThumb = entry.curatorThumbnailUrl?.trim();
             final cachedSub = entry.headerSubtitle?.trim();
-            final cachedSub2 = entry.headerSecondSubtitle?.trim();
             _remoteAsLocal = _makePlaylist(
               id: _resolvedBrowseId!,
               name: widget.albumName ?? widget.albumSongTitle ?? '',
@@ -807,10 +784,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               headerSubtitle: (cachedSub != null && cachedSub.isNotEmpty)
                   ? cachedSub
                   : null,
-              headerSecondSubtitle:
-                  (cachedSub2 != null && cachedSub2.isNotEmpty)
-                      ? cachedSub2
-                      : null,
               songs: entry.songs,
               imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
             );
@@ -848,7 +821,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           final cn = browseMeta?.curatorName?.trim();
           final ct = browseMeta?.curatorThumbnailUrl?.trim();
           final sub = browseMeta?.subtitle?.trim();
-          final sub2 = browseMeta?.secondSubtitle?.trim();
           CollectionTrackCache.instance.put(
             resolvedId,
             songs,
@@ -857,8 +829,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             curatorName: (cn != null && cn.isNotEmpty) ? cn : null,
             curatorThumbnailUrl: (ct != null && ct.isNotEmpty) ? ct : null,
             headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
-            headerSecondSubtitle:
-                (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
           );
           final color = _paletteColor ?? await _extractPaletteColor(imageUrl);
           if (!mounted || _backgroundLoadCancelled) return;
@@ -874,8 +844,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               curatorName: (cn != null && cn.isNotEmpty) ? cn : null,
               curatorThumbnailUrl: (ct != null && ct.isNotEmpty) ? ct : null,
               headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
-              headerSecondSubtitle:
-                  (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
               songs: songs,
               imageUrl: imageUrl,
             );
@@ -906,7 +874,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 curatorName: _remoteAsLocal?.curatorName,
                 curatorThumbnailUrl: _remoteAsLocal?.curatorThumbnailUrl,
                 headerSubtitle: _remoteAsLocal?.headerSubtitle,
-                headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
               );
             }
           });
@@ -940,7 +907,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           if (_remoteAsLocal == null) {
             final cachedDesc = entry.description?.trim();
             final cachedSub = entry.headerSubtitle?.trim();
-            final cachedSub2 = entry.headerSecondSubtitle?.trim();
             final cachedTitle = entry.collectionTitle?.trim();
             setState(() {
               if (entry.paletteColor != null) {
@@ -957,10 +923,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 headerSubtitle: (cachedSub != null && cachedSub.isNotEmpty)
                     ? cachedSub
                     : null,
-                headerSecondSubtitle:
-                    (cachedSub2 != null && cachedSub2.isNotEmpty)
-                        ? cachedSub2
-                        : null,
                 songs: entry.songs,
                 imageUrl: entry.imageUrl ?? widget.albumThumbnailUrl,
               );
@@ -994,7 +956,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           final songs = firstBatch.map(Song.fromTrack).toList();
           final d = browseMeta?.description?.trim();
           final sub = browseMeta?.subtitle?.trim();
-          final sub2 = browseMeta?.secondSubtitle?.trim();
           final channelTitle = browseMeta?.channelTitle?.trim();
           final channelThumb = browseMeta?.channelThumbnailUrl?.trim();
           final resolvedName = (channelTitle != null && channelTitle.isNotEmpty)
@@ -1010,8 +971,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             imageUrl: resolvedImage,
             description: (d != null && d.isNotEmpty) ? d : null,
             headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
-            headerSecondSubtitle:
-                (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
             collectionTitle: (channelTitle != null && channelTitle.isNotEmpty)
                 ? channelTitle
                 : null,
@@ -1026,8 +985,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
               name: resolvedName,
               description: (d != null && d.isNotEmpty) ? d : '',
               headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
-              headerSecondSubtitle:
-                  (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
               songs: songs,
               imageUrl: resolvedImage,
             );
@@ -1056,7 +1013,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 imageUrl: _remoteAsLocal?.customImageUrl,
                 description: _remoteAsLocal?.description,
                 headerSubtitle: _remoteAsLocal?.headerSubtitle,
-                headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
                 collectionTitle: _remoteAsLocal?.name,
               );
             }
@@ -1090,7 +1046,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         final cachedCurator = cachedEntry?.curatorName?.trim();
         final cachedCuratorThumb = cachedEntry?.curatorThumbnailUrl?.trim();
         final cachedSub = cachedEntry?.headerSubtitle?.trim();
-        final cachedSub2 = cachedEntry?.headerSecondSubtitle?.trim();
         setState(() {
           _remoteAsLocal = _makePlaylist(
             id: local.id,
@@ -1108,9 +1063,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             headerSubtitle: (cachedSub != null && cachedSub.isNotEmpty)
                 ? cachedSub
                 : local.headerSubtitle,
-            headerSecondSubtitle: (cachedSub2 != null && cachedSub2.isNotEmpty)
-                ? cachedSub2
-                : local.headerSecondSubtitle,
             songs: cached,
             imageUrl: local.customImageUrl ?? cachedEntry?.imageUrl,
             browseId: browseId,
@@ -1143,7 +1095,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
           final cn = browseMeta?.curatorName?.trim();
           final ct = browseMeta?.curatorThumbnailUrl?.trim();
           final sub = browseMeta?.subtitle?.trim();
-          final sub2 = browseMeta?.secondSubtitle?.trim();
           logInfo(
               'Fetched first page: ${songs.length} songs for imported playlist ${local.id}',
               tag: 'PlaylistScreen');
@@ -1156,8 +1107,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
             curatorThumbnailUrl:
                 (ct != null && ct.isNotEmpty) ? ct : local.curatorThumbnailUrl,
             headerSubtitle: (sub != null && sub.isNotEmpty) ? sub : null,
-            headerSecondSubtitle:
-                (sub2 != null && sub2.isNotEmpty) ? sub2 : null,
           );
           final color = _paletteColor ??
               await _extractPaletteColor(
@@ -1176,9 +1125,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                   : local.curatorThumbnailUrl,
               headerSubtitle:
                   (sub != null && sub.isNotEmpty) ? sub : local.headerSubtitle,
-              headerSecondSubtitle: (sub2 != null && sub2.isNotEmpty)
-                  ? sub2
-                  : local.headerSecondSubtitle,
               songs: songs,
               imageUrl: imageUrl,
               browseId: browseId,
@@ -1204,7 +1150,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
                 curatorName: _remoteAsLocal?.curatorName,
                 curatorThumbnailUrl: _remoteAsLocal?.curatorThumbnailUrl,
                 headerSubtitle: _remoteAsLocal?.headerSubtitle,
-                headerSecondSubtitle: _remoteAsLocal?.headerSecondSubtitle,
               );
             }
           });
@@ -2066,16 +2011,11 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
   Widget? _playlistHeaderDetailSubtitle(LibraryPlaylist playlist) {
     final desc = playlist.description.trim();
     var line1 = playlist.headerSubtitle?.trim() ?? '';
-    var line2 = playlist.headerSecondSubtitle?.trim() ?? '';
     final isCustomLibrary = !playlist.isImported && !_isRemote;
 
     if (_isUserCreatedMusicPlaylist(playlist)) {
-      final tracks = playlist.sortedSongs;
       if (line1.isEmpty) {
         line1 = 'Playlist • ${playlist.createdAt.year}';
-      }
-      if (line2.isEmpty) {
-        line2 = _libraryPlaylistStatsSubtitle(tracks);
       }
     }
 
@@ -2105,7 +2045,6 @@ class _LibraryPlaylistScreenState extends ConsumerState<LibraryPlaylistScreen> {
         (ownerImageUrl != null && ownerImageUrl.isNotEmpty);
     final metaParts = <String>[
       if (line1.isNotEmpty) line1,
-      if (line2.isNotEmpty) line2,
     ];
     final metaLine = metaParts.join(' • ');
     final hasMetaLine = metaLine.isNotEmpty;

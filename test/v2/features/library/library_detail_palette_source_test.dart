@@ -23,8 +23,6 @@ void main() {
         searchHint: '',
         title: 'Title',
         subtitlePrimary: 'Primary',
-        subtitleSecondary: '',
-        statsLine: '',
         tracks: tracks,
         heroImageUrl: heroImageUrl,
       );
@@ -54,8 +52,6 @@ void main() {
         searchHint: '',
         title: 'Title',
         subtitlePrimary: 'Primary',
-        subtitleSecondary: '',
-        statsLine: '',
         tracks: const [
           LibraryDetailsTrack(
             title: 'Track',
@@ -84,8 +80,6 @@ void main() {
         searchHint: '',
         title: 'Liked',
         subtitlePrimary: '1 song',
-        subtitleSecondary: '',
-        statsLine: '',
         tracks: const [],
       );
       expect(

@@ -5,10 +5,11 @@ import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/cards/album_shelf_card.dart';
 import 'package:tunify/v2/core/widgets/cards/artist_shelf_card.dart';
 import 'package:tunify/v2/core/widgets/buttons/tunify_press_feedback.dart';
-import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/presentation/navigation/open_library_remote_detail.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
 /// Horizontal carousel shelf (album / artist rows) using shared shelf cards.
 class HomeCarouselShelf extends StatelessWidget {
@@ -86,6 +87,19 @@ class HomeCarouselShelf extends StatelessWidget {
                   width: thumb,
                   child: TunifyPressFeedback(
                     borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
+                    onTap: () {
+                      if (kind == LibraryItemKind.podcast) {
+                        return;
+                      }
+                      pushLibraryRemoteDetailFromHomeCarousel(
+                        context,
+                        browseId: item.id,
+                        kind: kind,
+                        title: item.title,
+                        subtitle: subtitle,
+                        imageUrl: item.artworkUrl,
+                      );
+                    },
                     onLongPress: () =>
                         showLibraryItemOptionsSheet(context, libraryItem),
                     child: isArtist

@@ -6,6 +6,7 @@ import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
+import 'package:tunify/v2/features/library/presentation/navigation/open_library_remote_detail.dart';
 import 'package:tunify/v2/features/search/domain/entities/search_models.dart';
 import 'package:tunify/v2/features/search/presentation/providers/search_providers.dart';
 
@@ -102,62 +103,67 @@ class SearchRecentBody extends ConsumerWidget {
         ),
         const SizedBox(height: AppSpacing.md),
         ...items.map(
-          (item) => SizedBox(
-            height: item.kind == SearchItemKind.artist ? 74 : 64,
-            child: Row(
-              children: [
-                const SizedBox(width: AppSpacing.lg),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                    item.kind == SearchItemKind.artist
-                        ? AppBorderRadius.fullPill
-                        : AppBorderRadius.subtle,
+          (item) => InkWell(
+            onTap: () => pushLibraryRemoteDetailFromSearch(context, item),
+            child: SizedBox(
+              height: item.kind == SearchItemKind.artist ? 74 : 64,
+              child: Row(
+                children: [
+                  const SizedBox(width: AppSpacing.lg),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(
+                      item.kind == SearchItemKind.artist
+                          ? AppBorderRadius.fullPill
+                          : AppBorderRadius.subtle,
+                    ),
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: ArtworkOrGradient(imageUrl: item.imageUrl),
+                    ),
                   ),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: ArtworkOrGradient(imageUrl: item.imageUrl),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              item.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTextStyles.body.copyWith(
-                                fontSize: 15,
-                                height: 19 / 15,
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                item.title,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.body.copyWith(
+                                  fontSize: 15,
+                                  height: 19 / 15,
+                                ),
                               ),
                             ),
-                          ),
-                          if (item.isVerified) ...[
-                            const SizedBox(width: 4),
-                            AppIcon(
-                              icon: AppIcons.verified,
-                              color: AppColors.announcementBlue, size: 12),
+                            if (item.isVerified) ...[
+                              const SizedBox(width: 4),
+                              AppIcon(
+                                  icon: AppIcons.verified,
+                                  color: AppColors.announcementBlue,
+                                  size: 12),
+                            ],
                           ],
-                        ],
-                      ),
-                      Text(item.subtitle, style: AppTextStyles.small),
-                    ],
+                        ),
+                        Text(item.subtitle, style: AppTextStyles.small),
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  icon: AppIcon(
-                    icon: AppIcons.close,
-                    size: 20, color: AppColors.silver),
-                  onPressed: () => notifier.remove(item.id),
-                ),
-                const SizedBox(width: AppSpacing.sm),
-              ],
+                  IconButton(
+                    icon: AppIcon(
+                        icon: AppIcons.close,
+                        size: 20,
+                        color: AppColors.silver),
+                    onPressed: () => notifier.remove(item.id),
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                ],
+              ),
             ),
           ),
         ),
@@ -193,7 +199,9 @@ class SearchSuggestionBody extends StatelessWidget {
                 child: Row(
                   children: [
                     AppIcon(
-                      icon: AppIcons.search, color: AppColors.white, size: 18),
+                        icon: AppIcons.search,
+                        color: AppColors.white,
+                        size: 18),
                     const SizedBox(width: AppSpacing.lg),
                     Expanded(
                       child: Text(
@@ -205,8 +213,9 @@ class SearchSuggestionBody extends StatelessWidget {
                       ),
                     ),
                     AppIcon(
-                      icon: AppIcons.northWest,
-                      size: 16, color: AppColors.silver),
+                        icon: AppIcons.northWest,
+                        size: 16,
+                        color: AppColors.silver),
                   ],
                 ),
               ),
@@ -287,60 +296,68 @@ class _TopResultItem extends StatelessWidget {
 
   final SearchResultItem item;
 
+  void _openDetail(BuildContext context) {
+    pushLibraryRemoteDetailFromSearch(context, item);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 64,
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(AppBorderRadius.fullPill),
-            child: SizedBox(
-                width: 48,
-                height: 48,
-                child: ArtworkOrGradient(imageUrl: item.imageUrl)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.body
-                            .copyWith(fontSize: 15, height: 19 / 15),
+    return InkWell(
+      onTap: () => _openDetail(context),
+      child: SizedBox(
+        height: 64,
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(AppBorderRadius.fullPill),
+              child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: ArtworkOrGradient(imageUrl: item.imageUrl)),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          item.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.body
+                              .copyWith(fontSize: 15, height: 19 / 15),
+                        ),
                       ),
-                    ),
-                    if (item.isVerified) ...[
-                      const SizedBox(width: 4),
-                      AppIcon(
-                        icon: AppIcons.verified,
-                        color: AppColors.announcementBlue, size: 12),
+                      if (item.isVerified) ...[
+                        const SizedBox(width: 4),
+                        AppIcon(
+                            icon: AppIcons.verified,
+                            color: AppColors.announcementBlue,
+                            size: 12),
+                      ],
                     ],
-                  ],
-                ),
-                Text(item.subtitle, style: AppTextStyles.small),
-              ],
+                  ),
+                  Text(item.subtitle, style: AppTextStyles.small),
+                ],
+              ),
             ),
-          ),
-          OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              side: const BorderSide(color: AppColors.white),
-              shape: const StadiumBorder(),
-              minimumSize: const Size(0, 32),
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            OutlinedButton(
+              onPressed: () => _openDetail(context),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: AppColors.white),
+                shape: const StadiumBorder(),
+                minimumSize: const Size(0, 32),
+                padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              ),
+              child: Text(item.trailingText ?? 'Following',
+                  style: AppTextStyles.smallBold),
             ),
-            child: Text(item.trailingText ?? 'Following',
-                style: AppTextStyles.smallBold),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -353,24 +370,27 @@ class _FeaturingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 113,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-              width: 113,
-              height: 113,
-              child: ArtworkOrGradient(imageUrl: item.imageUrl)),
-          const SizedBox(height: AppSpacing.md),
-          Text(
-            item.title,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style:
-                AppTextStyles.smallBold.copyWith(fontWeight: FontWeight.w500),
-          ),
-        ],
+    return InkWell(
+      onTap: () => pushLibraryRemoteDetailFromSearch(context, item),
+      child: SizedBox(
+        width: 113,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+                width: 113,
+                height: 113,
+                child: ArtworkOrGradient(imageUrl: item.imageUrl)),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              item.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style:
+                  AppTextStyles.smallBold.copyWith(fontWeight: FontWeight.w500),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -384,43 +404,45 @@ class _ResultListItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isArtist = item.kind == SearchItemKind.artist;
-    return SizedBox(
-      height: 64,
-      child: Row(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(
-                isArtist ? AppBorderRadius.fullPill : AppBorderRadius.subtle),
-            child: SizedBox(
-                width: 48,
-                height: 48,
-                child: ArtworkOrGradient(imageUrl: item.imageUrl)),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.body
-                      .copyWith(fontSize: 15, height: 19 / 15),
-                ),
-                Text(
-                  item.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTextStyles.small,
-                ),
-              ],
+    return InkWell(
+      onTap: () => pushLibraryRemoteDetailFromSearch(context, item),
+      child: SizedBox(
+        height: 64,
+        child: Row(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(
+                  isArtist ? AppBorderRadius.fullPill : AppBorderRadius.subtle),
+              child: SizedBox(
+                  width: 48,
+                  height: 48,
+                  child: ArtworkOrGradient(imageUrl: item.imageUrl)),
             ),
-          ),
-          AppIcon(
-            icon: AppIcons.chevronRight, color: AppColors.silver),
-        ],
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.body
+                        .copyWith(fontSize: 15, height: 19 / 15),
+                  ),
+                  Text(
+                    item.subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTextStyles.small,
+                  ),
+                ],
+              ),
+            ),
+            AppIcon(icon: AppIcons.chevronRight, color: AppColors.silver),
+          ],
+        ),
       ),
     );
   }

@@ -5,6 +5,7 @@ enum LibraryDetailsType {
   /// Liked Songs, Your Episodes, and other fixed system playlists.
   staticPlaylist,
   playlist,
+  album,
   artist,
 }
 
@@ -13,11 +14,15 @@ class LibraryDetailsTrack {
     required this.title,
     required this.subtitle,
     this.trailingValue,
+    this.thumbUrl,
   });
 
   final String title;
   final String subtitle;
   final String? trailingValue;
+
+  /// Per-track artwork (e.g. from YouTube Music). When null, row uses collection art.
+  final String? thumbUrl;
 }
 
 class LibraryDetailsModel {
@@ -36,6 +41,9 @@ class LibraryDetailsModel {
     this.artistTabs = const <String>[],
     this.showSortButton = false,
     this.showAddRow = false,
+    this.collectionDescription,
+    this.ownerAvatarUrl,
+    this.backgroundGradientMid,
   });
 
   final LibraryDetailsType type;
@@ -53,5 +61,40 @@ class LibraryDetailsModel {
   final bool showSortButton;
   final bool showAddRow;
 
+  /// Long-form blurb from browse (playlist / album description). Not used for static playlists.
+  final String? collectionDescription;
+
+  /// Curator / owner facepile image from browse (playlist, album). When null, hero owner row uses icon.
+  final String? ownerAvatarUrl;
+
+  /// Optional mid gradient stop (from artwork palette). Null keeps a 3-stop gradient.
+  final Color? backgroundGradientMid;
+
   bool get isStaticPlaylist => type == LibraryDetailsType.staticPlaylist;
+
+  /// Same details with scaffold gradient colors replaced (after palette extraction).
+  LibraryDetailsModel withBackgroundPalette({
+    required Color gradientTop,
+    Color? backgroundGradientMid,
+  }) {
+    return LibraryDetailsModel(
+      type: type,
+      item: item,
+      searchHint: searchHint,
+      title: title,
+      subtitlePrimary: subtitlePrimary,
+      subtitleSecondary: subtitleSecondary,
+      statsLine: statsLine,
+      tracks: tracks,
+      heroImageUrl: heroImageUrl,
+      gradientTop: gradientTop,
+      chips: chips,
+      artistTabs: artistTabs,
+      showSortButton: showSortButton,
+      showAddRow: showAddRow,
+      collectionDescription: collectionDescription,
+      ownerAvatarUrl: ownerAvatarUrl,
+      backgroundGradientMid: backgroundGradientMid,
+    );
+  }
 }

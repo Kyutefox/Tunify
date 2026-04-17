@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/domain/library_playlist_management_pills.dart';
 
 abstract final class MockLibraryDetailsData {
   static bool _isStaticPlaylist(LibraryItem item) {
@@ -70,6 +71,22 @@ abstract final class MockLibraryDetailsData {
       );
     }
 
+    if (item.kind == LibraryItemKind.album) {
+      return LibraryDetailsModel(
+        type: LibraryDetailsType.album,
+        item: item,
+        searchHint: 'Find on this page',
+        title: item.title,
+        subtitlePrimary: item.creatorName ?? 'Album',
+        subtitleSecondary: '',
+        statsLine: '',
+        tracks: _baseTracks,
+        heroImageUrl: item.imageUrl,
+        gradientTop: const Color(0xFF6589AE),
+        chips: const <String>[],
+      );
+    }
+
     if (item.kind == LibraryItemKind.artist) {
       return LibraryDetailsModel(
         type: LibraryDetailsType.artist,
@@ -77,11 +94,12 @@ abstract final class MockLibraryDetailsData {
         searchHint: '',
         title: item.title,
         subtitlePrimary: '116.2M monthly listeners',
-        subtitleSecondary: 'Following',
+        subtitleSecondary: '',
+        collectionDescription:
+            'Genre-bending artist with a catalog spanning years of hits.',
         statsLine: '',
         tracks: _baseTracks,
-        heroImageUrl:
-            'https://i.scdn.co/image/ab6761610000e5eb1026c0f1f3f7ac6f9f8f6115',
+        heroImageUrl: item.imageUrl,
         gradientTop: const Color(0xFF121212),
         artistTabs: const ['Music', 'Events', 'Merch'],
       );
@@ -106,7 +124,9 @@ abstract final class MockLibraryDetailsData {
         ),
       ],
       gradientTop: const Color(0xFF6589AE),
-      chips: const ['Add', 'Edit', 'Sort', 'Name & details'],
+      chips: libraryPlaylistShowsManagementPills(item)
+          ? LibraryPlaylistManagementChips.ordered
+          : const <String>[],
     );
   }
 }

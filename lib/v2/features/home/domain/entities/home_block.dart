@@ -5,6 +5,7 @@ class HomeSlimTile {
     required this.title,
     required this.thumbColors,
     this.artworkUrl,
+    this.shelfKind,
     this.showNowPlayingIndicator = false,
     this.showMoreMenu = false,
     this.showSeekBar = false,
@@ -14,8 +15,12 @@ class HomeSlimTile {
   final String id;
   final String title;
   final List<int> thumbColors;
+
   /// When set (e.g. from `GET /v1/browse/home`), shown instead of [thumbColors] gradient.
   final String? artworkUrl;
+
+  /// Shelf item `kind` from the home API (`artist`, `album`, `playlist`, `track`, …).
+  final String? shelfKind;
   final bool showNowPlayingIndicator;
   final bool showMoreMenu;
   final bool showSeekBar;
@@ -55,6 +60,7 @@ class HomeCarouselItem {
   final String title;
   final String? subtitle;
   final List<int> imageColors;
+
   /// When set, shelf art loads from the network instead of [imageColors] only.
   final String? artworkUrl;
 
@@ -150,6 +156,7 @@ class HomePodcastPromo {
   final String showSubtitle;
   final String episodeDescription;
   final List<int> coverColors;
+
   /// ARGB (e.g. `0xFF324B5C`) — feature-level accent, not in DESIGN.md core palette.
   final int backgroundColor;
 }

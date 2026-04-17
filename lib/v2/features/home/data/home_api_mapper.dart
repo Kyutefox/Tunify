@@ -73,6 +73,7 @@ abstract final class HomeApiMapper {
       title: title,
       thumbColors: _hashToTwoColors(key),
       artworkUrl: _artworkUrl(json),
+      shelfKind: json['kind'] as String?,
     );
   }
 
@@ -131,6 +132,7 @@ abstract final class HomeApiMapper {
           title: label,
           thumbColors: _hashToTwoColors(key),
           artworkUrl: _artworkUrl(payload),
+          shelfKind: _shelfKind(raw),
         ),
       );
     }

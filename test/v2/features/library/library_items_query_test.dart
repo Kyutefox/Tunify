@@ -58,7 +58,8 @@ void main() {
         playlistSubFilter: LibraryPlaylistSubFilter.none,
         sortMode: LibrarySortMode.alphabetical,
       );
-      expect(out.map((e) => e.title).toList(), ['A Playlist', 'M Playlist', 'Z Playlist']);
+      expect(out.map((e) => e.title).toList(),
+          ['A Playlist', 'M Playlist', 'Z Playlist']);
     });
   });
 }

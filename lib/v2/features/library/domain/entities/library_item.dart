@@ -48,6 +48,9 @@ class LibraryItem {
     this.isPinned = false,
     this.creatorName,
     this.systemArtwork,
+    this.ytmBrowseId,
+    this.ytmParams,
+    this.isUserOwnedPlaylist = false,
   });
 
   final String id;
@@ -60,4 +63,11 @@ class LibraryItem {
 
   /// When set, renders a fixed gradient + icon instead of a network image.
   final SystemArtworkType? systemArtwork;
+
+  /// When set (e.g. home/search), details load via Tunify `POST /v1/browse` instead of mock data.
+  final String? ytmBrowseId;
+  final String? ytmParams;
+
+  /// User-created playlist (mock: [LibraryKnownCreators.you] rows; remote when wired from library).
+  final bool isUserOwnedPlaylist;
 }

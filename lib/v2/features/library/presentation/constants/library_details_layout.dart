@@ -36,11 +36,14 @@ abstract final class LibraryDetailsLayout {
 
   static const double ownerAvatarRadius = 14;
   static const double ownerAvatarIconSize = 14;
+
+  /// Vertical space before the track list when owner action pills are hidden (keeps header / list separation).
+  static const double headerToTrackListWhenNoChipsGap = AppSpacing.lg;
   static const double metaGlobeIconSize = 14;
 
-  static const double shuffleIconSize = 30;
-  static const double playButtonDiameter = 64;
-  static const double playButtonIconSize = 30;
+  static const double shuffleIconSize = 22;
+  static const double playButtonDiameter = 52;
+  static const double playButtonIconSize = 24;
 
   static const double chipPillHeight = 38;
   static const double chipIconSize = 18;
@@ -50,15 +53,28 @@ abstract final class LibraryDetailsLayout {
   static const double addRowPlusIconSize = 36;
 
   static const double trackRowArtSize = 58;
-  static const double trackTitleFontSize = 19;
   static const double trackTitleSubtitleGap = 2;
   static const double trackMoreIconSize = 20;
 
   static const double miniCoverDefaultSize = 34;
   static const double miniCoverCornerRadius = 4;
 
+  /// Portrait tile beside playlist actions (first-track art, not collection art).
+  static const double playlistActionMiniCoverWidth = 26;
+  static const double playlistActionMiniCoverHeight = 38;
+
   static const double circleActionSize = 30;
   static const double circleActionIconSize = 18;
+
+  /// Docked playlist / artist toolbar row height (matches v1 collection header).
+  static const double collectionDockedActionRowHeight = 56;
+
+  /// Right inset for [LibraryCollectionDockingPlayButton] (must match docked toolbar reserve).
+  static const double collectionDockPlayRightInset = 16;
+
+  /// Trailing clear space on the docked toolbar row so shuffle stays left of the play overlay.
+  static const double dockedToolbarReserveForPlay =
+      playButtonDiameter + collectionDockPlayRightInset + AppSpacing.md;
 
   static const double toolbarActionIconSize = 22;
 

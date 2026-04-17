@@ -12,6 +12,7 @@ class ArtworkOrGradient extends StatelessWidget {
     this.imageUrl,
     this.fallbackArgbColors = const [],
     this.fit = BoxFit.cover,
+    this.alignment = Alignment.center,
   });
 
   final String? imageUrl;
@@ -19,6 +20,7 @@ class ArtworkOrGradient extends StatelessWidget {
   /// Kept for API compat but no longer rendered as a gradient.
   final List<int> fallbackArgbColors;
   final BoxFit fit;
+  final Alignment alignment;
 
   static const _placeholder = ColoredBox(color: AppColors.darkSurface);
 
@@ -29,6 +31,7 @@ class ArtworkOrGradient extends StatelessWidget {
       return CachedNetworkImage(
         imageUrl: url,
         fit: fit,
+        alignment: alignment,
         fadeInDuration: const Duration(milliseconds: 150),
         placeholder: (_, __) => _placeholder,
         errorWidget: (_, __, ___) => _placeholder,

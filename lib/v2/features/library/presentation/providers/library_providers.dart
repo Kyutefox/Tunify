@@ -164,10 +164,10 @@ final libraryDetailsProvider = FutureProvider.autoDispose
     try {
       details = await ref
           .read(libraryBrowseDetailsRepositoryProvider)
-          .loadDetailsForRemoteItem(item);
+          .loadDetails(item);
     } on Object catch (e, st) {
       Logger.error(
-        'Remote library browse failed',
+        'Library browse failed',
         tag: 'LibraryDetails',
         error: e,
         stackTrace: st,

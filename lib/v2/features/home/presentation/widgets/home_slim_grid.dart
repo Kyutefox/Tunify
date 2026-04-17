@@ -6,7 +6,7 @@ import 'package:tunify/v2/core/widgets/buttons/tunify_press_feedback.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
-import 'package:tunify/v2/features/library/presentation/navigation/open_library_remote_detail.dart';
+import 'package:tunify/v2/features/library/presentation/navigation/open_library_detail.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
 /// Two-column slim grid — equal-width columns ([Expanded]); symmetric [AppSpacing.lg] inset.
@@ -72,7 +72,7 @@ class HomeSlimGrid extends StatelessWidget {
     return TunifyPressFeedback(
       borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
       onTap: () {
-        pushLibraryRemoteDetailFromHomeSlimTile(
+        pushLibraryDetailFromHomeSlimTile(
           context,
           tile,
           subtitle: libraryItem.subtitle,

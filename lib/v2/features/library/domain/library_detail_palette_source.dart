@@ -1,7 +1,7 @@
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 
-/// Chooses a remote artwork URL to sample for collection-detail gradients.
+/// Chooses an artwork URL to sample for collection-detail gradients.
 ///
 /// Keeps palette logic out of Riverpod providers (Clean Architecture / RULES.md).
 String? libraryDetailPaletteSourceUrl({

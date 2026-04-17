@@ -38,8 +38,8 @@ LibraryDetailsType _detailsType(LibraryItemKind kind) {
   };
 }
 
-/// Builds [LibraryDetailsModel] after a Tunify `POST /v1/browse` load.
-LibraryDetailsModel libraryDetailsFromRemoteBrowse({
+/// Builds [LibraryDetailsModel] after a Tunify browse load.
+LibraryDetailsModel libraryDetailsFromBrowse({
   required LibraryItem item,
   required List<Track> tracks,
   PlaylistBrowseMeta? meta,

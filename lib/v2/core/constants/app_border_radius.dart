@@ -13,6 +13,7 @@ class AppBorderRadius {
   static const double pill = 500;
   static const double fullPill = 9999;
   static const double circle = 50;
+  static const double touchTarget = 16;
 
   static const Radius minimalRadius = Radius.circular(minimal);
   static const Radius subtleRadius = Radius.circular(subtle);

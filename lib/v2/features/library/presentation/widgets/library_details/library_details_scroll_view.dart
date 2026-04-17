@@ -21,7 +21,7 @@ part 'library_details_scroll_view.part_hero.dart';
 part 'library_details_scroll_view.part_tracks.dart';
 part 'library_details_scroll_view.part_recommendations.dart';
 
-/// Scrollable body for [LibraryPlaylistDetailsScreen] (keeps the screen widget thin).
+/// Scrollable body for [LibraryDetailsScreen] (keeps the screen widget thin).
 class LibraryDetailsScrollView extends StatelessWidget {
   const LibraryDetailsScrollView({
     super.key,

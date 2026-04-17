@@ -1,30 +1,31 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 
 /// High-contrast Spotify-style mood card palette.
 ///
 /// These are intentionally vivid + text-friendly for white labels.
 const List<Color> searchMoodTilePalette = <Color>[
-  Color(0xFFD82A95), // Music pink
-  Color(0xFF056952), // Podcasts green-teal
-  Color(0xFF8400E7), // Live events purple
-  Color(0xFF233E8B), // Deep blue
-  Color(0xFF5B8208), // Olive green
-  Color(0xFF2D8E75), // Summer teal
-  Color(0xFF5D2257), // Plum
-  Color(0xFF4D87A6), // Steel blue
-  Color(0xFF347FB4), // Mid blue
-  Color(0xFF1E72D8), // Podcast charts blue
-  Color(0xFF9E7CCC), // Lilac
-  Color(0xFF688F08), // Video podcasts green
-  Color(0xFFE12A9C), // Latin/Festival pink
-  Color(0xFF5185A4), // Dance blue
-  Color(0xFF007C68), // Rock green
-  Color(0xFFEA1020), // Indie red
-  Color(0xFFB0468F), // Mood magenta
-  Color(0xFF5B216B), // Party purple
-  Color(0xFFD91A9B), // Gaming pink
-  Color(0xFFC17848), // Chill orange
+  AppColors.moodTilePink, // Music pink
+  AppColors.moodTileGreenTeal, // Podcasts green-teal
+  AppColors.moodTilePurple, // Live events purple
+  AppColors.moodTileDeepBlue, // Deep blue
+  AppColors.moodTileOlive, // Olive green
+  AppColors.moodTileSummerTeal, // Summer teal
+  AppColors.moodTilePlum, // Plum
+  AppColors.moodTileSteelBlue, // Steel blue
+  AppColors.moodTileMidBlue, // Mid blue
+  AppColors.moodTileChartsBlue, // Podcast charts blue
+  AppColors.moodTileLilac, // Lilac
+  AppColors.moodTileVideoGreen, // Video podcasts green
+  AppColors.moodTileLatinPink, // Latin/Festival pink
+  AppColors.moodTileDanceBlue, // Dance blue
+  AppColors.moodTileRockGreen, // Rock green
+  AppColors.moodTileIndieRed, // Indie red
+  AppColors.moodTileMagenta, // Mood magenta
+  AppColors.moodTilePartyPurple, // Party purple
+  AppColors.moodTileGamingPink, // Gaming pink
+  AppColors.moodTileChillOrange, // Chill orange
 ];
 
 /// Returns [count] card colors in randomized order with minimal visual repeats:

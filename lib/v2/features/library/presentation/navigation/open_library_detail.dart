@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
-import 'package:tunify/v2/features/library/presentation/screens/library_playlist_details_screen.dart';
+import 'package:tunify/v2/features/library/presentation/screens/library_details_screen.dart';
 import 'package:tunify/v2/features/search/domain/entities/search_models.dart';
 
-void pushLibraryRemoteDetailFromSearch(
+void pushLibraryDetailFromSearch(
   BuildContext context,
   SearchResultItem result,
 ) {
@@ -14,7 +14,7 @@ void pushLibraryRemoteDetailFromSearch(
   }
   Navigator.of(context).push<void>(
     MaterialPageRoute<void>(
-      builder: (_) => LibraryPlaylistDetailsScreen(
+      builder: (_) => LibraryDetailsScreen(
         item: LibraryItem(
           id: result.id,
           title: result.title,
@@ -28,7 +28,7 @@ void pushLibraryRemoteDetailFromSearch(
   );
 }
 
-void pushLibraryRemoteDetailFromHomeSlimTile(
+void pushLibraryDetailFromHomeSlimTile(
   BuildContext context,
   HomeSlimTile tile, {
   required String subtitle,
@@ -39,7 +39,7 @@ void pushLibraryRemoteDetailFromHomeSlimTile(
   }
   Navigator.of(context).push<void>(
     MaterialPageRoute<void>(
-      builder: (_) => LibraryPlaylistDetailsScreen(
+      builder: (_) => LibraryDetailsScreen(
         item: LibraryItem(
           id: tile.id,
           title: tile.title,
@@ -53,7 +53,7 @@ void pushLibraryRemoteDetailFromHomeSlimTile(
   );
 }
 
-void pushLibraryRemoteDetailFromHomeCarousel(
+void pushLibraryDetailFromHomeCarousel(
   BuildContext context, {
   required String browseId,
   required LibraryItemKind kind,
@@ -63,7 +63,7 @@ void pushLibraryRemoteDetailFromHomeCarousel(
 }) {
   Navigator.of(context).push<void>(
     MaterialPageRoute<void>(
-      builder: (_) => LibraryPlaylistDetailsScreen(
+      builder: (_) => LibraryDetailsScreen(
         item: LibraryItem(
           id: browseId,
           title: title,

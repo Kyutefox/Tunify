@@ -76,7 +76,7 @@ class SearchScreen extends ConsumerWidget {
                       backgroundColor: tile.$2,
                       width: 132,
                       padding: AppSpacing.lg - AppSpacing.sm,
-                      titleFontSize: 14,
+                      titleFontSize: AppSpacing.searchExploreCardTitleFontSize,
                     );
                   },
                 ),
@@ -119,7 +119,7 @@ class SearchScreen extends ConsumerWidget {
                         title: mood.title,
                         backgroundColor: moodTileColors[index],
                         padding: AppSpacing.lg,
-                        titleFontSize: 18,
+                        titleFontSize: AppSpacing.searchCategoryCardTitleFontSize,
                       );
                     },
                     childCount: moods.length,
@@ -356,8 +356,8 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
                     middle: Text(
                       'Search',
                       style: AppTextStyles.sectionTitle.copyWith(
-                        fontSize: 22,
-                        height: 26 / 22,
+                        fontSize: AppSpacing.searchHeaderCollapsedTitleFontSize,
+                        height: 26 / AppSpacing.searchHeaderCollapsedTitleFontSize,
                       ),
                     ),
                     trailing: AppIcon(
@@ -414,9 +414,7 @@ class _CollapsedSearchInput extends StatelessWidget {
               const SizedBox(width: AppSpacing.md),
               Text(
                 'What do you want to play?',
-                style: AppTextStyles.body.copyWith(
-                  fontSize: 15,
-                  height: 19 / 15,
+                style: AppTextStyles.listItemTitle.copyWith(
                   color: AppColors.nearBlack,
                 ),
               ),

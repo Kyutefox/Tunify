@@ -6,7 +6,7 @@ import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
-import 'package:tunify/v2/features/library/presentation/navigation/open_library_remote_detail.dart';
+import 'package:tunify/v2/features/library/presentation/navigation/open_library_detail.dart';
 import 'package:tunify/v2/features/search/domain/entities/search_models.dart';
 import 'package:tunify/v2/features/search/presentation/providers/search_providers.dart';
 
@@ -99,12 +99,12 @@ class SearchRecentBody extends ConsumerWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Text('Recent searches',
-              style: AppTextStyles.featureHeading.copyWith(fontSize: 18)),
+              style: AppTextStyles.featureHeading),
         ),
         const SizedBox(height: AppSpacing.md),
         ...items.map(
           (item) => InkWell(
-            onTap: () => pushLibraryRemoteDetailFromSearch(context, item),
+            onTap: () => pushLibraryDetailFromSearch(context, item),
             child: SizedBox(
               height: item.kind == SearchItemKind.artist ? 74 : 64,
               child: Row(
@@ -135,10 +135,7 @@ class SearchRecentBody extends ConsumerWidget {
                                 item.title,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: AppTextStyles.body.copyWith(
-                                  fontSize: 15,
-                                  height: 19 / 15,
-                                ),
+                                style: AppTextStyles.listItemTitle,
                               ),
                             ),
                             if (item.isVerified) ...[
@@ -206,8 +203,7 @@ class SearchSuggestionBody extends StatelessWidget {
                     Expanded(
                       child: Text(
                         text,
-                        style: AppTextStyles.body
-                            .copyWith(fontSize: 15, height: 19 / 15),
+                        style: AppTextStyles.listItemTitle,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -248,8 +244,7 @@ class SearchFocusEmptyBody extends StatelessWidget {
         children: [
           Text(
             'Play what you love',
-            style: AppTextStyles.featureHeading
-                .copyWith(fontSize: 24, height: 28 / 24),
+            style: AppTextStyles.sectionTitle,
           ),
           const SizedBox(height: AppSpacing.md),
           Text(
@@ -297,7 +292,7 @@ class _TopResultItem extends StatelessWidget {
   final SearchResultItem item;
 
   void _openDetail(BuildContext context) {
-    pushLibraryRemoteDetailFromSearch(context, item);
+    pushLibraryDetailFromSearch(context, item);
   }
 
   @override
@@ -328,8 +323,7 @@ class _TopResultItem extends StatelessWidget {
                           item.title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.body
-                              .copyWith(fontSize: 15, height: 19 / 15),
+                          style: AppTextStyles.listItemTitle,
                         ),
                       ),
                       if (item.isVerified) ...[
@@ -371,7 +365,7 @@ class _FeaturingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: () => pushLibraryRemoteDetailFromSearch(context, item),
+      onTap: () => pushLibraryDetailFromSearch(context, item),
       child: SizedBox(
         width: 113,
         child: Column(
@@ -405,7 +399,7 @@ class _ResultListItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final isArtist = item.kind == SearchItemKind.artist;
     return InkWell(
-      onTap: () => pushLibraryRemoteDetailFromSearch(context, item),
+      onTap: () => pushLibraryDetailFromSearch(context, item),
       child: SizedBox(
         height: 64,
         child: Row(
@@ -428,8 +422,7 @@ class _ResultListItem extends StatelessWidget {
                     item.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.body
-                        .copyWith(fontSize: 15, height: 19 / 15),
+                    style: AppTextStyles.listItemTitle,
                   ),
                   Text(
                     item.subtitle,

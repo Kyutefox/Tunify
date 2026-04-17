@@ -8,7 +8,7 @@ import 'package:tunify/v2/core/widgets/buttons/tunify_press_feedback.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
-import 'package:tunify/v2/features/library/presentation/navigation/open_library_remote_detail.dart';
+import 'package:tunify/v2/features/library/presentation/navigation/open_library_detail.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
 /// Horizontal carousel shelf (album / artist rows) using shared shelf cards.
@@ -91,7 +91,7 @@ class HomeCarouselShelf extends StatelessWidget {
                       if (kind == LibraryItemKind.podcast) {
                         return;
                       }
-                      pushLibraryRemoteDetailFromHomeCarousel(
+                      pushLibraryDetailFromHomeCarousel(
                         context,
                         browseId: item.id,
                         kind: kind,

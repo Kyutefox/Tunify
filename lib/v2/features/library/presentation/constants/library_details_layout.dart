@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 
 /// Layout, radii, and feature-local colors for library collection detail screens.
@@ -17,7 +18,7 @@ abstract final class LibraryDetailsLayout {
   static const double searchLeadingIconSize = 20;
 
   /// Search field tint (library header gradient family).
-  static const Color searchFieldTone = Color(0xFF6D8AA9);
+  static const Color searchFieldTone = AppColors.librarySearchFieldTone;
   static const double searchFieldFillOpacity = 0.35;
 
   static Color get searchFieldFill =>
@@ -27,7 +28,7 @@ abstract final class LibraryDetailsLayout {
   static const double heroCoverCornerRadius = 8;
   static const double heroCoverShadowBlur = 20;
   static const double heroCoverShadowOffsetY = 10;
-  static const Color heroCoverShadowColor = Color(0x66000000);
+  static const Color heroCoverShadowColor = AppColors.libraryHeroCoverShadow;
 
   static const double artistHeroHeight = 360;
   static const double artistNameFontSize = 27;

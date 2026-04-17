@@ -1,6 +1,6 @@
 import 'package:tunify/v2/core/network/tunify_api_client.dart';
 import 'package:tunify/v2/features/library/data/library_browse_gateway.dart';
-import 'package:tunify/v2/features/library/data/library_remote_details_mapper.dart';
+import 'package:tunify/v2/features/library/data/library_details_mapper.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/domain/library_ytm_browse_kind.dart';
@@ -23,25 +23,23 @@ final class LibraryBrowseDetailsRepositoryImpl
   }
 
   @override
-  Future<LibraryDetailsModel> loadDetailsForRemoteItem(LibraryItem item) async {
-    final browseId = item.ytmBrowseId?.trim();
-    if (browseId == null || browseId.isEmpty) {
+  Future<LibraryDetailsModel> loadDetails(LibraryItem item) async {
+    if (item.ytmBrowseId == null || item.ytmBrowseId!.isEmpty) {
       throw ArgumentError(
-        'LibraryItem.ytmBrowseId must be set for remote browse details',
+        'LibraryItem.ytmBrowseId must be set for browse details',
       );
     }
-    final paramsRaw = item.ytmParams?.trim();
-    final params = (paramsRaw == null || paramsRaw.isEmpty) ? null : paramsRaw;
-    final loaded = await _gateway.loadFullCollection(
-      browseKind: _browseKind(item),
-      browseId: browseId,
-      params: params,
+    final browseKind = _browseKind(item);
+    final browseData = await _gateway.loadFullCollection(
+      browseKind: browseKind,
+      browseId: item.ytmBrowseId!,
+      params: item.ytmParams,
     );
-    return libraryDetailsFromRemoteBrowse(
+    return libraryDetailsFromBrowse(
       item: item,
-      tracks: loaded.tracks,
-      meta: loaded.meta,
-      browseRecommendationShelves: loaded.recommendationShelves,
+      tracks: browseData.tracks,
+      meta: browseData.meta,
+      browseRecommendationShelves: browseData.recommendationShelves,
     );
   }
 }

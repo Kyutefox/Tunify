@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_browse_recommendation_shelf.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 
@@ -37,7 +38,7 @@ class LibraryDetailsModel {
     required this.statsLine,
     required this.tracks,
     this.heroImageUrl,
-    this.gradientTop = const Color(0xFF4B6F95),
+    this.gradientTop = AppColors.libraryDefaultGradientTop,
     this.chips = const <String>[],
     this.artistTabs = const <String>[],
     this.showSortButton = false,

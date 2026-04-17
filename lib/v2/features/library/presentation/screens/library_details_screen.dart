@@ -9,7 +9,8 @@ import 'package:tunify/v2/features/library/domain/library_detail_request.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_details_gradient.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
 import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_playlist_detail_scroll_shell.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_details_scroll_shell.dart';
+import 'package:tunify/v2/features/loading/presentation/screens/loading_screen.dart';
 
 String _collectionDetailsErrorMessage(Object error) {
   if (error is Failure) {
@@ -18,9 +19,10 @@ String _collectionDetailsErrorMessage(Object error) {
   return LibraryStrings.collectionDetailsLoadError;
 }
 
-/// Library collection detail: mock library, or remote album / playlist / artist when [LibraryItem.ytmBrowseId] is set.
-class LibraryPlaylistDetailsScreen extends ConsumerWidget {
-  const LibraryPlaylistDetailsScreen({
+/// Library collection detail: mock library, or album / playlist / artist when [LibraryItem.ytmBrowseId] is set.
+/// Reusable for all detail types: playlist, static playlist, album, artist.
+class LibraryDetailsScreen extends ConsumerWidget {
+  const LibraryDetailsScreen({
     super.key,
     required this.item,
   });
@@ -34,28 +36,12 @@ class LibraryPlaylistDetailsScreen extends ConsumerWidget {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
 
     return asyncDetails.when(
-      data: (details) => LibraryPlaylistDetailScrollShell(
+      data: (details) => LibraryDetailsScrollShell(
         details: details,
         bottomInset: bottomInset,
         gradientColors: libraryDetailBackgroundGradientColors(details),
       ),
-      loading: () => Scaffold(
-        backgroundColor: AppColors.nearBlack,
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(color: AppColors.brandGreen),
-              SizedBox(height: AppSpacing.lg),
-              Text(
-                item.title,
-                style: AppTextStyles.body,
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
+      loading: () => const LoadingScreen(),
       error: (err, _) => Scaffold(
         backgroundColor: AppColors.nearBlack,
         body: Center(

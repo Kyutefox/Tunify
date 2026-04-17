@@ -68,6 +68,6 @@ class LibraryItem {
   final String? ytmBrowseId;
   final String? ytmParams;
 
-  /// User-created playlist (mock: [LibraryKnownCreators.you] rows; remote when wired from library).
+  /// User-created playlist (mock: [LibraryKnownCreators.you] rows; wired from library).
   final bool isUserOwnedPlaylist;
 }

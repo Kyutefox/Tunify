@@ -10,7 +10,7 @@ import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
 import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
-import 'package:tunify/v2/features/library/presentation/screens/library_playlist_details_screen.dart';
+import 'package:tunify/v2/features/library/presentation/screens/library_details_screen.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_filter_pills.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_grid_tile.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_list_tile.dart';
@@ -174,7 +174,7 @@ class _LibraryListBody extends StatelessWidget {
 void _openDetails(BuildContext context, LibraryItem item) {
   Navigator.of(context).push(
     MaterialPageRoute<void>(
-      builder: (_) => LibraryPlaylistDetailsScreen(item: item),
+      builder: (_) => LibraryDetailsScreen(item: item),
     ),
   );
 }

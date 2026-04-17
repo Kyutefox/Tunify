@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 
@@ -50,15 +51,15 @@ class SystemArtwork extends StatelessWidget {
     return switch (type) {
       SystemArtworkType.likedSongs => _SystemArtConfig(
           gradientColors: const [
-            Color(0xFF4A17C8),
-            Color(0xFF8C8CE0),
+            AppColors.likedSongsGradientStart,
+            AppColors.likedSongsGradientEnd,
           ],
           icon: AppIcons.favorite,
         ),
       SystemArtworkType.yourEpisodes => _SystemArtConfig(
           gradientColors: const [
-            Color(0xFF056952),
-            Color(0xFF1DB954),
+            AppColors.yourEpisodesGradientStart,
+            AppColors.yourEpisodesGradientEnd,
           ],
           icon: AppIcons.bookmark,
         ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
@@ -23,7 +24,7 @@ class SearchFocusHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 60,
+      height: AppSpacing.searchHeaderHeight,
       color: AppColors.midDark,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       alignment: Alignment.center,
@@ -31,12 +32,12 @@ class SearchFocusHeader extends StatelessWidget {
         children: [
           InkWell(
             onTap: onBack,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppBorderRadius.touchTarget),
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.sm),
               child: AppIcon(
                 icon: AppIcons.back,
-                size: 18,
+                size: AppSpacing.searchHeaderIconSize,
                 color: AppColors.white,
               ),
             ),
@@ -51,8 +52,6 @@ class SearchFocusHeader extends StatelessWidget {
               textInputAction: TextInputAction.search,
               cursorColor: AppColors.brandGreen,
               style: AppTextStyles.caption.copyWith(
-                fontSize: 14,
-                height: 18 / 14,
                 color: AppColors.white,
               ),
               decoration: const InputDecoration(
@@ -65,7 +64,7 @@ class SearchFocusHeader extends StatelessWidget {
                 focusedErrorBorder: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
                 hintText: 'What do you want to play?',
-                hintStyle: TextStyle(color: AppColors.silver),
+                hintStyle: AppTextStyles.caption,
               ),
             ),
           ),
@@ -74,16 +73,19 @@ class SearchFocusHeader extends StatelessWidget {
             valueListenable: controller,
             builder: (context, value, _) {
               if (value.text.trim().isEmpty) {
-                return const SizedBox(width: 24, height: 24);
+                return SizedBox(
+                  width: AppSpacing.searchClearButtonSize,
+                  height: AppSpacing.searchClearButtonSize,
+                );
               }
               return InkWell(
                 onTap: onClear,
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(AppBorderRadius.touchTarget),
                 child: Padding(
                   padding: EdgeInsets.all(AppSpacing.sm),
                   child: AppIcon(
                     icon: AppIcons.close,
-                    size: 18,
+                    size: AppSpacing.searchHeaderIconSize,
                     color: AppColors.white,
                   ),
                 ),

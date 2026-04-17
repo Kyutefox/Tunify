@@ -154,4 +154,12 @@ class AppTextStyles {
     color: AppColors.white,
     decoration: TextDecoration.none,
   );
+
+  // List item title — 15px/400
+  static const TextStyle listItemTitle = TextStyle(
+    fontSize: 15,
+    height: 19 / 15,
+    fontWeight: FontWeight.w400,
+    color: AppColors.white,
+  );
 }

@@ -23,4 +23,22 @@ class AppSpacing {
 
   /// Session avatar fallback icon size.
   static const double navAvatarIconSize = 20;
+
+  /// Search header height.
+  static const double searchHeaderHeight = 60;
+
+  /// Search header icon size.
+  static const double searchHeaderIconSize = 18;
+
+  /// Search clear button size.
+  static const double searchClearButtonSize = 24;
+
+  /// Search explore card title font size.
+  static const double searchExploreCardTitleFontSize = 14;
+
+  /// Search category card title font size.
+  static const double searchCategoryCardTitleFontSize = 18;
+
+  /// Search header collapsed title font size.
+  static const double searchHeaderCollapsedTitleFontSize = 22;
 }

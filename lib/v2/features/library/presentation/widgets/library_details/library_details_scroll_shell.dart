@@ -9,8 +9,9 @@ import 'package:tunify/v2/features/library/presentation/widgets/library_details/
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_details_scroll_view.dart';
 
 /// v1-style collection detail: pinned app bar title fade, docked toolbar + play over scroll.
-class LibraryPlaylistDetailScrollShell extends StatefulWidget {
-  const LibraryPlaylistDetailScrollShell({
+/// Reusable for all detail types: playlist, static playlist, album, artist.
+class LibraryDetailsScrollShell extends StatefulWidget {
+  const LibraryDetailsScrollShell({
     super.key,
     required this.details,
     required this.bottomInset,
@@ -22,12 +23,12 @@ class LibraryPlaylistDetailScrollShell extends StatefulWidget {
   final List<Color> gradientColors;
 
   @override
-  State<LibraryPlaylistDetailScrollShell> createState() =>
-      _LibraryPlaylistDetailScrollShellState();
+  State<LibraryDetailsScrollShell> createState() =>
+      _LibraryDetailsScrollShellState();
 }
 
-class _LibraryPlaylistDetailScrollShellState
-    extends State<LibraryPlaylistDetailScrollShell> {
+class _LibraryDetailsScrollShellState
+    extends State<LibraryDetailsScrollShell> {
   late final ScrollController _scrollController;
   final GlobalKey _stackKey = GlobalKey();
   final GlobalKey _titleKey = GlobalKey();

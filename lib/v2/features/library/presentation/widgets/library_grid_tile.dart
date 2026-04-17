@@ -66,7 +66,6 @@ class LibraryGridTile extends StatelessWidget {
             style: AppTextStyles.small.copyWith(
               color: AppColors.white,
               fontWeight: FontWeight.w500,
-              height: 1.3,
             ),
           ),
           if (item.kind != LibraryItemKind.artist)
@@ -74,7 +73,7 @@ class LibraryGridTile extends StatelessWidget {
               item.subtitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTextStyles.micro.copyWith(height: 1.4),
+              style: AppTextStyles.micro,
             ),
           if (item.kind == LibraryItemKind.artist)
             Text(
@@ -82,7 +81,7 @@ class LibraryGridTile extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: AppTextStyles.micro.copyWith(height: 1.4),
+              style: AppTextStyles.micro,
             ),
         ],
       ),

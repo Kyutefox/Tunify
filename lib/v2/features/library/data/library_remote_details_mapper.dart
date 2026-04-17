@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_browse_recommendation_shelf.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/domain/library_playlist_management_pills.dart';
@@ -37,11 +38,13 @@ LibraryDetailsType _detailsType(LibraryItemKind kind) {
   };
 }
 
-/// Builds [LibraryDetailsModel] after a Tunify `POST /v1/browse` load (same parsing as YT reference client).
+/// Builds [LibraryDetailsModel] after a Tunify `POST /v1/browse` load.
 LibraryDetailsModel libraryDetailsFromRemoteBrowse({
   required LibraryItem item,
   required List<Track> tracks,
   PlaylistBrowseMeta? meta,
+  List<LibraryBrowseRecommendationShelf> browseRecommendationShelves =
+      const [],
 }) {
   final type = _detailsType(item.kind);
   final rows = tracks
@@ -90,6 +93,7 @@ LibraryDetailsModel libraryDetailsFromRemoteBrowse({
       heroImageUrl: heroUrl,
       gradientTop: const Color(0xFF121212),
       artistTabs: const ['Music', 'Events', 'Merch'],
+      browseRecommendationShelves: browseRecommendationShelves,
     );
   }
 
@@ -118,5 +122,6 @@ LibraryDetailsModel libraryDetailsFromRemoteBrowse({
         : (libraryPlaylistShowsManagementPills(item)
             ? LibraryPlaylistManagementChips.ordered
             : const <String>[]),
+    browseRecommendationShelves: browseRecommendationShelves,
   );
 }

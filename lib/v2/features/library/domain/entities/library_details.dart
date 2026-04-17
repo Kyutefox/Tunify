@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_browse_recommendation_shelf.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 
 enum LibraryDetailsType {
@@ -44,6 +45,7 @@ class LibraryDetailsModel {
     this.collectionDescription,
     this.ownerAvatarUrl,
     this.backgroundGradientMid,
+    this.browseRecommendationShelves = const [],
   });
 
   final LibraryDetailsType type;
@@ -70,6 +72,9 @@ class LibraryDetailsModel {
   /// Optional mid gradient stop (from artwork palette). Null keeps a 3-stop gradient.
   final Color? backgroundGradientMid;
 
+  /// Carousels from Tunify `POST /v1/browse` `parsed.recommendation_shelves` (YouTube Music provider).
+  final List<LibraryBrowseRecommendationShelf> browseRecommendationShelves;
+
   bool get isStaticPlaylist => type == LibraryDetailsType.staticPlaylist;
 
   /// Same details with scaffold gradient colors replaced (after palette extraction).
@@ -95,6 +100,7 @@ class LibraryDetailsModel {
       collectionDescription: collectionDescription,
       ownerAvatarUrl: ownerAvatarUrl,
       backgroundGradientMid: backgroundGradientMid,
+      browseRecommendationShelves: browseRecommendationShelves,
     );
   }
 }

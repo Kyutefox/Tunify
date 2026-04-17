@@ -41,6 +41,7 @@ final class LibraryBrowseDetailsRepositoryImpl
       item: item,
       tracks: loaded.tracks,
       meta: loaded.meta,
+      browseRecommendationShelves: loaded.recommendationShelves,
     );
   }
 }

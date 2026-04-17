@@ -5,6 +5,9 @@ import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
+import 'package:tunify/v2/features/home/presentation/widgets/home_carousel_shelf.dart';
+import 'package:tunify/v2/features/library/data/library_browse_recommendation_carousel_mapper.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_browse_recommendation_shelf.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/domain/library_playlist_management_pills.dart';
@@ -16,6 +19,7 @@ import 'package:tunify/v2/features/library/presentation/widgets/system_artwork.d
 part 'library_details_scroll_view.part_header.dart';
 part 'library_details_scroll_view.part_hero.dart';
 part 'library_details_scroll_view.part_tracks.dart';
+part 'library_details_scroll_view.part_recommendations.dart';
 
 /// Scrollable body for [LibraryPlaylistDetailsScreen] (keeps the screen widget thin).
 class LibraryDetailsScrollView extends StatelessWidget {
@@ -180,6 +184,12 @@ class LibraryDetailsScrollView extends StatelessWidget {
           ),
         ),
       ),
+      if (details.browseRecommendationShelves.isNotEmpty)
+        SliverToBoxAdapter(
+          child: _BrowseRecommendationShelvesSection(
+            shelves: details.browseRecommendationShelves,
+          ),
+        ),
       if (details.statsLine.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(

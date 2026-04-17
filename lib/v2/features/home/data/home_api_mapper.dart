@@ -317,4 +317,26 @@ abstract final class HomeApiMapper {
     final b = 0xFF000000 | ((h ^ (h >> 12) ^ (h >> 24)) & 0xffffff);
     return [a, b];
   }
+
+  /// Builds a [HomeCarouselSection] from the same `kind` + `value` entries as home `sections[].items`.
+  ///
+  /// Used by library browse recommendations so shelves reuse [HomeCarouselShelf] / card layout.
+  static HomeCarouselSection? carouselSectionFromKindValueItems({
+    required String id,
+    required String title,
+    required List<Map<String, dynamic>> items,
+  }) {
+    if (items.isEmpty) {
+      return null;
+    }
+    final block = _mapCarousel(
+      {'id': id, 'title': title},
+      items,
+      _shelfItemsAreAllArtists(items),
+    );
+    return switch (block) {
+      HomeCarouselBlock(:final section) => section,
+      _ => null,
+    };
+  }
 }

@@ -28,7 +28,6 @@ class _BrowseRecommendationShelvesSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        const SizedBox(height: AppSpacing.xxxl),
         ...carousels,
       ],
     );

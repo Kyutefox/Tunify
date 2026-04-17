@@ -4,22 +4,27 @@ class _TrackRow extends StatelessWidget {
   const _TrackRow({
     required this.track,
     required this.item,
+    required this.type,
   });
 
   final LibraryDetailsTrack track;
   final LibraryItem item;
+  final LibraryDetailsType type;
 
   @override
   Widget build(BuildContext context) {
+    final showThumbnail = type != LibraryDetailsType.album;
+    
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        LibraryDetailMiniCover(
-          item: item,
-          imageUrlOverride: track.thumbUrl,
-          size: LibraryDetailsLayout.trackRowArtSize,
-        ),
-        const SizedBox(width: AppSpacing.md),
+        if (showThumbnail)
+          LibraryDetailMiniCover(
+            item: item,
+            imageUrlOverride: track.thumbUrl,
+            size: LibraryDetailsLayout.trackRowArtSize,
+          ),
+        if (showThumbnail) const SizedBox(width: AppSpacing.md),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

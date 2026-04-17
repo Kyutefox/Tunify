@@ -174,30 +174,28 @@ class LibraryDetailsScrollView extends StatelessWidget {
 
     final tailSlivers = <Widget>[
       SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+        padding: const EdgeInsets.only(
+          left: AppSpacing.lg,
+          right: AppSpacing.lg,
+        ),
         sliver: SliverList.separated(
           itemCount: details.tracks.length,
           separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
           itemBuilder: (context, index) => _TrackRow(
             track: details.tracks[index],
             item: details.item,
+            type: details.type,
           ),
         ),
       ),
-      if (details.browseRecommendationShelves.isNotEmpty)
-        SliverToBoxAdapter(
-          child: _BrowseRecommendationShelvesSection(
-            shelves: details.browseRecommendationShelves,
-          ),
-        ),
       if (details.statsLine.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.lg,
-              AppSpacing.xxxl,
+            padding: const EdgeInsets.only(
+              left: AppSpacing.lg,
+              right: AppSpacing.lg,
+              top: AppSpacing.xxxl,
+              bottom: AppSpacing.xxxl,
             ),
             child: Center(
               child: Text(
@@ -208,6 +206,12 @@ class LibraryDetailsScrollView extends StatelessWidget {
                 ),
               ),
             ),
+          ),
+        ),
+      if (details.browseRecommendationShelves.isNotEmpty)
+        SliverToBoxAdapter(
+          child: _BrowseRecommendationShelvesSection(
+            shelves: details.browseRecommendationShelves,
           ),
         ),
       SliverToBoxAdapter(

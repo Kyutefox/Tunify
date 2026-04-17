@@ -58,6 +58,8 @@ abstract final class LibraryDetailsLayout {
   static const double trackMoreIconSize = 20;
 
   static const double miniCoverDefaultSize = 34;
+  static const double miniCoverWidth = 26;
+  static const double miniCoverHeight = 38;
   static const double miniCoverCornerRadius = 4;
 
   /// Portrait tile beside playlist actions (first-track art, not collection art).

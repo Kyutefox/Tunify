@@ -241,19 +241,6 @@ class _ArtistHero extends StatelessWidget {
                     fontSize: LibraryDetailsLayout.artistNameFontSize,
                   ),
                 ),
-                if (details.collectionDescription != null &&
-                    details.collectionDescription!.trim().isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    details.collectionDescription!.trim(),
-                    maxLines: 5,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.silver,
-                      height: 1.35,
-                    ),
-                  ),
-                ],
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   details.subtitlePrimary,

@@ -141,14 +141,14 @@ class LibraryDetailsScrollView extends StatelessWidget {
         ),
       if (details.type == LibraryDetailsType.artist &&
           details.artistTabs.isNotEmpty)
-        const SizedBox(height: AppSpacing.xxxl),
+        const SizedBox(height: AppSpacing.xl),
       if (details.type == LibraryDetailsType.artist)
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.lg,
             0,
             AppSpacing.lg,
-            AppSpacing.xxl,
+            AppSpacing.lg,
           ),
           child: Text(
             LibraryStrings.popular,
@@ -212,6 +212,36 @@ class LibraryDetailsScrollView extends StatelessWidget {
         SliverToBoxAdapter(
           child: _BrowseRecommendationShelvesSection(
             shelves: details.browseRecommendationShelves,
+          ),
+        ),
+      if (details.type == LibraryDetailsType.artist &&
+          details.collectionDescription != null &&
+          details.collectionDescription!.trim().isNotEmpty)
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg,
+              AppSpacing.xl,
+              AppSpacing.lg,
+              AppSpacing.xl,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'About',
+                  style: AppTextStyles.featureHeading,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  details.collectionDescription!.trim(),
+                  style: AppTextStyles.body.copyWith(
+                    color: AppColors.silver,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       SliverToBoxAdapter(

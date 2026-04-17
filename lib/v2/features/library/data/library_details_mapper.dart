@@ -11,6 +11,29 @@ String? _nonEmptyUrl(String url) {
   return t.isEmpty ? null : t;
 }
 
+/// Normalises or upgrades thumbnail URLs to a higher resolution where possible.
+String _upgradeThumbResolution(String? url, [String videoId = '']) {
+  if (url == null || url.isEmpty) return '';
+  if (url.contains('lh3.googleusercontent.com') ||
+      url.contains('yt3.ggpht.com')) {
+    return url.replaceAllMapped(
+      RegExp(r'=w\d+-h\d+'),
+      (_) => '=w544-h544',
+    );
+  }
+  if (url.contains('i.ytimg.com')) {
+    if (url.contains('/default.') ||
+        url.contains('/mqdefault.') ||
+        url.contains('/hqdefault.')) {
+      return url.replaceAll(
+        RegExp(r'/(default|mqdefault|hqdefault)\.'),
+        '/maxresdefault.',
+      );
+    }
+  }
+  return url;
+}
+
 /// Prefer list/grid avatar — **same URL as [LibraryDetailMiniCover]**.
 ///
 /// Do not run [upgradeThumbResolution] here: forcing `=w544-h544` on ggpht
@@ -61,7 +84,7 @@ LibraryDetailsModel libraryDetailsFromBrowse({
   /// Artist immersive header often supplies a wide banner; library [item.imageUrl]
   /// is the same square avatar as grids and [LibraryDetailMiniCover].
   final String? heroUrl = type == LibraryDetailsType.artist
-      ? _artistHeroImageUrl(item: item, meta: meta)
+      ? _upgradeThumbResolution(_artistHeroImageUrl(item: item, meta: meta))
       : (meta?.curatorThumbnailUrl ??
           meta?.channelThumbnailUrl ??
           item.imageUrl);

@@ -53,8 +53,8 @@ class LibraryPlaylistDockActionLeading extends StatelessWidget {
           LibraryDetailMiniCover(
             item: details.item,
             imageUrlOverride: firstNonEmptyTrackThumbForDock(details),
-            width: LibraryDetailsLayout.playlistActionMiniCoverWidth,
-            height: LibraryDetailsLayout.playlistActionMiniCoverHeight,
+            width: LibraryDetailsLayout.miniCoverWidth,
+            height: LibraryDetailsLayout.miniCoverHeight,
             useCollectionImageWhenNoOverride: false,
           ),
           const SizedBox(width: AppSpacing.sm),
@@ -85,7 +85,11 @@ class LibraryArtistDockActionLeading extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        LibraryDetailMiniCover(item: details.item),
+        LibraryDetailMiniCover(
+          item: details.item,
+          width: LibraryDetailsLayout.miniCoverWidth,
+          height: LibraryDetailsLayout.miniCoverHeight,
+        ),
         const SizedBox(width: AppSpacing.md),
         Flexible(
           child: Align(

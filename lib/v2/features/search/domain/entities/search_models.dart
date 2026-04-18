@@ -27,6 +27,7 @@ class SearchResultItem {
     required this.imageUrl,
     this.trailingText,
     this.isVerified = false,
+    this.videoId,
   });
 
   final String id;
@@ -36,6 +37,7 @@ class SearchResultItem {
   final String? imageUrl;
   final String? trailingText;
   final bool isVerified;
+  final String? videoId;
 }
 
 class SearchResultsData {

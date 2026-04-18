@@ -20,65 +20,17 @@ class _TrackRow extends StatelessWidget {
     final item = details.item;
     final showThumbnail = type != LibraryDetailsType.album;
 
-    return Material(
-      color: AppColors.transparent,
-      child: InkWell(
-        onLongPress: () => onRequestTrackOptions(track),
-        borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (showThumbnail)
-                LibraryDetailMiniCover(
-                  item: item,
-                  imageUrlOverride: track.thumbUrl,
-                  size: LibraryDetailsLayout.trackRowArtSize,
-                ),
-              if (showThumbnail) const SizedBox(width: AppSpacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      track.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.menuItemLabel,
-                    ),
-                    SizedBox(height: LibraryDetailsLayout.trackTitleSubtitleGap),
-                    Text(
-                      track.subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.small.copyWith(color: AppColors.silver),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: LibraryDetailsLayout.trackMoreIconSize + 8,
-                  minHeight: LibraryDetailsLayout.trackMoreIconSize + 8,
-                ),
-                onPressed: _sheetAvailable
-                    ? () => onRequestTrackOptions(track)
-                    : null,
-                icon: AppIcon(
-                  icon: AppIcons.moreVert,
-                  color: _sheetAvailable
-                      ? AppColors.silver
-                      : AppColors.silver.withValues(alpha: 0.35),
-                  size: LibraryDetailsLayout.trackMoreIconSize,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    // For albums, use the collection artwork; for others, use track thumbnail
+    final imageUrl = showThumbnail ? track.thumbUrl : item.imageUrl;
+
+    return TrackTile(
+      title: track.title,
+      subtitle: track.subtitle,
+      imageUrl: imageUrl,
+      onLongPress: _sheetAvailable ? () => onRequestTrackOptions(track) : null,
+      onMorePressed: _sheetAvailable ? () => onRequestTrackOptions(track) : null,
+      showMoreIcon: true,
+      enableMoreIcon: _sheetAvailable,
     );
   }
 }

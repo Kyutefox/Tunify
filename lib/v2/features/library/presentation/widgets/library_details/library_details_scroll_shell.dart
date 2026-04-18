@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
-import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/core/widgets/lists/track_tile.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
@@ -13,7 +12,6 @@ import 'package:tunify/v2/features/library/presentation/providers/library_collec
 import 'package:tunify/v2/features/library/presentation/library_list_invalidation.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_collection_scroll_docking.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_detail_dock_action_widgets.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_detail_mini_cover.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_details_scroll_view.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
@@ -639,68 +637,17 @@ class _SearchTrackRowInk extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final item = details.item;
-    return Material(
-      color: AppColors.transparent,
-      child: InkWell(
-        onLongPress: onOpenSheet,
-        borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              if (showThumbnail) ...[
-                LibraryDetailMiniCover(
-                  item: item,
-                  imageUrlOverride: track.thumbUrl,
-                  size: LibraryDetailsLayout.trackRowArtSize,
-                ),
-                const SizedBox(width: AppSpacing.md),
-              ],
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      track.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.menuItemLabel,
-                    ),
-                    SizedBox(
-                      height: LibraryDetailsLayout.trackTitleSubtitleGap,
-                    ),
-                    Text(
-                      track.subtitle,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.small.copyWith(
-                        color: AppColors.silver,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: LibraryDetailsLayout.trackMoreIconSize + 8,
-                  minHeight: LibraryDetailsLayout.trackMoreIconSize + 8,
-                ),
-                onPressed: _sheetAvailable ? onOpenSheet : null,
-                icon: AppIcon(
-                  icon: AppIcons.moreVert,
-                  color: _sheetAvailable
-                      ? AppColors.silver
-                      : AppColors.silver.withValues(alpha: 0.35),
-                  size: LibraryDetailsLayout.trackMoreIconSize,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+    // For albums, use the collection artwork; for others, use track thumbnail
+    final imageUrl = showThumbnail ? track.thumbUrl : item.imageUrl;
+
+    return TrackTile(
+      title: track.title,
+      subtitle: track.subtitle,
+      imageUrl: imageUrl,
+      onLongPress: _sheetAvailable ? onOpenSheet : null,
+      onMorePressed: _sheetAvailable ? onOpenSheet : null,
+      showMoreIcon: true,
+      enableMoreIcon: _sheetAvailable,
     );
   }
 }

@@ -1,13 +1,12 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
-import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
 import 'package:tunify/v2/core/widgets/avatar/network_avatar_image.dart';
+import 'package:tunify/v2/core/widgets/lists/track_tile.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_carousel_shelf.dart';
 import 'package:tunify/v2/features/library/data/library_browse_recommendation_carousel_mapper.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_browse_recommendation_shelf.dart';
@@ -19,7 +18,6 @@ import 'package:tunify/v2/features/library/domain/library_playlist_management_pi
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_collection_artwork.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_detail_mini_cover.dart';
 
 part 'library_details_scroll_view.part_header.dart';
 part 'library_details_scroll_view.part_hero.dart';
@@ -197,7 +195,7 @@ class LibraryDetailsScrollView extends StatelessWidget {
       SliverPadding(
         padding: const EdgeInsets.only(
           left: AppSpacing.lg,
-          right: AppSpacing.lg,
+          right: 0,
         ),
         sliver: SliverList.separated(
           itemCount: details.tracks.length,

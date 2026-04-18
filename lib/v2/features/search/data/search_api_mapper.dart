@@ -118,6 +118,7 @@ abstract final class SearchApiMapper {
       title: title,
       subtitle: normalizedSubtitle,
       imageUrl: _safeImage(json['artwork_url']),
+      videoId: id, // For tracks, id is the videoId
     );
   }
 

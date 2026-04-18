@@ -6,7 +6,11 @@ import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
+import 'package:tunify/v2/core/widgets/lists/track_tile.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/navigation/open_library_detail.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 import 'package:tunify/v2/features/search/domain/entities/search_models.dart';
 import 'package:tunify/v2/features/search/presentation/providers/search_providers.dart';
 
@@ -37,7 +41,7 @@ class SearchResultBody extends StatelessWidget {
       },
       child: ListView(
         padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg, AppSpacing.md, AppSpacing.lg, 120),
+            AppSpacing.lg, AppSpacing.md, 0, 120),
         children: [
           if (results.selectedFilter == SearchFilter.all &&
               results.topResult != null) ...[
@@ -195,10 +199,15 @@ class SearchSuggestionBody extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
                 child: Row(
                   children: [
-                    AppIcon(
-                        icon: AppIcons.search,
-                        color: AppColors.white,
-                        size: 18),
+                    SizedBox(
+                      width: 48,
+                      child: Center(
+                        child: AppIcon(
+                            icon: AppIcons.search,
+                            color: AppColors.white,
+                            size: 18),
+                      ),
+                    ),
                     const SizedBox(width: AppSpacing.lg),
                     Expanded(
                       child: Text(
@@ -223,7 +232,7 @@ class SearchSuggestionBody extends StatelessWidget {
           ...simpleItems.take(8).map(
                 (item) => Padding(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                      const EdgeInsets.only(left: AppSpacing.lg),
                   child: _ResultListItem(item: item),
                 ),
               ),
@@ -395,48 +404,76 @@ class _ResultListItem extends StatelessWidget {
 
   final SearchResultItem item;
 
+  LibraryItemKind? _libraryKindFromSearch(SearchItemKind kind) {
+    return switch (kind) {
+      SearchItemKind.artist => LibraryItemKind.artist,
+      SearchItemKind.album => LibraryItemKind.album,
+      SearchItemKind.playlist => LibraryItemKind.playlist,
+      _ => null,
+    };
+  }
+
+  void _handleMoreOrLongPress(BuildContext context) {
+    final kind = _libraryKindFromSearch(item.kind);
+    if (kind != null) {
+      // Show options for artist/album/playlist
+      final libraryItem = LibraryItem(
+        id: item.id,
+        title: item.title,
+        subtitle: item.subtitle,
+        kind: kind,
+        imageUrl: item.imageUrl,
+        ytmBrowseId: item.id,
+      );
+      showLibraryItemOptionsSheet(context, libraryItem);
+    } else if (item.kind == SearchItemKind.song && item.videoId != null) {
+      // Show track options for songs
+      final track = LibraryDetailsTrack(
+        title: item.title,
+        subtitle: item.subtitle,
+        videoId: item.videoId!,
+        thumbUrl: item.imageUrl,
+      );
+      // Create a minimal LibraryDetailsModel for the track options sheet
+      final details = LibraryDetailsModel(
+        type: LibraryDetailsType.playlist,
+        item: LibraryItem(
+          id: 'search_result',
+          title: 'Search Result',
+          subtitle: '',
+          kind: LibraryItemKind.playlist,
+          isUserOwnedPlaylist: true,
+        ),
+        searchHint: '',
+        title: item.title,
+        subtitlePrimary: item.subtitle,
+        tracks: [],
+      );
+      showLibraryItemOptionsSheetForTrack(context, details, track);
+    } else {
+      // For other types (video, episode, etc.), navigate to detail
+      pushLibraryDetailFromSearch(context, item);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isArtist = item.kind == SearchItemKind.artist;
-    return InkWell(
+    final kind = _libraryKindFromSearch(item.kind);
+    final hasVideoId = item.kind == SearchItemKind.song && item.videoId != null;
+    final canShowOptions = kind != null || hasVideoId;
+
+    return TrackTile(
+      title: item.title,
+      subtitle: item.subtitle,
+      imageUrl: item.imageUrl,
+      isArtist: isArtist,
+      isVerified: item.isVerified,
       onTap: () => pushLibraryDetailFromSearch(context, item),
-      child: SizedBox(
-        height: 64,
-        child: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(
-                  isArtist ? AppBorderRadius.fullPill : AppBorderRadius.subtle),
-              child: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: ArtworkOrGradient(imageUrl: item.imageUrl)),
-            ),
-            const SizedBox(width: AppSpacing.smMd),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.listItemTitle,
-                  ),
-                  Text(
-                    item.subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.small,
-                  ),
-                ],
-              ),
-            ),
-            AppIcon(icon: AppIcons.chevronRight, color: AppColors.silver),
-          ],
-        ),
-      ),
+      onMorePressed: canShowOptions ? () => _handleMoreOrLongPress(context) : null,
+      onLongPress: canShowOptions ? () => _handleMoreOrLongPress(context) : null,
+      showMoreIcon: true,
+      enableMoreIcon: canShowOptions,
     );
   }
 }

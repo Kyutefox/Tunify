@@ -178,9 +178,9 @@ class LibraryDetailsScrollView extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.fromLTRB(
             AppSpacing.lg,
-            AppSpacing.md,
+            0,
             AppSpacing.lg,
-            AppSpacing.md,
+            0,
           ),
           child: _AddToPlaylistRow(),
         ),

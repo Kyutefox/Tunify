@@ -611,14 +611,11 @@ class _AnimatedTrackRowState extends State<_AnimatedTrackRow>
       axisAlignment: -1.0,
       child: FadeTransition(
         opacity: _curve,
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.md),
-          child: _SearchTrackRowInk(
-            details: widget.details,
-            track: widget.track,
-            showThumbnail: widget.showThumbnail,
-            onOpenSheet: () => widget.onRequestTrackOptions(widget.track),
-          ),
+        child: _SearchTrackRowInk(
+          details: widget.details,
+          track: widget.track,
+          showThumbnail: widget.showThumbnail,
+          onOpenSheet: () => widget.onRequestTrackOptions(widget.track),
         ),
       ),
     );

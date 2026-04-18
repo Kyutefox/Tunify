@@ -144,24 +144,28 @@ class _AddToPlaylistRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: LibraryDetailsLayout.addRowLeadingSize,
-          height: LibraryDetailsLayout.addRowLeadingSize,
-          color: AppColors.darkSurface,
-          child: Icon(
-            Icons.add,
-            color: AppColors.silver,
-            size: LibraryDetailsLayout.addRowPlusIconSize,
+    return SizedBox(
+      height: LibraryDetailsLayout.addRowHeight,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: LibraryDetailsLayout.addRowLeadingSize,
+            height: LibraryDetailsLayout.addRowLeadingSize,
+            color: AppColors.darkSurface,
+            child: Icon(
+              Icons.add,
+              color: AppColors.silver,
+              size: LibraryDetailsLayout.addRowPlusIconSize,
+            ),
           ),
-        ),
-        const SizedBox(width: AppSpacing.md),
-        Text(
-          LibraryStrings.addToThisPlaylist,
-          style: AppTextStyles.body.copyWith(color: AppColors.white),
-        ),
-      ],
+          const SizedBox(width: AppSpacing.md),
+          Text(
+            LibraryStrings.addToThisPlaylist,
+            style: AppTextStyles.body.copyWith(color: AppColors.white),
+          ),
+        ],
+      ),
     );
   }
 }

@@ -50,8 +50,9 @@ abstract final class LibraryDetailsLayout {
   static const double chipIconSize = 18;
   static const double chipLabelFontSize = 9.5;
 
-  static const double addRowLeadingSize = 56;
-  static const double addRowPlusIconSize = 36;
+  static const double addRowLeadingSize = 48;
+  static const double addRowPlusIconSize = 24;
+  static const double addRowHeight = 64;
 
   static const double trackRowArtSize = 58;
   static const double trackTitleSubtitleGap = 2;

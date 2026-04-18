@@ -509,7 +509,7 @@ class _SearchModeOverlay extends StatelessWidget {
               padding: EdgeInsets.fromLTRB(
                 AppSpacing.lg,
                 AppSpacing.sm,
-                AppSpacing.lg,
+                0,
                 bottomInset +
                     LibraryDetailsLayout.scrollBottomExtraPadding,
               ),

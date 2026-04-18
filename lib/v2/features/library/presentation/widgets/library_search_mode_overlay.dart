@@ -168,7 +168,7 @@ class LibrarySearchModeOverlay extends StatelessWidget {
                     padding: EdgeInsets.fromLTRB(
                       AppSpacing.lg,
                       AppSpacing.sm,
-                      AppSpacing.lg,
+                      0,
                       bottomPad,
                     ),
                     children: [
@@ -204,7 +204,7 @@ class LibrarySearchModeOverlay extends StatelessWidget {
                     padding: EdgeInsets.fromLTRB(
                       LibraryLayout.horizontalPadding,
                       AppSpacing.sm,
-                      LibraryLayout.horizontalPadding,
+                      0,
                       bottomPad,
                     ),
                     gridDelegate:

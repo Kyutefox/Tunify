@@ -131,40 +131,34 @@ class LibraryArtistDockActionLeading extends StatelessWidget {
           ),
         ),
         const SizedBox(width: AppSpacing.md),
-        Flexible(
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: OutlinedButton(
-              onPressed: (followBusy || onFollowPressed == null)
-                  ? null
-                  : onFollowPressed,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.white,
-                side: const BorderSide(color: AppColors.lightBorder),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.lg,
-                  vertical: AppSpacing.sm,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                minimumSize: Size.zero,
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              ),
-              child: followBusy
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : Text(
-                      isFollowing
-                          ? LibraryStrings.following
-                          : LibraryStrings.follow,
-                      style: AppTextStyles.smallBold,
-                    ),
+        OutlinedButton(
+          onPressed: (followBusy || onFollowPressed == null)
+              ? null
+              : onFollowPressed,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.white,
+            side: const BorderSide(color: AppColors.lightBorder),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppSpacing.lg,
+              vertical: AppSpacing.sm,
+            ),
+            minimumSize: const Size(0, 32),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(999),
             ),
           ),
+          child: followBusy
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(
+                  isFollowing
+                      ? LibraryStrings.following
+                      : LibraryStrings.follow,
+                  style: AppTextStyles.smallBold,
+                ),
         ),
         const SizedBox(width: AppSpacing.md),
         _DockToolbarIcon(icon: AppIcons.moreVert, onPressed: onMorePressed),

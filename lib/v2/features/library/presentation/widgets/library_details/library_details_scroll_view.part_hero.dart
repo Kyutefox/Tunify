@@ -183,7 +183,7 @@ class _PlaylistHero extends StatelessWidget {
               ],
               _PlaylistOwnerAvatar(details: details),
               const SizedBox(width: AppSpacing.sm),
-              Text(details.subtitlePrimary, style: AppTextStyles.bodyBold),
+              Text(details.subtitlePrimary, style: AppTextStyles.bodyBold.copyWith(fontSize: LibraryDetailsLayout.miniCoverBorderCreatorFontSize)),
             ],
           ),
         ),
@@ -259,7 +259,7 @@ class _ArtistHero extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   details.subtitlePrimary,
-                  style: AppTextStyles.body.copyWith(color: AppColors.silver),
+                  style: AppTextStyles.body.copyWith(color: AppColors.silver, fontSize: LibraryDetailsLayout.miniCoverBorderCreatorFontSize),
                 ),
               ],
             ),

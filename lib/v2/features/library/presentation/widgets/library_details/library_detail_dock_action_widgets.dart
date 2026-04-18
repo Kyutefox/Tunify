@@ -5,8 +5,11 @@ import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/core/widgets/buttons/tunify_play_circle_button.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
+import 'package:tunify/v2/features/library/domain/utils/track_selection.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_detail_mini_cover.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_detail_mini_cover_animated_border.dart';
 class _DockToolbarIcon extends StatelessWidget {
   const _DockToolbarIcon({
     required this.icon,
@@ -49,15 +52,29 @@ class LibraryPlaylistDockActionLeading extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUserCreated = details.item.isUserOwnedPlaylist;
+    final isStaticPlaylist = details.isStaticPlaylist;
     final currentlyInLibrary = isInLibrary ?? details.item.isInServerLibrary;
+    final randomTrackThumbUrl = TrackSelection.getRandomTrackThumbUrl(details);
 
-    // Mini cover hidden for all collection types
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        LibraryDetailMiniCoverAnimatedBorder(
+          width: LibraryDetailsLayout.playlistActionMiniCoverWidth,
+          height: LibraryDetailsLayout.playlistActionMiniCoverHeight,
+          child: LibraryDetailMiniCover(
+            item: details.item,
+            imageUrlOverride: randomTrackThumbUrl,
+            width: LibraryDetailsLayout.playlistActionMiniCoverWidth,
+            height: LibraryDetailsLayout.playlistActionMiniCoverHeight,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
         if (isUserCreated) ...[
           _DockToolbarIcon(icon: AppIcons.download),
           _DockToolbarIcon(icon: AppIcons.share),
+        ] else if (isStaticPlaylist) ...[
+          _DockToolbarIcon(icon: AppIcons.download),
         ] else ...[
           _DockToolbarIcon(
             icon: currentlyInLibrary ? AppIcons.check : AppIcons.addCircle,
@@ -68,7 +85,7 @@ class LibraryPlaylistDockActionLeading extends StatelessWidget {
         ],
         _DockToolbarIcon(icon: AppIcons.moreVert, onPressed: onMorePressed),
         const Spacer(),
-        Icon(
+        const Icon(
           Icons.shuffle_rounded,
           color: AppColors.brandGreen,
           size: LibraryDetailsLayout.shuffleIconSize,
@@ -98,10 +115,22 @@ class LibraryArtistDockActionLeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Mini cover hidden for all collection types
+    final randomTrackThumbUrl = TrackSelection.getRandomTrackThumbUrl(details);
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
+        LibraryDetailMiniCoverAnimatedBorder(
+          width: LibraryDetailsLayout.playlistActionMiniCoverWidth,
+          height: LibraryDetailsLayout.playlistActionMiniCoverHeight,
+          child: LibraryDetailMiniCover(
+            item: details.item,
+            imageUrlOverride: randomTrackThumbUrl,
+            width: LibraryDetailsLayout.playlistActionMiniCoverWidth,
+            height: LibraryDetailsLayout.playlistActionMiniCoverHeight,
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
         Flexible(
           child: Align(
             alignment: Alignment.centerLeft,

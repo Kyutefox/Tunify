@@ -85,4 +85,11 @@ abstract final class LibraryDetailsLayout {
   static const double bodyGradientNearBlackStopAlpha = 0.98;
 
   static const double scrollBottomExtraPadding = 12;
+
+  // Mini cover animated border constants
+  static const double miniCoverBorderOffset = 8;
+  static const double miniCoverBorderRadiusOffset = 2;
+  static const double miniCoverBorderRotationOffset = 180.0;
+  static const double miniCoverBorderCurveOffset = 0.375;
+  static const double miniCoverBorderCreatorFontSize = 12;
 }

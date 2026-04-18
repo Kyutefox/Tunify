@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/domain/library_playlist_management_pills.dart';
@@ -33,7 +34,7 @@ LibraryDetailsModel libraryStaticSystemPlaylistDetails(LibraryItem item) {
               subtitle: 'Feb 18 · 51 min',
             ),
           ],
-    gradientTop: liked ? const Color(0xFF2F3FAF) : const Color(0xFF0A3D32),
+    gradientTop: liked ? AppColors.likedSongsDetailGradient : AppColors.yourEpisodesDetailGradient,
     showSortButton: true,
     showAddRow: true,
   );
@@ -51,7 +52,7 @@ LibraryDetailsModel libraryOfflinePlaylistShell(LibraryItem item) {
     typeSubtitle: 'Playlist',
     tracks: const [],
     heroImageUrl: item.imageUrl,
-    gradientTop: const Color(0xFF6589AE),
+    gradientTop: AppColors.libraryPlaylistGradientTop,
     chips: libraryPlaylistShowsManagementPills(item)
         ? LibraryPlaylistManagementChips.ordered
         : const <String>[],

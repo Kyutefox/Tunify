@@ -142,7 +142,7 @@ class _QuickCircleButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: busy ? null : onTap,
         customBorder: const CircleBorder(),
@@ -183,11 +183,7 @@ class _QuickCircleButton extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: AppTextStyles.small.copyWith(
-                  color: AppColors.silver,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 11,
-                ),
+                style: AppTextStyles.quickActionLabel,
               ),
             ],
           ),

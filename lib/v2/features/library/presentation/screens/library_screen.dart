@@ -144,8 +144,8 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.4),
-                      Colors.transparent,
+                      AppColors.nearBlack.withValues(alpha: 0.4),
+                      AppColors.transparent,
                     ],
                   ),
                 ),

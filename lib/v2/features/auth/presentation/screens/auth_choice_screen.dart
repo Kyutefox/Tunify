@@ -174,7 +174,7 @@ class AuthChoiceScreen extends StatelessWidget {
       width: double.infinity,
       height: AppSpacing.xxxl,
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         borderRadius: BorderRadius.circular(AppBorderRadius.fullPill),
         child: InkWell(
           onTap: onPressed,

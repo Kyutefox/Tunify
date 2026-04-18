@@ -267,7 +267,7 @@ class _LibraryDetailsScrollShellState
                 child: child,
               ),
               child: AppBar(
-                backgroundColor: Colors.transparent,
+                backgroundColor: AppColors.transparent,
                 elevation: 0,
                 scrolledUnderElevation: 0,
                 leading: Padding(
@@ -286,10 +286,7 @@ class _LibraryDetailsScrollShellState
                   builder: (_, opacity, __) => opacity >= 1.0
                       ? Text(
                           widget.details.title,
-                          style: AppTextStyles.sectionTitle.copyWith(
-                            fontSize: 17,
-                            color: AppColors.white,
-                          ),
+                          style: AppTextStyles.pinnedAppBarTitle,
                           overflow: TextOverflow.ellipsis,
                         )
                       : const SizedBox.shrink(),

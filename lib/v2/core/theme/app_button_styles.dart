@@ -141,7 +141,7 @@ class AppButtonStyles {
     return SizedBox(
       width: width,
       child: Material(
-        color: Colors.transparent,
+        color: AppColors.transparent,
         borderRadius: BorderRadius.circular(AppBorderRadius.fullPill),
         child: InkWell(
           onTap: onPressed,

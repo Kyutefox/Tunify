@@ -122,7 +122,7 @@ class SearchRecentBody extends ConsumerWidget {
                       child: ArtworkOrGradient(imageUrl: item.imageUrl),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: AppSpacing.smMd),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -139,7 +139,7 @@ class SearchRecentBody extends ConsumerWidget {
                               ),
                             ),
                             if (item.isVerified) ...[
-                              const SizedBox(width: 4),
+                              const SizedBox(width: AppSpacing.sm),
                               AppIcon(
                                   icon: AppIcons.verified,
                                   color: AppColors.announcementBlue,
@@ -310,7 +310,7 @@ class _TopResultItem extends StatelessWidget {
                   height: 48,
                   child: ArtworkOrGradient(imageUrl: item.imageUrl)),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.smMd),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -412,7 +412,7 @@ class _ResultListItem extends StatelessWidget {
                   height: 48,
                   child: ArtworkOrGradient(imageUrl: item.imageUrl)),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: AppSpacing.smMd),
             Expanded(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,

@@ -54,7 +54,7 @@ class AuthInputField extends StatelessWidget {
           onChanged: onChanged,
           decoration: InputDecoration(
             filled: true,
-            fillColor: Colors.transparent,
+            fillColor: AppColors.transparent,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
               borderSide: const BorderSide(

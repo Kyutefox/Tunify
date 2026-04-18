@@ -55,7 +55,7 @@ class TunifyBottomNavBar extends StatelessWidget {
             final selected = currentIndex == i;
             return Expanded(
               child: Material(
-                color: Colors.transparent,
+                color: AppColors.transparent,
                 child: InkWell(
                   onTap: () => onTap(i),
                   splashColor: AppColors.white.withValues(alpha: 0.08),

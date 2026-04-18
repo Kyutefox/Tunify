@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 
@@ -41,7 +41,7 @@ LibraryDetailsModel libraryEphemeralHomeTrackShelfDetails(LibraryItem item) {
     typeSubtitle: 'Playlist',
     tracks: tracks,
     heroImageUrl: item.imageUrl,
-    gradientTop: const Color(0xFF6589AE),
+    gradientTop: AppColors.libraryPlaylistGradientTop,
     chips: const [],
   );
 }

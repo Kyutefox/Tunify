@@ -93,7 +93,7 @@ class SessionAvatarButton extends ConsumerWidget {
     final avatarUrl = avatarUrlFromUser(user);
 
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         customBorder: const CircleBorder(),
         onTap: onTap,

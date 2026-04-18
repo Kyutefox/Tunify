@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_browse_recommendation_shelf.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
@@ -109,7 +110,7 @@ LibraryDetailsModel libraryDetailsFromBrowse({
       collectionStatInfo: null, // Artists don't have collection stat info
       tracks: rows,
       heroImageUrl: heroUrl,
-      gradientTop: const Color(0xFF121212),
+      gradientTop: AppColors.libraryArtistGradientTop,
       artistTabs: const ['Music', 'Events', 'Merch'],
       browseRecommendationShelves: browseRecommendationShelves,
     );
@@ -136,7 +137,7 @@ LibraryDetailsModel libraryDetailsFromBrowse({
     ownerAvatarUrl: ownerAvatarUrl,
     tracks: rows,
     heroImageUrl: heroUrl,
-    gradientTop: const Color(0xFF6589AE),
+    gradientTop: AppColors.libraryPlaylistGradientTop,
     chips: type == LibraryDetailsType.album
         ? const <String>[]
         : (libraryPlaylistShowsManagementPills(item)

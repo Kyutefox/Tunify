@@ -396,7 +396,7 @@ class _CollapsedSearchInput extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         borderRadius: BorderRadius.circular(AppBorderRadius.comfortable),
         onTap: onTap,

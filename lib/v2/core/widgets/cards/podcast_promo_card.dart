@@ -95,7 +95,7 @@ class PodcastPromoCard extends StatelessWidget {
           ),
         ),
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: PodcastPromoLayout.compactPlaylistPaddingH,
@@ -135,9 +135,7 @@ class PodcastPromoCard extends StatelessWidget {
                                 Expanded(
                                   child: Text(
                                     title,
-                                    style: AppTextStyles.menuTitleName.copyWith(
-                                      fontSize: 19,
-                                      height: 1.15,
+                                    style: AppTextStyles.podcastPromoTitle.copyWith(
                                       letterSpacing:
                                           PodcastPromoLayout
                                               .compactPlaylistTitleLetterSpacing,
@@ -217,7 +215,7 @@ class PodcastPromoCard extends StatelessWidget {
       child: ColoredBox(
         color: Color(backgroundArgb),
         child: Material(
-          color: Colors.transparent,
+          color: AppColors.transparent,
           child: Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppSpacing.lg,

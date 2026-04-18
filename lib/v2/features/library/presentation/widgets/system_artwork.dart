@@ -39,7 +39,7 @@ class SystemArtwork extends StatelessWidget {
         child: Center(
           child: AppIcon(
             icon: config.icon,
-            color: Colors.white,
+            color: AppColors.white,
             size: size * 0.42,
           ),
         ),

@@ -90,4 +90,16 @@ class AppColors {
   static const Color librarySearchFieldTone = Color(0xFF6D8AA9);
   static const Color libraryHeroCoverShadow = Color(0x66000000);
   static const Color libraryDefaultGradientTop = Color(0xFF4B6F95);
+  static const Color libraryPlaylistGradientTop = Color(0xFF6589AE);
+  static const Color libraryArtistGradientTop = nearBlack;
+  static const Color likedSongsDetailGradient = Color(0xFF2F3FAF);
+  static const Color yourEpisodesDetailGradient = Color(0xFF0A3D32);
+
+  /// Semantic alias for `Colors.transparent` — avoids raw Flutter SDK usage.
+  static const Color transparent = Color(0x00000000);
+
+  /// Gradient overlays
+  static const Color headerShadowStart = Color(0x66000000);
+  static const Color gradientWhite14 = Color(0x24FFFFFF);
+  static const Color gradientWhite06 = Color(0x0FFFFFFF);
 }

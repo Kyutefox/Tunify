@@ -162,4 +162,28 @@ class AppTextStyles {
     fontWeight: FontWeight.w400,
     color: AppColors.white,
   );
+
+  // Pinned app bar title — 17px/700 (compact variant of section title)
+  static const TextStyle pinnedAppBarTitle = TextStyle(
+    fontSize: 17,
+    fontWeight: FontWeight.w700,
+    color: AppColors.white,
+    height: 1.0,
+  );
+
+  // Quick action label — 11px/500 (smaller than badge)
+  static const TextStyle quickActionLabel = TextStyle(
+    fontSize: 11,
+    fontWeight: FontWeight.w500,
+    color: AppColors.silver,
+    height: 1.0,
+  );
+
+  // Podcast promo title — 19px/700 (between feature heading and section title)
+  static const TextStyle podcastPromoTitle = TextStyle(
+    fontSize: 19,
+    fontWeight: FontWeight.w700,
+    color: AppColors.white,
+    height: 1.15,
+  );
 }

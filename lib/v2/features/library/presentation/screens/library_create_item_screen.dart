@@ -91,9 +91,9 @@ class _LibraryCreateItemScreenState extends ConsumerState<LibraryCreateItemScree
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.white.withValues(alpha: 0.14),
-                    Colors.white.withValues(alpha: 0.06),
-                    Colors.transparent,
+                    AppColors.gradientWhite14,
+                    AppColors.gradientWhite06,
+                    AppColors.transparent,
                   ],
                   stops: const [0.0, 0.35, 1.0],
                 ),

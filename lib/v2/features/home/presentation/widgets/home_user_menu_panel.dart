@@ -19,7 +19,7 @@ Future<void> showHomeUserMenu(BuildContext context) {
     useRootNavigator: true,
     barrierDismissible: true,
     barrierLabel: localizations.modalBarrierDismissLabel,
-    barrierColor: Colors.transparent,
+    barrierColor: AppColors.transparent,
     transitionDuration: const Duration(milliseconds: 280),
     pageBuilder: (dialogContext, animation, secondaryAnimation) {
       final size = MediaQuery.sizeOf(dialogContext);
@@ -353,7 +353,7 @@ class _MenuItemRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: AppColors.transparent,
       child: InkWell(
         onTap: onTap,
         child: Padding(

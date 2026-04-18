@@ -38,6 +38,7 @@ class AppIcons {
   static List<List<dynamic>> get delete => HugeIcons.strokeRoundedDelete01;
   static List<List<dynamic>> get edit => HugeIcons.strokeRoundedEdit04;
   static List<List<dynamic>> get share => HugeIcons.strokeRoundedShare01;
+  static List<List<dynamic>> get download => HugeIcons.strokeRoundedDownloadCircle01;
 
   // View modes
   static List<List<dynamic>> get gridView => HugeIcons.strokeRoundedGridView;
@@ -81,7 +82,6 @@ class AppIcons {
   // Organization
   static List<List<dynamic>> get sort => HugeIcons.strokeRoundedSorting01;
   static List<List<dynamic>> get dragHandle => HugeIcons.strokeRoundedDrag01;
-  static List<List<dynamic>> get download => HugeIcons.strokeRoundedDownload03;
   static List<List<dynamic>> get pin => HugeIcons.strokeRoundedPin;
   static List<List<dynamic>> get pushPin => HugeIcons.strokeRoundedPin;
   static List<List<dynamic>> get pinOff => HugeIcons.strokeRoundedPin02;

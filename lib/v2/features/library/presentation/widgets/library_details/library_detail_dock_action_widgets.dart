@@ -8,10 +8,15 @@ import 'package:tunify/v2/features/library/domain/entities/library_details.dart'
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
 class _DockToolbarIcon extends StatelessWidget {
-  const _DockToolbarIcon({required this.icon, this.onPressed});
+  const _DockToolbarIcon({
+    required this.icon,
+    this.onPressed,
+    this.isPrimary = false,
+  });
 
   final List<List<dynamic>> icon;
   final VoidCallback? onPressed;
+  final bool isPrimary;
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +24,7 @@ class _DockToolbarIcon extends StatelessWidget {
       onPressed: onPressed,
       icon: AppIcon(
         icon: icon,
-        color: AppColors.silver,
+        color: isPrimary ? AppColors.brandGreen : AppColors.silver,
         size: LibraryDetailsLayout.toolbarActionIconSize,
       ),
     );
@@ -31,20 +36,36 @@ class LibraryPlaylistDockActionLeading extends StatelessWidget {
   const LibraryPlaylistDockActionLeading({
     super.key,
     required this.details,
+    this.onAddPressed,
     this.onMorePressed,
+    this.isInLibrary,
   });
 
   final LibraryDetailsModel details;
+  final VoidCallback? onAddPressed;
   final VoidCallback? onMorePressed;
+  final bool? isInLibrary;
 
   @override
   Widget build(BuildContext context) {
+    final isUserCreated = details.item.isUserOwnedPlaylist;
+    final currentlyInLibrary = isInLibrary ?? details.item.isInServerLibrary;
+
     // Mini cover hidden for all collection types
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _DockToolbarIcon(icon: AppIcons.download),
-        _DockToolbarIcon(icon: AppIcons.share),
+        if (isUserCreated) ...[
+          _DockToolbarIcon(icon: AppIcons.download),
+          _DockToolbarIcon(icon: AppIcons.share),
+        ] else ...[
+          _DockToolbarIcon(
+            icon: currentlyInLibrary ? AppIcons.check : AppIcons.addCircle,
+            onPressed: onAddPressed,
+            isPrimary: currentlyInLibrary,
+          ),
+          _DockToolbarIcon(icon: AppIcons.download),
+        ],
         _DockToolbarIcon(icon: AppIcons.moreVert, onPressed: onMorePressed),
         const Spacer(),
         Icon(
@@ -118,11 +139,6 @@ class LibraryArtistDockActionLeading extends StatelessWidget {
         ),
         const SizedBox(width: AppSpacing.md),
         _DockToolbarIcon(icon: AppIcons.moreVert, onPressed: onMorePressed),
-        Icon(
-          Icons.shuffle_rounded,
-          color: AppColors.brandGreen,
-          size: LibraryDetailsLayout.shuffleIconSize,
-        ),
         const SizedBox(width: LibraryDetailsLayout.dockedToolbarReserveForPlay),
       ],
     );

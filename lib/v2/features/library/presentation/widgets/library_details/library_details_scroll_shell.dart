@@ -341,7 +341,14 @@ class _LibraryDetailsScrollShellState
                     )
                   : LibraryPlaylistDockActionLeading(
                       details: widget.details,
+                      onAddPressed: _remoteCollectionSupported()
+                          ? _toggleRemoteCollection
+                          : null,
                       onMorePressed: _openLibraryItemOptionsFromDock,
+                      isInLibrary: collectionSaved?.maybeWhen(
+                            data: (v) => v,
+                            orElse: () => false,
+                          ),
                     ),
             ),
           ),

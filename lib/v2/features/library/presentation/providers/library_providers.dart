@@ -6,6 +6,7 @@ import 'package:tunify/v2/core/utils/logger.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
 import 'package:tunify/v2/features/library/data/library_browse_details_repository_impl.dart';
 import 'package:tunify/v2/features/library/data/library_list_gateway.dart';
+import 'package:tunify/v2/features/library/data/library_liked_songs_details_from_api.dart';
 import 'package:tunify/v2/features/library/data/library_write_gateway.dart';
 import 'package:tunify/v2/features/library/data/library_ephemeral_home_track_shelf_details.dart';
 import 'package:tunify/v2/features/library/data/library_offline_collection_details.dart';
@@ -169,9 +170,8 @@ Future<LibraryDetailsModel> _libraryDetailsWithResolvedPalette(
   }
 }
 
-bool _isStaticSystemPlaylist(LibraryItem item) {
-  return item.systemArtwork == SystemArtworkType.likedSongs ||
-      item.systemArtwork == SystemArtworkType.yourEpisodes;
+bool _isYourEpisodesSystemPlaylist(LibraryItem item) {
+  return item.systemArtwork == SystemArtworkType.yourEpisodes;
 }
 
 /// Remote browse details, static system playlists, or offline shells.
@@ -179,7 +179,7 @@ final libraryDetailsProvider = FutureProvider.autoDispose
     .family<LibraryDetailsModel, LibraryDetailRequest>((ref, request) async {
   final item = request.item;
   final browseId = item.ytmBrowseId?.trim();
-  final LibraryDetailsModel details;
+  late LibraryDetailsModel details;
   if (item.isEphemeralHomeTrackShelf && item.homeTrackVideoIds.isNotEmpty) {
     details = libraryEphemeralHomeTrackShelfDetails(item);
   } else if (browseId != null && browseId.isNotEmpty) {
@@ -196,11 +196,97 @@ final libraryDetailsProvider = FutureProvider.autoDispose
       );
       throw NetworkFailure(LibraryStrings.collectionDetailsLoadError);
     }
-  } else if (_isStaticSystemPlaylist(item)) {
+  } else if (item.systemArtwork == SystemArtworkType.likedSongs) {
+    try {
+      details = await loadLikedSongsPlaylistDetailsFromApi(
+        item: item,
+        gateway: ref.read(libraryWriteGatewayProvider),
+      );
+    } on Object catch (e, st) {
+      Logger.error(
+        'Liked songs list load failed',
+        tag: 'LibraryDetails',
+        error: e,
+        stackTrace: st,
+      );
+      throw NetworkFailure(LibraryStrings.collectionDetailsLoadError);
+    }
+  } else if (item.isUserOwnedPlaylist) {
+    try {
+      details = await loadUserOwnedPlaylistDetailsFromApi(
+        item: item,
+        gateway: ref.read(libraryWriteGatewayProvider),
+      );
+    } on Object catch (e, st) {
+      Logger.error(
+        'User playlist tracks load failed',
+        tag: 'LibraryDetails',
+        error: e,
+        stackTrace: st,
+      );
+      // Fallback to shell if API fails
+      details = libraryOfflinePlaylistShell(item);
+    }
+  } else if (_isYourEpisodesSystemPlaylist(item)) {
     details = libraryStaticSystemPlaylistDetails(item);
   } else {
     details = libraryOfflinePlaylistShell(item);
   }
 
   return _libraryDetailsWithResolvedPalette(details, item);
+});
+
+/// Root library row for Liked Songs (`playlist_kind = liked`), when present.
+final likedPlaylistLibraryItemProvider = Provider<LibraryItem?>((ref) {
+  final root = ref.watch(libraryRemoteItemsProvider(null));
+  return root.maybeWhen(
+    data: (items) {
+      for (final i in items) {
+        if (i.systemArtwork == SystemArtworkType.likedSongs) {
+          return i;
+        }
+      }
+      return null;
+    },
+    orElse: () => null,
+  );
+});
+
+/// Whether [videoId] is stored in the user's liked playlist on the server.
+final trackLikedStatusProvider =
+    FutureProvider.autoDispose.family<bool, String>((ref, videoId) async {
+  final v = videoId.trim();
+  if (v.isEmpty) {
+    return false;
+  }
+  return ref.read(libraryWriteGatewayProvider).fetchTrackLiked(trackId: v);
+});
+
+/// Playlist ids (user + liked) on the server that already contain [videoId].
+final trackPlaylistMembershipsProvider =
+    FutureProvider.autoDispose.family<Set<String>, String>((ref, videoId) async {
+  final v = videoId.trim();
+  if (v.isEmpty) {
+    return const {};
+  }
+  return ref.read(libraryWriteGatewayProvider).fetchTrackPlaylistMemberships(
+        trackId: v,
+      );
+});
+
+/// Track thumbnails for a user-owned playlist (first 4 tracks for cover generation).
+final playlistTrackThumbnailsProvider =
+    FutureProvider.autoDispose.family<List<String>, String>((ref, playlistId) async {
+  final id = playlistId.trim();
+  if (id.isEmpty) {
+    return const [];
+  }
+  try {
+    final tracks = await ref.read(libraryWriteGatewayProvider).fetchPlaylistTracks(
+      playlistId: id,
+    );
+    return tracks.take(4).map((t) => t.thumbUrl ?? '').where((url) => url.isNotEmpty).toList();
+  } catch (_) {
+    return const [];
+  }
 });

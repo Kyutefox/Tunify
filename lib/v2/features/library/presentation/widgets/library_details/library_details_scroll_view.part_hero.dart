@@ -287,6 +287,7 @@ class _Cover extends StatelessWidget {
       preferredImageUrl: details.heroImageUrl,
       size: size,
       borderRadius: r,
+      tracks: details.item.isUserOwnedPlaylist ? details.tracks : null,
     );
 
     return Container(

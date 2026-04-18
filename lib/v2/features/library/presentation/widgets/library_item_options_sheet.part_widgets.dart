@@ -1,7 +1,7 @@
 part of 'library_item_options_sheet.dart';
 
 class _SheetDragHandle extends StatelessWidget {
-  const _SheetDragHandle({super.key});
+  const _SheetDragHandle();
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class _SheetDragHandle extends StatelessWidget {
 }
 
 class _SheetDivider extends StatelessWidget {
-  const _SheetDivider({super.key});
+  const _SheetDivider();
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +30,7 @@ class _SheetDivider extends StatelessWidget {
 }
 
 class _ItemHeader extends StatelessWidget {
-  const _ItemHeader({super.key, required this.item});
+  const _ItemHeader({required this.item});
 
   final LibraryItem item;
 
@@ -79,7 +79,6 @@ class _ItemHeader extends StatelessWidget {
 
 class _SheetCircleButton extends StatelessWidget {
   const _SheetCircleButton({
-    super.key,
     required this.icon,
     required this.label,
     this.onTap,
@@ -153,7 +152,6 @@ class _SheetCircleButton extends StatelessWidget {
 
 class _OptionRow extends StatelessWidget {
   const _OptionRow({
-    super.key,
     required this.icon,
     required this.label,
     required this.onTap,
@@ -196,8 +194,15 @@ class _OptionRow extends StatelessWidget {
 }
 
 class _OptionAction {
-  const _OptionAction({required this.icon, required this.label});
+  const _OptionAction({
+    required this.icon,
+    required this.label,
+    this.customTap,
+  });
 
   final List<List<dynamic>> icon;
   final String label;
+
+  /// When set, the options sheet does not auto-pop; the callback owns navigation.
+  final void Function()? customTap;
 }

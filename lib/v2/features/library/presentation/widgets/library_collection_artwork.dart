@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/playlist_cover_generator.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/system_artwork.dart';
 
 /// Library / collection artwork: remote image, [SystemArtwork], or flat placeholder + icon.
@@ -11,13 +15,17 @@ import 'package:tunify/v2/features/library/presentation/widgets/system_artwork.d
 /// no gradients here (those stay on static system playlists and detail scaffold palettes).
 ///
 /// [preferredImageUrl] is checked before [item.imageUrl] (e.g. detail hero URL).
-class LibraryCollectionArtwork extends StatelessWidget {
+/// [tracks] can be provided to generate a mosaic cover for user-owned playlists.
+/// [loadTrackThumbnails] can be set to true to automatically load track thumbnails for user-owned playlists.
+class LibraryCollectionArtwork extends ConsumerWidget {
   const LibraryCollectionArtwork({
     super.key,
     required this.item,
     this.preferredImageUrl,
     required this.size,
     this.borderRadius = 4,
+    this.tracks,
+    this.loadTrackThumbnails = false,
   });
 
   final LibraryItem item;
@@ -26,6 +34,8 @@ class LibraryCollectionArtwork extends StatelessWidget {
   final String? preferredImageUrl;
   final double size;
   final double borderRadius;
+  final List<LibraryDetailsTrack>? tracks;
+  final bool loadTrackThumbnails;
 
   String? _effectiveUrl() {
     final p = preferredImageUrl?.trim();
@@ -40,7 +50,7 @@ class LibraryCollectionArtwork extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (item.systemArtwork != null) {
       return SystemArtwork(
         type: item.systemArtwork!,
@@ -57,6 +67,47 @@ class LibraryCollectionArtwork extends StatelessWidget {
       );
     }
 
+    // Use cover generator for user-owned playlists when tracks are provided
+    if (item.isUserOwnedPlaylist) {
+      if (tracks != null) {
+        return PlaylistCoverGenerator(
+          tracks: tracks!,
+          size: size,
+          borderRadius: BorderRadius.circular(borderRadius),
+          customImageUrl: _effectiveUrl(),
+        );
+      }
+      
+      // Load track thumbnails for library list/grid
+      if (loadTrackThumbnails) {
+        final thumbnailsAsync = ref.watch(playlistTrackThumbnailsProvider(item.id));
+        return thumbnailsAsync.when(
+          data: (thumbnails) {
+            final trackList = thumbnails.map((url) => LibraryDetailsTrack(
+              title: '',
+              subtitle: '',
+              thumbUrl: url,
+              videoId: '',
+              durationMs: 0,
+            )).toList();
+            
+            return PlaylistCoverGenerator(
+              tracks: trackList,
+              size: size,
+              borderRadius: BorderRadius.circular(borderRadius),
+              customImageUrl: _effectiveUrl(),
+            );
+          },
+          loading: () => _buildDefaultCover(),
+          error: (_, __) => _buildDefaultCover(),
+        );
+      }
+    }
+
+    return _buildDefaultCover();
+  }
+
+  Widget _buildDefaultCover() {
     final url = _effectiveUrl();
     if (url != null) {
       return ClipRRect(

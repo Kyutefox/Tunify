@@ -1,11 +1,26 @@
 import 'package:tunify/v2/core/network/tunify_api_client.dart';
 import 'package:tunify/v2/features/library/data/library_playlist_list_mapper.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 
 class LibraryWriteGateway {
   LibraryWriteGateway({required TunifyApiClient api}) : _api = api;
 
   final TunifyApiClient _api;
+
+  String? _trailingFromDurationMs(Object? v) {
+    if (v == null) {
+      return null;
+    }
+    final ms = v is int ? v : (v as num).toInt();
+    if (ms <= 0) {
+      return null;
+    }
+    final totalSec = ms ~/ 1000;
+    final m = totalSec ~/ 60;
+    final s = totalSec % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
 
   Future<Map<String, dynamic>> createFolder({required String name}) async {
     return _api.postJson(
@@ -95,7 +110,77 @@ class LibraryWriteGateway {
     );
   }
 
-  /// Appends a track to a **user-owned** Tunify playlist (`playlist_kind = user`).
+  /// Loads ordered tracks for a **user-owned** or **liked songs** playlist (`GET /v1/library/playlist/tracks`).
+  Future<List<LibraryDetailsTrack>> fetchPlaylistTracks({
+    required String playlistId,
+  }) async {
+    final map = await _api.getJson(
+      '/v1/library/playlist/tracks',
+      withAuth: true,
+      query: {'playlist_id': playlistId.trim()},
+    );
+    final raw = map['tracks'];
+    if (raw is! List<dynamic>) {
+      return const [];
+    }
+    final out = <LibraryDetailsTrack>[];
+    for (final e in raw.whereType<Map<String, dynamic>>()) {
+      final id = (e['track_id'] as String?)?.trim() ?? '';
+      if (id.isEmpty) {
+        continue;
+      }
+      final title = (e['title'] as String?)?.trim() ?? 'Unknown';
+      final sub = (e['subtitle'] as String?)?.trim() ?? '';
+      final art = (e['artwork_url'] as String?)?.trim();
+      final durationMs = e['duration_ms'] == null
+          ? null
+          : (e['duration_ms'] is int
+              ? e['duration_ms'] as int
+              : (e['duration_ms'] as num).toInt());
+      out.add(
+        LibraryDetailsTrack(
+          title: title,
+          subtitle: sub,
+          trailingValue: _trailingFromDurationMs(durationMs),
+          thumbUrl: art == null || art.isEmpty ? null : art,
+          videoId: id,
+          durationMs: durationMs,
+        ),
+      );
+    }
+    return out;
+  }
+
+  /// Playlist ids (user-owned + liked) that contain [trackId].
+  Future<Set<String>> fetchTrackPlaylistMemberships({
+    required String trackId,
+  }) async {
+    final map = await _api.getJson(
+      '/v1/library/track/playlist_memberships',
+      withAuth: true,
+      query: {'track_id': trackId.trim()},
+    );
+    final raw = map['playlist_ids'];
+    if (raw is! List<dynamic>) {
+      return const {};
+    }
+    return raw
+        .map((e) => e is String ? e.trim() : '')
+        .where((s) => s.isNotEmpty)
+        .toSet();
+  }
+
+  /// Whether [trackId] is present in the user's liked songs playlist.
+  Future<bool> fetchTrackLiked({required String trackId}) async {
+    final map = await _api.getJson(
+      '/v1/library/liked/status',
+      withAuth: true,
+      query: {'track_id': trackId.trim()},
+    );
+    return map['liked'] == true;
+  }
+
+  /// Appends a track to a **user-owned** or **liked songs** Tunify playlist.
   Future<void> addUserPlaylistTrack({
     required String playlistId,
     required String trackId,
@@ -119,7 +204,7 @@ class LibraryWriteGateway {
     );
   }
 
-  /// Removes a track from a **user-owned** Tunify playlist.
+  /// Removes a track from a **user-owned** or **liked songs** Tunify playlist.
   Future<void> removeUserPlaylistTrack({
     required String playlistId,
     required String trackId,

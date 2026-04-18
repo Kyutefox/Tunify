@@ -1,40 +1,32 @@
-import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/domain/library_playlist_management_pills.dart';
 
-/// Liked Songs / Your Episodes when there is no YouTube browse id.
+/// Your Episodes placeholder when there is no YouTube browse id.
+/// Liked Songs uses [loadLikedSongsPlaylistDetailsFromApi] instead.
 LibraryDetailsModel libraryStaticSystemPlaylistDetails(LibraryItem item) {
-  final liked = item.systemArtwork == SystemArtworkType.likedSongs;
   return LibraryDetailsModel(
     type: LibraryDetailsType.staticPlaylist,
     item: item,
-    searchHint: liked ? 'Find in Liked Songs' : 'Find in Your Episodes',
+    searchHint: 'Find in Your Episodes',
     title: item.title,
-    subtitlePrimary: liked ? '1 song' : '3 episodes',
-    tracks: liked
-        ? const [
-            LibraryDetailsTrack(
-              title: 'Tumhe Apna Banane Ka',
-              subtitle: 'Armaan Malik, Neeti Mohan, Amaal Mallik, Rashmi Virag',
-            ),
-          ]
-        : const [
-            LibraryDetailsTrack(
-              title: 'Episode 12 — The one about music',
-              subtitle: 'Today · 42 min',
-            ),
-            LibraryDetailsTrack(
-              title: 'Episode 11 — Behind the scenes',
-              subtitle: 'Mar 2 · 38 min',
-            ),
-            LibraryDetailsTrack(
-              title: 'Episode 10 — Listener mail',
-              subtitle: 'Feb 18 · 51 min',
-            ),
-          ],
-    gradientTop: liked ? AppColors.likedSongsDetailGradient : AppColors.yourEpisodesDetailGradient,
+    subtitlePrimary: '3 episodes',
+    tracks: const [
+      LibraryDetailsTrack(
+        title: 'Episode 12 — The one about music',
+        subtitle: 'Today · 42 min',
+      ),
+      LibraryDetailsTrack(
+        title: 'Episode 11 — Behind the scenes',
+        subtitle: 'Mar 2 · 38 min',
+      ),
+      LibraryDetailsTrack(
+        title: 'Episode 10 — Listener mail',
+        subtitle: 'Feb 18 · 51 min',
+      ),
+    ],
+    gradientTop: AppColors.yourEpisodesDetailGradient,
     showSortButton: true,
     showAddRow: true,
   );

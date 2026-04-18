@@ -23,6 +23,7 @@ abstract final class LibraryTrackPlaylistSheetActions {
       trackId: trackId,
     );
     invalidateLibraryListCaches(ref);
+    ref.invalidate(trackPlaylistMembershipsProvider(trackId.trim()));
     ref.invalidate(
       libraryDetailsProvider(LibraryDetailRequest(detailsItem)),
     );
@@ -45,6 +46,7 @@ abstract final class LibraryTrackPlaylistSheetActions {
       durationMs: track.durationMs,
     );
     invalidateLibraryListCaches(ref);
+    ref.invalidate(trackPlaylistMembershipsProvider(videoId.trim()));
     ref.invalidate(
       libraryDetailsProvider(LibraryDetailRequest(detailsItem)),
     );

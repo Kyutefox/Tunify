@@ -53,6 +53,7 @@ class LibraryGridTile extends StatelessWidget {
                   item: item,
                   size: size,
                   borderRadius: radius,
+                  loadTrackThumbnails: item.isUserOwnedPlaylist,
                 );
               },
             ),

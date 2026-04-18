@@ -10,11 +10,14 @@ import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/domain/library_collection_catalog.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
+import 'package:tunify/v2/features/library/presentation/library_track_like_sheet_actions.dart';
 import 'package:tunify/v2/features/library/presentation/library_track_playlist_sheet_actions.dart';
+import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/add_to_folder_sheet.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_collection_artwork.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_pin_toggle_row.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_item_sheet_quick_actions.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/save_track_to_playlist_sheet.dart';
 
 part 'library_item_options_sheet.part_widgets.dart';
 
@@ -26,7 +29,10 @@ List<_OptionAction> _libraryItemOptionsSecondaryActions(
 }) {
   final actions = <_OptionAction>[];
   final useQuickRow = quickKind != LibraryItemSheetQuickRowKind.none;
-  final omitShare = item.isEphemeralHomeTrackShelf;
+  final omitShare = item.isEphemeralHomeTrackShelf ||
+      item.systemArtwork == SystemArtworkType.likedSongs;
+  final omitTunifyCode =
+      item.systemArtwork == SystemArtworkType.likedSongs;
 
   if (!useQuickRow) {
     if (!omitShare) {
@@ -55,18 +61,12 @@ List<_OptionAction> _libraryItemOptionsSecondaryActions(
     );
   }
 
-  actions.add(
-    _OptionAction(icon: AppIcons.equalizer, label: 'Show Tunify Code'),
-  );
+  if (!omitTunifyCode) {
+    actions.add(
+      _OptionAction(icon: AppIcons.equalizer, label: 'Show Tunify Code'),
+    );
+  }
   return actions;
-}
-
-List<_OptionAction> _trackOptionsSecondaryActions() {
-  return [
-    _OptionAction(icon: AppIcons.share, label: 'Share'),
-    _OptionAction(icon: AppIcons.queueMusic, label: 'Add to Queue'),
-    _OptionAction(icon: AppIcons.equalizer, label: 'Show Tunify Code'),
-  ];
 }
 
 void _showItemOptionsSheet(
@@ -166,6 +166,7 @@ class _LibraryOptionsSheet extends ConsumerStatefulWidget {
 
 class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
   bool _playlistBusy = false;
+  bool _likeBusy = false;
 
   String get _videoId => (widget.track?.videoId ?? '').trim();
 
@@ -234,85 +235,88 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
     }
   }
 
-  Future<void> _addToUserPlaylist() async {
-    if (!_hasVideoId || _playlistBusy) {
+  void _addToUserPlaylist() {
+    if (!_hasVideoId) {
       return;
     }
     final track = widget.track!;
     final details = widget.details!;
-    final messenger = ScaffoldMessenger.maybeOf(context);
-    final targets = await LibraryTrackPlaylistSheetActions.loadWritablePlaylistTargets(
+    final exclude =
+        details.item.isUserOwnedPlaylist ? details.item.id : null;
+    Navigator.of(context).pop();
+    showSaveTrackToPlaylistSheet(
+      context: widget.hostContext,
       ref: ref,
-      excludePlaylistId: details.item.id,
+      track: track,
+      sourceCollectionItem: details.item,
+      excludePlaylistId: exclude,
     );
-    if (targets.isEmpty) {
-      messenger?.showSnackBar(
-        const SnackBar(content: Text(LibraryStrings.trackCreateUserPlaylistFirst)),
-      );
-      return;
-    }
-    if (!mounted) {
-      return;
-    }
-    final chosen = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: AppColors.bottomSheetSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppBorderRadius.comfortable),
-        ),
+  }
+
+  List<_OptionAction> _trackSecondaryActions() {
+    final details = widget.details!;
+    final fromLikedSongs =
+        details.item.systemArtwork == SystemArtworkType.likedSongs;
+    return [
+      if (!fromLikedSongs)
+        _OptionAction(icon: AppIcons.share, label: 'Share'),
+      _OptionAction(
+        icon: AppIcons.playlistAddIcon,
+        label: LibraryStrings.trackAddToPlaylistSheetTitle,
+        customTap: _openSaveToPlaylistSheetFromTrack,
       ),
-      builder: (ctx) {
-        return SafeArea(
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(AppSpacing.lg),
-                child: Text(
-                  LibraryStrings.trackAddToPlaylistSheetTitle,
-                  style: AppTextStyles.bodyBold,
-                ),
-              ),
-              for (final p in targets)
-                ListTile(
-                  title: Text(
-                    p.title,
-                    style: AppTextStyles.caption.copyWith(color: AppColors.white),
-                  ),
-                  onTap: () => Navigator.of(ctx).pop(p.id),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-    if (chosen == null || chosen.isEmpty || !mounted) {
+      _OptionAction(icon: AppIcons.queueMusic, label: 'Add to Queue'),
+      if (!fromLikedSongs)
+        _OptionAction(icon: AppIcons.equalizer, label: 'Show Tunify Code'),
+    ];
+  }
+
+  void _openSaveToPlaylistSheetFromTrack() {
+    if (!_hasVideoId) {
       return;
     }
-    setState(() => _playlistBusy = true);
+    final details = widget.details!;
+    final exclude =
+        details.item.isUserOwnedPlaylist ? details.item.id : null;
+    Navigator.of(context).pop();
+    showSaveTrackToPlaylistSheet(
+      context: widget.hostContext,
+      ref: ref,
+      track: widget.track!,
+      sourceCollectionItem: details.item,
+      excludePlaylistId: exclude,
+    );
+  }
+
+  Future<void> _onTrackLikeTap(
+    LibraryItem likedPlaylistItem,
+    bool currentlyLiked,
+  ) async {
+    if (!_hasVideoId || _likeBusy) {
+      return;
+    }
+    setState(() => _likeBusy = true);
+    final messenger = ScaffoldMessenger.maybeOf(widget.hostContext);
     try {
-      await LibraryTrackPlaylistSheetActions.addTrackToUserPlaylist(
+      await LibraryTrackLikeSheetActions.setTrackLiked(
         ref: ref,
-        targetPlaylistId: chosen,
+        liked: !currentlyLiked,
         videoId: _videoId,
-        track: track,
-        detailsItem: details.item,
+        track: widget.track!,
+        likedPlaylistItem: likedPlaylistItem,
+        currentDetailsItem: widget.details!.item,
       );
       if (!mounted) {
         return;
       }
       Navigator.of(context).pop();
-      messenger?.showSnackBar(
-        const SnackBar(content: Text(LibraryStrings.trackAddedToPlaylist)),
-      );
     } on Object catch (_) {
       messenger?.showSnackBar(
-        const SnackBar(content: Text(LibraryStrings.trackAddToPlaylistFailed)),
+        const SnackBar(content: Text(LibraryStrings.trackLikeUpdateFailed)),
       );
     } finally {
       if (mounted) {
-        setState(() => _playlistBusy = false);
+        setState(() => _likeBusy = false);
       }
     }
   }
@@ -392,7 +396,13 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
             (a) => _OptionRow(
               icon: a.icon,
               label: a.label,
-              onTap: () => Navigator.of(context).pop(),
+              onTap: () {
+                if (a.customTap != null) {
+                  a.customTap!();
+                  return;
+                }
+                Navigator.of(context).pop();
+              },
             ),
           ),
           const SizedBox(height: AppSpacing.md),
@@ -404,6 +414,12 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
   Widget _buildTrackBody(BuildContext context) {
     final details = widget.details!;
     final track = widget.track!;
+    final likedPlaylistItem = ref.watch(likedPlaylistLibraryItemProvider);
+    final likedAsync = ref.watch(trackLikedStatusProvider(_videoId));
+    final isLiked =
+        likedAsync.maybeWhen(data: (v) => v, orElse: () => false);
+    final likeReady =
+        _hasVideoId && likedPlaylistItem != null && !likedAsync.isLoading;
     final radius = AppBorderRadius.subtle;
     final playlistLabel = _userOwnedPlaylist ? 'Remove' : 'Playlist';
     final playlistIcon =
@@ -476,19 +492,19 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
                 Expanded(
                   child: _SheetCircleButton(
                     icon: AppIcons.favorite,
-                    label: 'Like',
-                    enabled: _hasVideoId,
-                    onTap: _hasVideoId
-                        ? () {
-                            Navigator.of(context).pop();
-                            ScaffoldMessenger.maybeOf(widget.hostContext)
-                                ?.showSnackBar(
-                              const SnackBar(
-                                content: Text(LibraryStrings.trackLikeNotAvailableYet),
-                              ),
-                            );
-                          }
-                        : null,
+                    label: isLiked ? 'Unlike' : 'Like',
+                    busy: _likeBusy,
+                    enabled: likeReady,
+                    onTap: () {
+                      final row = likedPlaylistItem;
+                      if (row == null ||
+                          !_hasVideoId ||
+                          likedAsync.isLoading ||
+                          _likeBusy) {
+                        return;
+                      }
+                      _onTrackLikeTap(row, isLiked);
+                    },
                   ),
                 ),
               ],
@@ -497,11 +513,17 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
           const SizedBox(height: AppSpacing.md),
           const _SheetDivider(),
           const SizedBox(height: AppSpacing.sm),
-          ..._trackOptionsSecondaryActions().map(
+          ..._trackSecondaryActions().map(
             (a) => _OptionRow(
               icon: a.icon,
               label: a.label,
-              onTap: () => Navigator.of(context).pop(),
+              onTap: () {
+                if (a.customTap != null) {
+                  a.customTap!();
+                  return;
+                }
+                Navigator.of(context).pop();
+              },
             ),
           ),
           const SizedBox(height: AppSpacing.md),

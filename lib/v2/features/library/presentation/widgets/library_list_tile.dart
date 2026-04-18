@@ -55,6 +55,7 @@ class LibraryListTile extends StatelessWidget {
                 item: item,
                 size: LibraryLayout.listThumbSize,
                 borderRadius: radius,
+                loadTrackThumbnails: item.isUserOwnedPlaylist,
               ),
               const SizedBox(width: LibraryLayout.listThumbTextGap),
 

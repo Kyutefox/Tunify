@@ -31,13 +31,18 @@ abstract final class LibraryStrings {
   static const String trackRemoveFromPlaylistFailed =
       'Could not remove track from playlist.';
   static const String trackAddToPlaylistSheetTitle = 'Add to playlist';
+  static const String saveInSheetTitle = 'Save in';
+  static const String saveInNewPlaylist = 'New playlist';
+  static const String saveInFindPlaylistHint = 'Find playlist';
+  static const String saveInToggleFailed =
+      'Could not update that playlist. Try again.';
   static const String trackCreateUserPlaylistFirst =
       'Create a playlist in Your Library first.';
   static const String trackAddedToPlaylist = 'Added to playlist';
   static const String trackAddToPlaylistFailed =
       'Could not add track to playlist.';
-  static const String trackLikeNotAvailableYet =
-      'Like is not available here yet.';
+  static const String trackLikeUpdateFailed =
+      'Could not update liked songs. Check your connection and try again.';
 
   static String trackRemoveFromPlaylistBody(String trackTitle) =>
       '$trackTitle will be removed from this playlist.';

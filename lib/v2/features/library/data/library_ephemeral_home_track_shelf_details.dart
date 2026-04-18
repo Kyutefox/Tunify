@@ -28,6 +28,7 @@ LibraryDetailsModel libraryEphemeralHomeTrackShelfDetails(LibraryItem item) {
         title: _trackRowTitle(item, i),
         subtitle: _trackRowSubtitle(item, i),
         thumbUrl: 'https://i.ytimg.com/vi/${ids[i]}/hqdefault.jpg',
+        videoId: ids[i],
       ),
   ];
   final n = tracks.length;

@@ -78,6 +78,8 @@ LibraryDetailsModel libraryDetailsFromBrowse({
           subtitle: t.artist,
           trailingValue: t.durationFormatted,
           thumbUrl: _nonEmptyUrl(t.thumbnailUrl),
+          videoId: t.id,
+          durationMs: t.duration.inMilliseconds,
         ),
       )
       .toList(growable: false);

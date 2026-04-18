@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
@@ -44,6 +45,7 @@ class LibraryDetailsScrollView extends StatelessWidget {
     required this.titleMeasureKey,
     required this.actionRowPlaceholderKey,
     required this.appBarUnderlapHeight,
+    required this.onRequestTrackOptions,
     this.showInlineBackButton = false,
     this.headerScrollGradientColors = const [],
     this.onSearchTap,
@@ -60,6 +62,9 @@ class LibraryDetailsScrollView extends StatelessWidget {
 
   /// When non-empty, painted behind the header column so the palette scrolls with content (v1-style).
   final List<Color> headerScrollGradientColors;
+
+  /// Opens the track row options sheet (long-press / more on the track list).
+  final void Function(LibraryDetailsTrack track) onRequestTrackOptions;
 
   List<Widget> _headerColumnChildren() {
     return [
@@ -198,9 +203,9 @@ class LibraryDetailsScrollView extends StatelessWidget {
           itemCount: details.tracks.length,
           separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
           itemBuilder: (context, index) => _TrackRow(
+            details: details,
             track: details.tracks[index],
-            item: details.item,
-            type: details.type,
+            onRequestTrackOptions: onRequestTrackOptions,
           ),
         ),
       ),

@@ -22,4 +22,23 @@ abstract final class LibraryStrings {
   static const String searchNoResultsTitle = 'No results found';
   static const String searchNoResultsBody =
       'Check the spelling or try different keywords.';
+
+  // ── Track row / options sheet (collection details) ──
+
+  static const String trackRemoveFromPlaylistTitle = 'Remove from playlist?';
+  static const String trackRemoveFromPlaylistConfirm = 'Remove';
+  static const String trackRemovedFromPlaylist = 'Removed from playlist';
+  static const String trackRemoveFromPlaylistFailed =
+      'Could not remove track from playlist.';
+  static const String trackAddToPlaylistSheetTitle = 'Add to playlist';
+  static const String trackCreateUserPlaylistFirst =
+      'Create a playlist in Your Library first.';
+  static const String trackAddedToPlaylist = 'Added to playlist';
+  static const String trackAddToPlaylistFailed =
+      'Could not add track to playlist.';
+  static const String trackLikeNotAvailableYet =
+      'Like is not available here yet.';
+
+  static String trackRemoveFromPlaylistBody(String trackTitle) =>
+      '$trackTitle will be removed from this playlist.';
 }

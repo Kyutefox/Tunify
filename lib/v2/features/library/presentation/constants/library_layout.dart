@@ -50,6 +50,12 @@ abstract final class LibraryLayout {
   /// Header artwork size inside the options sheet.
   static const double sheetArtworkSize = 48;
 
+  /// Quick-action circle diameter (library item + track rows in options sheet).
+  static const double sheetQuickCircleSize = 44;
+
+  /// Progress indicator inside a quick-action circle while awaiting network.
+  static const double sheetQuickProgressSize = 18;
+
   /// Icon size for each option row.
   static const double sheetOptionIconSize = 24;
 

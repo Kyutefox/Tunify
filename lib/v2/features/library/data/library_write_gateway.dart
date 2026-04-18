@@ -94,4 +94,43 @@ class LibraryWriteGateway {
       query: {'folder_id': folderId.trim()},
     );
   }
+
+  /// Appends a track to a **user-owned** Tunify playlist (`playlist_kind = user`).
+  Future<void> addUserPlaylistTrack({
+    required String playlistId,
+    required String trackId,
+    required String title,
+    String? subtitle,
+    String? artworkUrl,
+    int? durationMs,
+  }) async {
+    await _api.postJson(
+      '/v1/library/playlist/tracks',
+      {
+        'playlist_id': playlistId.trim(),
+        'track_id': trackId.trim(),
+        'title': title.trim(),
+        if (subtitle != null && subtitle.trim().isNotEmpty) 'subtitle': subtitle.trim(),
+        if (artworkUrl != null && artworkUrl.trim().isNotEmpty)
+          'artwork_url': artworkUrl.trim(),
+        if (durationMs != null) 'duration_ms': durationMs,
+      },
+      withAuth: true,
+    );
+  }
+
+  /// Removes a track from a **user-owned** Tunify playlist.
+  Future<void> removeUserPlaylistTrack({
+    required String playlistId,
+    required String trackId,
+  }) async {
+    await _api.deleteJson(
+      '/v1/library/playlist/tracks',
+      withAuth: true,
+      query: {
+        'playlist_id': playlistId.trim(),
+        'track_id': trackId.trim(),
+      },
+    );
+  }
 }

@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
-import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
 import 'package:tunify/v2/features/library/domain/library_collection_catalog.dart';
 import 'package:tunify/v2/features/library/presentation/providers/library_collection_providers.dart';
 import 'package:tunify/v2/features/library/presentation/library_list_invalidation.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_details/collection_options_sheet.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_collection_scroll_docking.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_detail_dock_action_widgets.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_detail_mini_cover.dart';
@@ -76,22 +75,13 @@ class _LibraryDetailsScrollShellState
     return browseId != null && target != null;
   }
 
-  void _openCollectionOptionsSheet() {
-    if (!_remoteCollectionSupported()) {
-      return;
-    }
-    showCollectionOptionsSheet(
-      context: context,
-      details: widget.details,
-    );
+  /// Same bottom sheet as long-press on a library tile (not a separate detail-only menu).
+  void _openLibraryItemOptionsFromDock() {
+    showLibraryItemOptionsSheet(context, widget.details.item);
   }
 
-  void _openPlaylistMoreFromDock() {
-    if (widget.details.item.isEphemeralHomeTrackShelf) {
-      showLibraryItemOptionsSheet(context, widget.details.item);
-      return;
-    }
-    _openCollectionOptionsSheet();
+  void _openTrackSheet(LibraryDetailsTrack track) {
+    showLibraryItemOptionsSheetForTrack(context, widget.details, track);
   }
 
   Future<void> _toggleRemoteCollection() async {
@@ -305,6 +295,7 @@ class _LibraryDetailsScrollShellState
               titleMeasureKey: _titleKey,
               actionRowPlaceholderKey: _actionRowKey,
               appBarUnderlapHeight: appBarHeight,
+              onRequestTrackOptions: _openTrackSheet,
               showInlineBackButton: false,
               headerScrollGradientColors:
                   widget.details.type == LibraryDetailsType.artist
@@ -348,16 +339,11 @@ class _LibraryDetailsScrollShellState
                       onFollowPressed: _remoteCollectionSupported()
                           ? _toggleRemoteCollection
                           : null,
-                      onMorePressed: _remoteCollectionSupported()
-                          ? _openCollectionOptionsSheet
-                          : null,
+                      onMorePressed: _openLibraryItemOptionsFromDock,
                     )
                   : LibraryPlaylistDockActionLeading(
                       details: widget.details,
-                      onMorePressed: (_remoteCollectionSupported() ||
-                              widget.details.item.isEphemeralHomeTrackShelf)
-                          ? _openPlaylistMoreFromDock
-                          : null,
+                      onMorePressed: _openLibraryItemOptionsFromDock,
                     ),
             ),
           ),
@@ -384,6 +370,7 @@ class _LibraryDetailsScrollShellState
                     bottomInset: widget.bottomInset,
                     filteredTracks: _filteredTracks,
                     onBack: _exitSearchMode,
+                    onRequestTrackOptions: _openTrackSheet,
                   ),
                 );
               },
@@ -405,6 +392,7 @@ class _SearchModeOverlay extends StatelessWidget {
     required this.bottomInset,
     required this.filteredTracks,
     required this.onBack,
+    required this.onRequestTrackOptions,
   });
 
   final Animation<double> animation;
@@ -416,6 +404,7 @@ class _SearchModeOverlay extends StatelessWidget {
   final double bottomInset;
   final List<LibraryDetailsTrack> Function(String) filteredTracks;
   final VoidCallback onBack;
+  final void Function(LibraryDetailsTrack track) onRequestTrackOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -534,10 +523,11 @@ class _SearchModeOverlay extends StatelessWidget {
 
                 return _AnimatedTrackRow(
                   key: ValueKey(track.title + track.subtitle),
+                  details: details,
                   track: track,
                   searchQuery: searchQuery,
                   showThumbnail: showThumbnail,
-                  item: details.item,
+                  onRequestTrackOptions: onRequestTrackOptions,
                 );
               },
             ),
@@ -551,16 +541,18 @@ class _SearchModeOverlay extends StatelessWidget {
 class _AnimatedTrackRow extends StatefulWidget {
   const _AnimatedTrackRow({
     super.key,
+    required this.details,
     required this.track,
     required this.searchQuery,
     required this.showThumbnail,
-    required this.item,
+    required this.onRequestTrackOptions,
   });
 
+  final LibraryDetailsModel details;
   final LibraryDetailsTrack track;
   final ValueNotifier<String> searchQuery;
   final bool showThumbnail;
-  final LibraryItem item;
+  final void Function(LibraryDetailsTrack track) onRequestTrackOptions;
 
   @override
   State<_AnimatedTrackRow> createState() => _AnimatedTrackRowState();
@@ -616,13 +608,51 @@ class _AnimatedTrackRowState extends State<_AnimatedTrackRow>
         opacity: _curve,
         child: Padding(
           padding: const EdgeInsets.only(bottom: AppSpacing.md),
+          child: _SearchTrackRowInk(
+            details: widget.details,
+            track: widget.track,
+            showThumbnail: widget.showThumbnail,
+            onOpenSheet: () => widget.onRequestTrackOptions(widget.track),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SearchTrackRowInk extends StatelessWidget {
+  const _SearchTrackRowInk({
+    required this.details,
+    required this.track,
+    required this.showThumbnail,
+    required this.onOpenSheet,
+  });
+
+  final LibraryDetailsModel details;
+  final LibraryDetailsTrack track;
+  final bool showThumbnail;
+  final VoidCallback onOpenSheet;
+
+  bool get _sheetAvailable =>
+      track.videoId.trim().isNotEmpty || details.item.isUserOwnedPlaylist;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = details.item;
+    return Material(
+      color: AppColors.transparent,
+      child: InkWell(
+        onLongPress: onOpenSheet,
+        borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: AppSpacing.xs),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              if (widget.showThumbnail) ...[
+              if (showThumbnail) ...[
                 LibraryDetailMiniCover(
-                  item: widget.item,
-                  imageUrlOverride: widget.track.thumbUrl,
+                  item: item,
+                  imageUrlOverride: track.thumbUrl,
                   size: LibraryDetailsLayout.trackRowArtSize,
                 ),
                 const SizedBox(width: AppSpacing.md),
@@ -632,7 +662,7 @@ class _AnimatedTrackRowState extends State<_AnimatedTrackRow>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      widget.track.title,
+                      track.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.menuItemLabel,
@@ -641,7 +671,7 @@ class _AnimatedTrackRowState extends State<_AnimatedTrackRow>
                       height: LibraryDetailsLayout.trackTitleSubtitleGap,
                     ),
                     Text(
-                      widget.track.subtitle,
+                      track.subtitle,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: AppTextStyles.small.copyWith(
@@ -652,10 +682,20 @@ class _AnimatedTrackRowState extends State<_AnimatedTrackRow>
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              AppIcon(
-                icon: AppIcons.moreVert,
-                color: AppColors.silver,
-                size: LibraryDetailsLayout.trackMoreIconSize,
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: LibraryDetailsLayout.trackMoreIconSize + 8,
+                  minHeight: LibraryDetailsLayout.trackMoreIconSize + 8,
+                ),
+                onPressed: _sheetAvailable ? onOpenSheet : null,
+                icon: AppIcon(
+                  icon: AppIcons.moreVert,
+                  color: _sheetAvailable
+                      ? AppColors.silver
+                      : AppColors.silver.withValues(alpha: 0.35),
+                  size: LibraryDetailsLayout.trackMoreIconSize,
+                ),
               ),
             ],
           ),

@@ -17,6 +17,8 @@ class LibraryDetailsTrack {
     required this.subtitle,
     this.trailingValue,
     this.thumbUrl,
+    this.videoId = '',
+    this.durationMs,
   });
 
   final String title;
@@ -25,6 +27,12 @@ class LibraryDetailsTrack {
 
   /// Per-track artwork (e.g. from YouTube Music). When null, row uses collection art.
   final String? thumbUrl;
+
+  /// YouTube Music video id when known (browse / home). Empty for offline placeholders.
+  final String videoId;
+
+  /// Track length in milliseconds when known (browse).
+  final int? durationMs;
 }
 
 class LibraryDetailsModel {

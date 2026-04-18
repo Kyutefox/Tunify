@@ -6,7 +6,7 @@ abstract final class LibraryLayout {
   static const double listThumbSize = 68;
 
   /// List-view row height (thumb + vertical padding).
-  static const double listRowHeight = 92;
+  static const double listRowHeight = 80;
 
   /// Gap between thumbnail and text content.
   static const double listThumbTextGap = 14;

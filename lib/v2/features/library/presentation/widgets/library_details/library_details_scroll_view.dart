@@ -197,13 +197,14 @@ class LibraryDetailsScrollView extends StatelessWidget {
           left: AppSpacing.lg,
           right: 0,
         ),
-        sliver: SliverList.separated(
-          itemCount: details.tracks.length,
-          separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.md),
-          itemBuilder: (context, index) => _TrackRow(
-            details: details,
-            track: details.tracks[index],
-            onRequestTrackOptions: onRequestTrackOptions,
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => _TrackRow(
+              details: details,
+              track: details.tracks[index],
+              onRequestTrackOptions: onRequestTrackOptions,
+            ),
+            childCount: details.tracks.length,
           ),
         ),
       ),

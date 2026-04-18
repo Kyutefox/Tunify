@@ -13,11 +13,15 @@ class AppTopNavigation extends StatelessWidget {
     required this.middle,
     this.trailing,
     this.leadingOnTap,
+    this.useBackButton = false,
   });
 
   final Widget middle;
   final Widget? trailing;
   final VoidCallback? leadingOnTap;
+
+  /// When true, shows a back chevron instead of the session avatar (e.g. folder drill-in).
+  final bool useBackButton;
 
   /// Gap between system status bar and nav content (Spotify-matched).
   static const double statusBarGap = AppSpacing.md + AppSpacing.sm;
@@ -46,7 +50,18 @@ class AppTopNavigation extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            SessionAvatarButton(onTap: leadingOnTap),
+            if (useBackButton)
+              IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(
+                  minWidth: AppSpacing.navAvatarSize,
+                  minHeight: AppSpacing.navAvatarSize,
+                ),
+                icon: const Icon(Icons.arrow_back, color: AppColors.white, size: 22),
+                onPressed: leadingOnTap,
+              )
+            else
+              SessionAvatarButton(onTap: leadingOnTap),
             const SizedBox(width: AppSpacing.lg - AppSpacing.sm),
             Expanded(child: middle),
             if (trailing != null) ...[

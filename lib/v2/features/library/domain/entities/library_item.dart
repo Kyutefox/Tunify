@@ -6,12 +6,14 @@ enum LibraryItemKind {
   artist,
   album,
   podcast,
+  folder,
 }
 
 /// Primary filter categories for the library pill row (Figma order).
 enum LibraryFilter {
   all,
   playlists,
+  folders,
   podcasts,
   albums,
   artists,
@@ -51,6 +53,13 @@ class LibraryItem {
     this.ytmBrowseId,
     this.ytmParams,
     this.isUserOwnedPlaylist = false,
+    this.isRemoteCatalogPlaylist = false,
+    this.isInServerLibrary = false,
+    this.updatedAtMs = 0,
+    this.isEphemeralHomeTrackShelf = false,
+    this.homeTrackVideoIds = const [],
+    this.homeTrackTitles = const [],
+    this.homeTrackSubtitles = const [],
   });
 
   final String id;
@@ -68,6 +77,27 @@ class LibraryItem {
   final String? ytmBrowseId;
   final String? ytmParams;
 
-  /// User-created playlist (mock: [LibraryKnownCreators.you] rows; wired from library).
+  /// User-created local playlist (`playlist_kind` user, not a saved remote catalog row).
   final bool isUserOwnedPlaylist;
+
+  /// Saved YouTube Music playlist (`is_remote_playlist` on the server).
+  final bool isRemoteCatalogPlaylist;
+
+  /// Row came from `GET /v1/library/playlists` (already persisted for this user).
+  final bool isInServerLibrary;
+
+  /// Server `updated_at_ms` (playlist / folder row). Used to stack pins: older first, newest last.
+  final int updatedAtMs;
+
+  /// Home folded track-shelf promo: details are built from [homeTrackVideoIds], not YTM browse.
+  final bool isEphemeralHomeTrackShelf;
+
+  /// YouTube Music video ids from the home API (order matches the shelf).
+  final List<String> homeTrackVideoIds;
+
+  /// Optional titles per [homeTrackVideoIds] index (from home feed when provided).
+  final List<String> homeTrackTitles;
+
+  /// Optional subtitles per [homeTrackVideoIds] (e.g. artist line).
+  final List<String> homeTrackSubtitles;
 }

@@ -67,6 +67,8 @@ class HomeSlimGrid extends StatelessWidget {
       kind: LibraryItemKind.playlist,
       imageUrl: tile.artworkUrl,
       creatorName: 'Tunify',
+      ytmBrowseId: tile.id,
+      isInServerLibrary: false,
     );
 
     return TunifyPressFeedback(

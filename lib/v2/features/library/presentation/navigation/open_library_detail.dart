@@ -4,6 +4,69 @@ import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/screens/library_details_screen.dart';
 import 'package:tunify/v2/features/search/domain/entities/search_models.dart';
 
+/// Home promo card backed by a real playlist browse id (e.g. `playlist_shelf_promo` / Charts).
+bool homePromoIsBrowseBackedPlaylist(HomePodcastPromo data) {
+  if (data.trackVideoIds.isNotEmpty) {
+    return false;
+  }
+  final id = data.id.trim();
+  if (id.startsWith('tunify_home_tracks:')) {
+    return false;
+  }
+  return id.startsWith('VL') ||
+      id.startsWith('OLAK5uy_') ||
+      id.startsWith('RD');
+}
+
+void pushLibraryDetailFromHomeBrowsePlaylistPromo(
+  BuildContext context,
+  HomePodcastPromo data,
+) {
+  if (!homePromoIsBrowseBackedPlaylist(data)) {
+    return;
+  }
+  final browseId = data.id.trim();
+  pushLibraryDetailFromHomeCarousel(
+    context,
+    browseId: browseId,
+    kind: LibraryItemKind.playlist,
+    title: data.title,
+    subtitle: data.showSubtitle,
+    imageUrl:
+        data.mosaicArtworkUrls.isNotEmpty ? data.mosaicArtworkUrls.first : null,
+  );
+}
+
+/// Folded home `track_shelf_promo` — opens playlist-style detail without a YTM browse id.
+void pushLibraryDetailFromHomeTrackShelfPromo(
+  BuildContext context,
+  HomePodcastPromo promo,
+) {
+  if (promo.trackVideoIds.isEmpty) {
+    return;
+  }
+  Navigator.of(context).push<void>(
+    MaterialPageRoute<void>(
+      builder: (_) => LibraryDetailsScreen(
+        item: LibraryItem(
+          id: promo.id,
+          title: promo.title,
+          subtitle: promo.showSubtitle,
+          kind: LibraryItemKind.playlist,
+          imageUrl: promo.mosaicArtworkUrls.isNotEmpty
+              ? promo.mosaicArtworkUrls.first
+              : null,
+          creatorName: 'Tunify',
+          isEphemeralHomeTrackShelf: true,
+          homeTrackVideoIds: promo.trackVideoIds,
+          homeTrackTitles: promo.trackTitles,
+          homeTrackSubtitles: promo.trackSubtitles,
+        ),
+      ),
+    ),
+  );
+}
+
 void pushLibraryDetailFromSearch(
   BuildContext context,
   SearchResultItem result,
@@ -108,10 +171,10 @@ LibraryItemKind? _libraryKindForHomeShelf(String? shelfKind, String browseId) {
   if (trimmed.startsWith('UC')) {
     return LibraryItemKind.artist;
   }
-  if (trimmed.startsWith('MPRE') || trimmed.startsWith('OLAK5uy_')) {
+  if (trimmed.startsWith('MPRE')) {
     return LibraryItemKind.album;
   }
-  if (trimmed.startsWith('VL')) {
+  if (trimmed.startsWith('OLAK5uy_') || trimmed.startsWith('VL')) {
     return LibraryItemKind.playlist;
   }
   return null;

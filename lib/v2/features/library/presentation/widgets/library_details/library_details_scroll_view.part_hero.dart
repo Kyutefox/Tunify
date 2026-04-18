@@ -27,46 +27,69 @@ class _HeroSection extends StatelessWidget {
   }
 }
 
-class _PlaylistOwnerAvatar extends StatelessWidget {
+class _PlaylistOwnerAvatar extends ConsumerWidget {
   const _PlaylistOwnerAvatar({required this.details});
 
   final LibraryDetailsModel details;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final r = LibraryDetailsLayout.ownerAvatarRadius;
     final d = r * 2;
     final url = details.ownerAvatarUrl?.trim();
-    if (url == null || url.isEmpty) {
-      return CircleAvatar(
-        radius: r,
-        backgroundColor: AppColors.darkSurface,
-        child: Icon(
-          Icons.person,
-          color: AppColors.silver,
-          size: LibraryDetailsLayout.ownerAvatarIconSize,
-        ),
-      );
-    }
-    return ClipOval(
-      child: SizedBox(
-        width: d,
-        height: d,
-        child: CachedNetworkImage(
-          imageUrl: url,
-          fit: BoxFit.cover,
-          fadeInDuration: const Duration(milliseconds: 150),
-          placeholder: (_, __) =>
-              const ColoredBox(color: AppColors.darkSurface),
-          errorWidget: (_, __, ___) => ColoredBox(
-            color: AppColors.darkSurface,
-            child: Icon(
-              Icons.person,
-              color: AppColors.silver,
-              size: LibraryDetailsLayout.ownerAvatarIconSize,
+    if (url != null && url.isNotEmpty) {
+      return ClipOval(
+        child: SizedBox(
+          width: d,
+          height: d,
+          child: CachedNetworkImage(
+            imageUrl: url,
+            fit: BoxFit.cover,
+            fadeInDuration: const Duration(milliseconds: 150),
+            placeholder: (_, __) =>
+                const ColoredBox(color: AppColors.darkSurface),
+            errorWidget: (_, __, ___) => ColoredBox(
+              color: AppColors.darkSurface,
+              child: Icon(
+                Icons.person,
+                color: AppColors.silver,
+                size: LibraryDetailsLayout.ownerAvatarIconSize,
+              ),
             ),
           ),
         ),
+      );
+    }
+
+    final item = details.item;
+    final useSessionAvatar = item.kind == LibraryItemKind.playlist &&
+        (item.isUserOwnedPlaylist ||
+            item.creatorName == LibraryKnownCreators.you);
+    if (useSessionAvatar) {
+      final user =
+          ref.watch(authSessionProvider).whenOrNull(data: (value) => value);
+      final sessionUrl = avatarUrlFromUser(user);
+      if (sessionUrl != null && sessionUrl.isNotEmpty) {
+        return ClipOval(
+          child: SizedBox(
+            width: d,
+            height: d,
+            child: NetworkAvatarImage(
+              url: sessionUrl,
+              fallbackIconSize: LibraryDetailsLayout.ownerAvatarIconSize,
+            ),
+          ),
+        );
+      }
+    }
+
+    return CircleAvatar(
+      radius: r,
+      backgroundColor: AppColors.darkSurface,
+      child: Icon(
+        Icons.person,
+        color: AppColors.silver,
+        size: LibraryDetailsLayout.ownerAvatarIconSize,
       ),
     );
   }
@@ -109,7 +132,7 @@ class _PlaylistHero extends StatelessWidget {
       children: [
         Center(
           child: _Cover(
-            item: details.item,
+            details: details,
             size: LibraryDetailsLayout.heroCoverSize,
           ),
         ),
@@ -154,8 +177,10 @@ class _PlaylistHero extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Row(
             children: [
-              _CircleButton(icon: Icons.add),
-              const SizedBox(width: AppSpacing.sm),
+              if (!details.item.isEphemeralHomeTrackShelf) ...[
+                _CircleButton(icon: Icons.add),
+                const SizedBox(width: AppSpacing.sm),
+              ],
               _PlaylistOwnerAvatar(details: details),
               const SizedBox(width: AppSpacing.sm),
               Text(details.subtitlePrimary, style: AppTextStyles.bodyBold),
@@ -247,19 +272,22 @@ class _ArtistHero extends StatelessWidget {
 
 class _Cover extends StatelessWidget {
   const _Cover({
-    required this.item,
+    required this.details,
     required this.size,
   });
 
-  final LibraryItem item;
+  final LibraryDetailsModel details;
   final double size;
 
   @override
   Widget build(BuildContext context) {
     final r = LibraryDetailsLayout.heroCoverCornerRadius;
-    final child = item.systemArtwork != null
-        ? SystemArtwork(type: item.systemArtwork!, size: size, borderRadius: r)
-        : ArtworkOrGradient(imageUrl: item.imageUrl);
+    final child = LibraryCollectionArtwork(
+      item: details.item,
+      preferredImageUrl: details.heroImageUrl,
+      size: size,
+      borderRadius: r,
+    );
 
     return Container(
       width: size,

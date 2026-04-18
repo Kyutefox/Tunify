@@ -10,43 +10,58 @@ class ListenNowPillButton extends StatelessWidget {
     super.key,
     this.label = 'Listen now',
     this.onPressed,
+    this.dense = false,
   });
 
   final String label;
   final VoidCallback? onPressed;
 
+  /// Smaller vertical padding (e.g. Spotify-style compact promo row).
+  final bool dense;
+
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.nearBlack.withValues(alpha: 0.5),
-      borderRadius: BorderRadius.circular(AppBorderRadius.pill),
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(AppBorderRadius.pill),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppSpacing.md,
-            vertical: AppSpacing.md,
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const _ListenModeBarsIcon(),
-              const SizedBox(width: AppSpacing.md),
-              Text(
-                label,
-                style: AppTextStyles.small.copyWith(color: AppColors.white),
-              ),
-            ],
-          ),
-        ),
+    final enabled = onPressed != null;
+    final vPad = dense ? AppSpacing.sm + AppSpacing.xs : AppSpacing.md;
+    final hPad = dense ? AppSpacing.md + AppSpacing.xs : AppSpacing.md;
+    final labelStyle = (dense ? AppTextStyles.caption : AppTextStyles.small).copyWith(
+      color: AppColors.white.withValues(alpha: enabled ? 1 : 0.5),
+      fontWeight: dense ? FontWeight.w600 : FontWeight.w400,
+    );
+    final child = Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: hPad,
+        vertical: vPad,
       ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _ListenModeBarsIcon(
+            foreground: AppColors.white.withValues(alpha: enabled ? 1 : 0.5),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          Text(label, style: labelStyle),
+        ],
+      ),
+    );
+    return Material(
+      color: AppColors.nearBlack.withValues(alpha: enabled ? 0.5 : 0.35),
+      borderRadius: BorderRadius.circular(AppBorderRadius.pill),
+      child: enabled
+          ? InkWell(
+              onTap: onPressed,
+              borderRadius: BorderRadius.circular(AppBorderRadius.pill),
+              child: child,
+            )
+          : child,
     );
   }
 }
 
 class _ListenModeBarsIcon extends StatelessWidget {
-  const _ListenModeBarsIcon();
+  const _ListenModeBarsIcon({this.foreground = AppColors.white});
+
+  final Color foreground;
 
   static const double _containerWidth = 18;
   static const double _containerHeight = 20;
@@ -67,7 +82,7 @@ class _ListenModeBarsIcon extends StatelessWidget {
               width: _barWidth,
               height: h,
               decoration: BoxDecoration(
-                color: AppColors.white,
+                color: foreground,
                 borderRadius: BorderRadius.circular(AppBorderRadius.minimal),
               ),
             ),

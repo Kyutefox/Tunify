@@ -3,6 +3,7 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_collection_artwork.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/system_artwork.dart';
 
 /// Small artwork tile (track list, toolbar, docked action row).
@@ -48,7 +49,19 @@ class LibraryDetailMiniCover extends StatelessWidget {
             )
           : artwork;
     } else if (useCollectionImageWhenNoOverride) {
-      child = ArtworkOrGradient(imageUrl: item.imageUrl);
+      final useRect = width != null || height != null;
+      final collSize = useRect ? (w < h ? w : h) : size;
+      final artwork = LibraryCollectionArtwork(
+        item: item,
+        size: collSize,
+        borderRadius: r,
+      );
+      child = useRect
+          ? ColoredBox(
+              color: AppColors.darkSurface,
+              child: Center(child: artwork),
+            )
+          : artwork;
     } else {
       child = const ColoredBox(color: AppColors.darkSurface);
     }

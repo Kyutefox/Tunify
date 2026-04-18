@@ -65,13 +65,17 @@ class HomeCarouselShelf extends StatelessWidget {
                     section.thumbKind == HomeCarouselThumbKind.circle94;
                 final kind = isArtist
                     ? LibraryItemKind.artist
-                    : _homeCarouselKindFromSubtitle(item.subtitle);
+                    : _homeCarouselKindFromShelfKind(
+                        item.shelfKind,
+                        item.subtitle,
+                      );
 
                 final subtitle = switch (kind) {
                   LibraryItemKind.artist => 'Artist',
                   LibraryItemKind.album => 'Album',
                   LibraryItemKind.podcast => 'Podcast',
                   LibraryItemKind.playlist => 'Playlist',
+                  LibraryItemKind.folder => 'Folder',
                 };
 
                 final libraryItem = LibraryItem(
@@ -81,6 +85,8 @@ class HomeCarouselShelf extends StatelessWidget {
                   kind: kind,
                   imageUrl: item.artworkUrl,
                   creatorName: 'Tunify',
+                  ytmBrowseId: item.id,
+                  isInServerLibrary: false,
                 );
 
                 return SizedBox(
@@ -88,7 +94,8 @@ class HomeCarouselShelf extends StatelessWidget {
                   child: TunifyPressFeedback(
                     borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
                     onTap: () {
-                      if (kind == LibraryItemKind.podcast) {
+                      if (kind == LibraryItemKind.podcast ||
+                          kind == LibraryItemKind.folder) {
                         return;
                       }
                       pushLibraryDetailFromHomeCarousel(
@@ -128,7 +135,25 @@ class HomeCarouselShelf extends StatelessWidget {
   }
 }
 
-LibraryItemKind _homeCarouselKindFromSubtitle(String? subtitle) {
+LibraryItemKind _homeCarouselKindFromShelfKind(
+  String? shelfKind,
+  String? subtitle,
+) {
+  switch (shelfKind) {
+    case 'artist':
+      return LibraryItemKind.artist;
+    case 'album':
+      return LibraryItemKind.album;
+    case 'playlist':
+    case 'station':
+    case 'track':
+      return LibraryItemKind.playlist;
+    case 'podcast':
+    case 'episode':
+      return LibraryItemKind.podcast;
+    default:
+      break;
+  }
   final s = (subtitle ?? '').toLowerCase();
   if (s.contains('album')) return LibraryItemKind.album;
   if (s.contains('podcast')) return LibraryItemKind.podcast;

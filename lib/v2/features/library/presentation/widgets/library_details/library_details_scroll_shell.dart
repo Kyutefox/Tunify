@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
@@ -6,14 +7,20 @@ import 'package:tunify/v2/core/theme/app_text_styles.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
+import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
+import 'package:tunify/v2/features/library/domain/library_collection_catalog.dart';
+import 'package:tunify/v2/features/library/presentation/providers/library_collection_providers.dart';
+import 'package:tunify/v2/features/library/presentation/library_list_invalidation.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_details/collection_options_sheet.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_collection_scroll_docking.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_detail_dock_action_widgets.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_detail_mini_cover.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_details/library_details_scroll_view.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
 /// v1-style collection detail: pinned app bar title fade, docked toolbar + play over scroll.
 /// Reusable for all detail types: playlist, static playlist, album, artist.
-class LibraryDetailsScrollShell extends StatefulWidget {
+class LibraryDetailsScrollShell extends ConsumerStatefulWidget {
   const LibraryDetailsScrollShell({
     super.key,
     required this.details,
@@ -26,12 +33,12 @@ class LibraryDetailsScrollShell extends StatefulWidget {
   final List<Color> gradientColors;
 
   @override
-  State<LibraryDetailsScrollShell> createState() =>
+  ConsumerState<LibraryDetailsScrollShell> createState() =>
       _LibraryDetailsScrollShellState();
 }
 
 class _LibraryDetailsScrollShellState
-    extends State<LibraryDetailsScrollShell>
+    extends ConsumerState<LibraryDetailsScrollShell>
     with SingleTickerProviderStateMixin {
   late final ScrollController _scrollController;
   final GlobalKey _stackKey = GlobalKey();
@@ -49,6 +56,88 @@ class _LibraryDetailsScrollShellState
   final TextEditingController _searchTextController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   final ValueNotifier<String> _searchQuery = ValueNotifier('');
+
+  bool _collectionToggleBusy = false;
+
+  String? _remoteCollectionBrowseId() {
+    final id = widget.details.item.ytmBrowseId?.trim();
+    if (id == null || id.isEmpty) {
+      return null;
+    }
+    return id;
+  }
+
+  String? _remoteCollectionApiTarget() =>
+      libraryCollectionApiTargetForItem(widget.details.item);
+
+  bool _remoteCollectionSupported() {
+    final browseId = _remoteCollectionBrowseId();
+    final target = _remoteCollectionApiTarget();
+    return browseId != null && target != null;
+  }
+
+  void _openCollectionOptionsSheet() {
+    if (!_remoteCollectionSupported()) {
+      return;
+    }
+    showCollectionOptionsSheet(
+      context: context,
+      details: widget.details,
+    );
+  }
+
+  void _openPlaylistMoreFromDock() {
+    if (widget.details.item.isEphemeralHomeTrackShelf) {
+      showLibraryItemOptionsSheet(context, widget.details.item);
+      return;
+    }
+    _openCollectionOptionsSheet();
+  }
+
+  Future<void> _toggleRemoteCollection() async {
+    final browseId = _remoteCollectionBrowseId();
+    final apiTarget = _remoteCollectionApiTarget();
+    if (browseId == null || apiTarget == null || _collectionToggleBusy) {
+      return;
+    }
+    setState(() => _collectionToggleBusy = true);
+    final key = (target: apiTarget, browseId: browseId);
+    final gateway = ref.read(libraryCollectionGatewayProvider);
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    try {
+      final was = await ref.read(libraryCollectionSavedProvider(key).future);
+      final next = await gateway.mutate(
+        op: was ? 'remove' : 'add',
+        target: apiTarget,
+        browseId: browseId,
+        title: widget.details.title,
+        coverUrl: widget.details.heroImageUrl ?? widget.details.item.imageUrl,
+        description: widget.details.collectionDescription,
+      );
+      ref.invalidate(libraryCollectionSavedProvider(key));
+      invalidateLibraryListCaches(ref);
+      if (!mounted) {
+        return;
+      }
+      messenger?.showSnackBar(
+        SnackBar(
+          content: Text(
+            widget.details.type == LibraryDetailsType.artist
+                ? (next ? LibraryStrings.following : 'Artist removed from your library')
+                : (next ? 'Added to Your Library' : 'Removed from Your Library'),
+          ),
+        ),
+      );
+    } on Object catch (e) {
+      messenger?.showSnackBar(
+        SnackBar(content: Text('Could not update library ($e)')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _collectionToggleBusy = false);
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -152,6 +241,16 @@ class _LibraryDetailsScrollShellState
     final appBarHeight = kToolbarHeight + topPad;
     final pinnedBg = _pinnedAppBarColor();
     final useDock = widget.details.tracks.isNotEmpty;
+    final browseId = _remoteCollectionBrowseId() ?? '';
+    final apiTargetStr = _remoteCollectionApiTarget();
+    final AsyncValue<bool>? collectionSaved =
+        browseId.isNotEmpty && apiTargetStr != null
+            ? ref.watch(
+                libraryCollectionSavedProvider(
+                  (target: apiTargetStr, browseId: browseId),
+                ),
+              )
+            : null;
 
     return Stack(
       key: _stackKey,
@@ -241,8 +340,28 @@ class _LibraryDetailsScrollShellState
                 0,
               ),
               child: widget.details.type == LibraryDetailsType.artist
-                  ? LibraryArtistDockActionLeading(details: widget.details)
-                  : LibraryPlaylistDockActionLeading(details: widget.details),
+                  ? LibraryArtistDockActionLeading(
+                      details: widget.details,
+                      isFollowing: collectionSaved?.maybeWhen(
+                            data: (v) => v,
+                            orElse: () => false,
+                          ) ==
+                          true,
+                      followBusy: _collectionToggleBusy,
+                      onFollowPressed: _remoteCollectionSupported()
+                          ? _toggleRemoteCollection
+                          : null,
+                      onMorePressed: _remoteCollectionSupported()
+                          ? _openCollectionOptionsSheet
+                          : null,
+                    )
+                  : LibraryPlaylistDockActionLeading(
+                      details: widget.details,
+                      onMorePressed: (_remoteCollectionSupported() ||
+                              widget.details.item.isEphemeralHomeTrackShelf)
+                          ? _openPlaylistMoreFromDock
+                          : null,
+                    ),
             ),
           ),
         ],

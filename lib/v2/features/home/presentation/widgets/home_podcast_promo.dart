@@ -1,11 +1,23 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
+import 'package:tunify/v2/core/constants/podcast_promo_layout.dart';
 import 'package:tunify/v2/core/widgets/cards/podcast_promo_card.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
+import 'package:tunify/v2/features/library/data/library_collection_gateway.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/domain/library_collection_catalog.dart';
+import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
+import 'package:tunify/v2/features/library/presentation/library_list_invalidation.dart';
+import 'package:tunify/v2/features/library/presentation/navigation/open_library_detail.dart';
+import 'package:tunify/v2/features/library/presentation/providers/library_collection_providers.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
 /// Home feed wrapper for the shared [PodcastPromoCard].
-class HomePodcastPromoView extends StatelessWidget {
+class HomePodcastPromoView extends ConsumerWidget {
   const HomePodcastPromoView({
     super.key,
     required this.data,
@@ -14,7 +26,66 @@ class HomePodcastPromoView extends StatelessWidget {
   final HomePodcastPromo data;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isFoldedTrackShelf = data.trackVideoIds.isNotEmpty;
+    final isBrowsePlaylistPromo = homePromoIsBrowseBackedPlaylist(data);
+    final useCompactPromo = isFoldedTrackShelf || isBrowsePlaylistPromo;
+
+    void openDetail() {
+      if (isBrowsePlaylistPromo) {
+        pushLibraryDetailFromHomeBrowsePlaylistPromo(context, data);
+        return;
+      }
+      if (isFoldedTrackShelf) {
+        pushLibraryDetailFromHomeTrackShelfPromo(context, data);
+      }
+    }
+
+    void tryAddToLibrary() {
+      if (!isBrowsePlaylistPromo) {
+        return;
+      }
+      final browseId = data.id.trim();
+      final tmp = LibraryItem(
+        id: browseId,
+        title: data.title,
+        subtitle: data.showSubtitle,
+        kind: LibraryItemKind.playlist,
+        ytmBrowseId: browseId,
+      );
+      final target = libraryCollectionApiTargetForItem(tmp);
+      if (target == null) {
+        return;
+      }
+      unawaited(
+        _savePlaylistToLibrary(
+          context,
+          ref,
+          browseId: browseId,
+          target: target,
+          title: data.title,
+          coverUrl: data.mosaicArtworkUrls.isNotEmpty
+              ? data.mosaicArtworkUrls.first
+              : null,
+        ),
+      );
+    }
+
+    final libraryItem = LibraryItem(
+      id: isBrowsePlaylistPromo ? data.id.trim() : data.id,
+      title: data.title,
+      subtitle: data.showSubtitle,
+      kind: LibraryItemKind.playlist,
+      imageUrl:
+          data.mosaicArtworkUrls.isNotEmpty ? data.mosaicArtworkUrls.first : null,
+      creatorName: isFoldedTrackShelf ? 'Tunify' : data.creatorName,
+      ytmBrowseId: isBrowsePlaylistPromo ? data.id.trim() : null,
+      isEphemeralHomeTrackShelf: isFoldedTrackShelf,
+      homeTrackVideoIds: isFoldedTrackShelf ? data.trackVideoIds : const [],
+      homeTrackTitles: isFoldedTrackShelf ? data.trackTitles : const [],
+      homeTrackSubtitles: isFoldedTrackShelf ? data.trackSubtitles : const [],
+    );
+
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -28,7 +99,60 @@ class HomePodcastPromoView extends StatelessWidget {
         episodeDescription: data.episodeDescription,
         mockCoverArgbColors: data.coverColors,
         backgroundArgb: data.backgroundColor,
+        mosaicArtworkUrls: data.mosaicArtworkUrls,
+        compactPlaylistStyle: useCompactPromo,
+        listenNowLabel:
+            isFoldedTrackShelf ? 'Preview playlist' : 'Listen now',
+        coverWidth: useCompactPromo
+            ? PodcastPromoLayout.trackShelfCoverSize
+            : null,
+        coverHeight: useCompactPromo
+            ? PodcastPromoLayout.trackShelfCoverSize
+            : null,
+        onOpenDetail: useCompactPromo ? openDetail : null,
+        // Folded track shelves: promo layout only; preview flow is not wired yet (same as playlists).
+        onListenNow:
+            useCompactPromo && !isFoldedTrackShelf ? openDetail : null,
+        onPlay: isBrowsePlaylistPromo ? openDetail : null,
+        onMore: useCompactPromo
+            ? () => showLibraryItemOptionsSheet(context, libraryItem)
+            : null,
+        showAddToLibraryButton: !isFoldedTrackShelf,
+        onAddToLibrary: isBrowsePlaylistPromo ? tryAddToLibrary : null,
       ),
+    );
+  }
+}
+
+Future<void> _savePlaylistToLibrary(
+  BuildContext context,
+  WidgetRef ref, {
+  required String browseId,
+  required String target,
+  required String title,
+  String? coverUrl,
+}) async {
+  final messenger = ScaffoldMessenger.maybeOf(context);
+  final gateway = LibraryCollectionGateway(
+    api: ref.read(tunifyApiClientProvider),
+  );
+  final key = (target: target, browseId: browseId);
+  try {
+    await gateway.mutate(
+      op: 'add',
+      target: target,
+      browseId: browseId,
+      title: title,
+      coverUrl: coverUrl,
+    );
+    ref.invalidate(libraryCollectionSavedProvider(key));
+    invalidateLibraryListCaches(ref);
+    messenger?.showSnackBar(
+      const SnackBar(content: Text('Added to Your Library')),
+    );
+  } on Object catch (e) {
+    messenger?.showSnackBar(
+      SnackBar(content: Text('Could not save ($e)')),
     );
   }
 }

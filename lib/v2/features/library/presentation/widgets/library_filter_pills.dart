@@ -9,7 +9,7 @@ import 'package:tunify/v2/features/library/presentation/providers/library_provid
 
 /// Horizontally scrolling filter pills for the library screen.
 ///
-/// Figma order: Playlists · Podcasts · Albums · Artists.
+/// Primary order: Playlists · Folders · Podcasts · Albums · Artists.
 /// When a filter is active the row collapses to [X close] + active pill
 /// + optional sub-filter pills ("By you" / "By Spotify" for Playlists).
 class LibraryFilterPills extends ConsumerWidget {
@@ -17,6 +17,7 @@ class LibraryFilterPills extends ConsumerWidget {
 
   static const _primaryFilters = <(LibraryFilter, String)>[
     (LibraryFilter.playlists, 'Playlists'),
+    (LibraryFilter.folders, 'Folders'),
     (LibraryFilter.podcasts, 'Podcasts'),
     (LibraryFilter.albums, 'Albums'),
     (LibraryFilter.artists, 'Artists'),
@@ -141,6 +142,7 @@ class LibraryFilterPills extends ConsumerWidget {
     return switch (filter) {
       LibraryFilter.all => 'All',
       LibraryFilter.playlists => 'Playlists',
+      LibraryFilter.folders => 'Folders',
       LibraryFilter.podcasts => 'Podcasts',
       LibraryFilter.albums => 'Albums',
       LibraryFilter.artists => 'Artists',

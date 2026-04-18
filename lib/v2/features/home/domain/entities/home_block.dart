@@ -54,6 +54,7 @@ class HomeCarouselItem {
     required this.imageColors,
     this.imageBorderRadius = 0,
     this.artworkUrl,
+    this.shelfKind,
   });
 
   final String id;
@@ -66,6 +67,9 @@ class HomeCarouselItem {
 
   /// 0 = square, 8 = rounded square, 9999 = circle (94×94).
   final double imageBorderRadius;
+
+  /// Home API `kind` (`album`, `playlist`, `track`, …) — avoids mis-typing from subtitle text.
+  final String? shelfKind;
 }
 
 enum HomeCarouselTitleSize {
@@ -149,6 +153,11 @@ class HomePodcastPromo {
     required this.episodeDescription,
     required this.coverColors,
     required this.backgroundColor,
+    this.mosaicArtworkUrls = const [],
+    this.trackVideoIds = const [],
+    this.creatorName,
+    this.trackTitles = const [],
+    this.trackSubtitles = const [],
   });
 
   final String id;
@@ -159,6 +168,21 @@ class HomePodcastPromo {
 
   /// ARGB (e.g. `0xFF324B5C`) — feature-level accent, not in DESIGN.md core palette.
   final int backgroundColor;
+
+  /// Up to four thumbnails for a 2×2 mosaic (folded track-list shelves from the home API).
+  final List<String> mosaicArtworkUrls;
+
+  /// Video ids for the folded shelf (playback wiring can use these later).
+  final List<String> trackVideoIds;
+
+  /// Curator / owner line for detail header (when known from the home API).
+  final String? creatorName;
+
+  /// Per-track titles aligned with [trackVideoIds] (same length when populated).
+  final List<String> trackTitles;
+
+  /// Per-track secondary lines (e.g. artists), aligned with [trackVideoIds].
+  final List<String> trackSubtitles;
 }
 
 class HomePodcastPromoBlock extends HomeBlock {

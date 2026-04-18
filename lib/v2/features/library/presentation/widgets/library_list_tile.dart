@@ -4,12 +4,11 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
-import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
 import 'package:tunify/v2/core/widgets/buttons/tunify_press_feedback.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_layout.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_collection_artwork.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/system_artwork.dart';
 
 /// Single row in the library list view (Figma Image 3).
 ///
@@ -20,10 +19,14 @@ class LibraryListTile extends StatelessWidget {
     super.key,
     required this.item,
     this.onTap,
+    this.libraryListScopeFolderId,
   });
 
   final LibraryItem item;
   final VoidCallback? onTap;
+
+  /// When set (folder screen), long-press invalidations refresh this folder list too.
+  final String? libraryListScopeFolderId;
 
   @override
   Widget build(BuildContext context) {
@@ -34,7 +37,11 @@ class LibraryListTile extends StatelessWidget {
     return TunifyPressFeedback(
       borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
       onTap: onTap,
-      onLongPress: () => showLibraryItemOptionsSheet(context, item),
+      onLongPress: () => showLibraryItemOptionsSheet(
+        context,
+        item,
+        libraryListScopeFolderId: libraryListScopeFolderId,
+      ),
       child: SizedBox(
         height: LibraryLayout.listRowHeight,
         child: Padding(
@@ -44,21 +51,11 @@ class LibraryListTile extends StatelessWidget {
           child: Row(
             children: [
               // ── Artwork thumbnail ──
-              if (item.systemArtwork != null)
-                SystemArtwork(
-                  type: item.systemArtwork!,
-                  size: LibraryLayout.listThumbSize,
-                  borderRadius: radius,
-                )
-              else
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(radius),
-                  child: SizedBox(
-                    width: LibraryLayout.listThumbSize,
-                    height: LibraryLayout.listThumbSize,
-                    child: ArtworkOrGradient(imageUrl: item.imageUrl),
-                  ),
-                ),
+              LibraryCollectionArtwork(
+                item: item,
+                size: LibraryLayout.listThumbSize,
+                borderRadius: radius,
+              ),
               const SizedBox(width: LibraryLayout.listThumbTextGap),
 
               // ── Title + subtitle ──

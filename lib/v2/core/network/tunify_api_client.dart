@@ -107,4 +107,24 @@ class TunifyApiClient {
     }
     return decoded;
   }
+
+  /// HTTP DELETE with optional query string (empty body).
+  Future<void> deleteJson(
+    String path, {
+    bool withAuth = true,
+    Map<String, String>? query,
+  }) async {
+    var uri = _uri(path);
+    if (query != null && query.isNotEmpty) {
+      uri = uri.replace(queryParameters: {...uri.queryParameters, ...query});
+    }
+    final response =
+        await _http.delete(uri, headers: _headers(withAuth: withAuth));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ServerException(
+        _messageFromBody(response.body),
+        code: response.statusCode,
+      );
+    }
+  }
 }

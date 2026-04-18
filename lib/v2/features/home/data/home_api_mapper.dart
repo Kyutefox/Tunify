@@ -90,6 +90,10 @@ abstract final class HomeApiMapper {
         return _mapGrid(items);
       case 'hero':
         return _mapHero(title, subtitle, items);
+      case 'track_shelf_promo':
+        return _mapTrackShelfPromo(section, items);
+      case 'playlist_shelf_promo':
+        return _mapPlaylistShelfPromo(section, items);
       case 'horizontal_scroll':
       case 'vertical_list':
         return _mapCarousel(
@@ -173,6 +177,290 @@ abstract final class HomeApiMapper {
     );
   }
 
+  static HomeBlock _mapTrackShelfPromo(
+    Map<String, dynamic> section,
+    List<dynamic> items,
+  ) {
+    final raw = items.isNotEmpty ? items.first : null;
+    final payload = raw is Map<String, dynamic> ? _shelfPayload(raw) : null;
+    final sid = section['id'] as String? ?? 'track_shelf';
+    final fromPayloadTitle = (payload?['title'] as String?)?.trim();
+    final title = (fromPayloadTitle != null && fromPayloadTitle.isNotEmpty)
+        ? fromPayloadTitle
+        : (section['title'] as String? ?? 'Playlist');
+    final m = payload?['mosaic_artwork_urls'];
+    final mosaics = <String>[];
+    if (m is List<dynamic>) {
+      for (final e in m) {
+        if (e is String) {
+          final u = _artworkUrl({'artwork_url': e});
+          if (u != null) {
+            mosaics.add(u);
+          }
+        }
+      }
+    }
+    final v = payload?['shelf_track_video_ids'];
+    final ids = <String>[];
+    if (v is List<dynamic>) {
+      for (final e in v) {
+        if (e is String && e.trim().isNotEmpty) {
+          ids.add(e.trim());
+        }
+      }
+    }
+    final fromPayloadSub = (payload?['subtitle'] as String?)?.trim();
+    final showSubtitle = (fromPayloadSub != null && fromPayloadSub.isNotEmpty)
+        ? fromPayloadSub
+        : (ids.isEmpty ? 'Playlist' : '${ids.length} tracks');
+    final desc = ids.isEmpty
+        ? 'Curated picks from your home feed.'
+        : 'Made for you from your home feed.';
+    final fromPayloadId = (payload?['id'] as String?)?.trim();
+
+    final trackMetaById = _trackShelfMetaByVideoId(
+      payload: payload,
+      items: items,
+      orderedVideoIds: ids,
+    );
+    final trackTitles = <String>[];
+    final trackSubtitles = <String>[];
+    for (final id in ids) {
+      final entry = trackMetaById[id];
+      trackTitles.add(
+        entry != null && entry.$1.trim().isNotEmpty ? entry.$1.trim() : '',
+      );
+      trackSubtitles.add(
+        entry != null && entry.$2.trim().isNotEmpty ? entry.$2.trim() : '',
+      );
+    }
+    final creatorName = _trackShelfCreatorName(
+      section: section,
+      payload: payload,
+      showSubtitle: showSubtitle,
+      trackSubtitles: trackSubtitles,
+    );
+
+    return HomePodcastPromoBlock(
+      HomePodcastPromo(
+        id: (fromPayloadId != null && fromPayloadId.isNotEmpty)
+            ? fromPayloadId
+            : sid,
+        title: title,
+        showSubtitle: showSubtitle,
+        episodeDescription: desc,
+        coverColors: _hashToTwoColors(sid),
+        backgroundColor: _hashToTwoColors('$sid-bg')[0],
+        mosaicArtworkUrls: mosaics,
+        trackVideoIds: ids,
+        creatorName: creatorName,
+        trackTitles: trackTitles,
+        trackSubtitles: trackSubtitles,
+      ),
+    );
+  }
+
+  /// Browse-backed playlist in promo layout (e.g. folded Charts shelf).
+  static HomeBlock _mapPlaylistShelfPromo(
+    Map<String, dynamic> section,
+    List<dynamic> items,
+  ) {
+    final raw = items.isNotEmpty ? items.first : null;
+    final payload = raw is Map<String, dynamic> ? _shelfPayload(raw) : null;
+    final sid = section['id'] as String? ?? 'playlist_shelf';
+    final fromPayloadTitle = (payload?['title'] as String?)?.trim();
+    final title = (fromPayloadTitle != null && fromPayloadTitle.isNotEmpty)
+        ? fromPayloadTitle
+        : (section['title'] as String? ?? 'Playlist');
+    final m = payload?['mosaic_artwork_urls'];
+    final mosaics = <String>[];
+    if (m is List<dynamic>) {
+      for (final e in m) {
+        if (e is String) {
+          final u = _artworkUrl({'artwork_url': e});
+          if (u != null) {
+            mosaics.add(u);
+          }
+        }
+      }
+    }
+    final fromPayloadSub = (payload?['subtitle'] as String?)?.trim();
+    final showSubtitle = (fromPayloadSub != null && fromPayloadSub.isNotEmpty)
+        ? fromPayloadSub
+        : 'Playlist';
+    final desc = (payload?['description'] as String?)?.trim() ?? '';
+    final fromPayloadId = (payload?['id'] as String?)?.trim();
+    final browseId = (fromPayloadId != null && fromPayloadId.isNotEmpty)
+        ? fromPayloadId
+        : sid;
+    final creatorName = _trackShelfCreatorName(
+      section: section,
+      payload: payload,
+      showSubtitle: showSubtitle,
+      trackSubtitles: const [],
+    );
+    return HomePodcastPromoBlock(
+      HomePodcastPromo(
+        id: browseId,
+        title: title,
+        showSubtitle: showSubtitle,
+        episodeDescription: desc.isEmpty ? ' ' : desc,
+        coverColors: _hashToTwoColors(sid),
+        backgroundColor: _hashToTwoColors('$sid-bg')[0],
+        mosaicArtworkUrls: mosaics,
+        creatorName: creatorName,
+      ),
+    );
+  }
+
+  /// Comma-separated artist names from a home [FeedItem]-shaped JSON map.
+  static String _artistNamesFromFeedItemJson(Map<String, dynamic> e) {
+    final artists = e['artists'];
+    if (artists is! List<dynamic> || artists.isEmpty) {
+      return '';
+    }
+    final names = <String>[];
+    for (final a in artists) {
+      if (a is Map<String, dynamic>) {
+        final n = (a['name'] as String?)?.trim();
+        if (n != null && n.isNotEmpty) {
+          names.add(n);
+        }
+      }
+    }
+    return names.join(', ');
+  }
+
+  /// `(title, subtitle)` per YouTube video id for folded track-shelf promos.
+  static Map<String, (String, String)> _trackShelfMetaByVideoId({
+    required Map<String, dynamic>? payload,
+    required List<dynamic> items,
+    required List<String> orderedVideoIds,
+  }) {
+    final out = <String, (String, String)>{};
+
+    void put(String id, String title, String subtitle) {
+      final t = title.trim();
+      final s = subtitle.trim();
+      if (t.isEmpty && s.isEmpty) {
+        return;
+      }
+      out[id] = (t, s);
+    }
+
+    for (final raw in items) {
+      final p = _shelfPayload(raw);
+      if (p == null) {
+        continue;
+      }
+      final id = (p['id'] as String?)?.trim();
+      if (id == null || id.isEmpty) {
+        continue;
+      }
+      final kind = _shelfKind(raw);
+      final inferred = _inferKind(p);
+      if (kind != 'track' && inferred != 'track') {
+        continue;
+      }
+      final title = _primaryLabel(p).trim();
+      var sub = (_optionalSubtitle(p, kind ?? inferred) ?? _secondaryLabel(p))
+          .trim();
+      if (sub.isEmpty) {
+        sub = _artistNamesFromFeedItemJson(p);
+      }
+      put(id, title, sub);
+    }
+
+    if (payload != null) {
+      for (final key in ['shelf_tracks', 'tracks', 'shelf_track_items']) {
+        final list = payload[key];
+        if (list is! List<dynamic>) {
+          continue;
+        }
+        for (final e in list) {
+          if (e is! Map<String, dynamic>) {
+            continue;
+          }
+          final id = (e['video_id'] as String?)?.trim() ??
+              (e['id'] as String?)?.trim();
+          if (id == null || id.isEmpty) {
+            continue;
+          }
+          final title = (e['title'] as String?)?.trim() ??
+              (e['name'] as String?)?.trim() ??
+              '';
+          var sub = (e['subtitle'] as String?)?.trim() ??
+              (e['artist'] as String?)?.trim() ??
+              '';
+          if (sub.isEmpty) {
+            sub = _artistNamesFromFeedItemJson(e);
+          }
+          put(id, title, sub);
+        }
+      }
+
+      final titles = payload['shelf_track_titles'];
+      final subs = payload['shelf_track_subtitles'] ?? payload['shelf_track_artists'];
+      if (titles is List<dynamic>) {
+        for (var i = 0; i < orderedVideoIds.length && i < titles.length; i++) {
+          final id = orderedVideoIds[i];
+          final ti = (titles[i] as String?)?.trim() ?? '';
+          var su = '';
+          if (subs is List<dynamic> && i < subs.length) {
+            su = (subs[i] as String?)?.trim() ?? '';
+          }
+          if (ti.isNotEmpty || su.isNotEmpty) {
+            put(id, ti, su);
+          }
+        }
+      }
+    }
+
+    return out;
+  }
+
+  static bool _looksLikeTrackCountLine(String s) {
+    final t = s.trim().toLowerCase();
+    return RegExp(r'^\d+\s+(tracks?|songs?)$').hasMatch(t);
+  }
+
+  static String? _trackShelfCreatorName({
+    required Map<String, dynamic> section,
+    required Map<String, dynamic>? payload,
+    required String showSubtitle,
+    required List<String> trackSubtitles,
+  }) {
+    String? pick(String? s) {
+      final t = s?.trim();
+      return (t == null || t.isEmpty) ? null : t;
+    }
+
+    final fromPayload = pick(payload?['author'] as String?) ??
+        pick(payload?['owner'] as String?) ??
+        pick(payload?['curator'] as String?) ??
+        pick(payload?['menu_title'] as String?) ??
+        pick(payload?['short_byline'] as String?) ??
+        pick(payload?['byline'] as String?);
+
+    if (fromPayload != null) {
+      return fromPayload;
+    }
+
+    final sectionSub = pick(section['subtitle'] as String?);
+    if (sectionSub != null &&
+        sectionSub != showSubtitle &&
+        !_looksLikeTrackCountLine(sectionSub)) {
+      return sectionSub;
+    }
+
+    final nonEmptySubs =
+        trackSubtitles.map((e) => e.trim()).where((e) => e.isNotEmpty).toSet();
+    if (nonEmptySubs.length == 1) {
+      return nonEmptySubs.first;
+    }
+    return null;
+  }
+
   static HomeBlock _mapCarousel(
     Map<String, dynamic> section,
     List<dynamic> items,
@@ -201,6 +489,7 @@ abstract final class HomeApiMapper {
           ),
           imageBorderRadius: kind == 'artist' ? 9999 : 8,
           artworkUrl: _artworkUrl(payload),
+          shelfKind: kind,
         ),
       );
     }

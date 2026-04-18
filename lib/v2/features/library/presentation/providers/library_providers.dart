@@ -5,14 +5,16 @@ import 'package:tunify/v2/core/utils/image_palette_extractor.dart';
 import 'package:tunify/v2/core/utils/logger.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
 import 'package:tunify/v2/features/library/data/library_browse_details_repository_impl.dart';
-import 'package:tunify/v2/features/library/data/mock_library_repository.dart';
+import 'package:tunify/v2/features/library/data/library_list_gateway.dart';
+import 'package:tunify/v2/features/library/data/library_write_gateway.dart';
+import 'package:tunify/v2/features/library/data/library_ephemeral_home_track_shelf_details.dart';
+import 'package:tunify/v2/features/library/data/library_offline_collection_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/domain/library_detail_palette_source.dart';
 import 'package:tunify/v2/features/library/domain/library_detail_request.dart';
 import 'package:tunify/v2/features/library/domain/library_items_query.dart';
 import 'package:tunify/v2/features/library/domain/repositories/library_browse_details_repository.dart';
-import 'package:tunify/v2/features/library/domain/repositories/library_repository.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
 
 /// Immutable view-state for the library screen.
@@ -96,24 +98,42 @@ final libraryControllerProvider =
   LibraryController.new,
 );
 
-/// Data access for library lists and detail models (swap implementation for real API).
-final libraryRepositoryProvider = Provider<LibraryRepository>((ref) {
-  return MockLibraryRepository();
+final libraryListGatewayProvider = Provider<LibraryListGateway>((ref) {
+  return LibraryListGateway(api: ref.watch(tunifyApiClientProvider));
 });
 
-/// Derived provider: filtered + sorted library items.
-final libraryItemsProvider = Provider<List<LibraryItem>>((ref) {
+final libraryWriteGatewayProvider = Provider<LibraryWriteGateway>((ref) {
+  return LibraryWriteGateway(api: ref.watch(tunifyApiClientProvider));
+});
+
+/// Raw rows from `GET /v1/library/playlists` (`folderId` null = root with folders).
+final libraryRemoteItemsProvider =
+    FutureProvider.autoDispose.family<List<LibraryItem>, String?>((ref, folderId) async {
+  return ref.watch(libraryListGatewayProvider).fetchLibraryItems(folderId: folderId);
+});
+
+/// Filtered + sorted library items for the current UI state and optional folder scope.
+final libraryItemsAsyncProvider =
+    Provider.family<AsyncValue<List<LibraryItem>>, String?>((ref, folderId) {
+  final remote = ref.watch(libraryRemoteItemsProvider(folderId));
   final viewState = ref.watch(libraryControllerProvider);
-  final allItems = ref.watch(libraryRepositoryProvider).libraryItems;
-  return LibraryItemsQuery.apply(
-    items: allItems,
-    filter: viewState.filter,
-    playlistSubFilter: viewState.playlistSubFilter,
-    sortMode: viewState.sortMode,
-  );
+  return remote.whenData((items) {
+    if (folderId != null && folderId.trim().isNotEmpty) {
+      return LibraryItemsQuery.applyFolderContents(
+        items: items,
+        sortMode: viewState.sortMode,
+      );
+    }
+    return LibraryItemsQuery.apply(
+      items: items,
+      filter: viewState.filter,
+      playlistSubFilter: viewState.playlistSubFilter,
+      sortMode: viewState.sortMode,
+    );
+  });
 });
 
-/// Tunify browse-backed collection details (mock list repo stays separate).
+/// Tunify browse-backed collection details.
 final libraryBrowseDetailsRepositoryProvider =
     Provider<LibraryBrowseDetailsRepository>((ref) {
   return LibraryBrowseDetailsRepositoryImpl(
@@ -149,18 +169,20 @@ Future<LibraryDetailsModel> _libraryDetailsWithResolvedPalette(
   }
 }
 
-/// Mock details, or Tunify browse-backed details when [LibraryItem.ytmBrowseId] is set.
-///
-/// When a palette source URL exists, extraction runs before the future completes so the
-/// first painted frame already uses artwork-derived gradients (no late palette flash).
+bool _isStaticSystemPlaylist(LibraryItem item) {
+  return item.systemArtwork == SystemArtworkType.likedSongs ||
+      item.systemArtwork == SystemArtworkType.yourEpisodes;
+}
+
+/// Remote browse details, static system playlists, or offline shells.
 final libraryDetailsProvider = FutureProvider.autoDispose
     .family<LibraryDetailsModel, LibraryDetailRequest>((ref, request) async {
   final item = request.item;
   final browseId = item.ytmBrowseId?.trim();
   final LibraryDetailsModel details;
-  if (browseId == null || browseId.isEmpty) {
-    details = ref.read(libraryRepositoryProvider).detailsFor(item);
-  } else {
+  if (item.isEphemeralHomeTrackShelf && item.homeTrackVideoIds.isNotEmpty) {
+    details = libraryEphemeralHomeTrackShelfDetails(item);
+  } else if (browseId != null && browseId.isNotEmpty) {
     try {
       details = await ref
           .read(libraryBrowseDetailsRepositoryProvider)
@@ -174,6 +196,10 @@ final libraryDetailsProvider = FutureProvider.autoDispose
       );
       throw NetworkFailure(LibraryStrings.collectionDetailsLoadError);
     }
+  } else if (_isStaticSystemPlaylist(item)) {
+    details = libraryStaticSystemPlaylistDetails(item);
+  } else {
+    details = libraryOfflinePlaylistShell(item);
   }
 
   return _libraryDetailsWithResolvedPalette(details, item);

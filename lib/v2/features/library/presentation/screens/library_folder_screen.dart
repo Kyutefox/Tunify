@@ -4,34 +4,41 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/core/widgets/buttons/filter_single_pill.dart';
 import 'package:tunify/v2/core/widgets/navigation/app_top_navigation.dart';
-import 'package:tunify/v2/core/widgets/navigation/user_menu_launcher.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/domain/library_items_query.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
-import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
 import 'package:tunify/v2/features/library/presentation/library_list_invalidation.dart';
 import 'package:tunify/v2/features/library/presentation/navigation/open_library_item.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_filter_pills.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_plus_actions_sheet.dart';
+import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
+import 'package:tunify/v2/features/library/presentation/screens/library_create_item_screen.dart';
+import 'package:tunify/v2/features/library/presentation/screens/library_details_screen.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_grid_tile.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_list_tile.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_sort_controls.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_search_mode_overlay.dart';
 
-/// Spotify iOS 2024 "Your Library" screen.
-///
-/// Header: avatar + "Your Library" title + search icon + plus icon.
-/// Filter pills row → sort / view-mode bar → grid (default) or list body.
-class LibraryScreen extends ConsumerStatefulWidget {
-  const LibraryScreen({super.key});
+/// Library scoped to one folder: back, folder title, search, + (create playlist here),
+/// single "By you" filter, sort + view as root.
+class LibraryFolderScreen extends ConsumerStatefulWidget {
+  const LibraryFolderScreen({
+    super.key,
+    required this.folderId,
+    required this.folderName,
+  });
+
+  final String folderId;
+  final String folderName;
 
   @override
-  ConsumerState<LibraryScreen> createState() => _LibraryScreenState();
+  ConsumerState<LibraryFolderScreen> createState() => _LibraryFolderScreenState();
 }
 
-class _LibraryScreenState extends ConsumerState<LibraryScreen>
+class _LibraryFolderScreenState extends ConsumerState<LibraryFolderScreen>
     with SingleTickerProviderStateMixin {
+  bool _byYouOnly = false;
   bool _isSearchMode = false;
   late final AnimationController _searchAnimController;
   late final CurvedAnimation _searchAnim;
@@ -81,10 +88,57 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
     });
   }
 
+  Future<void> _onTapPlus() async {
+    final created = await Navigator.of(context).push<LibraryItem?>(
+      MaterialPageRoute<LibraryItem?>(
+        builder: (_) => LibraryCreateItemScreen(
+          isPlaylist: true,
+          initialFolderId: widget.folderId,
+        ),
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    if (created != null) {
+      invalidateLibraryListCaches(ref, folderId: widget.folderId);
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => LibraryDetailsScreen(item: created),
+        ),
+      );
+    }
+  }
+
+  AsyncValue<List<LibraryItem>> _processedItems() {
+    final remote = ref.watch(libraryRemoteItemsProvider(widget.folderId));
+    final sortMode = ref.watch(
+      libraryControllerProvider.select((s) => s.sortMode),
+    );
+    return remote.whenData((raw) {
+      var base = raw;
+      if (_byYouOnly) {
+        base = raw
+            .where(
+              (i) =>
+                  i.kind != LibraryItemKind.playlist ||
+                  LibraryItemsQuery.playlistIsByYou(i),
+            )
+            .toList();
+      }
+      return LibraryItemsQuery.applyFolderContents(
+        items: base,
+        sortMode: sortMode,
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final viewState = ref.watch(libraryControllerProvider);
-    final itemsAsync = ref.watch(libraryItemsAsyncProvider(null));
+    final viewMode = ref.watch(
+      libraryControllerProvider.select((s) => s.viewMode),
+    );
+    final itemsAsync = _processedItems();
     final bottomInset = MediaQuery.paddingOf(context).bottom + AppSpacing.xxl;
     final searchItems = itemsAsync.maybeWhen(
       data: (items) => items,
@@ -98,9 +152,10 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
           Column(
             children: [
               AppTopNavigation(
-                leadingOnTap: () => launchUserMenu(context),
+                useBackButton: true,
+                leadingOnTap: () => Navigator.of(context).maybePop(),
                 middle: Text(
-                  LibraryStrings.yourLibrary,
+                  widget.folderName,
                   style: AppTextStyles.sectionTitle.copyWith(
                     fontSize: LibraryLayout.screenTitleFontSize,
                     height: LibraryLayout.screenTitleLineHeight,
@@ -123,7 +178,7 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                     SizedBox(width: AppSpacing.lg),
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap: () => showLibraryPlusActionsSheet(context, ref),
+                      onTap: _onTapPlus,
                       child: AppIcon(
                         icon: AppIcons.add,
                         color: AppColors.white,
@@ -134,7 +189,22 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                 ),
               ),
               const SizedBox(height: AppSpacing.md),
-              const LibraryFilterPills(),
+              SizedBox(
+                height: LibraryLayout.filterPillsRowHeight,
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: LibraryLayout.horizontalPadding,
+                    ),
+                    child: FilterSinglePill(
+                      label: 'By you',
+                      selected: _byYouOnly,
+                      onPressed: () => setState(() => _byYouOnly = !_byYouOnly),
+                    ),
+                  ),
+                ),
+              ),
               const SizedBox(height: AppSpacing.md),
               const LibrarySortControls(),
               Container(
@@ -152,26 +222,29 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
               ),
               Expanded(
                 child: itemsAsync.when(
-                  loading: () => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  error: (e, _) => _LibraryErrorView(
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => _FolderErrorView(
                     message: e.toString(),
-                    onRetry: () => invalidateLibraryListCaches(ref),
+                    onRetry: () => ref.invalidate(
+                      libraryRemoteItemsProvider(widget.folderId),
+                    ),
                   ),
                   data: (items) => RefreshIndicator(
-                    onRefresh: () =>
-                        ref.refresh(libraryRemoteItemsProvider(null).future),
+                    onRefresh: () => ref.refresh(
+                      libraryRemoteItemsProvider(widget.folderId).future,
+                    ),
                     child: AnimatedSwitcher(
                       duration: LibraryLayout.gridListSwitchDuration,
-                      child: viewState.viewMode == LibraryViewMode.grid
-                          ? _LibraryGridBody(
+                      child: viewMode == LibraryViewMode.grid
+                          ? _FolderGridBody(
                               key: const ValueKey('grid'),
+                              folderId: widget.folderId,
                               items: items,
                               bottomInset: bottomInset,
                             )
-                          : _LibraryListBody(
+                          : _FolderListBody(
                               key: const ValueKey('list'),
+                              folderId: widget.folderId,
                               items: items,
                               bottomInset: bottomInset,
                             ),
@@ -198,11 +271,12 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
                       searchTextController: _searchTextController,
                       searchFocusNode: _searchFocusNode,
                       searchQuery: _searchQuery,
-                      searchHint: LibraryStrings.searchYourLibraryHint,
+                      searchHint: LibraryStrings.searchFolderHint,
                       items: searchItems,
                       bottomInset: bottomInset,
-                      viewMode: viewState.viewMode,
+                      viewMode: viewMode,
                       onBack: _exitSearchMode,
+                      libraryListScopeFolderId: widget.folderId,
                     ),
                   );
                 },
@@ -214,13 +288,15 @@ class _LibraryScreenState extends ConsumerState<LibraryScreen>
   }
 }
 
-class _LibraryGridBody extends StatelessWidget {
-  const _LibraryGridBody({
+class _FolderGridBody extends StatelessWidget {
+  const _FolderGridBody({
     super.key,
+    required this.folderId,
     required this.items,
     required this.bottomInset,
   });
 
+  final String folderId;
   final List<LibraryItem> items;
   final double bottomInset;
 
@@ -232,7 +308,7 @@ class _LibraryGridBody extends StatelessWidget {
         children: [
           SizedBox(
             height: MediaQuery.sizeOf(context).height * 0.45,
-            child: const _LibraryEmptyView(),
+            child: const _FolderEmptyView(),
           ),
         ],
       );
@@ -257,6 +333,7 @@ class _LibraryGridBody extends StatelessWidget {
         final item = items[index];
         return LibraryGridTile(
           item: item,
+          libraryListScopeFolderId: folderId,
           onTap: () => openLibraryItemFromList(context, item),
         );
       },
@@ -264,13 +341,15 @@ class _LibraryGridBody extends StatelessWidget {
   }
 }
 
-class _LibraryListBody extends StatelessWidget {
-  const _LibraryListBody({
+class _FolderListBody extends StatelessWidget {
+  const _FolderListBody({
     super.key,
+    required this.folderId,
     required this.items,
     required this.bottomInset,
   });
 
+  final String folderId;
   final List<LibraryItem> items;
   final double bottomInset;
 
@@ -282,7 +361,7 @@ class _LibraryListBody extends StatelessWidget {
         children: [
           SizedBox(
             height: MediaQuery.sizeOf(context).height * 0.45,
-            child: const _LibraryEmptyView(),
+            child: const _FolderEmptyView(),
           ),
         ],
       );
@@ -296,6 +375,7 @@ class _LibraryListBody extends StatelessWidget {
         final item = items[index];
         return LibraryListTile(
           item: item,
+          libraryListScopeFolderId: folderId,
           onTap: () => openLibraryItemFromList(context, item),
         );
       },
@@ -303,8 +383,8 @@ class _LibraryListBody extends StatelessWidget {
   }
 }
 
-class _LibraryErrorView extends StatelessWidget {
-  const _LibraryErrorView({
+class _FolderErrorView extends StatelessWidget {
+  const _FolderErrorView({
     required this.message,
     required this.onRetry,
   });
@@ -321,7 +401,7 @@ class _LibraryErrorView extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Could not load your library',
+              'Could not load folder',
               style: AppTextStyles.featureHeading,
               textAlign: TextAlign.center,
             ),
@@ -343,8 +423,8 @@ class _LibraryErrorView extends StatelessWidget {
   }
 }
 
-class _LibraryEmptyView extends StatelessWidget {
-  const _LibraryEmptyView();
+class _FolderEmptyView extends StatelessWidget {
+  const _FolderEmptyView();
 
   @override
   Widget build(BuildContext context) {

@@ -8,14 +8,15 @@ import 'package:tunify/v2/features/library/domain/entities/library_details.dart'
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
 class _DockToolbarIcon extends StatelessWidget {
-  const _DockToolbarIcon({required this.icon});
+  const _DockToolbarIcon({required this.icon, this.onPressed});
 
   final List<List<dynamic>> icon;
+  final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
-      onPressed: () {},
+      onPressed: onPressed,
       icon: AppIcon(
         icon: icon,
         color: AppColors.silver,
@@ -27,9 +28,14 @@ class _DockToolbarIcon extends StatelessWidget {
 
 /// Playlist / album toolbar without the play control (docked with scroll in v1 layout).
 class LibraryPlaylistDockActionLeading extends StatelessWidget {
-  const LibraryPlaylistDockActionLeading({super.key, required this.details});
+  const LibraryPlaylistDockActionLeading({
+    super.key,
+    required this.details,
+    this.onMorePressed,
+  });
 
   final LibraryDetailsModel details;
+  final VoidCallback? onMorePressed;
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +45,7 @@ class LibraryPlaylistDockActionLeading extends StatelessWidget {
       children: [
         _DockToolbarIcon(icon: AppIcons.download),
         _DockToolbarIcon(icon: AppIcons.share),
-        _DockToolbarIcon(icon: AppIcons.moreVert),
+        _DockToolbarIcon(icon: AppIcons.moreVert, onPressed: onMorePressed),
         const Spacer(),
         Icon(
           Icons.shuffle_rounded,
@@ -54,9 +60,20 @@ class LibraryPlaylistDockActionLeading extends StatelessWidget {
 
 /// Artist toolbar without the play control.
 class LibraryArtistDockActionLeading extends StatelessWidget {
-  const LibraryArtistDockActionLeading({super.key, required this.details});
+  const LibraryArtistDockActionLeading({
+    super.key,
+    required this.details,
+    required this.isFollowing,
+    required this.followBusy,
+    this.onFollowPressed,
+    this.onMorePressed,
+  });
 
   final LibraryDetailsModel details;
+  final bool isFollowing;
+  final bool followBusy;
+  final VoidCallback? onFollowPressed;
+  final VoidCallback? onMorePressed;
 
   @override
   Widget build(BuildContext context) {
@@ -68,7 +85,9 @@ class LibraryArtistDockActionLeading extends StatelessWidget {
           child: Align(
             alignment: Alignment.centerLeft,
             child: OutlinedButton(
-              onPressed: () {},
+              onPressed: (followBusy || onFollowPressed == null)
+                  ? null
+                  : onFollowPressed,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.white,
                 side: const BorderSide(color: AppColors.lightBorder),
@@ -82,15 +101,23 @@ class LibraryArtistDockActionLeading extends StatelessWidget {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              child: Text(
-                LibraryStrings.follow,
-                style: AppTextStyles.smallBold,
-              ),
+              child: followBusy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : Text(
+                      isFollowing
+                          ? LibraryStrings.following
+                          : LibraryStrings.follow,
+                      style: AppTextStyles.smallBold,
+                    ),
             ),
           ),
         ),
         const SizedBox(width: AppSpacing.md),
-        _DockToolbarIcon(icon: AppIcons.moreVert),
+        _DockToolbarIcon(icon: AppIcons.moreVert, onPressed: onMorePressed),
         Icon(
           Icons.shuffle_rounded,
           color: AppColors.brandGreen,

@@ -89,9 +89,7 @@ LibraryDetailsModel libraryDetailsFromBrowse({
   /// is the same square avatar as grids and [LibraryDetailMiniCover].
   final String? heroUrl = type == LibraryDetailsType.artist
       ? _upgradeThumbResolution(_artistHeroImageUrl(item: item, meta: meta))
-      : (meta?.curatorThumbnailUrl ??
-          meta?.channelThumbnailUrl ??
-          item.imageUrl);
+      : item.imageUrl;
 
   final title = (type == LibraryDetailsType.artist
           ? (meta?.channelTitle ?? item.title)
@@ -122,7 +120,7 @@ LibraryDetailsModel libraryDetailsFromBrowse({
   final ownerLine =
       (meta?.curatorName ?? item.creatorName ?? item.subtitle).trim();
   final ownerAvatarUrl = _nonEmptyUrl(
-    meta?.channelThumbnailUrl ?? meta?.curatorThumbnailUrl ?? '',
+    meta?.curatorThumbnailUrl ?? '',
   );
 
   // For album/playlist, subtitle is the type info (e.g., "Album • 2026") shown below owner

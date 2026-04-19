@@ -92,12 +92,9 @@ final class LibraryBrowseGateway {
     if (collectionMetadata != null) {
       meta = PlaylistBrowseMeta(
         description: collectionMetadata['description'] as String?,
-        curatorName: collectionMetadata['subtitle'] as String?,
-        // Use thumbnail_url for hero image (podcast cover)
-        // Artist avatar is in channelThumbnailUrl for artist section
-        curatorThumbnailUrl: collectionMetadata['thumbnail_url'] as String?,
-        channelThumbnailUrl: collectionMetadata['artist_avatar'] as String?,
-        channelTitle: collectionMetadata['subtitle'] as String?,
+        curatorName: collectionMetadata['curator_name'] as String?,
+        curatorThumbnailUrl: collectionMetadata['artist_avatar'] as String?,
+        subtitle: collectionMetadata['subtitle'] as String?,
         collectionStatInfo: collectionMetadata['collection_stat_info'] as String?,
       );
     } else {
@@ -171,12 +168,9 @@ final class LibraryBrowseGateway {
     if (collectionMetadata != null) {
       meta = PlaylistBrowseMeta(
         description: collectionMetadata['description'] as String?,
-        curatorName: collectionMetadata['subtitle'] as String?,
-        // Use thumbnail_url for hero image (podcast cover)
-        // Artist avatar is in channelThumbnailUrl for artist section
-        curatorThumbnailUrl: collectionMetadata['thumbnail_url'] as String?,
-        channelThumbnailUrl: collectionMetadata['artist_avatar'] as String?,
-        channelTitle: collectionMetadata['subtitle'] as String?,
+        curatorName: collectionMetadata['curator_name'] as String?,
+        curatorThumbnailUrl: collectionMetadata['artist_avatar'] as String?,
+        subtitle: collectionMetadata['subtitle'] as String?,
         collectionStatInfo: collectionMetadata['collection_stat_info'] as String?,
       );
     } else {

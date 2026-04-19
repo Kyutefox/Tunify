@@ -24,6 +24,7 @@ class TrackTile extends StatelessWidget {
     this.onMorePressed,
     this.showMoreIcon = true,
     this.enableMoreIcon = true,
+    this.showThumbnail = true,
   });
 
   final String title;
@@ -36,6 +37,7 @@ class TrackTile extends StatelessWidget {
   final VoidCallback? onMorePressed;
   final bool showMoreIcon;
   final bool enableMoreIcon;
+  final bool showThumbnail;
 
   @override
   Widget build(BuildContext context) {
@@ -57,19 +59,21 @@ class TrackTile extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              ExcludeSemantics(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(
-                    isArtist ? AppBorderRadius.fullPill : AppBorderRadius.subtle,
-                  ),
-                  child: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: ArtworkOrGradient(imageUrl: imageUrl),
+              if (showThumbnail) ...[
+                ExcludeSemantics(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(
+                      isArtist ? AppBorderRadius.fullPill : AppBorderRadius.subtle,
+                    ),
+                    child: SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: ArtworkOrGradient(imageUrl: imageUrl),
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: AppSpacing.smMd),
+                const SizedBox(width: AppSpacing.smMd),
+              ],
               Expanded(
                 child: ExcludeSemantics(
                   child: Column(

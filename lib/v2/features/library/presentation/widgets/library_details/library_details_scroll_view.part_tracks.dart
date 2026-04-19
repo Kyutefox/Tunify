@@ -18,12 +18,7 @@ class _TrackRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final type = details.type;
-    final item = details.item;
-    final showThumbnail = type != LibraryDetailsType.album;
-
-    // For albums, use the collection artwork; for others, use track thumbnail
-    final imageUrl = showThumbnail ? track.thumbUrl : item.imageUrl;
+    final isAlbum = details.type == LibraryDetailsType.album;
 
     if (_isPodcast) {
       // Concatenate subtitle (timestamp) and durationText with dot separator
@@ -35,7 +30,7 @@ class _TrackRow extends StatelessWidget {
         title: track.title,
         description: track.description ?? '',
         individualStat: individualStat,
-        imageUrl: imageUrl,
+        imageUrl: track.thumbUrl,
         onTap: () => _onTrackTap(track),
         onLongPress: _sheetAvailable ? () => onRequestTrackOptions(track) : null,
         onMorePressed: _sheetAvailable ? () => onRequestTrackOptions(track) : null,
@@ -48,7 +43,8 @@ class _TrackRow extends StatelessWidget {
     return TrackTile(
       title: track.title,
       subtitle: track.subtitle,
-      imageUrl: imageUrl,
+      imageUrl: track.thumbUrl,
+      showThumbnail: !isAlbum,
       onLongPress: _sheetAvailable ? () => onRequestTrackOptions(track) : null,
       onMorePressed: _sheetAvailable ? () => onRequestTrackOptions(track) : null,
       showMoreIcon: true,

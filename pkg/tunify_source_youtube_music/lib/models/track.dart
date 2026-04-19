@@ -30,6 +30,12 @@ class Track {
   /// Whether the track is marked explicit by YouTube.
   final bool isExplicit;
 
+  /// Episode description (for podcasts). Null for regular tracks.
+  final String? description;
+
+  /// Duration text (e.g., "1 hr 29 min") from the API response. Null for regular tracks.
+  final String? durationText;
+
   /// Creates an immutable [Track] instance describing a YouTube Music item.
   const Track({
     required this.id,
@@ -41,6 +47,8 @@ class Track {
     this.albumBrowseId,
     this.albumName,
     this.isExplicit = false,
+    this.description,
+    this.durationText,
   });
 
   /// Serialises this track to a JSON‑compatible map.
@@ -54,6 +62,8 @@ class Track {
         'albumBrowseId': albumBrowseId,
         'albumName': albumName,
         'isExplicit': isExplicit,
+        'description': description,
+        'durationText': durationText,
       };
 
   /// Human‑readable duration string in `mm:ss` or `h:mm:ss` format.
@@ -79,6 +89,8 @@ class Track {
     String? albumBrowseId,
     String? albumName,
     bool? isExplicit,
+    String? description,
+    String? durationText,
   }) {
     return Track(
       id: id ?? this.id,
@@ -90,6 +102,8 @@ class Track {
       albumBrowseId: albumBrowseId ?? this.albumBrowseId,
       albumName: albumName ?? this.albumName,
       isExplicit: isExplicit ?? this.isExplicit,
+      description: description ?? this.description,
+      durationText: durationText ?? this.durationText,
     );
   }
 

@@ -79,6 +79,8 @@ LibraryDetailsModel libraryDetailsFromBrowse({
           thumbUrl: _nonEmptyUrl(t.thumbnailUrl),
           videoId: t.id,
           durationMs: t.duration.inMilliseconds,
+          description: t.description,
+          durationText: t.durationText,
         ),
       )
       .toList(growable: false);
@@ -120,7 +122,7 @@ LibraryDetailsModel libraryDetailsFromBrowse({
   final ownerLine =
       (meta?.curatorName ?? item.creatorName ?? item.subtitle).trim();
   final ownerAvatarUrl = _nonEmptyUrl(
-    meta?.curatorThumbnailUrl ?? meta?.channelThumbnailUrl ?? '',
+    meta?.channelThumbnailUrl ?? meta?.curatorThumbnailUrl ?? '',
   );
 
   // For album/playlist, subtitle is the type info (e.g., "Album • 2026") shown below owner

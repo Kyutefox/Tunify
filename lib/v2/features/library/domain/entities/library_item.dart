@@ -6,6 +6,7 @@ enum LibraryItemKind {
   artist,
   album,
   podcast,
+  episode,
   folder,
 }
 

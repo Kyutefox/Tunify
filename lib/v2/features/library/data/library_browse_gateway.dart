@@ -86,7 +86,23 @@ final class LibraryBrowseGateway {
     final parsedFirst =
         first['parsed'] as Map<String, dynamic>? ?? const <String, dynamic>{};
 
-    final meta = BrowseFormatter.extractCollectionBrowseMeta(rawFirst);
+    // Use backend's parsed collection_metadata if available, otherwise fallback to raw extraction
+    final collectionMetadata = parsedFirst['collection_metadata'] as Map<String, dynamic>?;
+    PlaylistBrowseMeta? meta;
+    if (collectionMetadata != null) {
+      meta = PlaylistBrowseMeta(
+        description: collectionMetadata['description'] as String?,
+        curatorName: collectionMetadata['subtitle'] as String?,
+        // Use thumbnail_url for hero image (podcast cover)
+        // Artist avatar is in channelThumbnailUrl for artist section
+        curatorThumbnailUrl: collectionMetadata['thumbnail_url'] as String?,
+        channelThumbnailUrl: collectionMetadata['artist_avatar'] as String?,
+        channelTitle: collectionMetadata['subtitle'] as String?,
+        collectionStatInfo: collectionMetadata['collection_stat_info'] as String?,
+      );
+    } else {
+      meta = BrowseFormatter.extractCollectionBrowseMeta(rawFirst);
+    }
     final shelves = _recommendationShelvesFromParsed(parsedFirst);
 
     final seen = <String>{};
@@ -149,7 +165,23 @@ final class LibraryBrowseGateway {
     required Map<String, dynamic> root,
     required int maxTracks,
   }) async {
-    var meta = BrowseFormatter.extractCollectionBrowseMeta(root);
+    // Check if root has parsed metadata from backend
+    final collectionMetadata = root['collection_metadata'] as Map<String, dynamic>?;
+    PlaylistBrowseMeta? meta;
+    if (collectionMetadata != null) {
+      meta = PlaylistBrowseMeta(
+        description: collectionMetadata['description'] as String?,
+        curatorName: collectionMetadata['subtitle'] as String?,
+        // Use thumbnail_url for hero image (podcast cover)
+        // Artist avatar is in channelThumbnailUrl for artist section
+        curatorThumbnailUrl: collectionMetadata['thumbnail_url'] as String?,
+        channelThumbnailUrl: collectionMetadata['artist_avatar'] as String?,
+        channelTitle: collectionMetadata['subtitle'] as String?,
+        collectionStatInfo: collectionMetadata['collection_stat_info'] as String?,
+      );
+    } else {
+      meta = BrowseFormatter.extractCollectionBrowseMeta(root);
+    }
 
     var dataForTracks = root;
     if (browseKind == LibraryYtmBrowseKind.artist &&

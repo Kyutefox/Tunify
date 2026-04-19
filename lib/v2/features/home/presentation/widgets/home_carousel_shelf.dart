@@ -74,6 +74,7 @@ class HomeCarouselShelf extends StatelessWidget {
                   LibraryItemKind.artist => 'Artist',
                   LibraryItemKind.album => 'Album',
                   LibraryItemKind.podcast => 'Podcast',
+                  LibraryItemKind.episode => 'Episode',
                   LibraryItemKind.playlist => 'Playlist',
                   LibraryItemKind.folder => 'Folder',
                 };

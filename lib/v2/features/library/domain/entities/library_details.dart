@@ -19,6 +19,8 @@ class LibraryDetailsTrack {
     this.thumbUrl,
     this.videoId = '',
     this.durationMs,
+    this.description,
+    this.durationText,
   });
 
   final String title;
@@ -33,6 +35,12 @@ class LibraryDetailsTrack {
 
   /// Track length in milliseconds when known (browse).
   final int? durationMs;
+
+  /// Episode description (for podcasts). Null for regular tracks.
+  final String? description;
+
+  /// Duration text (e.g., "1 hr 29 min") from the API response. Null for regular tracks.
+  final String? durationText;
 }
 
 class LibraryDetailsModel {

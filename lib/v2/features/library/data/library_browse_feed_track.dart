@@ -5,6 +5,8 @@ Track trackFromBrowseFeedJson(Map<String, dynamic> json) {
   final id = (json['id'] as String?)?.trim() ?? '';
   final title = (json['title'] as String?)?.trim() ?? '';
   final subtitle = (json['subtitle'] as String?)?.trim();
+  final description = (json['description'] as String?)?.trim();
+  final durationText = (json['duration_text'] as String?)?.trim();
   final artists = json['artists'] as List<dynamic>? ?? const [];
   final firstArtist = artists.isEmpty
       ? null
@@ -20,6 +22,8 @@ Track trackFromBrowseFeedJson(Map<String, dynamic> json) {
     thumbnailUrl: thumb,
     duration: Duration(milliseconds: ms),
     isExplicit: json['is_explicit'] as bool? ?? false,
+    description: description,
+    durationText: durationText,
   );
 }
 

@@ -409,6 +409,8 @@ class _ResultListItem extends StatelessWidget {
       SearchItemKind.artist => LibraryItemKind.artist,
       SearchItemKind.album => LibraryItemKind.album,
       SearchItemKind.playlist => LibraryItemKind.playlist,
+      SearchItemKind.podcast => LibraryItemKind.podcast,
+      SearchItemKind.episode => LibraryItemKind.episode,
       _ => null,
     };
   }

@@ -177,13 +177,30 @@ class _PlaylistHero extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
           child: Row(
             children: [
-              if (!details.item.isEphemeralHomeTrackShelf) ...[
+              if (details.item.isUserOwnedPlaylist) ...[
                 _CircleButton(icon: Icons.add),
                 const SizedBox(width: AppSpacing.sm),
               ],
               _PlaylistOwnerAvatar(details: details),
               const SizedBox(width: AppSpacing.sm),
-              Text(details.subtitlePrimary, style: AppTextStyles.bodyBold.copyWith(fontSize: LibraryDetailsLayout.miniCoverBorderCreatorFontSize)),
+              Row(
+                children: [
+                  Text(
+                    details.subtitlePrimary,
+                    style: AppTextStyles.bodyBold.copyWith(
+                      fontSize: LibraryDetailsLayout.miniCoverBorderCreatorFontSize,
+                    ),
+                  ),
+                  if (details.subtitlePrimary == 'Tunify') ...[
+                    const SizedBox(width: 4),
+                    AppIcon(
+                      icon: AppIcons.verified,
+                      color: AppColors.brandGreen,
+                      size: 12,
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
         ),

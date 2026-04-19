@@ -18,6 +18,7 @@ final class LibraryBrowseDetailsRepositoryImpl
     return switch (item.kind) {
       LibraryItemKind.artist => LibraryYtmBrowseKind.artist,
       LibraryItemKind.album => LibraryYtmBrowseKind.album,
+      LibraryItemKind.podcast => LibraryYtmBrowseKind.podcast,
       _ => LibraryYtmBrowseKind.playlist,
     };
   }

@@ -3,4 +3,5 @@ enum LibraryYtmBrowseKind {
   album,
   playlist,
   artist,
+  podcast,
 }

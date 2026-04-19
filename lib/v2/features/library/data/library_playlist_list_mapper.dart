@@ -115,6 +115,20 @@ abstract final class LibraryPlaylistListMapper {
           isInServerLibrary: true,
           updatedAtMs: updatedAtMs,
         );
+      case 'podcast':
+        return LibraryItem(
+          id: id,
+          title: name,
+          subtitle: 'Podcast',
+          kind: LibraryItemKind.podcast,
+          isPinned: isPinned,
+          imageUrl: cover,
+          ytmBrowseId: ytmBrowse,
+          isUserOwnedPlaylist: false,
+          isRemoteCatalogPlaylist: true,
+          isInServerLibrary: true,
+          updatedAtMs: updatedAtMs,
+        );
       case 'user':
       default:
         final userOwned = !isRemote;

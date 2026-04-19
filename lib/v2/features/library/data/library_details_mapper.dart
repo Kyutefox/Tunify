@@ -129,8 +129,8 @@ LibraryDetailsModel libraryDetailsFromBrowse({
   return LibraryDetailsModel(
     type: type,
     item: item,
-    searchHint: 'Find in ${item.title}',
-    title: title,
+    searchHint: 'Find on this page',
+    title: item.title,
     subtitlePrimary: ownerLine,
     collectionDescription: collectionDescription,
     collectionStatInfo: meta?.collectionStatInfo,

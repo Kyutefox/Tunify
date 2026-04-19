@@ -16,7 +16,7 @@ String? libraryCollectionApiTargetForItem(LibraryItem item) {
       }
       return 'playlist';
     case LibraryItemKind.podcast:
-      return null;
+      return 'podcast';
     case LibraryItemKind.episode:
       return null;
     case LibraryItemKind.folder:

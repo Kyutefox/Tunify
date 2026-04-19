@@ -4,6 +4,7 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
+import 'package:tunify/v2/core/utils/accessibility_utils.dart';
 import 'package:tunify/v2/core/widgets/art/artwork_or_gradient.dart';
 import 'package:tunify/v2/core/widgets/buttons/tunify_press_feedback.dart';
 
@@ -38,78 +39,102 @@ class TrackTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 64,
-      child: TunifyPressFeedback(
-        borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
-        onTap: onTap,
-        onLongPress: onLongPress ?? () {},
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(
-                isArtist ? AppBorderRadius.fullPill : AppBorderRadius.subtle,
+    final semanticLabel = AccessibilityUtils.trackLabel(
+      title: title,
+      artist: subtitle,
+    );
+
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      enabled: onTap != null,
+      child: SizedBox(
+        height: 64,
+        child: TunifyPressFeedback(
+          borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
+          onTap: onTap,
+          onLongPress: onLongPress ?? () {},
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              ExcludeSemantics(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                    isArtist ? AppBorderRadius.fullPill : AppBorderRadius.subtle,
+                  ),
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: ArtworkOrGradient(imageUrl: imageUrl),
+                  ),
+                ),
               ),
-              child: SizedBox(
-                width: 48,
-                height: 48,
-                child: ArtworkOrGradient(imageUrl: imageUrl),
-              ),
-            ),
-            const SizedBox(width: AppSpacing.smMd),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+              const SizedBox(width: AppSpacing.smMd),
+              Expanded(
+                child: ExcludeSemantics(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Flexible(
-                        child: Text(
-                          title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTextStyles.listItemTitle,
-                        ),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTextStyles.listItemTitle,
+                            ),
+                          ),
+                          if (isVerified) ...[
+                            const SizedBox(width: 4),
+                            AppIcon(
+                              icon: AppIcons.verified,
+                              color: AppColors.announcementBlue,
+                              size: 12,
+                            ),
+                          ],
+                        ],
                       ),
-                      if (isVerified) ...[
-                        const SizedBox(width: 4),
-                        AppIcon(
-                          icon: AppIcons.verified,
-                          color: AppColors.announcementBlue,
-                          size: 12,
-                        ),
-                      ],
+                      Text(
+                        subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.small,
+                      ),
                     ],
                   ),
-                  Text(
-                    subtitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTextStyles.small,
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              if (showMoreIcon)
+                Semantics(
+                  label: 'More options for $title',
+                  button: true,
+                  enabled: enableMoreIcon,
+                  hint: 'Double tap to open options menu',
+                  child: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(
+                        minWidth: 48,
+                        minHeight: 48,
+                      ),
+                      onPressed: enableMoreIcon ? onMorePressed : null,
+                      icon: AppIcon(
+                        icon: AppIcons.moreVert,
+                        color: enableMoreIcon
+                            ? AppColors.silver
+                            : AppColors.silver.withValues(alpha: 0.35),
+                        size: 20,
+                      ),
+                    ),
                   ),
-                ],
-              ),
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            if (showMoreIcon)
-              IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(
-                  minWidth: 28,
-                  minHeight: 28,
                 ),
-                onPressed: enableMoreIcon ? onMorePressed : null,
-                icon: AppIcon(
-                  icon: AppIcons.moreVert,
-                  color: enableMoreIcon
-                      ? AppColors.silver
-                      : AppColors.silver.withValues(alpha: 0.35),
-                  size: 20,
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );

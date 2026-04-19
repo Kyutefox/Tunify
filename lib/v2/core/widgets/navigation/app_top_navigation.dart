@@ -79,7 +79,7 @@ class SessionAvatarButton extends ConsumerWidget {
   const SessionAvatarButton({
     super.key,
     this.onTap,
-    this.size = AppSpacing.navAvatarSize,
+    this.size = 44.0, // Increased from 36 to meet minimum touch target
     this.iconSize = AppSpacing.navAvatarIconSize,
   });
 
@@ -92,22 +92,27 @@ class SessionAvatarButton extends ConsumerWidget {
     final user = ref.watch(authSessionProvider).whenOrNull(data: (value) => value);
     final avatarUrl = avatarUrlFromUser(user);
 
-    return Material(
-      color: AppColors.transparent,
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: onTap,
-        child: Container(
-          width: size,
-          height: size,
-          decoration: const BoxDecoration(
-            color: AppColors.midDark,
-            shape: BoxShape.circle,
+    return Semantics(
+      label: 'User profile',
+      button: true,
+      hint: 'Double tap to open user menu',
+      child: Material(
+        color: AppColors.transparent,
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: onTap,
+          child: Container(
+            width: size,
+            height: size,
+            decoration: const BoxDecoration(
+              color: AppColors.midDark,
+              shape: BoxShape.circle,
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: avatarUrl == null
+                ? AvatarFallbackIcon(size: iconSize)
+                : NetworkAvatarImage(url: avatarUrl, fallbackIconSize: iconSize),
           ),
-          clipBehavior: Clip.antiAlias,
-          child: avatarUrl == null
-              ? AvatarFallbackIcon(size: iconSize)
-              : NetworkAvatarImage(url: avatarUrl, fallbackIconSize: iconSize),
         ),
       ),
     );

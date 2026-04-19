@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
@@ -9,6 +10,8 @@ import 'package:tunify/v2/core/widgets/cards/search_category_card.dart';
 import 'package:tunify/v2/core/widgets/cards/search_explore_card.dart';
 import 'package:tunify/v2/core/widgets/navigation/app_top_navigation.dart';
 import 'package:tunify/v2/core/widgets/navigation/user_menu_launcher.dart';
+import 'package:tunify/v2/core/widgets/states/error_state_view.dart';
+import 'package:tunify/v2/features/search/domain/entities/moods_models.dart';
 import 'package:tunify/v2/features/search/domain/entities/search_models.dart';
 import 'package:tunify/v2/features/search/presentation/constants/search_discovery_tiles.dart';
 import 'package:tunify/v2/features/search/presentation/constants/search_mood_tile_colors.dart';
@@ -29,136 +32,164 @@ class SearchScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
-      body: CustomScrollView(
-        slivers: [
-          SliverPersistentHeader(
-            pinned: true,
-            delegate: _SearchHeaderDelegate(
-              statusBarHeight: safeArea.top,
-              onAvatarTap: () => launchUserMenu(context),
-              onSearchTap: () {
-                ref.read(searchControllerProvider.notifier).clearQuery();
-                ref.read(searchRecentItemsProvider.notifier).clear();
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const SearchFocusScreen(),
-                    fullscreenDialog: true,
-                  ),
-                );
-              },
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            sliver: SliverToBoxAdapter(
-              child: Text(
-                'Explore your musical type',
-                style: AppTextStyles.featureHeading,
+      body: RefreshIndicator(
+        onRefresh: () async {
+          ref.invalidate(moodsAndGenresProvider);
+          await ref.read(moodsAndGenresProvider.future);
+        },
+        color: AppColors.brandGreen,
+        backgroundColor: AppColors.darkSurface,
+        child: CustomScrollView(
+          slivers: [
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SearchHeaderDelegate(
+                statusBarHeight: safeArea.top,
+                onAvatarTap: () => launchUserMenu(context),
+                onSearchTap: () {
+                  ref.read(searchControllerProvider.notifier).clearQuery();
+                  ref.read(searchRecentItemsProvider.notifier).clear();
+                  Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const SearchFocusScreen(),
+                      fullscreenDialog: true,
+                    ),
+                  );
+                },
               ),
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            sliver: SliverToBoxAdapter(
-              child: SizedBox(
-                height: 160,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: searchExploreTiles.length,
-                  separatorBuilder: (_, __) =>
-                      const SizedBox(width: AppSpacing.md),
-                  itemBuilder: (context, index) {
-                    final tile = searchExploreTiles[index];
-                    return SearchExploreCard(
-                      title: tile.$1,
-                      backgroundColor: tile.$2,
-                      width: 132,
-                      padding: AppSpacing.lg - AppSpacing.sm,
-                      titleFontSize: AppSpacing.searchExploreCardTitleFontSize,
-                    );
-                  },
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              sliver: SliverToBoxAdapter(
+                child: Text(
+                  'Explore your musical type',
+                  style: AppTextStyles.featureHeading,
                 ),
               ),
             ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
-          SliverPadding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            sliver: SliverToBoxAdapter(
-              child: Text('Browse all', style: AppTextStyles.featureHeading),
-            ),
-          ),
-          const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
-          SliverPadding(
-            padding: EdgeInsets.fromLTRB(
-                AppSpacing.lg, 0, AppSpacing.lg, bottomInset),
-            sliver: moodsAsync.when(
-              data: (moods) {
-                final colorSeed = moods.fold<int>(
-                  0,
-                  (acc, mood) =>
-                      acc ^ mood.browseId.hashCode ^ mood.title.hashCode,
-                );
-                final moodTileColors = buildRandomizedMoodTileColors(
-                  moods.length,
-                  seed: colorSeed,
-                );
-                return SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                    maxCrossAxisExtent: 220,
-                    mainAxisSpacing: AppSpacing.md,
-                    crossAxisSpacing: AppSpacing.md,
-                    mainAxisExtent: 104,
-                  ),
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final mood = moods[index];
-                      return SearchCategoryCard(
-                        title: mood.title,
-                        backgroundColor: moodTileColors[index],
-                        padding: AppSpacing.lg,
-                        titleFontSize: AppSpacing.searchCategoryCardTitleFontSize,
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              sliver: SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 160,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: searchExploreTiles.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(width: AppSpacing.md),
+                    itemBuilder: (context, index) {
+                      final tile = searchExploreTiles[index];
+                      return SearchExploreCard(
+                        title: tile.$1,
+                        backgroundColor: tile.$2,
+                        width: 132,
+                        padding: AppSpacing.lg - AppSpacing.sm,
+                        titleFontSize: AppSpacing.searchExploreCardTitleFontSize,
                       );
                     },
-                    childCount: moods.length,
-                  ),
-                );
-              },
-              loading: () => const SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 240,
-                  child: Center(
-                    child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.white,
-                      ),
-                    ),
                   ),
                 ),
               ),
-              error: (err, _) => SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 240,
-                  child: Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSpacing.lg),
-                      child: Text(
-                        'Failed to load moods',
-                        style: AppTextStyles.small,
-                        textAlign: TextAlign.center,
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.xl)),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              sliver: SliverToBoxAdapter(
+                child: Text('Browse all', style: AppTextStyles.featureHeading),
+              ),
+            ),
+            const SliverToBoxAdapter(child: SizedBox(height: AppSpacing.lg)),
+            SliverPadding(
+              padding: EdgeInsets.fromLTRB(
+                  AppSpacing.lg, 0, AppSpacing.lg, bottomInset),
+              sliver: moodsAsync.when(
+                data: (moods) {
+                  final colorSeed = moods.fold<int>(
+                    0,
+                    (acc, mood) =>
+                        acc ^ mood.browseId.hashCode ^ mood.title.hashCode,
+                  );
+                  final moodTileColors = buildRandomizedMoodTileColors(
+                    moods.length,
+                    seed: colorSeed,
+                  );
+                  return SliverGrid(
+                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: 220,
+                      mainAxisSpacing: AppSpacing.md,
+                      crossAxisSpacing: AppSpacing.md,
+                      mainAxisExtent: 104,
+                    ),
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final mood = moods[index];
+                        return SearchCategoryCard(
+                          title: mood.title,
+                          backgroundColor: moodTileColors[index],
+                          padding: AppSpacing.lg,
+                          titleFontSize: AppSpacing.searchCategoryCardTitleFontSize,
+                        );
+                      },
+                      childCount: moods.length,
+                    ),
+                  );
+                },
+                loading: () {
+                  // Use Skeletonizer to automatically generate skeleton from actual UI
+                  final dummyMoods = List.generate(
+                    12,
+                    (i) => SearchMoodTile(
+                      browseId: 'skeleton-$i',
+                      title: 'Loading Category',
+                    ),
+                  );
+                  final dummyColors = List.generate(12, (i) => AppColors.darkCard);
+                  
+                  return SliverToBoxAdapter(
+                    child: Skeletonizer(
+                      enabled: true,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        child: GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                            maxCrossAxisExtent: 220,
+                            mainAxisSpacing: AppSpacing.md,
+                            crossAxisSpacing: AppSpacing.md,
+                            mainAxisExtent: 104,
+                          ),
+                          itemCount: 12,
+                          itemBuilder: (context, index) {
+                            return SearchCategoryCard(
+                              title: dummyMoods[index].title,
+                              backgroundColor: dummyColors[index],
+                              padding: AppSpacing.lg,
+                              titleFontSize: AppSpacing.searchCategoryCardTitleFontSize,
+                            );
+                          },
+                        ),
                       ),
+                    ),
+                  );
+                },
+                error: (err, stack) => SliverToBoxAdapter(
+                  child: SizedBox(
+                    height: 400,
+                    child: ErrorStateView(
+                      title: 'Failed to load moods',
+                      message: 'Unable to fetch browse categories',
+                      subtitle: 'Check your connection and try again',
+                      onRetry: () => ref.invalidate(moodsAndGenresProvider),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -220,13 +251,13 @@ class _SearchFocusScreenState extends ConsumerState<SearchFocusScreen> {
             SearchFocusHeader(
               controller: _controller,
               onChanged: searchController.updateQueryDraft,
-              onSubmitted: (value) async {
+              onSubmitted: (value) {
                 final trimmed = value.trim();
                 if (trimmed.isEmpty) {
                   searchController.hideSubmittedSearch();
                   return;
                 }
-                await searchController.submitSearch();
+                searchController.submitSearch();
               },
               onBack: () => Navigator.of(context).pop(),
               onClear: () {
@@ -238,8 +269,8 @@ class _SearchFocusScreenState extends ConsumerState<SearchFocusScreen> {
               const SizedBox(height: AppSpacing.md),
               SearchFilterChipsRow(
                 selectedFilter: state.selectedFilter,
-                onFilterSelected: (filter) async {
-                  await searchController.onFilterChanged(filter);
+                onFilterSelected: (filter) {
+                  searchController.onFilterChanged(filter);
                 },
               ),
               const SizedBox(height: AppSpacing.md),
@@ -254,14 +285,24 @@ class _SearchFocusScreenState extends ConsumerState<SearchFocusScreen> {
                     return SearchRecentBody(items: recentItems);
                   }
                   if (!showResults && state.isLoading) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.white,
-                        ),
+                    // Use Skeletonizer to auto-generate skeleton from actual UI
+                    final dummyItems = List.generate(
+                      8,
+                      (i) => SearchResultItem(
+                        id: 'skeleton-$i',
+                        kind: SearchItemKind.song,
+                        title: 'Loading Track Title',
+                        subtitle: 'Loading Artist Name',
+                        imageUrl: null,
+                      ),
+                    );
+                    
+                    return Skeletonizer(
+                      enabled: true,
+                      child: SearchSuggestionBody(
+                        suggestions: const [],
+                        simpleItems: dummyItems,
+                        onSuggestionTap: (_) {},
                       ),
                     );
                   }
@@ -269,24 +310,40 @@ class _SearchFocusScreenState extends ConsumerState<SearchFocusScreen> {
                     return SearchSuggestionBody(
                       suggestions: suggestions,
                       simpleItems: typingItems,
-                      onSuggestionTap: (text) async {
+                      onSuggestionTap: (text) {
                         _controller.text = text;
                         _controller.selection =
                             TextSelection.collapsed(offset: text.length);
                         searchController.updateQueryDraft(text);
-                        await searchController.submitSearch();
+                        searchController.submitSearch();
                       },
                     );
                   }
                   if (showResults && state.isLoading) {
-                    return const Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: AppColors.white,
+                    // Use Skeletonizer to auto-generate skeleton from actual results UI
+                    final dummyResults = SearchResultsData(
+                      query: query,
+                      selectedFilter: state.selectedFilter,
+                      topResult: null,
+                      featuringItems: const [],
+                      items: List.generate(
+                        10,
+                        (i) => SearchResultItem(
+                          id: 'skeleton-$i',
+                          kind: SearchItemKind.song,
+                          title: 'Loading Track Title',
+                          subtitle: 'Loading Artist Name',
+                          imageUrl: null,
                         ),
+                      ),
+                    );
+                    
+                    return Skeletonizer(
+                      enabled: true,
+                      child: SearchResultBody(
+                        results: dummyResults,
+                        isLoadingMore: false,
+                        onLoadMore: () async {},
                       ),
                     );
                   }

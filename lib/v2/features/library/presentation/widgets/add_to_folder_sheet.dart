@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
@@ -8,6 +9,7 @@ import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_layout.dart';
 import 'package:tunify/v2/features/library/presentation/library_list_invalidation.dart';
 import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_list_tile.dart';
 
 /// Pick a folder and attach [playlistId] (Tunify library `playlist_id`).
 void showAddToFolderSheet(
@@ -105,10 +107,37 @@ class _AddToFolderSheetBodyState extends ConsumerState<_AddToFolderSheetBody> {
             ),
             const SizedBox(height: AppSpacing.md),
             foldersAsync.when(
-              loading: () => const Padding(
-                padding: EdgeInsets.all(AppSpacing.xl),
-                child: Center(child: CircularProgressIndicator()),
-              ),
+              loading: () {
+                // Use Skeletonizer to auto-generate from actual UI
+                final dummyFolders = List.generate(
+                  4,
+                  (i) => LibraryItem(
+                    id: 'skeleton-$i',
+                    kind: LibraryItemKind.folder,
+                    title: 'Loading Folder',
+                    subtitle: 'Loading',
+                    imageUrl: null,
+                    isPinned: false,
+                  ),
+                );
+                
+                return SizedBox(
+                  height: 200,
+                  child: Skeletonizer(
+                    enabled: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      itemCount: 4,
+                      itemBuilder: (context, index) {
+                        return LibraryListTile(
+                          item: dummyFolders[index],
+                          onTap: () {},
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
               error: (e, _) => Padding(
                 padding: const EdgeInsets.all(AppSpacing.xl),
                 child: Text(

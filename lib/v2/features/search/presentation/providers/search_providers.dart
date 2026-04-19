@@ -85,7 +85,7 @@ class SearchController extends Notifier<SearchViewState> {
     if (trimmed.isEmpty) {
       return;
     }
-    _typingDebounce = Timer(const Duration(milliseconds: 250), () {
+    _typingDebounce = Timer(const Duration(milliseconds: 400), () {
       _loadTypingPreview(trimmed);
     });
   }

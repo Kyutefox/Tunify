@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
@@ -222,7 +223,34 @@ class _LibraryFolderScreenState extends ConsumerState<LibraryFolderScreen>
               ),
               Expanded(
                 child: itemsAsync.when(
-                  loading: () => const Center(child: CircularProgressIndicator()),
+                  loading: () {
+                    // Use Skeletonizer to auto-generate from actual UI
+                    final dummyItems = List.generate(
+                      12,
+                      (i) => LibraryItem(
+                        id: 'skeleton-$i',
+                        kind: LibraryItemKind.playlist,
+                        title: 'Loading Playlist Title',
+                        subtitle: 'Loading subtitle',
+                        imageUrl: null,
+                        isPinned: false,
+                      ),
+                    );
+                    
+                    return Skeletonizer(
+                      enabled: true,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(top: AppSpacing.md),
+                        itemCount: 12,
+                        itemBuilder: (context, index) {
+                          return LibraryListTile(
+                            item: dummyItems[index],
+                            onTap: () {},
+                          );
+                        },
+                      ),
+                    );
+                  },
                   error: (e, _) => _FolderErrorView(
                     message: e.toString(),
                     onRetry: () => ref.invalidate(

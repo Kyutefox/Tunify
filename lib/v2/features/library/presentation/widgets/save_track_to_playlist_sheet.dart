@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import 'package:tunify/v2/core/constants/app_border_radius.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
@@ -13,6 +14,7 @@ import 'package:tunify/v2/features/library/presentation/library_track_playlist_s
 import 'package:tunify/v2/features/library/presentation/library_track_like_sheet_actions.dart';
 import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
 import 'package:tunify/v2/features/library/presentation/screens/library_create_item_screen.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_list_tile.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_collection_artwork.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_search_bar_with_sort.dart';
 
@@ -182,10 +184,37 @@ class _SaveTrackToPlaylistSheetState extends ConsumerState<_SaveTrackToPlaylistS
           const SizedBox(height: AppSpacing.lg),
           Flexible(
             child: itemsAsync.when(
-              loading: () => const SizedBox(
-                height: 200,
-                child: Center(child: CircularProgressIndicator()),
-              ),
+              loading: () {
+                // Use Skeletonizer to auto-generate from actual UI
+                final dummyPlaylists = List.generate(
+                  4,
+                  (i) => LibraryItem(
+                    id: 'skeleton-$i',
+                    kind: LibraryItemKind.playlist,
+                    title: 'Loading Playlist',
+                    subtitle: 'Loading',
+                    imageUrl: null,
+                    isPinned: false,
+                  ),
+                );
+                
+                return SizedBox(
+                  height: 200,
+                  child: Skeletonizer(
+                    enabled: true,
+                    child: ListView.builder(
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      itemCount: 4,
+                      itemBuilder: (context, index) {
+                        return LibraryListTile(
+                          item: dummyPlaylists[index],
+                          onTap: () {},
+                        );
+                      },
+                    ),
+                  ),
+                );
+              },
               error: (e, _) => SizedBox(
                 height: 200,
                 child: Center(

@@ -118,7 +118,7 @@ Built with Flutter for a seamless experience on both Android and iOS, Tunify use
 | **Preferences** | [shared_preferences](https://pub.dev/packages/shared_preferences) |
 | **Networking** | [http](https://pub.dev/packages/http), [connectivity_plus](https://pub.dev/packages/connectivity_plus) |
 | **Images** | [cached_network_image](https://pub.dev/packages/cached_network_image), [palette_generator](https://pub.dev/packages/palette_generator) |
-| **UI** | [google_fonts](https://pub.dev/packages/google_fonts), [flutter_animate](https://pub.dev/packages/flutter_animate), [shimmer](https://pub.dev/packages/shimmer), [flutter_svg](https://pub.dev/packages/flutter_svg), [hugeicons](https://pub.dev/packages/hugeicons) |
+| **UI** | [google_fonts](https://pub.dev/packages/google_fonts), [flutter_animate](https://pub.dev/packages/flutter_animate), [skeletonizer](https://pub.dev/packages/skeletonizer), [flutter_svg](https://pub.dev/packages/flutter_svg), [hugeicons](https://pub.dev/packages/hugeicons), [lottie](https://pub.dev/packages/lottie) |
 | **Code Generation** | [freezed](https://pub.dev/packages/freezed), [build_runner](https://pub.dev/packages/build_runner) |
 | **Casting** | [chromecast_dlna_finder](https://pub.dev/packages/chromecast_dlna_finder) |
 | **Device Music** | [on_audio_query_pluse](https://pub.dev/packages/on_audio_query_pluse) |

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/theme/app_theme.dart';
+import 'package:tunify/v2/core/widgets/states/offline_banner.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/auth_session_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/authenticated_app_shell.dart';
@@ -43,12 +44,14 @@ class TunifyApp extends ConsumerWidget {
         scaffoldBackgroundColor: AppColors.nearBlack,
       ),
       themeMode: ThemeMode.dark,
-      home: session.when(
-        loading: () => const LoadingScreen(),
-        error: (_, __) => const WelcomeScreen(),
-        data: (user) => user != null
-            ? const AuthenticatedAppShell()
-            : const WelcomeScreen(),
+      home: OfflineBanner(
+        child: session.when(
+          loading: () => const LoadingScreen(),
+          error: (_, __) => const WelcomeScreen(),
+          data: (user) => user != null
+              ? const AuthenticatedAppShell()
+              : const WelcomeScreen(),
+        ),
       ),
       // Custom page transitions to prevent content glimpsing
       builder: (context, child) {

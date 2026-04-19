@@ -17,7 +17,7 @@ migrate_working_dir/
 *.ipr
 *.iws
 .idea/
-
+*.md
 # VS Code related
 .vscode/
 .zed/

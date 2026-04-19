@@ -33,6 +33,9 @@ class ArtworkOrGradient extends StatelessWidget {
         fit: fit,
         alignment: alignment,
         fadeInDuration: const Duration(milliseconds: 150),
+        // Optimize memory usage by caching at reasonable sizes
+        maxWidthDiskCache: 800,
+        maxHeightDiskCache: 800,
         placeholder: (_, __) => _placeholder,
         errorWidget: (_, __, ___) => _placeholder,
       );

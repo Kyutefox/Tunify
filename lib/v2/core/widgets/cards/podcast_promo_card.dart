@@ -30,6 +30,7 @@ class PodcastPromoCard extends StatelessWidget {
     this.coverHeight,
     this.showAddToLibraryButton = true,
     this.compactPlaylistStyle = false,
+    this.isSaved = false,
   });
 
   final String title;
@@ -58,6 +59,9 @@ class PodcastPromoCard extends StatelessWidget {
 
   /// Spotify-style compact playlist promo (folded home track shelf).
   final bool compactPlaylistStyle;
+
+  /// When true, the add-to-library button shows as a filled checkmark in accent color.
+  final bool isSaved;
 
   @override
   Widget build(BuildContext context) {
@@ -189,6 +193,7 @@ class PodcastPromoCard extends StatelessWidget {
                       TunifyAddToLibraryIconButton(
                         onPressed: onAddToLibrary,
                         iconColor: AppColors.white.withValues(alpha: 0.92),
+                        isSaved: isSaved,
                       ),
                       const SizedBox(width: AppSpacing.md),
                     ],
@@ -326,6 +331,7 @@ class PodcastPromoCard extends StatelessWidget {
                           TunifyAddToLibraryIconButton(
                             onPressed: onAddToLibrary,
                             iconColor: AppColors.white.withValues(alpha: 0.95),
+                            isSaved: isSaved,
                           ),
                           const SizedBox(width: AppSpacing.lg),
                         ],

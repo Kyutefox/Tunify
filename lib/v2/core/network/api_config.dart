@@ -10,7 +10,7 @@ class ApiConfig {
   static ApiConfig fromEnvironment() {
     const raw = String.fromEnvironment(
       'TUNIFY_API_BASE_URL',
-      defaultValue: 'http://192.168.1.106:8080',
+      defaultValue: 'http://192.168.1.6:8080',
     );
     final trimmed = raw.trim();
     final noSlash = trimmed.endsWith('/')

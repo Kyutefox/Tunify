@@ -1,7 +1,7 @@
-import 'package:tunify_source_youtube_music/models/track.dart';
+import 'package:tunify/v2/features/library/domain/entities/browse_track.dart';
 
-/// Maps Tunify Rust `FeedItem` JSON (from `/v1/browse` `parsed.primary_tracks`) to [Track].
-Track trackFromBrowseFeedJson(Map<String, dynamic> json) {
+/// Maps Tunify Rust `FeedItem` JSON (from `/v1/browse` `parsed.primary_tracks`) to [BrowseTrack].
+BrowseTrack trackFromBrowseFeedJson(Map<String, dynamic> json) {
   final id = (json['id'] as String?)?.trim() ?? '';
   final title = (json['title'] as String?)?.trim() ?? '';
   final subtitle = (json['subtitle'] as String?)?.trim();
@@ -15,7 +15,7 @@ Track trackFromBrowseFeedJson(Map<String, dynamic> json) {
       (firstArtist?['name'] as String?)?.trim() ?? '';
   final ms = (json['duration_ms'] as num?)?.toInt() ?? 0;
   final thumb = (json['artwork_url'] as String?)?.trim() ?? '';
-  return Track(
+  return BrowseTrack(
     id: id,
     title: title,
     artist: (subtitle != null && subtitle.isNotEmpty) ? subtitle : artistName,
@@ -27,7 +27,7 @@ Track trackFromBrowseFeedJson(Map<String, dynamic> json) {
   );
 }
 
-List<Track> tracksFromBrowseParsed(Map<String, dynamic> parsed) {
+List<BrowseTrack> tracksFromBrowseParsed(Map<String, dynamic> parsed) {
   final list = parsed['primary_tracks'] as List<dynamic>? ?? const [];
   return list
       .whereType<Map<String, dynamic>>()

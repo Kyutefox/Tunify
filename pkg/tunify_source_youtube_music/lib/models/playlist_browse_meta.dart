@@ -10,11 +10,16 @@ class PlaylistBrowseMeta {
     this.channelTitle,
     this.channelThumbnailUrl,
     this.collectionStatInfo,
+    this.collectionThumbnailUrl,
   });
 
   final String? description;
   final String? curatorName;
   final String? curatorThumbnailUrl;
+
+  /// Cover art URL for the collection itself (album cover, playlist cover, podcast cover).
+  /// Populated from `collection_metadata.thumbnail_url` returned by the Rust backend.
+  final String? collectionThumbnailUrl;
 
   /// Playlist/album subtitle (e.g. `Playlist • 2023`) or artist monthly
   /// listeners (e.g. `101M monthly audience`).

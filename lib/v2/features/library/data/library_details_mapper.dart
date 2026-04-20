@@ -3,8 +3,8 @@ import 'package:tunify/v2/features/library/domain/entities/library_browse_recomm
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/domain/library_playlist_management_pills.dart';
-import 'package:tunify_source_youtube_music/models/playlist_browse_meta.dart';
-import 'package:tunify_source_youtube_music/models/track.dart';
+import 'package:tunify/v2/features/library/domain/entities/browse_meta.dart';
+import 'package:tunify/v2/features/library/domain/entities/browse_track.dart';
 
 String? _nonEmptyUrl(String url) {
   final t = url.trim();
@@ -40,7 +40,7 @@ String _upgradeThumbResolution(String? url) {
 /// URLs can change server-side framing (tight face crop) vs the library thumb.
 String? _artistHeroImageUrl({
   required LibraryItem item,
-  required PlaylistBrowseMeta? meta,
+  required BrowseMeta? meta,
 }) {
   final fromItem = _nonEmptyUrl(item.imageUrl ?? '');
   if (fromItem != null) {
@@ -64,8 +64,8 @@ LibraryDetailsType _detailsType(LibraryItemKind kind) {
 /// Builds [LibraryDetailsModel] after a Tunify browse load.
 LibraryDetailsModel libraryDetailsFromBrowse({
   required LibraryItem item,
-  required List<Track> tracks,
-  PlaylistBrowseMeta? meta,
+  required List<BrowseTrack> tracks,
+  BrowseMeta? meta,
   List<LibraryBrowseRecommendationShelf> browseRecommendationShelves =
       const [],
 }) {
@@ -85,11 +85,15 @@ LibraryDetailsModel libraryDetailsFromBrowse({
       )
       .toList(growable: false);
 
+
   /// Artist immersive header often supplies a wide banner; library [item.imageUrl]
   /// is the same square avatar as grids and [LibraryDetailMiniCover].
+  /// For all other types (album, playlist, podcast), prefer the fresh thumbnail
+  /// extracted by the Rust backend over the potentially stale DB value.
   final String? heroUrl = type == LibraryDetailsType.artist
       ? _upgradeThumbResolution(_artistHeroImageUrl(item: item, meta: meta))
-      : item.imageUrl;
+      : _nonEmptyUrl(_upgradeThumbResolution(meta?.collectionThumbnailUrl)) ?? item.imageUrl;
+
 
   final title = (type == LibraryDetailsType.artist
           ? (meta?.channelTitle ?? item.title)
@@ -108,7 +112,7 @@ LibraryDetailsModel libraryDetailsFromBrowse({
       title: title,
       subtitlePrimary: subtitlePrimary,
       collectionDescription: collectionDescription,
-      collectionStatInfo: null, // Artists don't have collection stat info
+      collectionStatInfo: null,
       tracks: rows,
       heroImageUrl: heroUrl,
       gradientTop: AppColors.libraryArtistGradientTop,

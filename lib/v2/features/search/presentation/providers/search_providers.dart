@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tunify/v2/core/constants/app_durations.dart';
 import 'package:tunify/v2/core/errors/failures.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
 import 'package:tunify/v2/features/search/data/repositories/search_repository_impl.dart';
@@ -85,7 +86,7 @@ class SearchController extends Notifier<SearchViewState> {
     if (trimmed.isEmpty) {
       return;
     }
-    _typingDebounce = Timer(const Duration(milliseconds: 400), () {
+    _typingDebounce = Timer(AppDurations.typingDebounce, () {
       _loadTypingPreview(trimmed);
     });
   }

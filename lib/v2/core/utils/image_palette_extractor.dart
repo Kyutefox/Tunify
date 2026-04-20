@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:palette_generator/palette_generator.dart';
 import 'package:tunify/v2/core/utils/logger.dart';
 
@@ -77,3 +78,33 @@ abstract final class ImagePaletteExtractor {
         .toColor();
   }
 }
+
+/// Riverpod provider for palette extraction from image URLs.
+///
+/// Caches results per URL and handles async extraction with null fallback.
+final imagePaletteProvider =
+    FutureProvider.autoDispose.family<ExtractedImagePalette?, String>((ref, url) async {
+  final trimmed = url.trim();
+  if (trimmed.isEmpty) {
+    return null;
+  }
+  try {
+    return await ImagePaletteExtractor.fromNetworkUrl(trimmed);
+  } on Object catch (e, st) {
+    Logger.error(
+      'Palette extraction failed (using default palette)',
+      tag: 'ImagePaletteProvider',
+      error: e,
+      stackTrace: st,
+    );
+    return null;
+  }
+});
+
+/// Convenience provider that returns the ARGB int for the gradient top color.
+///
+/// Returns null if extraction fails or URL is empty.
+final imagePaletteArgbProvider = Provider.autoDispose.family<int?, String>((ref, url) {
+  final paletteAsync = ref.watch(imagePaletteProvider(url));
+  return paletteAsync.value?.gradientTop.toARGB32();
+});

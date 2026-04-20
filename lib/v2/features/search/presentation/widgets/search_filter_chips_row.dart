@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:tunify/v2/core/constants/app_durations.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/widgets/buttons/filter_pill_row.dart';
 import 'package:tunify/v2/core/widgets/buttons/filter_single_pill.dart';
@@ -17,7 +18,7 @@ class SearchFilterChipsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCollapsed = selectedFilter != SearchFilter.all;
-    const animationDuration = Duration(milliseconds: 280);
+    final animationDuration = AppDurations.standardAnimation;
     const animationCurve = Curves.easeOutCubic;
 
     return SizedBox(

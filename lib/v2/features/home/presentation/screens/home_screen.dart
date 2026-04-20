@@ -129,10 +129,10 @@ class _HomeBlockView extends StatelessWidget {
   Widget build(BuildContext context) {
     return switch (block) {
       final HomeQuickPicksBlock qp => HomeQuickPicksShelf(data: qp),
-      HomeSlimGridBlock(:final tiles) => HomeSlimGrid(tiles: tiles),
+      HomeSlimGridBlock(:final tiles) => HomeSlimGrid(tiles: tiles, onShowOptions: null),
       HomeHeroRecommendedBlock(:final hero) =>
-        HomeHeroRecommendedView(data: hero),
-      HomeCarouselBlock(:final section) => HomeCarouselShelf(section: section),
+          HomeHeroRecommendedView(data: hero),
+      HomeCarouselBlock(:final section) => HomeCarouselShelf(section: section, onShowOptions: null),
       HomePodcastPromoBlock(:final promo) => HomePodcastPromoView(data: promo),
     };
   }

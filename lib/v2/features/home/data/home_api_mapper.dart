@@ -1,5 +1,6 @@
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_feed.dart';
+import 'package:tunify/v2/features/home/domain/utils/color_hash_generator.dart';
 
 /// Maps `GET /v1/browse/home` JSON into v2 [HomeFeed] blocks — field-driven only (no reorder heuristics).
 abstract final class HomeApiMapper {
@@ -71,7 +72,7 @@ abstract final class HomeApiMapper {
     return HomeSlimTile(
       id: id,
       title: title,
-      thumbColors: _hashToTwoColors(key),
+      thumbColors: ColorHashGenerator.hashToTwoColors(key),
       artworkUrl: _artworkUrl(json),
       shelfKind: json['kind'] as String?,
     );
@@ -134,7 +135,7 @@ abstract final class HomeApiMapper {
         HomeSlimTile(
           id: payload['id'] as String? ?? key,
           title: label,
-          thumbColors: _hashToTwoColors(key),
+          thumbColors: ColorHashGenerator.hashToTwoColors(key),
           artworkUrl: _artworkUrl(payload),
           shelfKind: _shelfKind(raw),
         ),
@@ -146,7 +147,7 @@ abstract final class HomeApiMapper {
           HomeSlimTile(
             id: 'placeholder',
             title: 'Tunify',
-            thumbColors: _hashToTwoColors('placeholder'),
+            thumbColors: ColorHashGenerator.hashToTwoColors('placeholder'),
           ),
         ],
       );
@@ -164,7 +165,7 @@ abstract final class HomeApiMapper {
     final cardSubtitle =
         first != null ? _secondaryLabel(first) : (subtitle ?? '');
     final key = '${first?['id'] ?? title}-hero';
-    final colors = _hashToTwoColors(key);
+    final colors = ColorHashGenerator.hashToTwoColors(key);
     return HomeHeroRecommendedBlock(
       HomeHeroRecommended(
         sectionLabel: subtitle ?? 'For you',
@@ -249,8 +250,8 @@ abstract final class HomeApiMapper {
         title: title,
         showSubtitle: showSubtitle,
         episodeDescription: desc,
-        coverColors: _hashToTwoColors(sid),
-        backgroundColor: _hashToTwoColors('$sid-bg')[0],
+        coverColors: ColorHashGenerator.hashToTwoColors(sid),
+        backgroundColor: ColorHashGenerator.hashToTwoColors('$sid-bg')[0],
         mosaicArtworkUrls: mosaics,
         trackVideoIds: ids,
         creatorName: creatorName,
@@ -305,8 +306,8 @@ abstract final class HomeApiMapper {
         title: title,
         showSubtitle: showSubtitle,
         episodeDescription: desc.isEmpty ? ' ' : desc,
-        coverColors: _hashToTwoColors(sid),
-        backgroundColor: _hashToTwoColors('$sid-bg')[0],
+        coverColors: ColorHashGenerator.hashToTwoColors(sid),
+        backgroundColor: ColorHashGenerator.hashToTwoColors('$sid-bg')[0],
         mosaicArtworkUrls: mosaics,
         creatorName: creatorName,
       ),
@@ -484,7 +485,7 @@ abstract final class HomeApiMapper {
           id: payload['id'] as String? ?? '${payload['title']}-item',
           title: _primaryLabel(payload),
           subtitle: _optionalSubtitle(payload, kind),
-          imageColors: _hashToTwoColors(
+          imageColors: ColorHashGenerator.hashToTwoColors(
             payload['id'] as String? ?? _primaryLabel(payload),
           ),
           imageBorderRadius: kind == 'artist' ? 9999 : 8,
@@ -498,7 +499,7 @@ abstract final class HomeApiMapper {
         HomeCarouselItem(
           id: '$id-empty',
           title: title.isEmpty ? 'Browse' : title,
-          imageColors: _hashToTwoColors(id),
+          imageColors: ColorHashGenerator.hashToTwoColors(id),
         ),
       );
     }
@@ -595,16 +596,6 @@ abstract final class HomeApiMapper {
       return 'artist';
     }
     return 'track';
-  }
-
-  static List<int> _hashToTwoColors(String input) {
-    var h = 0;
-    for (final unit in input.codeUnits) {
-      h = (h * 31 + unit) & 0x7fffffff;
-    }
-    final a = 0xFF000000 | (h & 0xffffff);
-    final b = 0xFF000000 | ((h ^ (h >> 12) ^ (h >> 24)) & 0xffffff);
-    return [a, b];
   }
 
   /// Builds a [HomeCarouselSection] from the same `kind` + `value` entries as home `sections[].items`.

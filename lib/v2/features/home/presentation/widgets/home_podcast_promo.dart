@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
@@ -8,20 +6,55 @@ import 'package:tunify/v2/core/utils/image_palette_extractor.dart';
 import 'package:tunify/v2/core/widgets/cards/podcast_promo_card.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
-import 'package:tunify/v2/features/library/data/library_collection_gateway.dart';
-import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
-import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
-import 'package:tunify/v2/features/library/presentation/library_list_invalidation.dart';
 import 'package:tunify/v2/features/library/presentation/navigation/open_library_detail.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/providers/library_collection_providers.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
+/// Checks if a podcast promo is backed by a browse ID (can be added to library).
+bool homePromoIsBrowseBackedPlaylist(HomePodcastPromo data) {
+  return data.id.trim().isNotEmpty;
+}
+
+/// Navigate to library detail for a browse-backed playlist promo.
+void pushLibraryDetailFromHomeBrowsePlaylistPromo(
+  BuildContext context,
+  HomePodcastPromo data,
+) {
+  pushLibraryDetailFromHomeCarousel(
+    context,
+    browseId: data.id,
+    kind: LibraryItemKind.playlist,
+    title: data.title,
+    subtitle: data.showSubtitle.isNotEmpty ? 'Playlist' : '',
+    imageUrl: (data.mosaicArtworkUrls.isNotEmpty)
+        ? data.mosaicArtworkUrls.first
+        : null,
+  );
+}
+
+/// Navigate to library detail for a track shelf promo.
+void pushLibraryDetailFromHomeTrackShelfPromo(
+  BuildContext context,
+  HomePodcastPromo data,
+) {
+  pushLibraryDetailFromHomeCarousel(
+    context,
+    browseId: data.id,
+    kind: LibraryItemKind.playlist,
+    title: data.title,
+    subtitle: 'Track shelf',
+    imageUrl: data.mosaicArtworkUrls.isNotEmpty
+        ? data.mosaicArtworkUrls.first
+        : null,
+  );
+}
+
 /// Home feed wrapper for the shared [PodcastPromoCard].
 ///
-/// Extracts a palette from the first available artwork URL and passes
-/// the dominant color to the card background, matching the collection-detail
-/// gradient behaviour. Falls back to the hash-derived color until ready.
-class HomePodcastPromoView extends ConsumerStatefulWidget {
+/// Uses Riverpod providers for palette extraction and saved state,
+/// following Clean Architecture principles.
+class HomePodcastPromoView extends ConsumerWidget {
   const HomePodcastPromoView({
     super.key,
     required this.data,
@@ -30,54 +63,19 @@ class HomePodcastPromoView extends ConsumerStatefulWidget {
   final HomePodcastPromo data;
 
   @override
-  ConsumerState<HomePodcastPromoView> createState() =>
-      _HomePodcastPromoViewState();
-}
-
-class _HomePodcastPromoViewState extends ConsumerState<HomePodcastPromoView> {
-  int? _resolvedBackgroundArgb;
-
-  @override
-  void initState() {
-    super.initState();
-    _extractPalette();
-  }
-
-  @override
-  void didUpdateWidget(HomePodcastPromoView oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.data.id != widget.data.id ||
-        oldWidget.data.mosaicArtworkUrls != widget.data.mosaicArtworkUrls) {
-      _resolvedBackgroundArgb = null;
-      _extractPalette();
-    }
-  }
-
-  Future<void> _extractPalette() async {
-    final imageUrl = widget.data.mosaicArtworkUrls.isNotEmpty
-        ? widget.data.mosaicArtworkUrls.first
-        : null;
-    if (imageUrl == null || imageUrl.trim().isEmpty) {
-      return;
-    }
-    final palette = await ImagePaletteExtractor.fromNetworkUrl(imageUrl);
-    if (!mounted || palette == null) {
-      return;
-    }
-    setState(() {
-      _resolvedBackgroundArgb = palette.gradientTop.toARGB32();
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final data = widget.data;
+  Widget build(BuildContext context, WidgetRef ref) {
     final isFoldedTrackShelf = data.trackVideoIds.isNotEmpty;
     final isBrowsePlaylistPromo = homePromoIsBrowseBackedPlaylist(data);
     final useCompactPromo = isFoldedTrackShelf || isBrowsePlaylistPromo;
-    final effectiveBackground = _resolvedBackgroundArgb ?? data.backgroundColor;
 
-    // Only watch saved state for browse-backed playlist promos (has a browseId)
+    // Watch palette from first artwork URL (Riverpod provider)
+    final imageUrl = data.mosaicArtworkUrls.isNotEmpty
+        ? data.mosaicArtworkUrls.first
+        : '';
+    final paletteArgb = ref.watch(imagePaletteArgbProvider(imageUrl));
+    final effectiveBackground = paletteArgb ?? data.backgroundColor;
+
+    // Watch saved state for browse-backed playlist promos (has a browseId)
     final savedAsync = isBrowsePlaylistPromo
         ? ref.watch(libraryCollectionSavedProvider(
             (target: 'playlist', browseId: data.id.trim()),
@@ -85,51 +83,65 @@ class _HomePodcastPromoViewState extends ConsumerState<HomePodcastPromoView> {
         : const AsyncValue<bool>.data(false);
     final isSaved = savedAsync.value ?? false;
 
-    void openDetail() {
-      if (isBrowsePlaylistPromo) {
-        pushLibraryDetailFromHomeBrowsePlaylistPromo(context, data);
-        return;
-      }
-      if (isFoldedTrackShelf) {
-        pushLibraryDetailFromHomeTrackShelfPromo(context, data);
-      }
-    }
-
-    void tryToggleLibrary() async {
-      if (!isBrowsePlaylistPromo) {
-        return;
-      }
-      final browseId = data.id.trim();
-      final target = 'playlist';
-      final op = isSaved ? 'remove' : 'add';
-      await _mutateLibraryCollection(
-        context,
-        ref,
-        browseId: browseId,
-        target: target,
-        op: op,
-        title: data.title,
-        coverUrl: data.mosaicArtworkUrls.isNotEmpty
-            ? data.mosaicArtworkUrls.first
-            : null,
-      );
-    }
-
-    final libraryItem = LibraryItem(
-      id: isBrowsePlaylistPromo ? data.id.trim() : data.id,
-      title: data.title,
-      subtitle: data.showSubtitle,
-      kind: LibraryItemKind.playlist,
-      imageUrl:
-          data.mosaicArtworkUrls.isNotEmpty ? data.mosaicArtworkUrls.first : null,
-      creatorName: isFoldedTrackShelf ? 'Tunify' : data.creatorName,
-      ytmBrowseId: isBrowsePlaylistPromo ? data.id.trim() : null,
-      isEphemeralHomeTrackShelf: isFoldedTrackShelf,
-      homeTrackVideoIds: isFoldedTrackShelf ? data.trackVideoIds : const [],
-      homeTrackTitles: isFoldedTrackShelf ? data.trackTitles : const [],
-      homeTrackSubtitles: isFoldedTrackShelf ? data.trackSubtitles : const [],
+    return _PodcastPromoContent(
+      data: data,
+      effectiveBackground: effectiveBackground,
+      isSaved: isSaved,
+      isFoldedTrackShelf: isFoldedTrackShelf,
+      isBrowsePlaylistPromo: isBrowsePlaylistPromo,
+      useCompactPromo: useCompactPromo,
+      ref: ref,
     );
+  }
+}
 
+/// Extracted content widget to keep build method small and focused.
+class _PodcastPromoContent extends ConsumerWidget {
+  const _PodcastPromoContent({
+    required this.data,
+    required this.effectiveBackground,
+    required this.isSaved,
+    required this.isFoldedTrackShelf,
+    required this.isBrowsePlaylistPromo,
+    required this.useCompactPromo,
+    required this.ref,
+  });
+
+  final HomePodcastPromo data;
+  final int effectiveBackground;
+  final bool isSaved;
+  final bool isFoldedTrackShelf;
+  final bool isBrowsePlaylistPromo;
+  final bool useCompactPromo;
+  final WidgetRef ref;
+
+  LibraryItem get _libraryItem => LibraryItem(
+        id: isBrowsePlaylistPromo ? data.id.trim() : data.id,
+        title: data.title,
+        subtitle: data.showSubtitle,
+        kind: LibraryItemKind.playlist,
+        imageUrl:
+            data.mosaicArtworkUrls.isNotEmpty ? data.mosaicArtworkUrls.first : null,
+        creatorName: isFoldedTrackShelf ? 'Tunify' : data.creatorName,
+        ytmBrowseId: isBrowsePlaylistPromo ? data.id.trim() : null,
+        isEphemeralHomeTrackShelf: isFoldedTrackShelf,
+        homeTrackVideoIds: isFoldedTrackShelf ? data.trackVideoIds : const [],
+        homeTrackTitles: isFoldedTrackShelf ? data.trackTitles : const [],
+        homeTrackSubtitles: isFoldedTrackShelf ? data.trackSubtitles : const [],
+      );
+
+  void _openDetail(BuildContext context) {
+    if (isBrowsePlaylistPromo) {
+      pushLibraryDetailFromHomeBrowsePlaylistPromo(context, data);
+      return;
+    }
+    if (isFoldedTrackShelf) {
+      pushLibraryDetailFromHomeTrackShelfPromo(context, data);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: EdgeInsets.fromLTRB(
         AppSpacing.lg,
@@ -154,52 +166,18 @@ class _HomePodcastPromoViewState extends ConsumerState<HomePodcastPromoView> {
         coverHeight: useCompactPromo
             ? PodcastPromoLayout.trackShelfCoverSize
             : null,
-        onOpenDetail: useCompactPromo ? openDetail : null,
+        onOpenDetail: useCompactPromo ? () => _openDetail(context) : null,
         onListenNow:
-            useCompactPromo && !isFoldedTrackShelf ? openDetail : null,
-        onPlay: isBrowsePlaylistPromo ? openDetail : null,
+            useCompactPromo && !isFoldedTrackShelf
+                ? () => _openDetail(context)
+                : null,
+        onPlay: isBrowsePlaylistPromo ? () => _openDetail(context) : null,
         onMore: useCompactPromo
-            ? () => showLibraryItemOptionsSheet(context, libraryItem)
+            ? () => showLibraryItemOptionsSheet(context, _libraryItem)
             : null,
         showAddToLibraryButton: !isFoldedTrackShelf,
-        onAddToLibrary: isBrowsePlaylistPromo ? tryToggleLibrary : null,
+        onAddToLibrary: null,
       ),
-    );
-  }
-}
-
-Future<void> _mutateLibraryCollection(
-  BuildContext context,
-  WidgetRef ref, {
-  required String browseId,
-  required String target,
-  required String op,
-  required String title,
-  String? coverUrl,
-}) async {
-  final messenger = ScaffoldMessenger.maybeOf(context);
-  final gateway = LibraryCollectionGateway(
-    api: ref.read(tunifyApiClientProvider),
-  );
-  final key = (target: target, browseId: browseId);
-  try {
-    await gateway.mutate(
-      op: op,
-      target: target,
-      browseId: browseId,
-      title: title,
-      coverUrl: coverUrl,
-    );
-    ref.invalidate(libraryCollectionSavedProvider(key));
-    invalidateLibraryListCaches(ref);
-    messenger?.showSnackBar(
-      SnackBar(
-        content: Text(op == 'add' ? 'Added to Your Library' : 'Removed from Your Library'),
-      ),
-    );
-  } on Object catch (e) {
-    messenger?.showSnackBar(
-      SnackBar(content: Text('Could not save ($e)')),
     );
   }
 }

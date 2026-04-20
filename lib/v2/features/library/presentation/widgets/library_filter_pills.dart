@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:tunify/v2/core/constants/app_durations.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/widgets/buttons/filter_pill_row.dart';
 import 'package:tunify/v2/core/widgets/buttons/filter_single_pill.dart';
@@ -29,7 +30,7 @@ class LibraryFilterPills extends ConsumerWidget {
     final notifier = ref.read(libraryControllerProvider.notifier);
     final isCollapsed = viewState.filter != LibraryFilter.all;
 
-    const animDuration = Duration(milliseconds: 280);
+    final animDuration = AppDurations.standardAnimation;
     const animCurve = Curves.easeOutCubic;
 
     return SizedBox(

@@ -45,7 +45,7 @@ class _PlaylistOwnerAvatar extends ConsumerWidget {
           child: CachedNetworkImage(
             imageUrl: url,
             fit: BoxFit.cover,
-            fadeInDuration: const Duration(milliseconds: 150),
+            fadeInDuration: AppDurations.fadeIn,
             placeholder: (_, __) =>
                 const ColoredBox(color: AppColors.darkSurface),
             errorWidget: (_, __, ___) => ColoredBox(

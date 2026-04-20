@@ -10,7 +10,6 @@ import 'package:tunify/v2/core/widgets/lists/track_tile.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/navigation/open_library_detail.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 import 'package:tunify/v2/features/search/domain/entities/search_models.dart';
 import 'package:tunify/v2/features/search/presentation/providers/search_providers.dart';
 
@@ -20,11 +19,15 @@ class SearchResultBody extends StatelessWidget {
     required this.results,
     required this.isLoadingMore,
     required this.onLoadMore,
+    this.onShowOptions,
+    this.onShowTrackOptions,
   });
 
   final SearchResultsData results;
   final bool isLoadingMore;
   final Future<void> Function() onLoadMore;
+  final void Function(LibraryItem)? onShowOptions;
+  final void Function(LibraryDetailsModel, LibraryDetailsTrack)? onShowTrackOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +72,11 @@ class SearchResultBody extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.md),
           ],
-          ...results.items.map((item) => _ResultListItem(item: item)),
+          ...results.items.map((item) => _ResultListItem(
+                item: item,
+                onShowOptions: onShowOptions,
+                onShowTrackOptions: onShowTrackOptions,
+              )),
           if (isLoadingMore) ...[
             const SizedBox(height: AppSpacing.md),
             const Center(
@@ -179,11 +186,15 @@ class SearchSuggestionBody extends StatelessWidget {
     required this.suggestions,
     required this.simpleItems,
     required this.onSuggestionTap,
+    this.onShowOptions,
+    this.onShowTrackOptions,
   });
 
   final List<String> suggestions;
   final List<SearchResultItem> simpleItems;
   final ValueChanged<String> onSuggestionTap;
+  final void Function(LibraryItem)? onShowOptions;
+  final void Function(LibraryDetailsModel, LibraryDetailsTrack)? onShowTrackOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -233,7 +244,11 @@ class SearchSuggestionBody extends StatelessWidget {
                 (item) => Padding(
                   padding:
                       const EdgeInsets.only(left: AppSpacing.lg),
-                  child: _ResultListItem(item: item),
+                  child: _ResultListItem(
+                    item: item,
+                    onShowOptions: onShowOptions,
+                    onShowTrackOptions: onShowTrackOptions,
+                  ),
                 ),
               ),
         ],
@@ -400,9 +415,15 @@ class _FeaturingCard extends StatelessWidget {
 }
 
 class _ResultListItem extends StatelessWidget {
-  const _ResultListItem({required this.item});
+  const _ResultListItem({
+    required this.item,
+    this.onShowOptions,
+    this.onShowTrackOptions,
+  });
 
   final SearchResultItem item;
+  final void Function(LibraryItem)? onShowOptions;
+  final void Function(LibraryDetailsModel, LibraryDetailsTrack)? onShowTrackOptions;
 
   LibraryItemKind? _libraryKindFromSearch(SearchItemKind kind) {
     return switch (kind) {
@@ -417,7 +438,7 @@ class _ResultListItem extends StatelessWidget {
 
   void _handleMoreOrLongPress(BuildContext context) {
     final kind = _libraryKindFromSearch(item.kind);
-    if (kind != null) {
+    if (kind != null && onShowOptions != null) {
       // Show options for artist/album/playlist
       final libraryItem = LibraryItem(
         id: item.id,
@@ -427,8 +448,8 @@ class _ResultListItem extends StatelessWidget {
         imageUrl: item.imageUrl,
         ytmBrowseId: item.id,
       );
-      showLibraryItemOptionsSheet(context, libraryItem);
-    } else if (item.kind == SearchItemKind.song && item.videoId != null) {
+      onShowOptions!(libraryItem);
+    } else if (item.kind == SearchItemKind.song && item.videoId != null && onShowTrackOptions != null) {
       // Show track options for songs
       final track = LibraryDetailsTrack(
         title: item.title,
@@ -451,7 +472,7 @@ class _ResultListItem extends StatelessWidget {
         subtitlePrimary: item.subtitle,
         tracks: [],
       );
-      showLibraryItemOptionsSheetForTrack(context, details, track);
+      onShowTrackOptions!(details, track);
     } else {
       // For other types (video, episode, etc.), navigate to detail
       pushLibraryDetailFromSearch(context, item);

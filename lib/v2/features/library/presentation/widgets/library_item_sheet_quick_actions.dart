@@ -4,8 +4,6 @@ import 'package:tunify/v2/core/constants/app_colors.dart';
 import 'package:tunify/v2/core/constants/app_icons.dart';
 import 'package:tunify/v2/core/constants/app_spacing.dart';
 import 'package:tunify/v2/core/theme/app_text_styles.dart';
-import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
-import 'package:tunify/v2/features/library/data/library_collection_gateway.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/domain/library_collection_catalog.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
@@ -220,7 +218,7 @@ class _QuickCollectionSaveSlotState extends ConsumerState<_QuickCollectionSaveSl
       return;
     }
     setState(() => _busy = true);
-    final gateway = LibraryCollectionGateway(api: ref.read(tunifyApiClientProvider));
+    final gateway = ref.read(libraryCollectionGatewayProvider);
     final messenger = ScaffoldMessenger.maybeOf(context);
     final key = (target: target, browseId: browseId);
     try {

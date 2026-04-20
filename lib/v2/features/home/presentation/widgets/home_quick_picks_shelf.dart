@@ -36,6 +36,7 @@ class HomeQuickPicksShelf extends StatelessWidget {
               child: HomeSlimGrid(
                 tiles: slice,
                 omitTrailingShelfGap: true,
+                onShowOptions: null,
               ),
             );
           },

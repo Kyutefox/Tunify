@@ -7,7 +7,6 @@ import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/navigation/open_library_detail.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
 /// Two-column slim grid — equal-width columns ([Expanded]); symmetric [AppSpacing.lg] inset.
 class HomeSlimGrid extends StatelessWidget {
@@ -15,6 +14,7 @@ class HomeSlimGrid extends StatelessWidget {
     super.key,
     required this.tiles,
     this.omitTrailingShelfGap = false,
+    this.onShowOptions,
   });
 
   final List<HomeSlimTile> tiles;
@@ -22,6 +22,9 @@ class HomeSlimGrid extends StatelessWidget {
   /// When true (e.g. Quick picks pages), no bottom [HomeLayout.shelfTrailingAfterContent] so the
   /// parent owns the boundary gap once per shelf.
   final bool omitTrailingShelfGap;
+
+  /// Callback to show options sheet for a tile.
+  final VoidCallback? onShowOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -80,7 +83,7 @@ class HomeSlimGrid extends StatelessWidget {
           subtitle: libraryItem.subtitle,
         );
       },
-      onLongPress: () => showLibraryItemOptionsSheet(context, libraryItem),
+      onLongPress: onShowOptions ?? () {},
       child: TrackSlimCard(
         title: tile.title,
         mockThumbArgbColors: tile.thumbColors,

@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/core/constants/app_colors.dart';
+import 'package:tunify/v2/core/constants/app_durations.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
 
 /// Animation constants for the mini cover border animation.
 class _MiniCoverAnimationConstants {
   static const double rotationRounds = 1.5;
-  static const Duration rotationDuration = Duration(milliseconds: 1200);
-  static const Duration mergeDuration = Duration(milliseconds: 300);
+  static const Duration rotationDuration = AppDurations.rotationAnimation;
+  static const Duration mergeDuration = AppDurations.mergeAnimation;
   static const double snakeLength = 0.25;
   static const double strokeWidth = 2.0;
   static const int pathSteps = 20;

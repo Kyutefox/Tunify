@@ -344,6 +344,7 @@ class _SearchFocusScreenState extends ConsumerState<SearchFocusScreen> {
                         results: dummyResults,
                         isLoadingMore: false,
                         onLoadMore: () async {},
+                        onShowOptions: null,
                       ),
                     );
                   }
@@ -360,6 +361,7 @@ class _SearchFocusScreenState extends ConsumerState<SearchFocusScreen> {
                     results: state.results!,
                     isLoadingMore: state.isLoadingMore,
                     onLoadMore: searchController.loadMore,
+                    onShowOptions: null,
                   );
                 },
               ),

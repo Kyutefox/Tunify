@@ -9,16 +9,19 @@ import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/presentation/navigation/open_library_detail.dart';
-import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
 /// Horizontal carousel shelf (album / artist rows) using shared shelf cards.
 class HomeCarouselShelf extends StatelessWidget {
   const HomeCarouselShelf({
     super.key,
     required this.section,
+    this.onShowOptions,
   });
 
   final HomeCarouselSection section;
+
+  /// Callback to show options sheet for an item.
+  final VoidCallback? onShowOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -79,17 +82,6 @@ class HomeCarouselShelf extends StatelessWidget {
                   LibraryItemKind.folder => 'Folder',
                 };
 
-                final libraryItem = LibraryItem(
-                  id: item.id,
-                  title: item.title,
-                  subtitle: subtitle,
-                  kind: kind,
-                  imageUrl: item.artworkUrl,
-                  creatorName: 'Tunify',
-                  ytmBrowseId: item.id,
-                  isInServerLibrary: false,
-                );
-
                 return SizedBox(
                   width: thumb,
                   child: TunifyPressFeedback(
@@ -108,8 +100,7 @@ class HomeCarouselShelf extends StatelessWidget {
                         imageUrl: item.artworkUrl,
                       );
                     },
-                    onLongPress: () =>
-                        showLibraryItemOptionsSheet(context, libraryItem),
+                    onLongPress: onShowOptions ?? () {},
                     child: isArtist
                         ? ArtistShelfCard(
                             thumbSize: thumb,

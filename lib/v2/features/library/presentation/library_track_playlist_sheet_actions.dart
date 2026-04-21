@@ -42,6 +42,7 @@ abstract final class LibraryTrackPlaylistSheetActions {
       trackId: videoId,
       title: track.title,
       subtitle: track.subtitle,
+      description: track.description,
       artworkUrl: track.thumbUrl,
       durationMs: track.durationMs,
     );

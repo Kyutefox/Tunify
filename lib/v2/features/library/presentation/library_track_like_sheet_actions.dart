@@ -25,6 +25,7 @@ abstract final class LibraryTrackLikeSheetActions {
         trackId: vid,
         title: track.title,
         subtitle: track.subtitle,
+        description: track.description,
         artworkUrl: track.thumbUrl,
         durationMs: track.durationMs,
       );

@@ -39,7 +39,8 @@ class LibraryWriteGateway {
       'name': name,
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
-      if (folderId != null && folderId.trim().isNotEmpty) 'folder_id': folderId.trim(),
+      if (folderId != null && folderId.trim().isNotEmpty)
+        'folder_id': folderId.trim(),
     };
     return _api.postJson('/v1/library/playlist', body, withAuth: true);
   }
@@ -132,6 +133,7 @@ class LibraryWriteGateway {
       final title = (e['title'] as String?)?.trim() ?? 'Unknown';
       final sub = (e['subtitle'] as String?)?.trim() ?? '';
       final art = (e['artwork_url'] as String?)?.trim();
+      final description = (e['description'] as String?)?.trim();
       final durationMs = e['duration_ms'] == null
           ? null
           : (e['duration_ms'] is int
@@ -145,6 +147,8 @@ class LibraryWriteGateway {
           thumbUrl: art == null || art.isEmpty ? null : art,
           videoId: id,
           durationMs: durationMs,
+          description:
+              description == null || description.isEmpty ? null : description,
         ),
       );
     }
@@ -186,6 +190,7 @@ class LibraryWriteGateway {
     required String trackId,
     required String title,
     String? subtitle,
+    String? description,
     String? artworkUrl,
     int? durationMs,
   }) async {
@@ -195,7 +200,10 @@ class LibraryWriteGateway {
         'playlist_id': playlistId.trim(),
         'track_id': trackId.trim(),
         'title': title.trim(),
-        if (subtitle != null && subtitle.trim().isNotEmpty) 'subtitle': subtitle.trim(),
+        if (subtitle != null && subtitle.trim().isNotEmpty)
+          'subtitle': subtitle.trim(),
+        if (description != null && description.trim().isNotEmpty)
+          'description': description.trim(),
         if (artworkUrl != null && artworkUrl.trim().isNotEmpty)
           'artwork_url': artworkUrl.trim(),
         if (durationMs != null) 'duration_ms': durationMs,

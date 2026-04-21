@@ -29,10 +29,11 @@ List<_OptionAction> _libraryItemOptionsSecondaryActions(
 }) {
   final actions = <_OptionAction>[];
   final useQuickRow = quickKind != LibraryItemSheetQuickRowKind.none;
-  final omitShare = item.isEphemeralHomeTrackShelf ||
-      item.systemArtwork == SystemArtworkType.likedSongs;
-  final omitTunifyCode =
-      item.systemArtwork == SystemArtworkType.likedSongs;
+  final isStaticSystemPlaylist =
+      item.systemArtwork == SystemArtworkType.likedSongs ||
+          item.systemArtwork == SystemArtworkType.yourEpisodes;
+  final omitShare = item.isEphemeralHomeTrackShelf || isStaticSystemPlaylist;
+  final omitTunifyCode = isStaticSystemPlaylist;
 
   if (!useQuickRow) {
     if (!omitShare) {
@@ -55,7 +56,7 @@ List<_OptionAction> _libraryItemOptionsSecondaryActions(
 
   actions.add(_OptionAction(icon: AppIcons.queueMusic, label: 'Add to Queue'));
 
-  if (item.kind != LibraryItemKind.playlist) {
+  if (item.kind != LibraryItemKind.playlist && !isStaticSystemPlaylist) {
     actions.add(
       _OptionAction(icon: AppIcons.playlistAddIcon, label: 'Add to playlist'),
     );
@@ -161,7 +162,8 @@ class _LibraryOptionsSheet extends ConsumerStatefulWidget {
   final LibraryDetailsTrack? track;
 
   @override
-  ConsumerState<_LibraryOptionsSheet> createState() => _LibraryOptionsSheetState();
+  ConsumerState<_LibraryOptionsSheet> createState() =>
+      _LibraryOptionsSheetState();
 }
 
 class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
@@ -226,7 +228,8 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
       );
     } on Object catch (_) {
       messenger?.showSnackBar(
-        const SnackBar(content: Text(LibraryStrings.trackRemoveFromPlaylistFailed)),
+        const SnackBar(
+            content: Text(LibraryStrings.trackRemoveFromPlaylistFailed)),
       );
     } finally {
       if (mounted) {
@@ -241,8 +244,7 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
     }
     final track = widget.track!;
     final details = widget.details!;
-    final exclude =
-        details.item.isUserOwnedPlaylist ? details.item.id : null;
+    final exclude = details.item.isUserOwnedPlaylist ? details.item.id : null;
     Navigator.of(context).pop();
     showSaveTrackToPlaylistSheet(
       context: widget.hostContext,
@@ -255,18 +257,20 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
 
   List<_OptionAction> _trackSecondaryActions() {
     final details = widget.details!;
-    final fromLikedSongs =
-        details.item.systemArtwork == SystemArtworkType.likedSongs;
+    final fromStaticSystemPlaylist =
+        details.item.systemArtwork == SystemArtworkType.likedSongs ||
+            details.item.systemArtwork == SystemArtworkType.yourEpisodes;
     return [
-      if (!fromLikedSongs)
+      if (!fromStaticSystemPlaylist)
         _OptionAction(icon: AppIcons.share, label: 'Share'),
-      _OptionAction(
-        icon: AppIcons.playlistAddIcon,
-        label: LibraryStrings.trackAddToPlaylistSheetTitle,
-        customTap: _openSaveToPlaylistSheetFromTrack,
-      ),
+      if (!fromStaticSystemPlaylist)
+        _OptionAction(
+          icon: AppIcons.playlistAddIcon,
+          label: LibraryStrings.trackAddToPlaylistSheetTitle,
+          customTap: _openSaveToPlaylistSheetFromTrack,
+        ),
       _OptionAction(icon: AppIcons.queueMusic, label: 'Add to Queue'),
-      if (!fromLikedSongs)
+      if (!fromStaticSystemPlaylist)
         _OptionAction(icon: AppIcons.equalizer, label: 'Show Tunify Code'),
     ];
   }
@@ -276,8 +280,7 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
       return;
     }
     final details = widget.details!;
-    final exclude =
-        details.item.isUserOwnedPlaylist ? details.item.id : null;
+    final exclude = details.item.isUserOwnedPlaylist ? details.item.id : null;
     Navigator.of(context).pop();
     showSaveTrackToPlaylistSheet(
       context: widget.hostContext,
@@ -416,8 +419,7 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
     final track = widget.track!;
     final likedPlaylistItem = ref.watch(likedPlaylistLibraryItemProvider);
     final likedAsync = ref.watch(trackLikedStatusProvider(_videoId));
-    final isLiked =
-        likedAsync.maybeWhen(data: (v) => v, orElse: () => false);
+    final isLiked = likedAsync.maybeWhen(data: (v) => v, orElse: () => false);
     final likeReady =
         _hasVideoId && likedPlaylistItem != null && !likedAsync.isLoading;
     final radius = AppBorderRadius.subtle;

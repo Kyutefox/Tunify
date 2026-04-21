@@ -20,6 +20,9 @@ import 'package:tunify/v2/features/library/domain/library_known_creators.dart';
 import 'package:tunify/v2/features/library/domain/library_playlist_management_pills.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_details_layout.dart';
 import 'package:tunify/v2/features/library/presentation/constants/library_strings.dart';
+import 'package:tunify/v2/features/library/presentation/library_list_invalidation.dart';
+import 'package:tunify/v2/features/library/domain/library_detail_request.dart';
+import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_collection_artwork.dart';
 
 part 'library_details_scroll_view.part_header.dart';
@@ -30,7 +33,7 @@ part 'library_details_scroll_view.part_recommendations.dart';
 /// Scrollable body for [LibraryDetailsScreen] (keeps the screen widget thin).
 String _buildStatsLine(LibraryDetailsModel details) {
   final collectionStatInfo = details.collectionStatInfo;
-  
+
   if (collectionStatInfo != null && collectionStatInfo.isNotEmpty) {
     return collectionStatInfo;
   }
@@ -203,6 +206,7 @@ class LibraryDetailsScrollView extends StatelessWidget {
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate(
             (context, index) => _TrackRow(
+              index: index,
               details: details,
               track: details.tracks[index],
               onRequestTrackOptions: onRequestTrackOptions,
@@ -211,7 +215,8 @@ class LibraryDetailsScrollView extends StatelessWidget {
           ),
         ),
       ),
-      if (details.collectionStatInfo != null && details.collectionStatInfo!.isNotEmpty)
+      if (details.collectionStatInfo != null &&
+          details.collectionStatInfo!.isNotEmpty)
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.only(
@@ -231,7 +236,8 @@ class LibraryDetailsScrollView extends StatelessWidget {
             ),
           ),
         ),
-      if (details.collectionStatInfo == null || details.collectionStatInfo!.isEmpty)
+      if (details.collectionStatInfo == null ||
+          details.collectionStatInfo!.isEmpty)
         const SliverToBoxAdapter(
           child: SizedBox(height: AppSpacing.xxxl),
         ),

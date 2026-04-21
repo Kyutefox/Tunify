@@ -3,6 +3,7 @@ import 'package:tunify/v2/features/library/data/library_write_gateway.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_details.dart';
 import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/library/domain/library_playlist_management_pills.dart';
+
 /// Loads Liked Songs rows from Tunify (`GET /v1/library/playlist/tracks`).
 Future<LibraryDetailsModel> loadLikedSongsPlaylistDetailsFromApi({
   required LibraryItem item,
@@ -28,6 +29,31 @@ Future<LibraryDetailsModel> loadLikedSongsPlaylistDetailsFromApi({
   );
 }
 
+/// Loads "Your Episodes" rows from Tunify (`GET /v1/library/playlist/tracks`).
+Future<LibraryDetailsModel> loadEpisodesForLaterDetailsFromApi({
+  required LibraryItem item,
+  required LibraryWriteGateway gateway,
+}) async {
+  final rows = await gateway.fetchPlaylistTracks(playlistId: item.id);
+  final n = rows.length;
+  final subtitlePrimary = n <= 0
+      ? 'Playlist'
+      : n == 1
+          ? 'Playlist · 1 episode'
+          : 'Playlist · $n episodes';
+  return LibraryDetailsModel(
+    type: LibraryDetailsType.staticPlaylist,
+    item: item,
+    searchHint: 'Find in Your Episodes',
+    title: item.title,
+    subtitlePrimary: subtitlePrimary,
+    tracks: rows,
+    gradientTop: AppColors.yourEpisodesDetailGradient,
+    showSortButton: true,
+    showAddRow: true,
+  );
+}
+
 /// Loads user-owned playlist rows from Tunify (`GET /v1/library/playlist/tracks`).
 /// Uses the same structure as libraryOfflinePlaylistShell but with actual tracks.
 Future<LibraryDetailsModel> loadUserOwnedPlaylistDetailsFromApi({
@@ -41,7 +67,7 @@ Future<LibraryDetailsModel> loadUserOwnedPlaylistDetailsFromApi({
       : n == 1
           ? '1 song'
           : '$n songs';
-  
+
   // Use the same structure as libraryOfflinePlaylistShell
   // Don't set heroImageUrl so the cover generator is used
   return LibraryDetailsModel(

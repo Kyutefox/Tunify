@@ -17,6 +17,7 @@ class TrackTile extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.imageUrl,
+    this.isExplicit = false,
     this.isArtist = false,
     this.isVerified = false,
     this.onTap,
@@ -30,6 +31,7 @@ class TrackTile extends StatelessWidget {
   final String title;
   final String subtitle;
   final String? imageUrl;
+  final bool isExplicit;
   final bool isArtist;
   final bool isVerified;
   final VoidCallback? onTap;
@@ -43,7 +45,9 @@ class TrackTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final semanticLabel = AccessibilityUtils.trackLabel(
       title: title,
-      artist: subtitle,
+      artist: isExplicit && subtitle.trim().isNotEmpty
+          ? 'Explicit, $subtitle'
+          : subtitle,
     );
 
     return Semantics(
@@ -100,12 +104,28 @@ class TrackTile extends StatelessWidget {
                           ],
                         ],
                       ),
-                      Text(
-                        subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTextStyles.small,
-                      ),
+                      if (isExplicit && subtitle.trim().isNotEmpty)
+                        Row(
+                          children: [
+                            const _ExplicitBadge(),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTextStyles.small,
+                              ),
+                            ),
+                          ],
+                        )
+                      else
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTextStyles.small,
+                        ),
                     ],
                   ),
                 ),
@@ -139,6 +159,33 @@ class TrackTile extends StatelessWidget {
                 ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExplicitBadge extends StatelessWidget {
+  const _ExplicitBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: AppColors.brandGreen.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: AppColors.brandGreen.withValues(alpha: 0.5),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        'E',
+        style: AppTextStyles.micro.copyWith(
+          color: AppColors.brandGreen,
+          fontWeight: FontWeight.w700,
+          height: 1,
         ),
       ),
     );

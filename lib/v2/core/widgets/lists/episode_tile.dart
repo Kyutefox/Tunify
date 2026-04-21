@@ -25,6 +25,8 @@ class EpisodeTile extends StatelessWidget {
     this.onSharePressed,
     this.showActionButtons = true,
     this.showSeparator = true,
+    this.isAddedToLater = false,
+    this.isExplicit = false,
   });
 
   final String title;
@@ -39,6 +41,8 @@ class EpisodeTile extends StatelessWidget {
   final VoidCallback? onSharePressed;
   final bool showActionButtons;
   final bool showSeparator;
+  final bool isAddedToLater;
+  final bool isExplicit;
 
   @override
   Widget build(BuildContext context) {
@@ -59,7 +63,8 @@ class EpisodeTile extends StatelessWidget {
                 Row(
                   children: [
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(AppBorderRadius.subtle),
+                      borderRadius:
+                          BorderRadius.circular(AppBorderRadius.subtle),
                       child: SizedBox(
                         width: 48,
                         height: 48,
@@ -104,16 +109,25 @@ class EpisodeTile extends StatelessWidget {
                 const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
-                    Text(
-                      individualStat,
-                      style: AppTextStyles.micro.copyWith(
-                        color: AppColors.silver,
+                    if (isExplicit && individualStat.trim().isNotEmpty) ...[
+                      const _ExplicitBadge(),
+                      const SizedBox(width: 6),
+                    ],
+                    Expanded(
+                      child: Text(
+                        individualStat,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTextStyles.micro.copyWith(
+                          color: AppColors.silver,
+                        ),
                       ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: AppSpacing.sm),
                     if (showActionButtons) ...[
                       _AddButton(
                         onPressed: onLaterPressed,
+                        isAdded: isAddedToLater,
                       ),
                       const SizedBox(width: AppSpacing.sm),
                       _ActionButton(
@@ -166,7 +180,9 @@ class _ActionButton extends StatelessWidget {
       onPressed: onPressed,
       icon: AppIcon(
         icon: icon,
-        color: onPressed != null ? AppColors.silver : AppColors.silver.withValues(alpha: 0.35),
+        color: onPressed != null
+            ? AppColors.silver
+            : AppColors.silver.withValues(alpha: 0.35),
         size: size,
       ),
     );
@@ -176,9 +192,11 @@ class _ActionButton extends StatelessWidget {
 class _AddButton extends StatelessWidget {
   const _AddButton({
     this.onPressed,
+    this.isAdded = false,
   });
 
   final VoidCallback? onPressed;
+  final bool isAdded;
 
   @override
   Widget build(BuildContext context) {
@@ -190,9 +208,38 @@ class _AddButton extends StatelessWidget {
       ),
       onPressed: onPressed,
       icon: AppIcon(
-        icon: AppIcons.addCircle,
-        color: onPressed != null ? AppColors.silver : AppColors.silver.withValues(alpha: 0.35),
+        icon: isAdded ? AppIcons.checkCircle : AppIcons.addCircle,
+        color: onPressed != null
+            ? (isAdded ? AppColors.brandGreen : AppColors.silver)
+            : AppColors.silver.withValues(alpha: 0.35),
         size: 20,
+      ),
+    );
+  }
+}
+
+class _ExplicitBadge extends StatelessWidget {
+  const _ExplicitBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: AppColors.brandGreen.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(4),
+        border: Border.all(
+          color: AppColors.brandGreen.withValues(alpha: 0.5),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        'E',
+        style: AppTextStyles.micro.copyWith(
+          color: AppColors.brandGreen,
+          fontWeight: FontWeight.w700,
+          height: 1,
+        ),
       ),
     );
   }

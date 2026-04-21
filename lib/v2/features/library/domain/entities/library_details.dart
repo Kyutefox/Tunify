@@ -15,6 +15,7 @@ class LibraryDetailsTrack {
   const LibraryDetailsTrack({
     required this.title,
     required this.subtitle,
+    this.isExplicit = false,
     this.trailingValue,
     this.thumbUrl,
     this.videoId = '',
@@ -25,6 +26,7 @@ class LibraryDetailsTrack {
 
   final String title;
   final String subtitle;
+  final bool isExplicit;
   final String? trailingValue;
 
   /// Per-track artwork (e.g. from YouTube Music). When null, row uses collection art.

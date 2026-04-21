@@ -108,9 +108,11 @@ final libraryWriteGatewayProvider = Provider<LibraryWriteGateway>((ref) {
 });
 
 /// Raw rows from `GET /v1/library/playlists` (`folderId` null = root with folders).
-final libraryRemoteItemsProvider =
-    FutureProvider.autoDispose.family<List<LibraryItem>, String?>((ref, folderId) async {
-  return ref.watch(libraryListGatewayProvider).fetchLibraryItems(folderId: folderId);
+final libraryRemoteItemsProvider = FutureProvider.autoDispose
+    .family<List<LibraryItem>, String?>((ref, folderId) async {
+  return ref
+      .watch(libraryListGatewayProvider)
+      .fetchLibraryItems(folderId: folderId);
 });
 
 /// Filtered + sorted library items for the current UI state and optional folder scope.
@@ -211,6 +213,21 @@ final libraryDetailsProvider = FutureProvider.autoDispose
       );
       throw NetworkFailure(LibraryStrings.collectionDetailsLoadError);
     }
+  } else if (_isYourEpisodesSystemPlaylist(item)) {
+    try {
+      details = await loadEpisodesForLaterDetailsFromApi(
+        item: item,
+        gateway: ref.read(libraryWriteGatewayProvider),
+      );
+    } on Object catch (e, st) {
+      Logger.error(
+        'Your episodes list load failed',
+        tag: 'LibraryDetails',
+        error: e,
+        stackTrace: st,
+      );
+      throw NetworkFailure(LibraryStrings.collectionDetailsLoadError);
+    }
   } else if (item.isUserOwnedPlaylist) {
     try {
       details = await loadUserOwnedPlaylistDetailsFromApi(
@@ -252,6 +269,22 @@ final likedPlaylistLibraryItemProvider = Provider<LibraryItem?>((ref) {
   );
 });
 
+/// Root library row for "Your Episodes" (`playlist_kind = episode`), when present.
+final episodesPlaylistLibraryItemProvider = Provider<LibraryItem?>((ref) {
+  final root = ref.watch(libraryRemoteItemsProvider(null));
+  return root.maybeWhen(
+    data: (items) {
+      for (final i in items) {
+        if (i.systemArtwork == SystemArtworkType.yourEpisodes) {
+          return i;
+        }
+      }
+      return null;
+    },
+    orElse: () => null,
+  );
+});
+
 /// Whether [videoId] is stored in the user's liked playlist on the server.
 final trackLikedStatusProvider =
     FutureProvider.autoDispose.family<bool, String>((ref, videoId) async {
@@ -263,8 +296,8 @@ final trackLikedStatusProvider =
 });
 
 /// Playlist ids (user + liked) on the server that already contain [videoId].
-final trackPlaylistMembershipsProvider =
-    FutureProvider.autoDispose.family<Set<String>, String>((ref, videoId) async {
+final trackPlaylistMembershipsProvider = FutureProvider.autoDispose
+    .family<Set<String>, String>((ref, videoId) async {
   final v = videoId.trim();
   if (v.isEmpty) {
     return const {};
@@ -275,17 +308,22 @@ final trackPlaylistMembershipsProvider =
 });
 
 /// Track thumbnails for a user-owned playlist (first 4 tracks for cover generation).
-final playlistTrackThumbnailsProvider =
-    FutureProvider.autoDispose.family<List<String>, String>((ref, playlistId) async {
+final playlistTrackThumbnailsProvider = FutureProvider.autoDispose
+    .family<List<String>, String>((ref, playlistId) async {
   final id = playlistId.trim();
   if (id.isEmpty) {
     return const [];
   }
   try {
-    final tracks = await ref.read(libraryWriteGatewayProvider).fetchPlaylistTracks(
-      playlistId: id,
-    );
-    return tracks.take(4).map((t) => t.thumbUrl ?? '').where((url) => url.isNotEmpty).toList();
+    final tracks =
+        await ref.read(libraryWriteGatewayProvider).fetchPlaylistTracks(
+              playlistId: id,
+            );
+    return tracks
+        .take(4)
+        .map((t) => t.thumbUrl ?? '')
+        .where((url) => url.isNotEmpty)
+        .toList();
   } catch (_) {
     return const [];
   }

@@ -75,6 +75,7 @@ LibraryDetailsModel libraryDetailsFromBrowse({
         (t) => LibraryDetailsTrack(
           title: t.title,
           subtitle: t.artist,
+          isExplicit: t.isExplicit,
           trailingValue: t.durationFormatted,
           thumbUrl: _nonEmptyUrl(t.thumbnailUrl),
           videoId: t.id,

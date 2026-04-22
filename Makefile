@@ -29,7 +29,7 @@ export RUST_BACKEND_ROOT
 export ANDROID_RUST_TARGET
 
 .PHONY: help run-android run-ios create-android create-ios \
-	bundle-android-debug bundle-android-release bundle-ios flutter-pub-get \
+	bundle-android-debug bundle-android-release bundle-ios-debug bundle-ios-release flutter-pub-get \
 	android ios apk ipa
 
 help:
@@ -56,6 +56,7 @@ flutter-pub-get:
 
 _chmod_scripts:
 	@chmod +x "$(SCRIPTS)/bundle_rust_android.sh" 2>/dev/null || true
+	@chmod +x "$(SCRIPTS)/bundle_rust_ios.sh" 2>/dev/null || true
 
 # --- Android: embed Rust HTTP server for same-device 127.0.0.1:8080 ---
 
@@ -94,13 +95,19 @@ create-android: bundle-android-release flutter-pub-get
 	cd "$(TUNIFY_ROOT)" && flutter build apk --release
 	@echo "==> APK artifacts under: $(TUNIFY_ROOT)/build/app/outputs/"
 
-# --- iOS: Flutter build only (in-app Rust server is Android-only today) ---
+# --- iOS: build Rust xcframework + Flutter build ---
 
-bundle-ios:
-	@echo "==> iOS: no Rust binary embedded. App uses default API URL until Settings provides a hosted backend."
-
-run-ios: bundle-ios flutter-pub-get
+bundle-ios-debug: _chmod_scripts
+	RUST_BACKEND_ROOT="$(RUST_BACKEND_ROOT)" \
+		"$(SCRIPTS)/bundle_rust_ios.sh" debug
 	cd "$(TUNIFY_ROOT)/ios" && pod install
+
+bundle-ios-release: _chmod_scripts
+	RUST_BACKEND_ROOT="$(RUST_BACKEND_ROOT)" \
+		"$(SCRIPTS)/bundle_rust_ios.sh" release
+	cd "$(TUNIFY_ROOT)/ios" && pod install
+
+run-ios: bundle-ios-debug flutter-pub-get
 	cd "$(TUNIFY_ROOT)" && \
 	if [[ -n "$(FLUTTER_DEVICE)" ]]; then \
 		flutter run -d "$(FLUTTER_DEVICE)"; \
@@ -108,7 +115,6 @@ run-ios: bundle-ios flutter-pub-get
 		flutter run; \
 	fi
 
-create-ios: bundle-ios flutter-pub-get
-	cd "$(TUNIFY_ROOT)/ios" && pod install
+create-ios: bundle-ios-release flutter-pub-get
 	cd "$(TUNIFY_ROOT)" && flutter build ipa
 	@echo "==> IPA: $(TUNIFY_ROOT)/build/ios/ipa/*.ipa"

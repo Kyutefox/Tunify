@@ -49,3 +49,6 @@ inner-tube-api-example/*
 assets/bundled_backend/tunify_rust_backend
 # Copied from the above into jniLibs by Gradle (preBuild); do not commit.
 android/app/src/main/jniLibs/**/libtunify_backend_exec.so
+# Generated iOS Rust bridge artifacts.
+ios/TunifyBackendFFI/TunifyBackendFFI.xcframework/
+ios/TunifyBackendFFI/Headers/

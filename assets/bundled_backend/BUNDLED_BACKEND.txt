@@ -4,6 +4,8 @@ Use these entry points from repo root:
 
   make run-android
   make create-android
+  make run-ios
+  make create-ios
 
 You can pin a device when multiple adb targets are connected:
 
@@ -17,15 +19,23 @@ Build/packaging source-of-truth:
      android/app/src/main/jniLibs/arm64-v8a/libtunify_backend_exec.so
 3) APK install places it in app native lib dir where Android allows exec.
 
+iOS build/packaging source-of-truth:
+
+1) scripts/bundle_rust_ios.sh builds Rust static libs and creates:
+     ios/TunifyBackendFFI/TunifyBackendFFI.xcframework
+2) Podfile includes local pod `TunifyBackendFFI` and links xcframework into Runner.
+3) AppDelegate starts backend in-process via Rust FFI.
+
 Runtime source-of-truth:
 
 - Android runtime launcher is TunifyApplication.kt (not Dart Process.start).
+- iOS runtime launcher is TunifyBackendBridge.swift called by AppDelegate.
 - It starts bundled backend with:
     APP_RUNTIME_KIND=bundled
     APP_HOST=127.0.0.1
     APP_PORT=8080
     APP_HOME_PROVIDER=youtube
-    DATABASE_URL=sqlite:/data/user/0/com.kyutefox.tunify/files/tunify.db
+    DATABASE_URL=sqlite:<app-support>/tunify.db
 - Flutter uses http://127.0.0.1:8080 by default (ApiConfig).
 
 Result: YouTube + auth + library persistence all use the same bundled backend config,

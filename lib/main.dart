@@ -13,7 +13,12 @@ import 'package:tunify/v2/core/network/bundled_backend_launcher.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await ensureBundledBackendIfPresent();
+  // Do not block first frame on backend health checks (especially iOS).
+  // We give startup a short head start, then continue booting UI.
+  await ensureBundledBackendIfPresent().timeout(
+    const Duration(seconds: 2),
+    onTimeout: () {},
+  );
   final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(

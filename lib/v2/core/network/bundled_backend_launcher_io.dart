@@ -19,15 +19,10 @@ Process? _backendProcess;
 Future<void> ensureBundledBackendIfPresent() async {
   if (kIsWeb) return;
 
-  // iOS App Store builds cannot generally ship and exec arbitrary HTTP server binaries;
-  // Android + desktop are supported here.
-  if (Platform.isIOS) {
-    return;
-  }
-
   // Android: [TunifyApplication] starts the binary from nativeLibraryDir (SELinux allows
   // exec there). Asset extraction + Process.start from app data is blocked on many devices.
-  if (Platform.isAndroid) {
+  // iOS: AppDelegate starts the in-process Rust backend via FFI bridge.
+  if (Platform.isAndroid || Platform.isIOS) {
     await _pollBundledHealth();
     return;
   }

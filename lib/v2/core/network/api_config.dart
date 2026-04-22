@@ -1,7 +1,10 @@
 /// Tunify HTTP API base URL (no trailing slash).
 ///
-/// Override at compile time, e.g. Android emulator → host loopback:
-/// `--dart-define=TUNIFY_API_BASE_URL=http://10.0.2.2:8080`
+/// **APK + bundled Rust backend on the same device:** default is loopback on the phone
+/// (`http://127.0.0.1:8080`). [main] starts the bundled binary when the asset is present.
+///
+/// **Dev / emulator talking to a backend on your Mac:** override compile-time, e.g.
+/// `--dart-define=TUNIFY_API_BASE_URL=http://10.0.2.2:8080` (Android emulator → host).
 class ApiConfig {
   const ApiConfig({required this.baseUrl});
 
@@ -10,7 +13,7 @@ class ApiConfig {
   static ApiConfig fromEnvironment() {
     const raw = String.fromEnvironment(
       'TUNIFY_API_BASE_URL',
-      defaultValue: 'http://192.168.1.106:8080',
+      defaultValue: 'http://127.0.0.1:8080',
     );
     final trimmed = raw.trim();
     final noSlash = trimmed.endsWith('/')

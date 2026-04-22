@@ -23,6 +23,17 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _urlController = TextEditingController();
+  bool _didLoad = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.microtask(() async {
+      if (!mounted || _didLoad) return;
+      _didLoad = true;
+      await ref.read(settingsProvider.notifier).loadRemoteBackendStatus();
+    });
+  }
 
   @override
   void dispose() {
@@ -34,6 +45,13 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final settingsState = ref.watch(settingsProvider);
     final settingsNotifier = ref.read(settingsProvider.notifier);
+    if (_urlController.text != settingsState.backendUrl) {
+      _urlController.value = TextEditingValue(
+        text: settingsState.backendUrl,
+        selection:
+            TextSelection.collapsed(offset: settingsState.backendUrl.length),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.nearBlack,
@@ -74,13 +92,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                 // Description
                 Text(
-                  'Enter the URL of your Tunify backend server.',
+                  'Set a hosted backend URL. Leave empty to stay fully local.',
                   style: AppTextStyles.caption.copyWith(
                     color: AppColors.silver,
                   ),
                 ),
 
                 const SizedBox(height: AppSpacing.lg),
+
+                if (settingsState.isLoading) ...[
+                  const LinearProgressIndicator(minHeight: 2),
+                  const SizedBox(height: AppSpacing.md),
+                ],
 
                 // Backend URL input
                 // Validation logic moved to provider per RULES.md
@@ -91,20 +114,62 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   onChanged: settingsNotifier.setBackendUrl,
                 ),
 
+                const SizedBox(height: AppSpacing.sm),
+                Text(
+                  settingsState.hasRemoteBackend
+                      ? 'Remote backend is active.'
+                      : 'Remote backend is not configured.',
+                  style: AppTextStyles.caption.copyWith(
+                    color: settingsState.hasRemoteBackend
+                        ? AppColors.brandGreen
+                        : AppColors.silver,
+                  ),
+                ),
+
+                if (settingsState.message != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  Text(
+                    settingsState.message!,
+                    style: AppTextStyles.caption.copyWith(
+                      color: AppColors.white,
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: AppSpacing.xxxl),
 
                 // Save button
                 // Disabled when URL is empty or invalid
                 // Validation state comes from provider per RULES.md
                 AppButtonStyles.brandGreenLargePill(
-                  label: 'Save',
+                  label: settingsState.isSaving ? 'Saving...' : 'Save',
                   width: double.infinity,
-                  onPressed: settingsState.isUrlValid
-                      ? () {
-                          // TODO: Save backend URL to secure storage
-                          Navigator.of(context).pop();
+                  onPressed: settingsState.isUrlValid && !settingsState.isSaving
+                      ? () async {
+                          final navigator = Navigator.of(context);
+                          final ok = await settingsNotifier.saveBackendUrl();
+                          if (!mounted) return;
+                          if (ok) {
+                            navigator.pop();
+                          }
                         }
                       : null,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                AppButtonStyles.darkPill(
+                  label: settingsState.isSaving
+                      ? 'Please wait...'
+                      : 'Clear Remote',
+                  width: double.infinity,
+                  onPressed:
+                      settingsState.isSaving || !settingsState.hasRemoteBackend
+                          ? null
+                          : () async {
+                              final navigator = Navigator.of(context);
+                              await settingsNotifier.clearBackendUrl();
+                              if (!mounted) return;
+                              navigator.pop();
+                            },
                 ),
               ],
             ),

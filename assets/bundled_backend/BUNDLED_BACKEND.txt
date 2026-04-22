@@ -1,0 +1,32 @@
+Bundled Rust backend (single source-of-truth flow)
+
+Use these entry points from repo root:
+
+  make run-android
+  make create-android
+
+You can pin a device when multiple adb targets are connected:
+
+  make run-android ANDROID_DEVICE_SERIAL=<adb-serial>
+
+Build/packaging source-of-truth:
+
+1) scripts/bundle_rust_android.sh builds Rust for Android and writes:
+     assets/bundled_backend/tunify_rust_backend
+2) android/app/build.gradle.kts task syncBundledBackend copies that asset into:
+     android/app/src/main/jniLibs/arm64-v8a/libtunify_backend_exec.so
+3) APK install places it in app native lib dir where Android allows exec.
+
+Runtime source-of-truth:
+
+- Android runtime launcher is TunifyApplication.kt (not Dart Process.start).
+- It starts bundled backend with:
+    APP_RUNTIME_KIND=bundled
+    APP_HOST=127.0.0.1
+    APP_PORT=8080
+    APP_HOME_PROVIDER=youtube
+    DATABASE_URL=sqlite:/data/user/0/com.kyutefox.tunify/files/tunify.db
+- Flutter uses http://127.0.0.1:8080 by default (ApiConfig).
+
+Result: YouTube + auth + library persistence all use the same bundled backend config,
+always on-device and always SQLite-backed unless user sets hosted backend via Settings.

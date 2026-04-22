@@ -9,9 +9,11 @@ import 'package:tunify/v2/features/auth/presentation/providers/auth_session_prov
 import 'package:tunify/v2/features/auth/presentation/widgets/authenticated_app_shell.dart';
 import 'package:tunify/v2/features/loading/presentation/screens/loading_screen.dart';
 import 'package:tunify/v2/features/welcome/presentation/screens/welcome_screen.dart';
+import 'package:tunify/v2/core/network/bundled_backend_launcher.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ensureBundledBackendIfPresent();
   final prefs = await SharedPreferences.getInstance();
   runApp(
     ProviderScope(
@@ -32,7 +34,8 @@ class TunifyApp extends ConsumerWidget {
     final sessionKey = session.when(
       loading: () => 'session-loading',
       error: (_, __) => 'session-guest',
-      data: (user) => user == null ? 'session-guest' : 'session-auth-${user.id}',
+      data: (user) =>
+          user == null ? 'session-guest' : 'session-auth-${user.id}',
     );
 
     return MaterialApp(

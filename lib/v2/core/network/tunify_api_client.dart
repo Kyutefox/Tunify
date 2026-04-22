@@ -47,13 +47,23 @@ class TunifyApiClient {
     try {
       final decoded = jsonDecode(body);
       if (decoded is Map<String, dynamic>) {
+        final directMessage = decoded['message'];
+        if (directMessage is String && directMessage.isNotEmpty) {
+          return directMessage;
+        }
         final err = decoded['error'];
+        if (err is String && err.isNotEmpty) {
+          return err;
+        }
         if (err is Map<String, dynamic>) {
           final msg = err['message'];
           if (msg is String && msg.isNotEmpty) {
             return msg;
           }
         }
+      }
+      if (decoded is String && decoded.isNotEmpty) {
+        return decoded;
       }
     } catch (_) {
       // fall through

@@ -10,8 +10,6 @@ import 'package:tunify/v2/features/auth/presentation/providers/auth_session_prov
 import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/forgot_password_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
-import 'package:tunify/v2/features/home/presentation/providers/home_providers.dart';
-import 'package:tunify/v2/features/user/presentation/providers/user_providers.dart';
 
 /// Email/Phone Login Screen - Minimal form design
 ///
@@ -169,8 +167,6 @@ class _EmailLoginScreenState extends ConsumerState<EmailLoginScreen> {
                               _isSubmitting.value = false;
                               result.fold(
                                 (user) {
-                                  ref.invalidate(homeFeedProvider);
-                                  ref.invalidate(currentUserProvider);
                                   ref
                                       .read(authSessionProvider.notifier)
                                       .applySignedInUser(user);

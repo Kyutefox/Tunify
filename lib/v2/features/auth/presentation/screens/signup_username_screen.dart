@@ -11,8 +11,6 @@ import 'package:tunify/v2/features/auth/presentation/providers/form_validation_p
 import 'package:tunify/v2/features/auth/presentation/screens/privacy_policy_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/screens/terms_of_use_screen.dart';
 import 'package:tunify/v2/features/auth/presentation/widgets/auth_input_field.dart';
-import 'package:tunify/v2/features/home/presentation/providers/home_providers.dart';
-import 'package:tunify/v2/features/user/presentation/providers/user_providers.dart';
 
 /// Sign Up Step 3: Username
 ///
@@ -196,8 +194,6 @@ class _SignupUsernameScreenState extends ConsumerState<SignupUsernameScreen> {
                               _isSubmitting.value = false;
                               result.fold(
                                 (user) {
-                                  ref.invalidate(homeFeedProvider);
-                                  ref.invalidate(currentUserProvider);
                                   ref
                                       .read(formValidationProvider.notifier)
                                       .reset();

@@ -4,6 +4,7 @@ import 'package:tunify/v2/features/auth/domain/entities/user_entity.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/auth_providers.dart';
 import 'package:tunify/v2/features/auth/presentation/providers/form_validation_provider.dart';
 import 'package:tunify/v2/features/home/presentation/providers/home_providers.dart';
+import 'package:tunify/v2/features/library/presentation/providers/library_providers.dart';
 import 'package:tunify/v2/features/user/presentation/providers/user_providers.dart';
 
 /// Restores the signed-in user from [SharedPreferences] + `GET /v1/users/me` on app start,
@@ -48,6 +49,9 @@ class AuthSessionNotifier extends AsyncNotifier<UserEntity?> {
   /// Called after a successful sign-in / sign-up when [UserEntity] is already available.
   void applySignedInUser(UserEntity user) {
     ref.read(postLoginBootstrapProvider.notifier).enable();
+    ref.invalidate(homeFeedProvider);
+    ref.invalidate(currentUserProvider);
+    ref.invalidate(libraryRemoteItemsProvider(null));
     state = AsyncData(user);
   }
 
@@ -59,6 +63,7 @@ class AuthSessionNotifier extends AsyncNotifier<UserEntity?> {
     ref.read(postLoginBootstrapProvider.notifier).disable();
     ref.invalidate(homeFeedProvider);
     ref.invalidate(currentUserProvider);
+    ref.invalidate(libraryRemoteItemsProvider(null));
     ref.invalidate(formValidationProvider);
   }
 }

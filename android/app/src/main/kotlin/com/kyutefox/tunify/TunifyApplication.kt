@@ -5,6 +5,7 @@ import android.os.Build
 import android.util.Log
 import androidx.work.WorkManager
 import java.io.File
+import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.concurrent.atomic.AtomicReference
@@ -49,11 +50,19 @@ class TunifyApplication : Application() {
             }
             try {
                 val pb = ProcessBuilder(exe.absolutePath)
-                val dbFile = File(filesDir, BUNDLED_DB_FILENAME)
-                pb.environment()["APP_RUNTIME_KIND"] = "bundled"
-                pb.environment()["APP_HOST"] = BUNDLED_HOST
-                pb.environment()["APP_PORT"] = BUNDLED_PORT.toString()
-                pb.environment()["APP_HOME_PROVIDER"] = BUNDLED_HOME_PROVIDER
+                val bundledEnv = loadBundledRuntimeEnv()
+                val dbFilename = bundledEnv["BUNDLED_DB_FILENAME"] ?: BUNDLED_DB_FILENAME
+                val dbFile = File(filesDir, dbFilename)
+                val host = bundledEnv["APP_HOST"] ?: BUNDLED_HOST
+                val port = bundledEnv["APP_PORT"] ?: BUNDLED_PORT.toString()
+                pb.environment()["APP_RUNTIME_KIND"] = bundledEnv["APP_RUNTIME_KIND"] ?: "bundled"
+                pb.environment()["APP_HOST"] = host
+                pb.environment()["APP_PORT"] = port
+                pb.environment()["APP_HOME_PROVIDER"] = bundledEnv["APP_HOME_PROVIDER"] ?: BUNDLED_HOME_PROVIDER
+                pb.environment()["APP_GATEWAY_ARCH_MODE"] =
+                    bundledEnv["APP_GATEWAY_ARCH_MODE"] ?: "local_youtube"
+                pb.environment()["APP_GATEWAY_STATE_PATH"] =
+                    bundledEnv["APP_GATEWAY_STATE_PATH"] ?: ".gateway_runtime.json"
                 pb.environment()["DATABASE_URL"] = "sqlite:${dbFile.absolutePath}"
                 pb.directory(filesDir)
                 pb.redirectErrorStream(true)
@@ -90,7 +99,10 @@ class TunifyApplication : Application() {
 
     private fun isHealthy(): Boolean =
         try {
-            val c = URL("http://$BUNDLED_HOST:$BUNDLED_PORT/health").openConnection() as HttpURLConnection
+            val bundledEnv = loadBundledRuntimeEnv()
+            val host = bundledEnv["APP_HOST"] ?: BUNDLED_HOST
+            val port = bundledEnv["APP_PORT"] ?: BUNDLED_PORT.toString()
+            val c = URL("http://$host:$port/health").openConnection() as HttpURLConnection
             c.connectTimeout = 250
             c.readTimeout = 250
             c.responseCode == 200
@@ -98,8 +110,31 @@ class TunifyApplication : Application() {
             false
         }
 
+    private fun loadBundledRuntimeEnv(): Map<String, String> {
+        return try {
+            assets.open(BUNDLED_RUNTIME_ENV_ASSET).use { stream ->
+                InputStreamReader(stream).readLines().mapNotNull { line ->
+                    val trimmed = line.trim()
+                    if (trimmed.isEmpty() || trimmed.startsWith("#")) {
+                        null
+                    } else {
+                        val idx = trimmed.indexOf('=')
+                        if (idx <= 0) null else {
+                            val key = trimmed.substring(0, idx).trim()
+                            val value = trimmed.substring(idx + 1).trim()
+                            key to value
+                        }
+                    }
+                }.toMap()
+            }
+        } catch (_: Exception) {
+            emptyMap()
+        }
+    }
+
     companion object {
         private const val TAG = "TunifyBackend"
+        private const val BUNDLED_RUNTIME_ENV_ASSET = "flutter_assets/assets/bundled_backend/runtime.env"
         private const val BUNDLED_HOST = "127.0.0.1"
         private const val BUNDLED_PORT = 8080
         private const val BUNDLED_HOME_PROVIDER = "youtube"

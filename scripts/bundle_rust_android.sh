@@ -18,7 +18,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TUNIFY_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 DEST="${TUNIFY_ROOT}/assets/bundled_backend/tunify_rust_backend"
+RUNTIME_ENV_DEST="${TUNIFY_ROOT}/assets/bundled_backend/runtime.env"
 RUST_BACKEND_ROOT="${RUST_BACKEND_ROOT:-${TUNIFY_ROOT}/../Rust-Backend}"
+BUNDLE_ENV_SOURCE="${BUNDLE_ENV_SOURCE:-${RUST_BACKEND_ROOT}/.env.bundle}"
 ANDROID_RUST_TARGET="${ANDROID_RUST_TARGET:-aarch64-linux-android}"
 PROFILE="${1:-release}"
 ANDROID_NATIVE_API_LEVEL="${ANDROID_NATIVE_API_LEVEL:-24}"
@@ -203,7 +205,22 @@ if [[ ! -f "${RUST_BIN}" ]]; then
   exit 1
 fi
 
+if [[ ! -f "${BUNDLE_ENV_SOURCE}" ]]; then
+  echo "Bundled env file not found: ${BUNDLE_ENV_SOURCE}"
+  echo "Create Rust-Backend/.env.bundle (or set BUNDLE_ENV_SOURCE=...)"
+  exit 1
+fi
+
 mkdir -p "$(dirname "${DEST}")"
 cp "${RUST_BIN}" "${DEST}"
 chmod +x "${DEST}"
+awk '
+  /^[[:space:]]*#/ { next }
+  /^[[:space:]]*$/ { next }
+  /^[A-Za-z_][A-Za-z0-9_]*=/ {
+    sub(/^[[:space:]]+/, "", $0)
+    print
+  }
+' "${BUNDLE_ENV_SOURCE}" > "${RUNTIME_ENV_DEST}"
 echo "==> Copied bundled backend to ${DEST} (target=${ANDROID_RUST_TARGET} profile=${PROFILE})"
+echo "==> Synced bundled runtime env to ${RUNTIME_ENV_DEST} (source=${BUNDLE_ENV_SOURCE})"

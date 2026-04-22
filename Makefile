@@ -8,6 +8,7 @@
 #   ANDROID_RUST_TARGET    Rust triple (default: aarch64-linux-android; use x86_64-linux-android for some emulators)
 #   FLUTTER_DEVICE         Passed to flutter -d when set
 #   ANDROID_DEVICE_SERIAL  Alias for FLUTTER_DEVICE (useful when multiple adb devices are connected)
+#   BUNDLE_ENV_SOURCE      Path to bundled env profile (default: ../Rust-Backend/.env.bundle)
 #
 # Examples:
 #   make run-android          # or: make android
@@ -41,6 +42,7 @@ help:
 	@echo "  make create-ios    (alias: make ipa)      — pod install + flutter build ipa"
 	@echo ""
 	@echo "Optional: FLUTTER_DEVICE=...  ANDROID_DEVICE_SERIAL=...  RUST_BACKEND_ROOT=...  ANDROID_RUST_TARGET=..."
+	@echo "          BUNDLE_ENV_SOURCE=... (defaults to ../Rust-Backend/.env.bundle)"
 	@echo "NDK: ANDROID_NDK_HOME=...  ANDROID_SDK_ROOT=...  ANDROID_NATIVE_API_LEVEL=24 (default)"
 	@echo "Skip compile: RUST_BACKEND_BINARY=/path/to/built/tunify-rust-backend ./scripts/bundle_rust_android.sh release"
 	@echo ""
@@ -63,6 +65,7 @@ _chmod_scripts:
 bundle-android-debug: _chmod_scripts
 	ANDROID_RUST_TARGET="$(ANDROID_RUST_TARGET)" \
 	RUST_BACKEND_ROOT="$(RUST_BACKEND_ROOT)" \
+	BUNDLE_ENV_SOURCE="$(BUNDLE_ENV_SOURCE)" \
 	RUST_BACKEND_BINARY="$(RUST_BACKEND_BINARY)" \
 	ANDROID_NDK_HOME="$(ANDROID_NDK_HOME)" \
 	ANDROID_NDK_VERSION="$(ANDROID_NDK_VERSION)" \
@@ -74,6 +77,7 @@ bundle-android-debug: _chmod_scripts
 bundle-android-release: _chmod_scripts
 	ANDROID_RUST_TARGET="$(ANDROID_RUST_TARGET)" \
 	RUST_BACKEND_ROOT="$(RUST_BACKEND_ROOT)" \
+	BUNDLE_ENV_SOURCE="$(BUNDLE_ENV_SOURCE)" \
 	RUST_BACKEND_BINARY="$(RUST_BACKEND_BINARY)" \
 	ANDROID_NDK_HOME="$(ANDROID_NDK_HOME)" \
 	ANDROID_NDK_VERSION="$(ANDROID_NDK_VERSION)" \
@@ -99,11 +103,13 @@ create-android: bundle-android-release flutter-pub-get
 
 bundle-ios-debug: _chmod_scripts
 	RUST_BACKEND_ROOT="$(RUST_BACKEND_ROOT)" \
+	BUNDLE_ENV_SOURCE="$(BUNDLE_ENV_SOURCE)" \
 		"$(SCRIPTS)/bundle_rust_ios.sh" debug
 	cd "$(TUNIFY_ROOT)/ios" && pod install
 
 bundle-ios-release: _chmod_scripts
 	RUST_BACKEND_ROOT="$(RUST_BACKEND_ROOT)" \
+	BUNDLE_ENV_SOURCE="$(BUNDLE_ENV_SOURCE)" \
 		"$(SCRIPTS)/bundle_rust_ios.sh" release
 	cd "$(TUNIFY_ROOT)/ios" && pod install
 

@@ -7,9 +7,10 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 const _assetPath = 'assets/bundled_backend/tunify_rust_backend';
-const _listenHost = '127.0.0.1';
-const _listenPort = 8080;
-const _bundledDbFilename = 'tunify.db';
+const _runtimeEnvAssetPath = 'assets/bundled_backend/runtime.env';
+const _defaultListenHost = '127.0.0.1';
+const _defaultListenPort = 8080;
+const _defaultDbFilename = 'tunify.db';
 
 Process? _backendProcess;
 
@@ -18,12 +19,13 @@ Process? _backendProcess;
 /// `http://127.0.0.1:8080` as [ApiConfig] base URL.
 Future<void> ensureBundledBackendIfPresent() async {
   if (kIsWeb) return;
+  final runtimeEnv = await _loadBundledRuntimeEnv();
 
   // Android: [TunifyApplication] starts the binary from nativeLibraryDir (SELinux allows
   // exec there). Asset extraction + Process.start from app data is blocked on many devices.
   // iOS: AppDelegate starts the in-process Rust backend via FFI bridge.
   if (Platform.isAndroid || Platform.isIOS) {
-    await _pollBundledHealth();
+    await _pollBundledHealth(runtimeEnv);
     return;
   }
 
@@ -55,12 +57,16 @@ Future<void> ensureBundledBackendIfPresent() async {
   }
 
   final env = Map<String, String>.from(Platform.environment);
-  env['APP_RUNTIME_KIND'] = 'bundled';
-  env['APP_HOST'] = _listenHost;
-  env['APP_PORT'] = '$_listenPort';
-  // Local YouTube catalog until user configures a hosted URL via Settings → gateway.
-  env['APP_HOME_PROVIDER'] = 'youtube';
-  final localDbFile = File(p.join(supportDir.path, _bundledDbFilename));
+  env['APP_RUNTIME_KIND'] = runtimeEnv['APP_RUNTIME_KIND'] ?? 'bundled';
+  env['APP_HOST'] = runtimeEnv['APP_HOST'] ?? _defaultListenHost;
+  env['APP_PORT'] = runtimeEnv['APP_PORT'] ?? '$_defaultListenPort';
+  env['APP_HOME_PROVIDER'] = runtimeEnv['APP_HOME_PROVIDER'] ?? 'youtube';
+  env['APP_GATEWAY_ARCH_MODE'] =
+      runtimeEnv['APP_GATEWAY_ARCH_MODE'] ?? 'local_youtube';
+  env['APP_GATEWAY_STATE_PATH'] =
+      runtimeEnv['APP_GATEWAY_STATE_PATH'] ?? '.gateway_runtime.json';
+  final dbFilename = runtimeEnv['BUNDLED_DB_FILENAME'] ?? _defaultDbFilename;
+  final localDbFile = File(p.join(supportDir.path, dbFilename));
   env['DATABASE_URL'] = 'sqlite:${localDbFile.path}';
 
   try {
@@ -84,11 +90,14 @@ Future<void> ensureBundledBackendIfPresent() async {
     return;
   }
 
-  await _pollBundledHealth();
+  await _pollBundledHealth(runtimeEnv);
 }
 
-Future<void> _pollBundledHealth() async {
-  const healthUri = 'http://$_listenHost:$_listenPort/health';
+Future<void> _pollBundledHealth(Map<String, String> runtimeEnv) async {
+  final host = runtimeEnv['APP_HOST'] ?? _defaultListenHost;
+  final portRaw = runtimeEnv['APP_PORT'];
+  final port = int.tryParse(portRaw ?? '') ?? _defaultListenPort;
+  final healthUri = 'http://$host:$port/health';
   for (var i = 0; i < 60; i++) {
     try {
       final response = await http
@@ -107,4 +116,28 @@ Future<void> _pollBundledHealth() async {
     'BundledBackendLauncher: timed out waiting for $healthUri — '
     'check that the binary was built for this OS/arch (e.g. aarch64-linux-android for most phones).',
   );
+}
+
+Future<Map<String, String>> _loadBundledRuntimeEnv() async {
+  try {
+    final raw = await rootBundle.loadString(_runtimeEnvAssetPath);
+    return raw
+        .split('\n')
+        .map((line) => line.trim())
+        .where((line) => line.isNotEmpty && !line.startsWith('#'))
+        .map((line) {
+          final idx = line.indexOf('=');
+          if (idx <= 0) return const MapEntry('', '');
+          final key = line.substring(0, idx).trim();
+          final value = line.substring(idx + 1).trim();
+          return MapEntry(key, value);
+        })
+        .where((entry) => entry.key.isNotEmpty)
+        .fold<Map<String, String>>({}, (acc, e) {
+          acc[e.key] = e.value;
+          return acc;
+        });
+  } catch (_) {
+    return const {};
+  }
 }

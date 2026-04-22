@@ -11,6 +11,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TUNIFY_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 RUST_BACKEND_ROOT="${RUST_BACKEND_ROOT:-${TUNIFY_ROOT}/../Rust-Backend}"
+BUNDLE_ENV_SOURCE="${BUNDLE_ENV_SOURCE:-${RUST_BACKEND_ROOT}/.env.bundle}"
 PROFILE="${1:-release}"
 
 if [[ "${PROFILE}" != "debug" && "${PROFILE}" != "release" ]]; then
@@ -37,6 +38,13 @@ fi
 OUT_DIR="${TUNIFY_ROOT}/ios/TunifyBackendFFI"
 FRAMEWORK_DIR="${OUT_DIR}/TunifyBackendFFI.xcframework"
 HEADERS_DIR="${OUT_DIR}/Headers"
+RUNTIME_ENV_DEST="${TUNIFY_ROOT}/assets/bundled_backend/runtime.env"
+
+if [[ ! -f "${BUNDLE_ENV_SOURCE}" ]]; then
+  echo "Bundled env file not found: ${BUNDLE_ENV_SOURCE}"
+  echo "Create Rust-Backend/.env.bundle (or set BUNDLE_ENV_SOURCE=...)"
+  exit 1
+fi
 
 mkdir -p "${HEADERS_DIR}"
 cp "${RUST_BACKEND_ROOT}/include/tunify_backend_ffi.h" "${HEADERS_DIR}/tunify_backend_ffi.h"
@@ -76,4 +84,15 @@ rm -rf "${FRAMEWORK_DIR}"
 echo "==> Creating xcframework at ${FRAMEWORK_DIR}"
 xcodebuild -create-xcframework "${LIBS[@]}" -output "${FRAMEWORK_DIR}"
 
+mkdir -p "$(dirname "${RUNTIME_ENV_DEST}")"
+awk '
+  /^[[:space:]]*#/ { next }
+  /^[[:space:]]*$/ { next }
+  /^[A-Za-z_][A-Za-z0-9_]*=/ {
+    sub(/^[[:space:]]+/, "", $0)
+    print
+  }
+' "${BUNDLE_ENV_SOURCE}" > "${RUNTIME_ENV_DEST}"
+
 echo "==> Bundled iOS backend xcframework ready: ${FRAMEWORK_DIR}"
+echo "==> Synced bundled runtime env to ${RUNTIME_ENV_DEST} (source=${BUNDLE_ENV_SOURCE})"

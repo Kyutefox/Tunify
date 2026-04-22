@@ -21,7 +21,7 @@ class HomeCarouselShelf extends StatelessWidget {
   final HomeCarouselSection section;
 
   /// Callback to show options sheet for an item.
-  final VoidCallback? onShowOptions;
+  final void Function(LibraryItem item)? onShowOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -81,6 +81,14 @@ class HomeCarouselShelf extends StatelessWidget {
                   LibraryItemKind.playlist => 'Playlist',
                   LibraryItemKind.folder => 'Folder',
                 };
+                final libraryItem = LibraryItem(
+                  id: item.id,
+                  title: item.title,
+                  subtitle: subtitle,
+                  kind: kind,
+                  imageUrl: item.artworkUrl,
+                  ytmBrowseId: item.id,
+                );
 
                 return SizedBox(
                   width: thumb,
@@ -100,7 +108,12 @@ class HomeCarouselShelf extends StatelessWidget {
                         imageUrl: item.artworkUrl,
                       );
                     },
-                    onLongPress: onShowOptions ?? () {},
+                    onLongPress: () {
+                      final show = onShowOptions;
+                      if (show != null) {
+                        show(libraryItem);
+                      }
+                    },
                     child: isArtist
                         ? ArtistShelfCard(
                             thumbSize: thumb,

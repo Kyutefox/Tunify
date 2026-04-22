@@ -24,7 +24,7 @@ class HomeSlimGrid extends StatelessWidget {
   final bool omitTrailingShelfGap;
 
   /// Callback to show options sheet for a tile.
-  final VoidCallback? onShowOptions;
+  final void Function(LibraryItem item)? onShowOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +83,12 @@ class HomeSlimGrid extends StatelessWidget {
           subtitle: libraryItem.subtitle,
         );
       },
-      onLongPress: onShowOptions ?? () {},
+      onLongPress: () {
+        final show = onShowOptions;
+        if (show != null) {
+          show(libraryItem);
+        }
+      },
       child: TrackSlimCard(
         title: tile.title,
         mockThumbArgbColors: tile.thumbColors,

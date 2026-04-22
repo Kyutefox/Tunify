@@ -1,6 +1,7 @@
 /// Browse header metadata returned by the Tunify `/v1/browse` `collection_metadata` field.
 class BrowseMeta {
   const BrowseMeta({
+    this.collectionTitle,
     this.description,
     this.curatorName,
     this.curatorThumbnailUrl,
@@ -10,6 +11,9 @@ class BrowseMeta {
     this.collectionStatInfo,
     this.collectionThumbnailUrl,
   });
+
+  /// Canonical collection title from backend `collection_metadata.title` (microformat).
+  final String? collectionTitle;
 
   final String? description;
   final String? curatorName;

@@ -22,6 +22,11 @@ class LibraryDetailsTrack {
     this.durationMs,
     this.description,
     this.durationText,
+    this.artistBrowseId,
+    this.artistBrowseIds = const <String>[],
+    this.albumBrowseId,
+    this.albumName,
+    this.primaryArtistName,
   });
 
   final String title;
@@ -43,6 +48,21 @@ class LibraryDetailsTrack {
 
   /// Duration text (e.g., "1 hr 29 min") from the API response. Null for regular tracks.
   final String? durationText;
+
+  /// YT Music browse id for the primary artist when available.
+  final String? artistBrowseId;
+
+  /// Ordered YT Music browse ids for all artists on this track when available.
+  final List<String> artistBrowseIds;
+
+  /// YT Music browse id for the source album when available.
+  final String? albumBrowseId;
+
+  /// Source album title when available.
+  final String? albumName;
+
+  /// Primary artist name aligned to [artistBrowseId] when available.
+  final String? primaryArtistName;
 }
 
 class LibraryDetailsModel {

@@ -17,6 +17,7 @@ import 'package:tunify/v2/features/library/presentation/widgets/add_to_folder_sh
 import 'package:tunify/v2/features/library/presentation/widgets/library_collection_artwork.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_pin_toggle_row.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/library_item_sheet_quick_actions.dart';
+import 'package:tunify/v2/features/library/presentation/screens/library_details_screen.dart';
 import 'package:tunify/v2/features/library/presentation/widgets/save_track_to_playlist_sheet.dart';
 
 part 'library_item_options_sheet.part_widgets.dart';
@@ -43,15 +44,6 @@ List<_OptionAction> _libraryItemOptionsSecondaryActions(
   } else if (quickKind != LibraryItemSheetQuickRowKind.remoteCollection &&
       quickKind != LibraryItemSheetQuickRowKind.ephemeralHomeTrackShelf) {
     actions.add(_OptionAction(icon: AppIcons.share, label: 'Share'));
-  }
-
-  if (item.kind != LibraryItemKind.artist &&
-      item.kind != LibraryItemKind.podcast &&
-      item.kind != LibraryItemKind.album &&
-      item.kind != LibraryItemKind.playlist) {
-    actions.add(
-      _OptionAction(icon: AppIcons.personOutline, label: 'Go to artist'),
-    );
   }
 
   actions.add(_OptionAction(icon: AppIcons.queueMusic, label: 'Add to Queue'));
@@ -256,23 +248,163 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
   }
 
   List<_OptionAction> _trackSecondaryActions() {
+    final track = widget.track!;
     final details = widget.details!;
-    final fromStaticSystemPlaylist =
-        details.item.systemArtwork == SystemArtworkType.likedSongs ||
-            details.item.systemArtwork == SystemArtworkType.yourEpisodes;
+    final isPodcastContext = details.item.kind == LibraryItemKind.podcast ||
+        details.item.kind == LibraryItemKind.episode;
+    final artistBrowseIds = _orderedArtistBrowseIds(track);
+    final hasArtistTarget = !isPodcastContext && artistBrowseIds.isNotEmpty;
+    final hasAlbumTarget =
+        !isPodcastContext && (track.albumBrowseId?.trim().isNotEmpty ?? false);
     return [
-      if (!fromStaticSystemPlaylist)
-        _OptionAction(icon: AppIcons.share, label: 'Share'),
-      if (!fromStaticSystemPlaylist)
+      _OptionAction(icon: AppIcons.share, label: 'Share'),
+      _OptionAction(
+        icon: AppIcons.playlistAddIcon,
+        label: LibraryStrings.trackAddToPlaylistSheetTitle,
+        customTap: _openSaveToPlaylistSheetFromTrack,
+      ),
+      if (hasArtistTarget)
         _OptionAction(
-          icon: AppIcons.playlistAddIcon,
-          label: LibraryStrings.trackAddToPlaylistSheetTitle,
-          customTap: _openSaveToPlaylistSheetFromTrack,
+          icon: AppIcons.personOutline,
+          label: 'Go to Artist',
+          customTap: _openTrackArtist,
+        ),
+      if (hasAlbumTarget)
+        _OptionAction(
+          icon: AppIcons.album,
+          label: 'Go to Album',
+          customTap: _openTrackAlbum,
         ),
       _OptionAction(icon: AppIcons.queueMusic, label: 'Add to Queue'),
-      if (!fromStaticSystemPlaylist)
-        _OptionAction(icon: AppIcons.equalizer, label: 'Show Tunify Code'),
+      _OptionAction(icon: AppIcons.equalizer, label: 'Show Tunify Code'),
     ];
+  }
+
+  void _openTrackArtist() {
+    final track = widget.track!;
+    final artistBrowseIds = _orderedArtistBrowseIds(track);
+    if (artistBrowseIds.isEmpty) {
+      return;
+    }
+    if (artistBrowseIds.length == 1) {
+      _openArtistByBrowseId(track, artistBrowseIds.first);
+      return;
+    }
+    _openArtistPicker(track, artistBrowseIds);
+  }
+
+  List<String> _orderedArtistBrowseIds(LibraryDetailsTrack track) {
+    final ordered = <String>[];
+    for (final id in track.artistBrowseIds) {
+      final t = id.trim();
+      if (t.isNotEmpty && !ordered.contains(t)) {
+        ordered.add(t);
+      }
+    }
+    final primary = track.artistBrowseId?.trim();
+    if (primary != null && primary.isNotEmpty && !ordered.contains(primary)) {
+      ordered.insert(0, primary);
+    }
+    return ordered;
+  }
+
+  Future<void> _openArtistPicker(
+    LibraryDetailsTrack track,
+    List<String> artistBrowseIds,
+  ) async {
+    Navigator.of(context).pop();
+    final selected = await showModalBottomSheet<String>(
+      context: widget.hostContext,
+      backgroundColor: AppColors.bottomSheetSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(AppBorderRadius.comfortable),
+        ),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: AppSpacing.md),
+            const _SheetDragHandle(),
+            const SizedBox(height: AppSpacing.sm),
+            Text('Choose Artist', style: AppTextStyles.bodyBold),
+            const SizedBox(height: AppSpacing.sm),
+            ...artistBrowseIds.asMap().entries.map(
+                  (entry) => _OptionRow(
+                    icon: AppIcons.personOutline,
+                    label: _artistLabelForIndex(track, entry.key),
+                    onTap: () => Navigator.of(sheetContext).pop(entry.value),
+                  ),
+                ),
+            const SizedBox(height: AppSpacing.md),
+          ],
+        ),
+      ),
+    );
+    if (selected == null || selected.trim().isEmpty) {
+      return;
+    }
+    _openArtistByBrowseId(track, selected.trim());
+  }
+
+  String _artistLabelForIndex(LibraryDetailsTrack track, int index) {
+    final subtitleChunks = track.subtitle
+        .split('•')
+        .first
+        .split(RegExp(r',|&'))
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList(growable: false);
+    if (index < subtitleChunks.length) {
+      return subtitleChunks[index];
+    }
+    return track.primaryArtistName?.trim().isNotEmpty == true
+        ? track.primaryArtistName!.trim()
+        : 'Artist ${index + 1}';
+  }
+
+  void _openArtistByBrowseId(LibraryDetailsTrack track, String browseId) {
+    Navigator.of(widget.hostContext).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => LibraryDetailsScreen(
+          item: LibraryItem(
+            id: browseId,
+            title: (track.primaryArtistName?.trim().isNotEmpty ?? false)
+                ? track.primaryArtistName!.trim()
+                : track.subtitle,
+            subtitle: 'Artist',
+            kind: LibraryItemKind.artist,
+            imageUrl: track.thumbUrl,
+            ytmBrowseId: browseId,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _openTrackAlbum() {
+    final track = widget.track!;
+    final browseId = track.albumBrowseId?.trim() ?? '';
+    if (browseId.isEmpty) {
+      return;
+    }
+    Navigator.of(context).pop();
+    Navigator.of(widget.hostContext).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => LibraryDetailsScreen(
+          item: LibraryItem(
+            id: browseId,
+            title: (track.albumName?.trim().isNotEmpty ?? false)
+                ? track.albumName!.trim()
+                : track.title,
+            subtitle: 'Album',
+            kind: LibraryItemKind.album,
+            ytmBrowseId: browseId,
+          ),
+        ),
+      ),
+    );
   }
 
   void _openSaveToPlaylistSheetFromTrack() {
@@ -439,7 +571,15 @@ class _LibraryOptionsSheetState extends ConsumerState<_LibraryOptionsSheet> {
             child: Row(
               children: [
                 LibraryCollectionArtwork(
-                  item: details.item,
+                  item: LibraryItem(
+                    id: track.videoId.isNotEmpty
+                        ? track.videoId
+                        : details.item.id,
+                    title: track.title,
+                    subtitle: track.subtitle,
+                    kind: LibraryItemKind.playlist,
+                    imageUrl: track.thumbUrl,
+                  ),
                   preferredImageUrl: track.thumbUrl,
                   size: LibraryLayout.sheetArtworkSize,
                   borderRadius: radius,

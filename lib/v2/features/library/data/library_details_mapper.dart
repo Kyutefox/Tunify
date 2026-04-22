@@ -42,6 +42,10 @@ String? _artistHeroImageUrl({
   required LibraryItem item,
   required BrowseMeta? meta,
 }) {
+  final fromCollection = _nonEmptyUrl(meta?.collectionThumbnailUrl ?? '');
+  if (fromCollection != null) {
+    return fromCollection;
+  }
   final fromItem = _nonEmptyUrl(item.imageUrl ?? '');
   if (fromItem != null) {
     return fromItem;
@@ -66,8 +70,7 @@ LibraryDetailsModel libraryDetailsFromBrowse({
   required LibraryItem item,
   required List<BrowseTrack> tracks,
   BrowseMeta? meta,
-  List<LibraryBrowseRecommendationShelf> browseRecommendationShelves =
-      const [],
+  List<LibraryBrowseRecommendationShelf> browseRecommendationShelves = const [],
 }) {
   final type = _detailsType(item.kind);
   final rows = tracks
@@ -82,10 +85,14 @@ LibraryDetailsModel libraryDetailsFromBrowse({
           durationMs: t.duration.inMilliseconds,
           description: t.description,
           durationText: t.durationText,
+          artistBrowseId: t.artistBrowseId,
+          artistBrowseIds: t.artistBrowseIds,
+          albumBrowseId: t.albumBrowseId,
+          albumName: t.albumName,
+          primaryArtistName: t.primaryArtistName,
         ),
       )
       .toList(growable: false);
-
 
   /// Artist immersive header often supplies a wide banner; library [item.imageUrl]
   /// is the same square avatar as grids and [LibraryDetailMiniCover].
@@ -93,13 +100,18 @@ LibraryDetailsModel libraryDetailsFromBrowse({
   /// extracted by the Rust backend over the potentially stale DB value.
   final String? heroUrl = type == LibraryDetailsType.artist
       ? _upgradeThumbResolution(_artistHeroImageUrl(item: item, meta: meta))
-      : _nonEmptyUrl(_upgradeThumbResolution(meta?.collectionThumbnailUrl)) ?? item.imageUrl;
+      : _nonEmptyUrl(_upgradeThumbResolution(meta?.collectionThumbnailUrl)) ??
+          item.imageUrl;
 
-
-  final title = (type == LibraryDetailsType.artist
-          ? (meta?.channelTitle ?? item.title)
-          : item.title)
-      .trim();
+  final browseTitle = (meta?.collectionTitle ?? '').trim();
+  final shouldUseBrowseTitle =
+      browseTitle.isNotEmpty && !item.isInServerLibrary;
+  final title = shouldUseBrowseTitle
+      ? browseTitle
+      : (type == LibraryDetailsType.artist
+              ? (meta?.channelTitle ?? item.title)
+              : item.title)
+          .trim();
 
   final description = (meta?.description ?? '').trim();
   final collectionDescription = description.isEmpty ? null : description;
@@ -135,7 +147,7 @@ LibraryDetailsModel libraryDetailsFromBrowse({
     type: type,
     item: item,
     searchHint: 'Find on this page',
-    title: item.title,
+    title: title,
     subtitlePrimary: ownerLine,
     collectionDescription: collectionDescription,
     collectionStatInfo: meta?.collectionStatInfo,

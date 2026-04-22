@@ -49,7 +49,7 @@ abstract final class SearchApiMapper {
       subtitle: json['subscriber_line'] as String? ?? 'Artist',
       imageUrl: _safeImage(json['artwork_url']),
       trailingText: 'Following',
-      isVerified: true,
+      isVerified: false,
     );
   }
 

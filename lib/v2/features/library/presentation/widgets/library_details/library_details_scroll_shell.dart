@@ -111,8 +111,12 @@ class _LibraryDetailsScrollShellState
         SnackBar(
           content: Text(
             widget.details.type == LibraryDetailsType.artist
-                ? (next ? LibraryStrings.following : 'Artist removed from your library')
-                : (next ? 'Added to Your Library' : 'Removed from Your Library'),
+                ? (next
+                    ? LibraryStrings.following
+                    : 'Artist removed from your library')
+                : (next
+                    ? 'Added to Your Library'
+                    : 'Removed from Your Library'),
           ),
         ),
       );
@@ -346,9 +350,9 @@ class _LibraryDetailsScrollShellState
                           : null,
                       onMorePressed: _openLibraryItemOptionsFromDock,
                       isInLibrary: collectionSaved?.maybeWhen(
-                            data: (v) => v,
-                            orElse: () => false,
-                          ),
+                        data: (v) => v,
+                        orElse: () => false,
+                      ),
                     ),
             ),
           ),
@@ -499,7 +503,10 @@ class _SearchModeOverlay extends StatelessWidget {
                             borderSide: BorderSide.none,
                           ),
                           contentPadding: const EdgeInsets.fromLTRB(
-                            0, 0, AppSpacing.md, 0,
+                            0,
+                            0,
+                            AppSpacing.md,
+                            0,
                           ),
                         ),
                       ),
@@ -517,14 +524,12 @@ class _SearchModeOverlay extends StatelessWidget {
                 AppSpacing.lg,
                 AppSpacing.sm,
                 0,
-                bottomInset +
-                    LibraryDetailsLayout.scrollBottomExtraPadding,
+                bottomInset + LibraryDetailsLayout.scrollBottomExtraPadding,
               ),
               itemCount: details.tracks.length,
               itemBuilder: (context, index) {
                 final track = details.tracks[index];
-                final showThumbnail =
-                    details.type != LibraryDetailsType.album;
+                final showThumbnail = details.type != LibraryDetailsType.album;
 
                 return _AnimatedTrackRow(
                   key: ValueKey(track.title + track.subtitle),
@@ -635,8 +640,7 @@ class _SearchTrackRowInk extends StatelessWidget {
   final bool showThumbnail;
   final VoidCallback onOpenSheet;
 
-  bool get _sheetAvailable =>
-      track.videoId.trim().isNotEmpty || details.item.isUserOwnedPlaylist;
+  bool get _sheetAvailable => true;
 
   @override
   Widget build(BuildContext context) {

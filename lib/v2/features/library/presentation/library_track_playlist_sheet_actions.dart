@@ -45,6 +45,8 @@ abstract final class LibraryTrackPlaylistSheetActions {
       description: track.description,
       artworkUrl: track.thumbUrl,
       durationMs: track.durationMs,
+      artistBrowseIds: track.artistBrowseIds,
+      albumBrowseId: track.albumBrowseId,
     );
     invalidateLibraryListCaches(ref);
     ref.invalidate(trackPlaylistMembershipsProvider(videoId.trim()));

@@ -29,9 +29,7 @@ class _TrackRow extends ConsumerStatefulWidget {
 class _TrackRowState extends ConsumerState<_TrackRow> {
   bool _addToLaterBusy = false;
 
-  bool get _sheetAvailable =>
-      widget.track.videoId.trim().isNotEmpty ||
-      widget.details.item.isUserOwnedPlaylist;
+  bool get _sheetAvailable => true;
 
   bool get _isPodcast => widget.details.item.kind == LibraryItemKind.podcast;
 
@@ -135,6 +133,8 @@ class _TrackRowState extends ConsumerState<_TrackRow> {
           description: track.description,
           artworkUrl: track.thumbUrl,
           durationMs: track.durationMs,
+          artistBrowseIds: track.artistBrowseIds,
+          albumBrowseId: track.albumBrowseId,
         );
       }
       if (!mounted) {

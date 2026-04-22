@@ -20,6 +20,7 @@ import 'package:tunify/v2/features/search/presentation/providers/moods_providers
 import 'package:tunify/v2/features/search/presentation/widgets/search_focus_bodies.dart';
 import 'package:tunify/v2/features/search/presentation/widgets/search_filter_chips_row.dart';
 import 'package:tunify/v2/features/search/presentation/widgets/search_focus_header.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
 class SearchScreen extends ConsumerWidget {
   const SearchScreen({super.key});
@@ -86,7 +87,8 @@ class SearchScreen extends ConsumerWidget {
                         backgroundColor: tile.$2,
                         width: 132,
                         padding: AppSpacing.lg - AppSpacing.sm,
-                        titleFontSize: AppSpacing.searchExploreCardTitleFontSize,
+                        titleFontSize:
+                            AppSpacing.searchExploreCardTitleFontSize,
                       );
                     },
                   ),
@@ -116,7 +118,8 @@ class SearchScreen extends ConsumerWidget {
                     seed: colorSeed,
                   );
                   return SliverGrid(
-                    gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                    gridDelegate:
+                        const SliverGridDelegateWithMaxCrossAxisExtent(
                       maxCrossAxisExtent: 220,
                       mainAxisSpacing: AppSpacing.md,
                       crossAxisSpacing: AppSpacing.md,
@@ -129,7 +132,8 @@ class SearchScreen extends ConsumerWidget {
                           title: mood.title,
                           backgroundColor: moodTileColors[index],
                           padding: AppSpacing.lg,
-                          titleFontSize: AppSpacing.searchCategoryCardTitleFontSize,
+                          titleFontSize:
+                              AppSpacing.searchCategoryCardTitleFontSize,
                         );
                       },
                       childCount: moods.length,
@@ -145,17 +149,20 @@ class SearchScreen extends ConsumerWidget {
                       title: 'Loading Category',
                     ),
                   );
-                  final dummyColors = List.generate(12, (i) => AppColors.darkCard);
-                  
+                  final dummyColors =
+                      List.generate(12, (i) => AppColors.darkCard);
+
                   return SliverToBoxAdapter(
                     child: Skeletonizer(
                       enabled: true,
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg),
                         child: GridView.builder(
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                          gridDelegate:
+                              const SliverGridDelegateWithMaxCrossAxisExtent(
                             maxCrossAxisExtent: 220,
                             mainAxisSpacing: AppSpacing.md,
                             crossAxisSpacing: AppSpacing.md,
@@ -167,7 +174,8 @@ class SearchScreen extends ConsumerWidget {
                               title: dummyMoods[index].title,
                               backgroundColor: dummyColors[index],
                               padding: AppSpacing.lg,
-                              titleFontSize: AppSpacing.searchCategoryCardTitleFontSize,
+                              titleFontSize:
+                                  AppSpacing.searchCategoryCardTitleFontSize,
                             );
                           },
                         ),
@@ -296,7 +304,7 @@ class _SearchFocusScreenState extends ConsumerState<SearchFocusScreen> {
                         imageUrl: null,
                       ),
                     );
-                    
+
                     return Skeletonizer(
                       enabled: true,
                       child: SearchSuggestionBody(
@@ -317,6 +325,14 @@ class _SearchFocusScreenState extends ConsumerState<SearchFocusScreen> {
                         searchController.updateQueryDraft(text);
                         searchController.submitSearch();
                       },
+                      onShowOptions: (item) =>
+                          showLibraryItemOptionsSheet(context, item),
+                      onShowTrackOptions: (details, track) =>
+                          showLibraryItemOptionsSheetForTrack(
+                        context,
+                        details,
+                        track,
+                      ),
                     );
                   }
                   if (showResults && state.isLoading) {
@@ -337,7 +353,7 @@ class _SearchFocusScreenState extends ConsumerState<SearchFocusScreen> {
                         ),
                       ),
                     );
-                    
+
                     return Skeletonizer(
                       enabled: true,
                       child: SearchResultBody(
@@ -361,7 +377,14 @@ class _SearchFocusScreenState extends ConsumerState<SearchFocusScreen> {
                     results: state.results!,
                     isLoadingMore: state.isLoadingMore,
                     onLoadMore: searchController.loadMore,
-                    onShowOptions: null,
+                    onShowOptions: (item) =>
+                        showLibraryItemOptionsSheet(context, item),
+                    onShowTrackOptions: (details, track) =>
+                        showLibraryItemOptionsSheetForTrack(
+                      context,
+                      details,
+                      track,
+                    ),
                   );
                 },
               ),
@@ -416,7 +439,8 @@ class _SearchHeaderDelegate extends SliverPersistentHeaderDelegate {
                       'Search',
                       style: AppTextStyles.sectionTitle.copyWith(
                         fontSize: AppSpacing.searchHeaderCollapsedTitleFontSize,
-                        height: 26 / AppSpacing.searchHeaderCollapsedTitleFontSize,
+                        height:
+                            26 / AppSpacing.searchHeaderCollapsedTitleFontSize,
                       ),
                     ),
                     trailing: AppIcon(
@@ -469,7 +493,7 @@ class _CollapsedSearchInput extends StatelessWidget {
           child: Row(
             children: [
               AppIcon(
-                icon: AppIcons.search, size: 28, color: AppColors.nearBlack),
+                  icon: AppIcons.search, size: 28, color: AppColors.nearBlack),
               const SizedBox(width: AppSpacing.md),
               Text(
                 'What do you want to play?',

@@ -10,8 +10,10 @@ class BrowseTrack {
     this.description,
     this.durationText,
     this.artistBrowseId,
+    this.artistBrowseIds = const [],
     this.albumBrowseId,
     this.albumName,
+    this.primaryArtistName,
   });
 
   final String id;
@@ -23,8 +25,10 @@ class BrowseTrack {
   final String? description;
   final String? durationText;
   final String? artistBrowseId;
+  final List<String> artistBrowseIds;
   final String? albumBrowseId;
   final String? albumName;
+  final String? primaryArtistName;
 
   String get durationFormatted {
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -38,7 +42,9 @@ class BrowseTrack {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is BrowseTrack && runtimeType == other.runtimeType && id == other.id;
+      other is BrowseTrack &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
   int get hashCode => id.hashCode;

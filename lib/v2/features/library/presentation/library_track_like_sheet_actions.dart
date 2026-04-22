@@ -28,6 +28,8 @@ abstract final class LibraryTrackLikeSheetActions {
         description: track.description,
         artworkUrl: track.thumbUrl,
         durationMs: track.durationMs,
+        artistBrowseIds: track.artistBrowseIds,
+        albumBrowseId: track.albumBrowseId,
       );
     } else {
       await gw.removeUserPlaylistTrack(

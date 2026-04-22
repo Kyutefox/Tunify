@@ -32,7 +32,8 @@ final class LibraryBrowseGateway {
     return root.containsKey('raw') && root.containsKey('parsed');
   }
 
-  static List<LibraryBrowseRecommendationShelf> _recommendationShelvesFromParsed(
+  static List<LibraryBrowseRecommendationShelf>
+      _recommendationShelvesFromParsed(
     Map<String, dynamic>? parsed,
   ) {
     if (parsed == null) {
@@ -74,16 +75,20 @@ final class LibraryBrowseGateway {
     final parsedFirst =
         first['parsed'] as Map<String, dynamic>? ?? const <String, dynamic>{};
 
-    final collectionMetadata = parsedFirst['collection_metadata'] as Map<String, dynamic>?;
+    final collectionMetadata =
+        parsedFirst['collection_metadata'] as Map<String, dynamic>?;
     final BrowseMeta? meta = collectionMetadata == null
         ? null
         : BrowseMeta(
+            collectionTitle: collectionMetadata['title'] as String?,
             description: collectionMetadata['description'] as String?,
             curatorName: collectionMetadata['curator_name'] as String?,
             curatorThumbnailUrl: collectionMetadata['artist_avatar'] as String?,
             subtitle: collectionMetadata['subtitle'] as String?,
-            collectionStatInfo: collectionMetadata['collection_stat_info'] as String?,
-            collectionThumbnailUrl: collectionMetadata['thumbnail_url'] as String?,
+            collectionStatInfo:
+                collectionMetadata['collection_stat_info'] as String?,
+            collectionThumbnailUrl:
+                collectionMetadata['thumbnail_url'] as String?,
           );
     final shelves = _recommendationShelvesFromParsed(parsedFirst);
 

@@ -139,6 +139,14 @@ class LibraryWriteGateway {
           : (e['duration_ms'] is int
               ? e['duration_ms'] as int
               : (e['duration_ms'] as num).toInt());
+      final artistBrowseId = (e['artist_browse_id'] as String?)?.trim();
+      final artistBrowseIds =
+          (e['artist_browse_ids'] as List<dynamic>? ?? const [])
+              .whereType<String>()
+              .map((id) => id.trim())
+              .where((id) => id.isNotEmpty)
+              .toList(growable: false);
+      final albumBrowseId = (e['album_browse_id'] as String?)?.trim();
       out.add(
         LibraryDetailsTrack(
           title: title,
@@ -147,6 +155,13 @@ class LibraryWriteGateway {
           thumbUrl: art == null || art.isEmpty ? null : art,
           videoId: id,
           durationMs: durationMs,
+          artistBrowseId: artistBrowseId == null || artistBrowseId.isEmpty
+              ? null
+              : artistBrowseId,
+          artistBrowseIds: artistBrowseIds,
+          albumBrowseId: albumBrowseId == null || albumBrowseId.isEmpty
+              ? null
+              : albumBrowseId,
           description:
               description == null || description.isEmpty ? null : description,
         ),
@@ -193,7 +208,15 @@ class LibraryWriteGateway {
     String? description,
     String? artworkUrl,
     int? durationMs,
+    List<String> artistBrowseIds = const [],
+    String? albumBrowseId,
   }) async {
+    final normalizedArtistBrowseIds = artistBrowseIds
+        .map((id) => id.trim())
+        .where((id) => id.isNotEmpty)
+        .toSet()
+        .toList(growable: false);
+    final normalizedAlbumBrowseId = albumBrowseId?.trim();
     await _api.postJson(
       '/v1/library/playlist/tracks',
       {
@@ -207,6 +230,11 @@ class LibraryWriteGateway {
         if (artworkUrl != null && artworkUrl.trim().isNotEmpty)
           'artwork_url': artworkUrl.trim(),
         if (durationMs != null) 'duration_ms': durationMs,
+        if (normalizedArtistBrowseIds.isNotEmpty)
+          'artist_browse_ids': normalizedArtistBrowseIds,
+        if (normalizedAlbumBrowseId != null &&
+            normalizedAlbumBrowseId.isNotEmpty)
+          'album_browse_id': normalizedAlbumBrowseId,
       },
       withAuth: true,
     );

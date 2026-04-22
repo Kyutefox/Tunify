@@ -16,6 +16,8 @@ import 'package:tunify/v2/features/home/presentation/widgets/home_podcast_promo.
 import 'package:tunify/v2/features/home/presentation/widgets/home_quick_picks_shelf.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_slim_grid.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_top_header.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
+import 'package:tunify/v2/features/library/presentation/widgets/library_item_options_sheet.dart';
 
 /// Home scroll + pinned header. Presentation only (RULES.md: Riverpod, no business logic).
 class HomeScreen extends ConsumerWidget {
@@ -125,14 +127,27 @@ class _HomeBlockView extends StatelessWidget {
 
   final HomeBlock block;
 
+  void _showOptions(BuildContext context, LibraryItem item) {
+    showLibraryItemOptionsSheet(context, item);
+  }
+
   @override
   Widget build(BuildContext context) {
     return switch (block) {
-      final HomeQuickPicksBlock qp => HomeQuickPicksShelf(data: qp),
-      HomeSlimGridBlock(:final tiles) => HomeSlimGrid(tiles: tiles, onShowOptions: null),
+      final HomeQuickPicksBlock qp => HomeQuickPicksShelf(
+          data: qp,
+          onShowOptions: (item) => _showOptions(context, item),
+        ),
+      HomeSlimGridBlock(:final tiles) => HomeSlimGrid(
+          tiles: tiles,
+          onShowOptions: (item) => _showOptions(context, item),
+        ),
       HomeHeroRecommendedBlock(:final hero) =>
-          HomeHeroRecommendedView(data: hero),
-      HomeCarouselBlock(:final section) => HomeCarouselShelf(section: section, onShowOptions: null),
+        HomeHeroRecommendedView(data: hero),
+      HomeCarouselBlock(:final section) => HomeCarouselShelf(
+          section: section,
+          onShowOptions: (item) => _showOptions(context, item),
+        ),
       HomePodcastPromoBlock(:final promo) => HomePodcastPromoView(data: promo),
     };
   }

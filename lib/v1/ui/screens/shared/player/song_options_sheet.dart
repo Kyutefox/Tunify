@@ -107,6 +107,9 @@ class _SongOptionsContent extends ConsumerWidget {
     final effectiveQueueIndex =
         queueIndex ?? queue.indexWhere((s) => s.id == song.id);
     final isInQueue = effectiveQueueIndex >= 0;
+    final hasArtistTarget =
+        songForNav.artistBrowseId?.trim().isNotEmpty ?? false;
+    final hasAlbumTarget = songForNav.albumBrowseId?.trim().isNotEmpty ?? false;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: kSheetHorizontalPadding),
@@ -226,7 +229,7 @@ class _SongOptionsContent extends ConsumerWidget {
             height: 1,
           ),
           const SizedBox(height: AppSpacing.sm),
-          if (showGoToArtist)
+          if (showGoToArtist && hasArtistTarget)
             SheetOptionTile(
               icon: AppIcons.artist,
               label: 'Go to Artist',
@@ -243,7 +246,7 @@ class _SongOptionsContent extends ConsumerWidget {
                 );
               },
             ),
-          if (showGoToAlbum)
+          if (showGoToAlbum && hasAlbumTarget)
             SheetOptionTile(
               icon: AppIcons.album,
               label: 'Go to Album',

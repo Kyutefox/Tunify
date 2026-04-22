@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:tunify/v2/features/home/domain/entities/home_block.dart';
 import 'package:tunify/v2/features/home/presentation/constants/home_layout.dart';
+import 'package:tunify/v2/features/library/domain/entities/library_item.dart';
 import 'package:tunify/v2/features/home/presentation/widgets/home_slim_grid.dart';
 
 /// Quick picks: 2×[visibleRows] tiles per horizontal swipe page; same [HomeSlimGrid] as mock/DESIGN.
@@ -8,9 +9,11 @@ class HomeQuickPicksShelf extends StatelessWidget {
   const HomeQuickPicksShelf({
     super.key,
     required this.data,
+    this.onShowOptions,
   });
 
   final HomeQuickPicksBlock data;
+  final void Function(LibraryItem item)? onShowOptions;
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +39,7 @@ class HomeQuickPicksShelf extends StatelessWidget {
               child: HomeSlimGrid(
                 tiles: slice,
                 omitTrailingShelfGap: true,
-                onShowOptions: null,
+                onShowOptions: onShowOptions,
               ),
             );
           },
